@@ -25,12 +25,22 @@ function evaluateRuleForField<
   context: C,
   prev: FieldValues<F> | undefined,
   availability: Partial<AvailabilityMap<F>>,
+  baseRuleCache: Map<Rule<F, C>, Map<string, RuleEvaluation>>,
 ): RuleEvaluation {
   const metadata = getInternalRuleMetadata(rule)
 
   if (metadata?.kind === 'anyOf') {
     const innerResults = metadata.rules.map((innerRule) =>
-      evaluateRuleForField(innerRule, field, fields, values, context, prev, availability),
+      evaluateRuleForField(
+        innerRule,
+        field,
+        fields,
+        values,
+        context,
+        prev,
+        availability,
+        baseRuleCache,
+      ),
     )
 
     if (innerResults.some((result) => result.enabled)) {
@@ -74,7 +84,13 @@ function evaluateRuleForField<
     }
   }
 
-  const result = rule.evaluate(values, context, prev, fields).get(field)
+  let evaluation = baseRuleCache.get(rule)
+  if (!evaluation) {
+    evaluation = rule.evaluate(values, context, prev, fields)
+    baseRuleCache.set(rule, evaluation)
+  }
+
+  const result = evaluation.get(field)
 
   if (!result) {
     return { enabled: true, reason: null }
@@ -100,6 +116,7 @@ export function evaluate<
 ): AvailabilityMap<F> {
   const availability = {} as AvailabilityMap<F>
   const rulesByTarget = new Map<string, Rule<F, C>[]>()
+  const baseRuleCache = new Map<Rule<F, C>, Map<string, RuleEvaluation>>()
 
   for (const rule of rules) {
     for (const target of rule.targets) {
@@ -120,7 +137,16 @@ export function evaluate<
     let reason: string | null = null
 
     for (const rule of fieldRules) {
-      const result = evaluateRuleForField(rule, field, fields, values, context, prev, availability)
+      const result = evaluateRuleForField(
+        rule,
+        field,
+        fields,
+        values,
+        context,
+        prev,
+        availability,
+        baseRuleCache,
+      )
 
       if (result.enabled) {
         continue

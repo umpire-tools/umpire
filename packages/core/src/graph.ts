@@ -1,3 +1,4 @@
+import { getInternalRuleMetadata } from './rules.js'
 import type { FieldDef, Rule } from './types.js'
 
 export type GraphEdge = {
@@ -17,6 +18,10 @@ function uniqueNodes(fieldNames: string[]): string[] {
   return [...new Set(fieldNames)]
 }
 
+function isOrderingEdge(edge: GraphEdge): boolean {
+  return edge.type !== 'oneOf'
+}
+
 export function buildGraph<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -33,6 +38,38 @@ export function buildGraph<
   }
 
   for (const rule of rules) {
+    const metadata = getInternalRuleMetadata(rule)
+
+    if (metadata?.kind === 'oneOf') {
+      const branchNames = Object.keys(metadata.branches)
+
+      for (let sourceIndex = 0; sourceIndex < branchNames.length; sourceIndex += 1) {
+        const sourceBranch = metadata.branches[branchNames[sourceIndex]]
+
+        for (let targetIndex = 0; targetIndex < branchNames.length; targetIndex += 1) {
+          if (sourceIndex === targetIndex) {
+            continue
+          }
+
+          const targetBranch = metadata.branches[branchNames[targetIndex]]
+
+          for (const source of sourceBranch) {
+            for (const target of targetBranch) {
+              const edgeKey = `${source}:${target}:${rule.type}`
+              if (seenEdges.has(edgeKey)) {
+                continue
+              }
+              seenEdges.add(edgeKey)
+
+              edges.push({ from: source, to: target, type: rule.type })
+            }
+          }
+        }
+      }
+
+      continue
+    }
+
     for (const source of rule.sources) {
       for (const target of rule.targets) {
         if (source === target) {
@@ -84,7 +121,9 @@ export function detectCycles(graph: DependencyGraph): void {
     active.add(node)
     stack.push(node)
 
-    for (const next of graph.adjacency.get(node) ?? []) {
+    for (const next of (graph.adjacency.get(node) ?? []).filter((candidate) =>
+      graph.edges.some((edge) => edge.from === node && edge.to === candidate && isOrderingEdge(edge)),
+    )) {
       if (!visited.has(next)) {
         const cycle = visit(next)
         if (cycle) {
@@ -120,7 +159,23 @@ export function detectCycles(graph: DependencyGraph): void {
 
 export function topologicalSort(graph: DependencyGraph, fieldNames: string[]): string[] {
   const orderedFields = uniqueNodes(fieldNames)
-  const incomingCounts = new Map(graph.incomingCounts)
+  const incomingCounts = new Map<string, number>()
+  const orderingAdjacency = new Map<string, string[]>()
+
+  for (const field of orderedFields) {
+    incomingCounts.set(field, 0)
+    orderingAdjacency.set(field, [])
+  }
+
+  for (const edge of graph.edges) {
+    if (!isOrderingEdge(edge)) {
+      continue
+    }
+
+    orderingAdjacency.get(edge.from)?.push(edge.to)
+    incomingCounts.set(edge.to, (incomingCounts.get(edge.to) ?? 0) + 1)
+  }
+
   const queue = orderedFields.filter((field) => (incomingCounts.get(field) ?? 0) === 0)
   const result: string[] = []
 
@@ -128,7 +183,7 @@ export function topologicalSort(graph: DependencyGraph, fieldNames: string[]): s
     const node = queue[index]
     result.push(node)
 
-    for (const next of graph.adjacency.get(node) ?? []) {
+    for (const next of orderingAdjacency.get(node) ?? []) {
       const remaining = (incomingCounts.get(next) ?? 0) - 1
       incomingCounts.set(next, remaining)
       if (remaining === 0) {
