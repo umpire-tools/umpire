@@ -56,6 +56,12 @@ export type ChallengeTrace = {
   } | null
 }
 
+export type RuleEvaluation = {
+  enabled: boolean
+  reason: string | null
+  reasons?: string[]
+}
+
 export type Rule<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
@@ -67,7 +73,8 @@ export type Rule<
     values: FieldValues<F>,
     context: C,
     prev?: FieldValues<F>,
-  ) => Map<string, { enabled: boolean; reason: string | null }>
+    fields?: F,
+  ) => Map<string, RuleEvaluation>
 }
 
 export interface Umpire<
