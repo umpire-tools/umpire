@@ -253,6 +253,26 @@ td {
   color-scheme: dark;
 }
 
+.umpire-columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.umpire-columns > div > .expressive-code {
+  height: 100%;
+}
+
+.umpire-columns > div > .expressive-code > figure {
+  height: 100%;
+}
+
+@media (min-width: 60rem) {
+  .umpire-columns {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 @media (max-width: 50rem) {
   .umpire-scoreboard__meta {
     grid-template-columns: 1fr;

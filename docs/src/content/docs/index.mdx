@@ -60,99 +60,70 @@ It does not manage state, render UI, validate data correctness, or mutate values
 
 ## Signup Example
 
-```ts
+<div class="umpire-columns">
+<div>
+
+```ts title="Define rules"
 import { enabledWhen, requires, umpire } from '@umpire/core'
 
-const signupFields = {
-  email: { required: true, isEmpty: (value) => !value },
-  password: { required: true, isEmpty: (value) => !value },
-  confirmPassword: { required: true, isEmpty: (value) => !value },
-  referralCode: {},
-  companyName: {},
-  companySize: {},
-}
-
-type SignupContext = {
-  plan: 'personal' | 'business'
-}
-
-const signupUmp = umpire<typeof signupFields, SignupContext>({
-  fields: signupFields,
+const ump = umpire({
+  fields: {
+    email:           { required: true, isEmpty: (v) => !v },
+    password:        { required: true, isEmpty: (v) => !v },
+    confirmPassword: { required: true, isEmpty: (v) => !v },
+    referralCode:    {},
+    companyName:     {},
+    companySize:     {},
+  },
   rules: [
     requires('confirmPassword', 'password'),
-    enabledWhen('companyName', (_values, context) => context.plan === 'business', {
-      reason: 'business plan required',
-    }),
-    enabledWhen('companySize', (_values, context) => context.plan === 'business', {
-      reason: 'business plan required',
-    }),
+
+    enabledWhen('companyName',
+      (_v, ctx) => ctx.plan === 'business',
+      { reason: 'business plan required' }),
+
+    enabledWhen('companySize',
+      (_v, ctx) => ctx.plan === 'business',
+      { reason: 'business plan required' }),
+
     requires('companySize', 'companyName'),
   ],
 })
+```
 
-const personal = signupUmp.check(
+</div>
+<div>
+
+```ts title="Check availability"
+// Personal plan — company fields disabled
+ump.check(
   { email: 'alex@example.com', password: 'hunter2' },
   { plan: 'personal' },
-)
+).companyName
+// → { enabled: false, reason: 'business plan required' }
 
-const business = signupUmp.check(
+// Business plan — companySize requires companyName
+ump.check(
   { email: 'alex@example.com', password: 'hunter2' },
   { plan: 'business' },
+).companySize
+// → { enabled: false, reason: 'requires companyName' }
+
+// Switch plans — what should reset?
+ump.flag(
+  { values: { companyName: 'Acme', companySize: '50' },
+    context: { plan: 'business' } },
+  { values: { companyName: 'Acme', companySize: '50' },
+    context: { plan: 'personal' } },
 )
-
-const penalties = signupUmp.flag(
-  {
-    values: {
-      email: 'alex@example.com',
-      password: 'hunter2',
-      companyName: 'Acme',
-      companySize: '50',
-    },
-    context: { plan: 'business' },
-  },
-  {
-    values: {
-      email: 'alex@example.com',
-      password: 'hunter2',
-      companyName: 'Acme',
-      companySize: '50',
-    },
-    context: { plan: 'personal' },
-  },
-)
-```
-
-```ts
-personal.companyName
-// {
-//   enabled: false,
-//   required: false,
-//   reason: 'business plan required',
-//   reasons: ['business plan required'],
-// }
-
-business.companySize
-// {
-//   enabled: false,
-//   required: false,
-//   reason: 'requires companyName',
-//   reasons: ['requires companyName'],
-// }
-
-penalties
-// [
-//   {
-//     field: 'companyName',
-//     reason: 'business plan required',
-//     suggestedValue: undefined,
-//   },
-//   {
-//     field: 'companySize',
-//     reason: 'business plan required',
-//     suggestedValue: undefined,
-//   },
+// → [
+//   { field: 'companyName', suggestedValue: undefined },
+//   { field: 'companySize', suggestedValue: undefined },
 // ]
 ```
+
+</div>
+</div>
 
 This example is intentionally about availability, not validation. `confirmPassword` depends on `password` being present, but Umpire does not check whether the two values match. That belongs in your validation layer.
 
