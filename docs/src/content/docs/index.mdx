@@ -1,0 +1,171 @@
+---
+title: Introduction
+description: Reactive field availability for forms with interdependent options.
+template: splash
+hero:
+  title: "<span>Rule the form.</span><br /><span>Flag the field.</span>"
+  tagline: "Umpire is a pure field-availability engine for forms with interdependent options. Declare the rules once, derive availability everywhere, and let reset recommendations stay recommendations."
+  actions:
+    - text: Read the concepts
+      link: ./concepts/availability/
+      variant: primary
+    - text: Browse the API
+      link: ./api/umpire/
+      variant: secondary
+    - text: Walk through signup
+      link: ./examples/signup/
+      variant: minimal
+  image:
+    html: |
+      <div class="umpire-scoreboard">
+        <div class="umpire-scoreboard__top">
+          <span>Umpire / Live Board</span>
+          <span class="umpire-scoreboard__status">Stadium Night Game</span>
+        </div>
+        <div class="umpire-scoreboard__call">
+          <span class="umpire-scoreboard__pill">Flag Raised</span>
+          <p class="umpire-scoreboard__headline">companySize is off the field</p>
+          <p class="umpire-scoreboard__body">Plan switched to personal. The field is disabled, no longer required, and ready for a reset recommendation.</p>
+        </div>
+        <div class="umpire-scoreboard__meta">
+          <div>
+            <span class="umpire-scoreboard__label">Enabled</span>
+            <span class="umpire-scoreboard__value">false</span>
+          </div>
+          <div>
+            <span class="umpire-scoreboard__label">Reason</span>
+            <span class="umpire-scoreboard__value">business plan required</span>
+          </div>
+          <div>
+            <span class="umpire-scoreboard__label">Penalty</span>
+            <span class="umpire-scoreboard__value">suggestedValue: undefined</span>
+          </div>
+        </div>
+      </div>
+---
+
+## Install
+
+```bash
+npm install @umpire/core
+```
+
+Use `@umpire/core` when you just need pure availability logic. Add `@umpire/react`, `@umpire/signals`, or `@umpire/zustand` when you want an adapter on top.
+
+## What It Does
+
+Umpire answers one question: given the current field values and optional context, which fields should be enabled, required, or flagged for cleanup?
+
+It does not manage state, render UI, validate data correctness, or mutate values for you. It recommends resets with `flag()`, but the consumer decides whether to apply them.
+
+## Signup Example
+
+```ts
+import { enabledWhen, requires, umpire } from '@umpire/core'
+
+const signupFields = {
+  email: { required: true, isEmpty: (value) => !value },
+  password: { required: true, isEmpty: (value) => !value },
+  confirmPassword: { required: true, isEmpty: (value) => !value },
+  referralCode: {},
+  companyName: {},
+  companySize: {},
+}
+
+type SignupContext = {
+  plan: 'personal' | 'business'
+}
+
+const signupUmp = umpire<typeof signupFields, SignupContext>({
+  fields: signupFields,
+  rules: [
+    requires('confirmPassword', 'password'),
+    enabledWhen('companyName', (_values, context) => context.plan === 'business', {
+      reason: 'business plan required',
+    }),
+    enabledWhen('companySize', (_values, context) => context.plan === 'business', {
+      reason: 'business plan required',
+    }),
+    requires('companySize', 'companyName'),
+  ],
+})
+
+const personal = signupUmp.check(
+  { email: 'alex@example.com', password: 'hunter2' },
+  { plan: 'personal' },
+)
+
+const business = signupUmp.check(
+  { email: 'alex@example.com', password: 'hunter2' },
+  { plan: 'business' },
+)
+
+const penalties = signupUmp.flag(
+  {
+    values: {
+      email: 'alex@example.com',
+      password: 'hunter2',
+      companyName: 'Acme',
+      companySize: '50',
+    },
+    context: { plan: 'business' },
+  },
+  {
+    values: {
+      email: 'alex@example.com',
+      password: 'hunter2',
+      companyName: 'Acme',
+      companySize: '50',
+    },
+    context: { plan: 'personal' },
+  },
+)
+```
+
+```ts
+personal.companyName
+// {
+//   enabled: false,
+//   required: false,
+//   reason: 'business plan required',
+//   reasons: ['business plan required'],
+// }
+
+business.companySize
+// {
+//   enabled: false,
+//   required: false,
+//   reason: 'requires companyName',
+//   reasons: ['requires companyName'],
+// }
+
+penalties
+// [
+//   {
+//     field: 'companyName',
+//     reason: 'business plan required',
+//     suggestedValue: undefined,
+//   },
+//   {
+//     field: 'companySize',
+//     reason: 'business plan required',
+//     suggestedValue: undefined,
+//   },
+// ]
+```
+
+This example is intentionally about availability, not validation. `confirmPassword` depends on `password` being present, but Umpire does not check whether the two values match. That belongs in your validation layer.
+
+## What It Does Not Do
+
+- It does not own form state.
+- It does not validate that values are correct.
+- It does not hide your fields or render your UI.
+- It does not clear stale values automatically.
+
+## Where To Next
+
+- Start with [Availability vs Validation](./concepts/availability/) for the mental model.
+- Read [Field Satisfaction Semantics](./concepts/satisfaction/) before writing rules with `isEmpty`.
+- Use [umpire()](./api/umpire/) and [Rules](./api/rules/) as the reference for the core API.
+- See [Signup Form Walkthrough](./examples/signup/) for the same example broken down step by step.
