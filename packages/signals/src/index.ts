@@ -1,3 +1,3 @@
-// @umpire/signals — signal adapter protocol + reactive umpire
-// Implementation coming in Phase 4
-export {};
+export type { SignalProtocol } from './protocol.js'
+export { reactiveUmp } from './reactive.js'
+export type { ReactiveUmpire, ReactiveUmpOptions, ReactiveField } from './reactive.js'
