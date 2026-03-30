@@ -1,0 +1,104 @@
+---
+title: '@umpire/zustand'
+description: Subscribe Umpire directly to a Zustand store using native next and previous state updates.
+---
+
+# `@umpire/zustand`
+
+`@umpire/zustand` connects an umpire to a store slice. It works with vanilla Zustand stores and in React applications that already use Zustand for state ownership.
+
+## Install
+
+```bash
+npm install @umpire/core @umpire/zustand zustand
+```
+
+## `fromStore()`
+
+```ts
+function fromStore<
+  S,
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
+  ump: Umpire<F, C>,
+  store: {
+    getState(): S
+    subscribe(listener: (state: S, prevState: S) => void): () => void
+  },
+  options: {
+    select: (state: S) => FieldValues<F>
+    context?: (state: S) => C
+  },
+): UmpireStore<F>
+```
+
+## Return Surface
+
+```ts
+interface UmpireStore<F extends Record<string, FieldDef>> {
+  field(name: keyof F & string): FieldAvailability
+  get penalties(): ResetRecommendation<F>[]
+  getAvailability(): AvailabilityMap<F>
+  subscribe(listener: (availability: AvailabilityMap<F>) => void): () => void
+  destroy(): void
+}
+```
+
+## Why Zustand Fits Well
+
+Zustand’s `subscribe()` already passes both `next` and `prev` state. That gives the adapter:
+
+- previous values for `oneOf()` resolution
+- previous and next snapshots for `flag()`
+
+No extra effect system is needed.
+
+## Example
+
+```ts
+import { createStore } from 'zustand/vanilla'
+import { fromStore } from '@umpire/zustand'
+
+type RecurrenceState = {
+  recurrenceFields: {
+    dates?: string[]
+    everyWeekday?: number[]
+    everyHour?: number[]
+    startTime?: string
+    endTime?: string
+    repeatEvery?: number
+  }
+  userPlan: 'free' | 'pro'
+}
+
+const store = createStore<RecurrenceState>(() => ({
+  recurrenceFields: {},
+  userPlan: 'free',
+}))
+
+const umpStore = fromStore(recurrenceUmp, store, {
+  select: (state) => state.recurrenceFields,
+  context: (state) => ({ plan: state.userPlan }),
+})
+
+const stop = umpStore.subscribe((availability) => {
+  console.log(availability.startTime.enabled)
+  console.log(umpStore.penalties)
+})
+```
+
+## In React And Outside React
+
+You can use the returned store-like object from:
+
+- a React hook built with `useSyncExternalStore`
+- plain imperative code
+- tests
+- non-React environments
+
+The adapter itself does not depend on React.
+
+## Cleanup
+
+Call `destroy()` when you no longer need the adapter so it unsubscribes from the underlying Zustand store.
