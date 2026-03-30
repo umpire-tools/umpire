@@ -100,6 +100,8 @@ a:hover {
   border: 1px solid rgba(107, 254, 156, 0.16);
   border-radius: 1.5rem;
   padding: 1.25rem;
+  min-width: 20rem;
+  max-width: 24rem;
   background:
     linear-gradient(135deg, rgba(107, 254, 156, 0.08), transparent 45%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(26, 26, 26, 0.96));
@@ -179,8 +181,8 @@ a:hover {
 
 .umpire-scoreboard__meta {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
 }
 
 .umpire-scoreboard__meta > div {
@@ -200,7 +202,10 @@ a:hover {
 
 .umpire-scoreboard__value {
   font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
   color: var(--sl-color-white);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .sl-markdown-content > ul:last-child,
