@@ -254,6 +254,13 @@ td {
   background: rgba(255, 255, 255, 0.01);
 }
 
+td:first-child,
+th:first-child,
+td:last-child,
+th:last-child {
+  padding-inline: 0.75rem;
+}
+
 [data-theme='light'] {
   color-scheme: dark;
 }
