@@ -1,0 +1,65 @@
+{
+  "name": "@umpire/signals",
+  "version": "0.1.0-alpha.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./alien": {
+      "types": "./dist/adapters/alien.d.ts",
+      "import": "./dist/adapters/alien.js"
+    },
+    "./preact": {
+      "types": "./dist/adapters/preact.d.ts",
+      "import": "./dist/adapters/preact.js"
+    },
+    "./tc39": {
+      "types": "./dist/adapters/tc39.d.ts",
+      "import": "./dist/adapters/tc39.js"
+    },
+    "./protocol": {
+      "types": "./dist/protocol.d.ts",
+      "import": "./dist/protocol.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    ".claude"
+  ],
+  "dependencies": {
+    "@umpire/core": "workspace:^"
+  },
+  "peerDependencies": {
+    "@preact/signals-core": "^1.0.0",
+    "alien-signals": "^3.0.0",
+    "signal-polyfill": "^0.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@preact/signals-core": {
+      "optional": true
+    },
+    "alien-signals": {
+      "optional": true
+    },
+    "signal-polyfill": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdougbrown/umpire.git",
+    "directory": "packages/signals"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
