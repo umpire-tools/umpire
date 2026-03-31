@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'packages/core/src/**'
   workflow_dispatch:
 
 permissions:
@@ -30,6 +31,12 @@ jobs:
           node-version: 20
           cache: yarn
           cache-dependency-path: docs/yarn.lock
+
+      - name: Install monorepo dependencies
+        run: yarn install --immutable
+
+      - name: Build packages
+        run: yarn turbo run build
 
       - name: Install docs dependencies
         working-directory: docs
