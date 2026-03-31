@@ -168,6 +168,29 @@ export default function LineupCard() {
         </button>
       </div>
 
+      {/* Penalties */}
+      {penalties.length > 0 && (
+        <div style={{
+          border: '1px solid rgba(254,208,35,0.3)', borderRadius: '12px',
+          padding: '0.75rem 1rem', marginBottom: '1rem',
+          background: 'linear-gradient(135deg, rgba(254,208,35,0.08), transparent 45%), rgba(18,18,18,0.96)',
+        }}>
+          <div style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+            color: '#fed023', marginBottom: '0.5rem',
+          }}>
+            🚩 Flag on the play
+          </div>
+          {penalties.map((p, i) => (
+            <div key={i} style={{ fontSize: '0.85rem', color: '#e0e0e0', marginBottom: '0.25rem' }}>
+              <strong>{roster[p.field]?.name ?? p.field}</strong>
+              <span style={{ color: '#a0a0a0' }}> — {p.reason}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Position Players */}
       <div style={{
         border: '1px solid rgba(107,254,156,0.16)', borderRadius: '12px',
@@ -388,28 +411,6 @@ export default function LineupCard() {
         </table>
       </div>
 
-      {/* Penalties */}
-      {penalties.length > 0 && (
-        <div style={{
-          border: '1px solid rgba(254,208,35,0.3)', borderRadius: '12px',
-          padding: '0.75rem 1rem',
-          background: 'linear-gradient(135deg, rgba(254,208,35,0.08), transparent 45%), rgba(18,18,18,0.96)',
-        }}>
-          <div style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase',
-            color: '#fed023', marginBottom: '0.5rem',
-          }}>
-            🚩 Flag on the play
-          </div>
-          {penalties.map((p, i) => (
-            <div key={i} style={{ fontSize: '0.85rem', color: '#e0e0e0', marginBottom: '0.25rem' }}>
-              <strong>{roster[p.field]?.name ?? p.field}</strong>
-              <span style={{ color: '#a0a0a0' }}> — {p.reason}</span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )
 }
