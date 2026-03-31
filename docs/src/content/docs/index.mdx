@@ -143,49 +143,58 @@ Three rule types in action: **`enabledWhen`** (injuries scratch players from the
 
 The lineup card above is a React component backed by a real `@umpire/core` instance. Here's how the state flows:
 
-```ts title="Rules — declared once"
-const lineupUmp = umpire({
+```ts title="Fields and conditions — declared once"
+// One field per player. Everything that affects eligibility is a condition.
+type Conditions = {
+  opposingPitcher: 'L' | 'R'
+  injuries: Record<string, boolean>
+  morrisonRested: boolean
+}
+
+const lineupUmp = umpire<typeof fields, Conditions>({
   fields,
   rules: [
-    // Platoon: lefty/righty splits at 1B and LF
+    // oneOf: only one branch is active at a time.
+    // Delgado (L) starts vs righties, Vega (R) starts vs lefties.
     oneOf('firstBasePlatoon', {
       vsRighty: ['delgado'],
       vsLefty:  ['vega'],
     }, {
-      activeBranch: (_v, cond) => cond.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
+      activeBranch: (_v, c) => c.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
+      reason: 'platoon matchup',
     }),
 
-    // Morrison can't pitch without rest
-    requires('morrison', 'morrisonRested'),
-
-    // Injuries scratch players
+    // enabledWhen: disabled when the predicate returns false.
     ...playerIds.map(id =>
-      enabledWhen(id, (values) => !values[`${id}_injured`])
+      enabledWhen(id, (_v, c) => !c.injuries[id], {
+        reason: 'on the injured list',
+      })
     ),
+
+    // Morrison can't pitch without rest.
+    enabledWhen('morrison', (_v, c) => c.morrisonRested, {
+      reason: 'needs rest',
+    }),
   ],
 })
 ```
 
-```ts title="Check — called on every state change"
-const availability = lineupUmp.check(values, { opposingPitcher })
-// availability.delgado.enabled → false when opposing pitcher is LHP
-// availability.morrison.reason → 'requires morrisonRested'
+```ts title="In the component — useUmpire does the rest"
+// Values: only players assigned to lineup slots. Bench players have no
+// values, so flag() only fires for players actually in the lineup.
+const values = Object.fromEntries(
+  Object.values(lineup).filter(Boolean).map(id => [id, id]),
+)
+
+// useUmpire handles check() + flag() + snapshot tracking internally.
+const { check: availability, penalties } = useUmpire(lineupUmp, values, conditions)
+
+// availability.delgado → { enabled: false, reason: 'platoon matchup' }
+// penalties → [{ field: 'delgado', reason: 'platoon matchup', ... }]
+//   (only if Delgado was in the lineup when the pitcher flipped)
 ```
 
-```ts title="Flag — compare two snapshots to find stale values"
-// After any state change, compare the previous snapshot to the current one.
-// flag() finds fields that just became disabled but still hold non-empty values.
-const prevSnapshot = { values: prevValues, conditions: prevConditions }
-const currentSnapshot = { values, conditions }
-
-const penalties = lineupUmp.flag(prevSnapshot, currentSnapshot)
-// User flips the opposing pitcher from RHP → LHP:
-// → [{ field: 'delgado', reason: 'platoon matchup', suggestedValue: undefined }]
-// Delgado was in the lineup, but the platoon rule just disabled him.
-// The penalty recommends clearing his slot — the UI shows the yellow flag.
-```
-
-`check()` tells you what's available *right now*. `flag()` tells you what *just broke* — fields that were enabled in the previous state but disabled in the current state, and still hold values that should be cleaned up. You call both on every state change: `check()` to derive the UI, `flag()` to surface reset recommendations.
+`check()` tells you what's available *right now*. `flag()` tells you what *just broke* — fields that were enabled before but disabled after, and still hold values that should be cleaned up. You call both on every state change: `check()` to derive the UI, `flag()` to surface reset recommendations.
 
 ## What It Does Not Do
 

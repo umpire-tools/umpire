@@ -1,8 +1,12 @@
 import { useState, useMemo, useCallback } from 'react'
-import { umpire, enabledWhen, requires, oneOf } from '@umpire/core'
+import { umpire, enabledWhen, oneOf } from '@umpire/core'
+import { useUmpire } from '@umpire/react'
 import type { FieldDef, FieldValues } from '@umpire/core'
 
-// --- Roster ---
+// ─── Roster data ───────────────────────────────────────────────────────────────
+// A baseball roster. Each player has positions they can field, handedness, and a
+// role (position player, starting pitcher, or reliever). This is static data —
+// Umpire doesn't care where it comes from.
 
 type Player = {
   name: string
@@ -30,7 +34,12 @@ const roster: Record<string, Player> = {
   whitfield: { name: 'Sam Whitfield',    positions: ['RP', 'CL'], bats: 'R', throws: 'R', role: 'reliever' },
 }
 
-// --- Lineup positions ---
+const playerIds = Object.keys(roster)
+const rosterEntries = Object.entries(roster)
+
+// ─── Lineup slots ──────────────────────────────────────────────────────────────
+// Tonight's card: starting pitcher + 9 batting order slots, each needing a
+// specific defensive position.
 
 type LineupSlot = { label: string; position: string }
 
@@ -47,117 +56,150 @@ const lineupSlots: LineupSlot[] = [
   { label: '9',  position: 'DH' },
 ]
 
-// --- Umpire setup ---
+// ─── Umpire setup ──────────────────────────────────────────────────────────────
+//
+// One field per player. All the factors that affect eligibility — pitcher
+// handedness, injuries, rest status — are *conditions*: external facts that
+// affect availability but aren't form fields the user fills in. Conditions go
+// in the second argument to check() and flag().
 
-const fields: Record<string, FieldDef> = {}
-for (const id of Object.keys(roster)) fields[id] = {}
-fields.morrisonRested = {}
+const fields: Record<string, FieldDef> = Object.fromEntries(
+  playerIds.map(id => [id, {}]),
+)
 
-type Cond = { opposingPitcher: 'L' | 'R' }
+type Conditions = {
+  opposingPitcher: 'L' | 'R'
+  injuries: Record<string, boolean>
+  morrisonRested: boolean
+}
 
-const lineupUmp = umpire<typeof fields, Cond>({
+const lineupUmp = umpire<typeof fields, Conditions>({
   fields,
   rules: [
+    // ── oneOf: platoon matchups ─────────────────────────────────────────────
+    // oneOf() creates mutually exclusive branches. Only the active branch's
+    // fields are enabled; the rest are disabled. Here, the opposing pitcher's
+    // handedness determines which batter starts at 1B and LF.
+
     oneOf('firstBasePlatoon', {
-      vsRighty: ['delgado'],
-      vsLefty:  ['vega'],
+      vsRighty: ['delgado'],   // Delgado (bats L) starts against right-handed pitchers
+      vsLefty:  ['vega'],      // Vega (bats R) starts against left-handed pitchers
     }, {
-      activeBranch: (_v, cond) => cond.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
+      activeBranch: (_v, c) => c.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
       reason: 'platoon matchup',
     }),
+
     oneOf('leftFieldPlatoon', {
-      vsRighty: ['reyes'],
-      vsLefty:  ['patterson'],
+      vsRighty: ['reyes'],     // Reyes (bats L) vs righties
+      vsLefty:  ['patterson'], // Patterson (bats R) vs lefties
     }, {
-      activeBranch: (_v, cond) => cond.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
+      activeBranch: (_v, c) => c.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
       reason: 'platoon matchup',
     }),
-    enabledWhen('silva', (_v, cond) => cond.opposingPitcher !== 'L', {
+
+    // ── enabledWhen: conditional availability ───────────────────────────────
+    // enabledWhen() disables a field when the predicate returns false. Each
+    // rule can read field values and conditions.
+
+    // Silva (bats L) sits against left-handed pitching — bad matchup.
+    enabledWhen('silva', (_v, c) => c.opposingPitcher !== 'L', {
       reason: 'platoon — lefty sits vs LHP',
     }),
-    requires('morrison', 'morrisonRested'),
-    ...Object.keys(roster).map(id =>
-      enabledWhen(id, (values) => !values[`${id}_injured`], {
+
+    // Injured players are scratched from the roster entirely.
+    ...playerIds.map(id =>
+      enabledWhen(id, (_v, c) => !c.injuries[id], {
         reason: 'on the injured list',
       })
     ),
+
+    // Morrison can't pitch without rest.
+    enabledWhen('morrison', (_v, c) => c.morrisonRested, {
+      reason: 'needs rest',
+    }),
   ],
 })
 
-// --- Helpers ---
+// ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function cls(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(' ')
 }
 
-// --- Component ---
+// ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function LineupCard() {
+  // --- User-controlled state ---
   const [opposingPitcher, setOpposingPitcher] = useState<'L' | 'R'>('R')
-  const [injuries, setInjuries] = useState<Set<string>>(new Set())
+  const [injuries, setInjuries] = useState<Record<string, boolean>>({})
   const [morrisonRested, setMorrisonRested] = useState(false)
+  const [selectingSlot, setSelectingSlot] = useState<string | null>(null)
   const [lineup, setLineup] = useState<Record<string, string | null>>(() => {
     const slots: Record<string, string | null> = {}
     for (const slot of lineupSlots) slots[slot.label] = null
     return slots
   })
-  const [selectingSlot, setSelectingSlot] = useState<string | null>(null)
-  const [prevValues, setPrevValues] = useState<FieldValues<typeof fields> | null>(null)
 
-  const values: FieldValues<typeof fields> = useMemo(() => {
-    const v: Record<string, unknown> = {}
-    for (const id of Object.keys(roster)) {
-      v[id] = injuries.has(id) ? undefined : id
-      v[`${id}_injured`] = injuries.has(id) || undefined
+  // --- Build the inputs to Umpire ---
+  //
+  // Values: only players assigned to lineup slots get truthy values. This is
+  // what makes flag() work correctly — it detects fields that "had a value but
+  // just became disabled." Bench players have no values, so they're never flagged.
+  //
+  // Conditions: external facts — pitcher handedness, injuries, rest status.
+
+  const values = useMemo(() => {
+    const inLineup = Object.values(lineup).filter(Boolean) as string[]
+    return Object.fromEntries(inLineup.map(id => [id, id])) as FieldValues<typeof fields>
+  }, [lineup])
+
+  const conditions: Conditions = useMemo(
+    () => ({ opposingPitcher, injuries, morrisonRested }),
+    [opposingPitcher, injuries, morrisonRested],
+  )
+
+  // --- useUmpire: availability + penalties in one call ---
+  //
+  // useUmpire() handles check() and flag() internally, including snapshot
+  // tracking for penalty detection. No manual useRef, no saveSnapshot()
+  // before every toggle. Pass values + conditions, get results.
+
+  const { check: availability, penalties } = useUmpire(lineupUmp, values, conditions)
+
+  // --- Derived: effective lineup ---
+  //
+  // Instead of mutating lineup state when a player becomes ineligible, we
+  // derive the effective lineup during render. Slots with ineligible players
+  // show as empty. If a player becomes eligible again (e.g., un-injured),
+  // they reappear in their slot — availability is derived, not destructive.
+
+  const effectiveLineup = useMemo(() => {
+    const result: Record<string, string | null> = {}
+    for (const [slot, playerId] of Object.entries(lineup)) {
+      result[slot] = playerId && availability[playerId]?.enabled ? playerId : null
     }
-    v.morrisonRested = morrisonRested || undefined
-    return v as FieldValues<typeof fields>
-  }, [injuries, morrisonRested])
+    return result
+  }, [lineup, availability])
 
-  const conditions: Cond = useMemo(() => ({ opposingPitcher }), [opposingPitcher])
-  const availability = useMemo(() => lineupUmp.check(values, conditions), [values, conditions])
+  const assignedPlayers = useMemo(
+    () => new Set(Object.values(effectiveLineup).filter(Boolean) as string[]),
+    [effectiveLineup],
+  )
 
-  const penalties = useMemo(() => {
-    if (!prevValues) return []
-    return lineupUmp.flag({ values: prevValues, conditions }, { values, conditions })
-  }, [values, conditions, prevValues])
-
-  const assignedPlayers = new Set(Object.values(lineup).filter(Boolean) as string[])
-
-  // Auto-remove ineligible players from lineup
-  useMemo(() => {
-    let changed = false
-    const next = { ...lineup }
-    for (const [slot, playerId] of Object.entries(next)) {
-      if (playerId && availability[playerId] && !availability[playerId].enabled) {
-        next[slot] = null
-        changed = true
-      }
-    }
-    if (changed) setLineup(next)
-  }, [availability])
-
-  const savePrev = useCallback(() => setPrevValues(values), [values])
+  // --- Event handlers ---
+  // No saveSnapshot() needed — useUmpire tracks snapshots internally.
 
   const toggleInjury = useCallback((id: string) => {
-    savePrev()
-    setInjuries(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [savePrev])
+    setInjuries(prev => ({ ...prev, [id]: !prev[id] }))
+  }, [])
 
   const togglePitcher = useCallback(() => {
-    savePrev()
     setOpposingPitcher(p => p === 'L' ? 'R' : 'L')
-  }, [savePrev])
+  }, [])
 
   const toggleRest = useCallback(() => {
-    savePrev()
     setMorrisonRested(r => !r)
-  }, [savePrev])
+  }, [])
 
   const assignPlayer = useCallback((slot: string, playerId: string) => {
     setLineup(prev => ({ ...prev, [slot]: playerId }))
@@ -168,22 +210,20 @@ export default function LineupCard() {
     setLineup(prev => ({ ...prev, [slot]: null }))
   }, [])
 
+  // Which players can fill a given slot? Must be eligible, not already assigned
+  // elsewhere, and able to play the position.
   const getEligibleForSlot = (slot: LineupSlot) =>
-    Object.entries(roster).filter(([id, player]) => {
+    rosterEntries.filter(([id, player]) => {
       if (!availability[id]?.enabled) return false
-      if (assignedPlayers.has(id) && lineup[slot.label] !== id) return false
+      if (assignedPlayers.has(id) && effectiveLineup[slot.label] !== id) return false
       if (slot.position === 'DH') return player.role === 'position'
       return player.positions.includes(slot.position)
     })
 
   // --- Render helpers ---
 
-  const pitcherVariant = opposingPitcher === 'L' ? 'green' : 'yellow'
-  const restVariant = morrisonRested ? 'green' : 'red'
-
-  function playerState(id: string) {
-    const enabled = availability[id]?.enabled ?? true
-    if (!enabled) return 'disabled'
+  function playerState(id: string): 'disabled' | 'assigned' | 'available' {
+    if (!availability[id]?.enabled) return 'disabled'
     if (assignedPlayers.has(id)) return 'assigned'
     return 'available'
   }
@@ -195,9 +235,14 @@ export default function LineupCard() {
     return 'green'
   }
 
+  const pitcherVariant = opposingPitcher === 'L' ? 'green' : 'yellow'
+  const restVariant = morrisonRested ? 'green' : 'red'
+
+  // --- Render ---
+
   return (
     <div className="lineup">
-      {/* Controls */}
+      {/* Toggle buttons — change conditions, watch availability react */}
       <div className="lineup__controls">
         <button
           className={cls('lineup__toggle', `lineup__toggle--${pitcherVariant}`)}
@@ -213,7 +258,7 @@ export default function LineupCard() {
         </button>
       </div>
 
-      {/* Penalties */}
+      {/* Penalty flags — useUmpire detected fields that just became ineligible */}
       {penalties.length > 0 && (
         <div className="lineup__penalties">
           <div className="lineup__penalties-title">🚩 Flag on the play</div>
@@ -226,16 +271,16 @@ export default function LineupCard() {
         </div>
       )}
 
-      {/* Panels */}
+      {/* Two-panel layout: roster on left, tonight's card on right */}
       <div className="lineup__panels">
-        {/* Roster */}
+        {/* Left: full roster with availability indicators */}
         <div className="lineup__panel lineup__panel--roster">
           <div className="lineup__panel-header lineup__panel-header--roster">
             <span>Roster</span>
             <span className="lineup__panel-accent--green">Boston Crabs</span>
           </div>
           <div className="lineup__panel-body">
-            {Object.entries(roster).map(([id, player]) => {
+            {rosterEntries.map(([id, player]) => {
               const state = playerState(id)
               const av = availability[id]
               return (
@@ -259,12 +304,12 @@ export default function LineupCard() {
                   <button
                     className={cls(
                       'lineup__injury-btn',
-                      injuries.has(id) ? 'lineup__injury-btn--injured' : 'lineup__injury-btn--clear',
+                      injuries[id] ? 'lineup__injury-btn--injured' : 'lineup__injury-btn--clear',
                     )}
                     onClick={() => toggleInjury(id)}
-                    title={injuries.has(id) ? 'Clear injury' : 'Add to IL'}
+                    title={injuries[id] ? 'Clear injury' : 'Add to IL'}
                   >
-                    {injuries.has(id) ? '✕' : '🤕'}
+                    {injuries[id] ? '✕' : '🤕'}
                   </button>
                 </div>
               )
@@ -272,7 +317,7 @@ export default function LineupCard() {
           </div>
         </div>
 
-        {/* Lineup Card */}
+        {/* Right: tonight's lineup card — click slots to assign eligible players */}
         <div className="lineup__panel lineup__panel--card">
           <div className="lineup__panel-header lineup__panel-header--card">
             <span>Tonight's Lineup</span>
@@ -282,7 +327,7 @@ export default function LineupCard() {
           </div>
           <div className="lineup__panel-body">
             {lineupSlots.map((slot) => {
-              const playerId = lineup[slot.label]
+              const playerId = effectiveLineup[slot.label]
               const player = playerId ? roster[playerId] : null
               const eligible = getEligibleForSlot(slot)
               const isSelecting = selectingSlot === slot.label
