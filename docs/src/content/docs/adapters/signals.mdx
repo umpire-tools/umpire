@@ -11,10 +11,12 @@ import SignalsAdapterDemo from '../../../components/SignalsAdapterDemo.tsx'
   <SignalsAdapterDemo client:load />
 </div>
 
+The demo above uses `@preact/signals-core` with a tiny inline adapter and bridges the reactive output into React through `useSyncExternalStore()`.
+
 ## Install
 
 ```bash
-npm install @umpire/core @umpire/signals
+yarn add @umpire/core @umpire/signals @preact/signals-core
 ```
 
 Bring your own signal implementation or one of the shipped adapter entry points.
@@ -149,7 +151,7 @@ Those patterns cause all field signals to be read.
 ## Adapter Examples
 
 ```ts
-import { computed, effect, signal } from '@preact/signals-core'
+import { batch, computed, effect, signal } from '@preact/signals-core'
 
 const preactAdapter: SignalProtocol = {
   signal(initial) {
@@ -161,6 +163,7 @@ const preactAdapter: SignalProtocol = {
     return { get: () => c.value }
   },
   effect,
+  batch,
 }
 ```
 
