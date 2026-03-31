@@ -296,7 +296,14 @@ export function umpire<
 
   return {
     check(values, conditions, prev) {
-      return evaluate(fields, rules, topoOrder, values, createEmptyConditions(conditions), prev)
+      return evaluate(
+        fields,
+        rules,
+        topoOrder,
+        values as FieldValues<F>,
+        createEmptyConditions(conditions),
+        prev as FieldValues<F> | undefined,
+      )
     },
 
     flag(before, after) {
@@ -304,16 +311,16 @@ export function umpire<
         fields,
         rules,
         topoOrder,
-        before.values,
+        before.values as FieldValues<F>,
         createEmptyConditions(before.conditions),
       )
       const afterAvailability = evaluate(
         fields,
         rules,
         topoOrder,
-        after.values,
+        after.values as FieldValues<F>,
         createEmptyConditions(after.conditions),
-        before.values,
+        before.values as FieldValues<F>,
       )
       const recommendations: ResetRecommendation<F>[] = []
 
@@ -369,7 +376,9 @@ export function umpire<
       }
 
       const resolvedConditions = createEmptyConditions(conditions)
-      const availability = evaluate(fields, rules, topoOrder, values, resolvedConditions, prev)
+      const typedValues = values as FieldValues<F>
+      const typedPrev = prev as FieldValues<F> | undefined
+      const availability = evaluate(fields, rules, topoOrder, typedValues, resolvedConditions, typedPrev)
       const baseRuleCache = new Map<Rule<F, C>, Map<string, RuleEvaluation>>()
       const directReasons = rules
         .filter((rule) => rule.targets.includes(field))
@@ -378,9 +387,9 @@ export function umpire<
             rule,
             field,
             fields,
-            values,
+            typedValues,
             resolvedConditions,
-            prev,
+            typedPrev,
             availability,
             baseRuleCache,
           ),
@@ -398,8 +407,8 @@ export function umpire<
               ...resolveOneOfState(
                 oneOfMetadata.groupName,
                 oneOfMetadata.branches,
-                values,
-                prev,
+                typedValues,
+                typedPrev,
                 oneOfMetadata.options?.activeBranch,
                 fields,
                 resolvedConditions,
@@ -415,9 +424,9 @@ export function umpire<
           field,
           fields,
           rules,
-          values,
+          typedValues,
           resolvedConditions,
-          prev,
+          typedPrev,
           availability,
           baseRuleCache,
         ),

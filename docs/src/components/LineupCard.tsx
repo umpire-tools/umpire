@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { umpire, enabledWhen, oneOf } from '@umpire/core'
 import { useUmpire } from '@umpire/react'
-import type { FieldDef, FieldValues } from '@umpire/core'
+import type { FieldDef } from '@umpire/core'
 
 // ─── Roster data ───────────────────────────────────────────────────────────────
 // A baseball roster. Each player has positions they can field, handedness, and a
@@ -150,7 +150,7 @@ export default function LineupCard() {
 
   const values = useMemo(() => {
     const inLineup = Object.values(lineup).filter(Boolean) as string[]
-    return Object.fromEntries(inLineup.map(id => [id, id])) as FieldValues<typeof fields>
+    return Object.fromEntries(inLineup.map(id => [id, id]))
   }, [lineup])
 
   const conditions: Conditions = useMemo(

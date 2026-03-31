@@ -14,7 +14,7 @@ type Snapshot<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 > = {
-  values: FieldValues<F>
+  values: InputValues
   conditions?: C
 }
 

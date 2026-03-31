@@ -33,7 +33,7 @@ function fromStore<
     subscribe(listener: (state: S, prevState: S) => void): () => void
   },
   options: {
-    select: (state: S) => FieldValues<F>
+    select: (state: S) => InputValues
     conditions?: (state: S) => C
   },
 ): UmpireStore<F>

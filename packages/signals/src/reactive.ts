@@ -2,7 +2,7 @@ import type {
   AvailabilityMap,
   FieldAvailability,
   FieldDef,
-  FieldValues,
+  InputValues,
   ResetRecommendation,
   Umpire,
 } from '@umpire/core'
@@ -70,8 +70,8 @@ export function reactiveUmp<
   const conditionSignals = options?.conditions ?? {}
 
   // --- 3. Lazy proxy for fine-grained predicate tracking ---
-  function createValuesProxy(): FieldValues<F> {
-    return new Proxy({} as FieldValues<F>, {
+  function createValuesProxy(): InputValues {
+    return new Proxy({}, {
       get(_target, prop) {
         if (typeof prop !== 'string') return undefined
         const sig = fieldSignals.get(prop)
@@ -173,13 +173,13 @@ export function reactiveUmp<
     // The penalties computed reads the version counter (to track as a dependency)
     // and uses `ump.flag(before, after)` with the snapshots.
 
-    let beforeValues: FieldValues<F> = Object.fromEntries(
+    let beforeValues: InputValues = Object.fromEntries(
       fieldNames.map((n) => [n, fieldSignals.get(n)!.get()]),
-    ) as FieldValues<F>
+    )
     let beforeConditions: C = Object.fromEntries(
       Object.keys(conditionSignals).map((k) => [k, conditionSignals[k].get()]),
     ) as C
-    let lastValues: FieldValues<F> = { ...beforeValues } as FieldValues<F>
+    let lastValues: InputValues = { ...beforeValues }
     let lastConditions: C = { ...beforeConditions } as C
 
     const version = adapter.signal(0)
@@ -187,7 +187,7 @@ export function reactiveUmp<
 
     const dispose = adapter.effect(() => {
       // Read all field signals to register as dependencies
-      const currentVals = {} as FieldValues<F>
+      const currentVals: InputValues = {}
       for (const name of fieldNames) {
         currentVals[name] = fieldSignals.get(name)!.get()
       }

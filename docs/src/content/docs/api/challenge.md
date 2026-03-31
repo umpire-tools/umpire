@@ -12,9 +12,9 @@ description: Inspect why a field is enabled or disabled, including direct failur
 ```ts
 ump.challenge(
   field: keyof F & string,
-  values: FieldValues<F>,
+  values: InputValues,
   conditions?: C,
-  prev?: FieldValues<F>,
+  prev?: InputValues,
 ): ChallengeTrace
 ```
 

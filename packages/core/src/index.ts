@@ -3,6 +3,7 @@ export type {
   FieldAvailability,
   AvailabilityMap,
   FieldValues,
+  InputValues,
   Snapshot,
   ResetRecommendation,
   ChallengeTrace,

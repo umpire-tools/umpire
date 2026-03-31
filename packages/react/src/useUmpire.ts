@@ -2,7 +2,7 @@ import { useMemo, useRef } from 'react'
 import type {
   AvailabilityMap,
   FieldDef,
-  FieldValues,
+  InputValues,
   ResetRecommendation,
   Snapshot,
   Umpire,
@@ -13,7 +13,7 @@ export function useUmpire<
   C extends Record<string, unknown>,
 >(
   ump: Umpire<F, C>,
-  values: FieldValues<F>,
+  values: InputValues,
   conditions?: C,
 ): {
   check: AvailabilityMap<F>

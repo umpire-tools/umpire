@@ -11,9 +11,9 @@ description: Compute the availability map for the current values, conditions, an
 
 ```ts
 ump.check(
-  values: FieldValues<F>,
+  values: InputValues,
   conditions?: C,
-  prev?: FieldValues<F>,
+  prev?: InputValues,
 ): AvailabilityMap<F>
 ```
 

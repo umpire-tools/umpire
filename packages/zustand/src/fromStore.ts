@@ -2,7 +2,7 @@ import type {
   AvailabilityMap,
   FieldAvailability,
   FieldDef,
-  FieldValues,
+  InputValues,
   ResetRecommendation,
   Umpire,
 } from '@umpire/core'
@@ -13,7 +13,7 @@ type StoreApi<S> = {
 }
 
 type FromStoreOptions<S, F extends Record<string, FieldDef>, C extends Record<string, unknown>> = {
-  select: (state: S) => FieldValues<F>
+  select: (state: S) => InputValues
   conditions?: (state: S) => C
 }
 
