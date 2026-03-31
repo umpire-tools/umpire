@@ -1,5 +1,6 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { enabledWhen, requires, umpire } from '@umpire/core'
+import { useUmpire } from '@umpire/react'
 
 const signupFields = {
   email:           { required: true, isEmpty: (v: unknown) => !v },
@@ -81,13 +82,9 @@ function cls(...parts: (string | false | null | undefined)[]) {
 export default function SignupDemo() {
   const [values, setValues] = useState(() => signupUmp.init())
   const [plan, setPlan] = useState<'personal' | 'business'>('personal')
-  const prevSnapshotRef = useRef({ values, conditions: { plan } })
 
   const conditions: SignupConditions = { plan }
-  const availability = signupUmp.check(values, conditions)
-  const currentSnapshot = { values, conditions }
-  const penalties = signupUmp.flag(prevSnapshotRef.current, currentSnapshot)
-  prevSnapshotRef.current = currentSnapshot
+  const { check: availability, penalties } = useUmpire(signupUmp, values, conditions)
 
   function updateValue(field: SignupField, nextValue: string) {
     setValues((current) => ({
