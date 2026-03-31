@@ -265,6 +265,32 @@ th:last-child {
   color-scheme: dark;
 }
 
+.umpire-lineup-demo {
+  position: relative;
+  margin-inline: -1.5rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid rgba(107, 254, 156, 0.12);
+  border-radius: 1rem;
+  background:
+    linear-gradient(135deg, rgba(107, 254, 156, 0.04), transparent 40%),
+    rgba(14, 14, 14, 0.96);
+  box-shadow: var(--umpire-glow);
+}
+
+@media (min-width: 72rem) {
+  .umpire-lineup-demo {
+    margin-inline: -3rem;
+    padding: 1.5rem 2rem;
+  }
+}
+
+@media (min-width: 90rem) {
+  .umpire-lineup-demo {
+    margin-inline: -5rem;
+    padding: 1.5rem 2.5rem;
+  }
+}
+
 .umpire-columns {
   display: grid;
   grid-template-columns: 1fr;
