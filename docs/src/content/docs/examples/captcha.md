@@ -5,9 +5,9 @@ description: A context-driven example where submit availability depends on both 
 
 # Login With Captcha Gate
 
-This example shows a submit field controlled by both local field state and external context. It is a good demonstration of availability reasons aggregation.
+A login form where the submit button depends on both field values *and* an external captcha token. Shows how context-driven rules and reasons aggregation work together.
 
-## Full Setup
+## The Rules
 
 ```ts
 import { check, enabledWhen, umpire } from '@umpire/core'

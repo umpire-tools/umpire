@@ -1,139 +1,180 @@
 ---
-title: Calendar Recurrence Walkthrough
-description: A complex DateRange recurrence example showing disables, oneOf, and requires working together.
+title: Calendar Recurrence
+description: A complex recurrence scheduling example showing disables, oneOf, and requires working together.
 ---
 
-# Calendar Recurrence Walkthrough
+A recurring event scheduler where fields interact in multiple ways at once. This is the kind of form that turns into a mess of `useEffect` chains without a system to manage it.
 
-This is the richer example from the spec. It combines structural disabling, mutually exclusive branches, and transitive dependencies.
+## The Problem
 
-## Full Setup
+A calendar app lets users define how events repeat. The options are interdependent:
+
+- **Explicit dates** override all pattern-based recurrence (if you pick specific dates, weekday/monthly patterns don't apply)
+- **Two scheduling strategies** are mutually exclusive: pick specific hours, *or* define a start/end time interval — not both
+- **Interval fields depend on each other**: you can't set a repeat interval or end time without a start time
+- **Exclusions** only make sense when a recurrence pattern exists
+- **"Fixed between" bounds** only make sense when both a start and end date are set
+
+## The Rules
 
 ```ts
 import { disables, enabledWhen, oneOf, requires, umpire } from '@umpire/core'
 
-const recurrenceFields = {
-  fromDate: {},
-  toDate: {},
-  fixedBetween: { default: false },
-  dates: {},
-  everyWeekday: {},
-  everyDate: {},
-  everyMonth: {},
-  exceptDates: {},
-  exceptBetween: {},
-  everyHour: {},
-  startTime: {},
-  endTime: {},
-  repeatEvery: {},
-  duration: {},
-}
+const scheduler = umpire({
+  fields: {
+    // Date bounds
+    fromDate:       {},
+    toDate:         {},
+    fixedBetween:   { default: false },
 
-const recurrenceUmp = umpire({
-  fields: recurrenceFields,
+    // Explicit dates (overrides patterns)
+    dates:          {},
+
+    // Day-level recurrence patterns
+    everyWeekday:   {},
+    everyDate:      {},
+    everyMonth:     {},
+
+    // Exclusions from patterns
+    exceptDates:    {},
+    exceptBetween:  {},
+
+    // Sub-day strategy A: specific hours
+    everyHour:      {},
+
+    // Sub-day strategy B: time interval
+    startTime:      {},
+    endTime:        {},
+    repeatEvery:    {},
+
+    // Shared
+    duration:       {},
+  },
   rules: [
+    // Explicit dates shut down everything pattern-based
     disables('dates', [
-      'everyWeekday',
-      'everyDate',
-      'everyMonth',
-      'everyHour',
-      'startTime',
-      'endTime',
-      'repeatEvery',
-      'exceptDates',
-      'exceptBetween',
+      'everyWeekday', 'everyDate', 'everyMonth',
+      'everyHour', 'startTime', 'endTime', 'repeatEvery',
+      'exceptDates', 'exceptBetween',
     ]),
+
+    // Pick one: specific hours OR a time interval
     oneOf('subDayStrategy', {
       hourList: ['everyHour'],
       interval: ['startTime', 'endTime', 'repeatEvery'],
     }),
+
+    // Interval fields chain off startTime
     requires('repeatEvery', 'startTime'),
     requires('endTime', 'startTime'),
-    enabledWhen('fixedBetween', ({ fromDate, toDate }) => !!fromDate && !!toDate),
-    enabledWhen('exceptDates', (values) => !!(values.everyWeekday || values.everyDate || values.everyMonth)),
-    enabledWhen('exceptBetween', (values) => !!(values.everyWeekday || values.everyDate || values.everyMonth)),
+
+    // Bounds toggle only meaningful when both dates exist
+    enabledWhen('fixedBetween',
+      ({ fromDate, toDate }) => !!fromDate && !!toDate),
+
+    // Exclusions only meaningful when patterns exist
+    enabledWhen('exceptDates',
+      (v) => !!(v.everyWeekday || v.everyDate || v.everyMonth)),
+    enabledWhen('exceptBetween',
+      (v) => !!(v.everyWeekday || v.everyDate || v.everyMonth)),
   ],
 })
 ```
 
-## Step 1: Explicit Dates Override Patterns
+Seven rules. Three different rule types working together. The declarations read as plain English.
+
+## Step 1 — User Picks Explicit Dates
 
 ```ts
-let values = recurrenceUmp.init()
+let values = scheduler.init()
 values = { ...values, dates: ['2026-04-01', '2026-04-05'] }
 
-const result = recurrenceUmp.check(values)
+const result = scheduler.check(values)
 ```
 
-Important outcomes:
+Everything pattern-based shuts down:
 
-- `everyWeekday`, `everyDate`, and `everyMonth` are disabled.
-- `everyHour`, `startTime`, `endTime`, and `repeatEvery` are disabled.
-- both exclusion fields are disabled.
+| Field | enabled | reason |
+| --- | --- | --- |
+| everyWeekday | `false` | `'overridden by dates'` |
+| everyHour | `false` | `'overridden by dates'` |
+| startTime | `false` | `'overridden by dates'` |
+| exceptDates | `false` | `'overridden by dates'` |
 
-The shared reason is `"overridden by dates"`.
+One `disables` rule knocked out 9 fields. The reason string makes it obvious why.
 
-## Step 2: Clear Dates, Switch To Pattern Recurrence
+## Step 2 — Switch to Weekly Recurrence
+
+User clears explicit dates and sets up a Monday/Wednesday/Friday pattern:
 
 ```ts
 const prev = values
 values = { ...values, dates: undefined, everyWeekday: [1, 3, 5] }
 
-const result = recurrenceUmp.check(values)
+const result = scheduler.check(values)
 ```
 
-Now:
+The field opens back up:
 
-- `dates` is enabled again.
-- both sub-day strategies are available because neither branch is active yet.
-- `exceptDates` and `exceptBetween` become enabled because a recurrence pattern now exists.
+- All pattern fields are available again
+- Both sub-day strategies are available (no branch chosen yet)
+- `exceptDates` and `exceptBetween` are now enabled — a recurrence pattern exists to exclude from
 
-## Step 3: Pick The Interval Branch
+## Step 3 — Pick the Interval Strategy
+
+User sets a start time. This activates the `interval` branch of `oneOf`:
 
 ```ts
 const prev2 = values
 values = { ...values, startTime: '09:00' }
 
-const result = recurrenceUmp.check(values, undefined, prev2)
+const result = scheduler.check(values, undefined, prev2)
 ```
 
-Important outcomes:
+| Field | enabled | reason |
+| --- | --- | --- |
+| everyHour | `false` | `'conflicts with interval strategy'` |
+| startTime | `true` | `null` |
+| endTime | `true` | `null` |
+| repeatEvery | `true` | `null` |
 
-- `startTime` activates the `interval` branch of `oneOf('subDayStrategy', ...)`.
-- `everyHour` becomes disabled with reason `"conflicts with interval strategy"`.
-- `repeatEvery` and `endTime` are enabled because `startTime` now satisfies their `requires()` dependency.
+Three things happened from one value change:
 
-## Step 4: Reset Recommendations
+1. `oneOf` detected that the `interval` branch is active (startTime has a value), disabling `everyHour`
+2. `requires('endTime', 'startTime')` is now satisfied — `endTime` becomes available
+3. `requires('repeatEvery', 'startTime')` is also satisfied
 
-If `everyHour` did not hold a value, there is nothing to reset:
+The `prev` parameter lets `oneOf` resolve ambiguity — it knows the `interval` branch is the *newly* active one.
+
+## Step 4 — Reset Recommendations
+
+If `everyHour` was empty, there's nothing to clean up:
 
 ```ts
-recurrenceUmp.flag({ values: prev2 }, { values })
-// []
+scheduler.flag({ values: prev2 }, { values })
+// → []
 ```
 
-If it did hold a value, `flag()` recommends clearing it:
+But if the user had previously set specific hours before switching strategies:
 
 ```ts
-recurrenceUmp.flag(
+scheduler.flag(
   { values: { ...prev2, everyHour: [9, 17] } },
   { values },
 )
-// [
-//   {
-//     field: 'everyHour',
-//     reason: 'conflicts with interval strategy',
-//     suggestedValue: undefined,
-//   },
-// ]
+// → [{ field: 'everyHour',
+//      reason: 'conflicts with interval strategy',
+//      suggestedValue: undefined }]
 ```
 
-## Why This Example Matters
+`flag()` only recommends clearing fields that (1) just became disabled, (2) hold a non-empty value, and (3) don't already match their default. No false positives.
 
-This is where the rule split pays off:
+## Why This Works
 
-- `disables('dates', ...)` keeps stale explicit dates authoritative until cleared.
-- `oneOf()` resolves the mutually exclusive sub-day strategies.
-- `requires()` propagates availability from `startTime` into `endTime` and `repeatEvery`.
+This form has three interaction patterns layered on top of each other:
 
-The behavior stays declarative even though the interaction is not simple.
+- **`disables`** — explicit dates are authoritative. A stale value in `dates` still shuts everything down, because Umpire checks the value, not the field's availability. The consumer has to clear `dates` to release the pattern fields.
+- **`oneOf`** — the two scheduling strategies are mutually exclusive. No `if/else` chain needed — declare the branches and Umpire handles the rest.
+- **`requires`** — availability flows through the dependency chain. `startTime` → `endTime` and `startTime` → `repeatEvery` propagate naturally.
+
+Seven declarative rules replace what would otherwise be a tangled web of `useEffect` hooks and conditional renders.
