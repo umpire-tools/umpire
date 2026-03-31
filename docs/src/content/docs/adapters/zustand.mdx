@@ -34,7 +34,7 @@ function fromStore<
   },
   options: {
     select: (state: S) => FieldValues<F>
-    context?: (state: S) => C
+    conditions?: (state: S) => C
   },
 ): UmpireStore<F>
 ```
@@ -85,7 +85,7 @@ const store = createStore<RecurrenceState>(() => ({
 
 const umpStore = fromStore(recurrenceUmp, store, {
   select: (state) => state.recurrenceFields,
-  context: (state) => ({ plan: state.userPlan }),
+  conditions: (state) => ({ plan: state.userPlan }),
 })
 
 const stop = umpStore.subscribe((availability) => {

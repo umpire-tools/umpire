@@ -164,7 +164,7 @@ describe('reactiveUmp', () => {
     const adapter = createMockAdapter()
     const ump = createTestUmpire()
     const reactive = reactiveUmp(ump, adapter, {
-      context: { plan: { get: () => 'personal' } },
+      conditions: { plan: { get: () => 'personal' } },
     })
 
     const email = reactive.field('email')
@@ -178,7 +178,7 @@ describe('reactiveUmp', () => {
     const adapter = createMockAdapter()
     const ump = createTestUmpire()
     const reactive = reactiveUmp(ump, adapter, {
-      context: { plan: { get: () => 'personal' } },
+      conditions: { plan: { get: () => 'personal' } },
     })
 
     // Company fields should be disabled for personal plan
@@ -267,13 +267,13 @@ describe('reactiveUmp', () => {
     expect(reactive.values.email).toBe('alice@example.com')
   })
 
-  test('context signals feed context to check()', () => {
+  test('condition signals feed conditions to check()', () => {
     const adapter = createMockAdapter()
     const ump = createTestUmpire()
 
     let plan = 'personal'
     const reactive = reactiveUmp(ump, adapter, {
-      context: { plan: { get: () => plan } },
+      conditions: { plan: { get: () => plan } },
     })
 
     // Personal plan — company fields disabled

@@ -9,15 +9,15 @@ const fields = {
   companyName:     { isEmpty: (v: unknown) => !v },
 }
 
-type Ctx = { plan: 'personal' | 'business' }
-type Plan = Ctx['plan']
+type Cond = { plan: 'personal' | 'business' }
+type Plan = Cond['plan']
 type DemoField = keyof typeof fields
 
-const demoUmp = umpire<typeof fields, Ctx>({
+const demoUmp = umpire<typeof fields, Cond>({
   fields,
   rules: [
     requires('confirmPassword', 'password'),
-    enabledWhen('companyName', (_v, ctx) => ctx.plan === 'business', {
+    enabledWhen('companyName', (_v, cond) => cond.plan === 'business', {
       reason: 'business plan required',
     }),
   ],
@@ -135,8 +135,8 @@ export default function ReactAdapterDemo() {
   const [values, setValues] = useState(() => demoUmp.init())
   const [plan, setPlan] = useState<Plan>('personal')
 
-  const context: Ctx = { plan }
-  const { check, penalties } = useUmpire(demoUmp, values, context)
+  const conditions: Cond = { plan }
+  const { check, penalties } = useUmpire(demoUmp, values, conditions)
 
   function updateValue(field: DemoField, nextValue: string) {
     setValues((current) => ({
@@ -163,14 +163,14 @@ export default function ReactAdapterDemo() {
               <div className="react-demo__callout-copy">
                 <div className="react-demo__callout-title">Pure derivation on render</div>
                 <p className="react-demo__callout-text">
-                  Pass current values and context in. Get live availability and reset guidance back.
+                  Pass current values and conditions in. Get live availability and reset guidance back.
                 </p>
               </div>
             </div>
 
-            <div className="react-demo__context">
-              <span className="react-demo__context-label">Context</span>
-              <code className="react-demo__context-code">{`{ plan: '${plan}' }`}</code>
+            <div className="react-demo__conditions">
+              <span className="react-demo__conditions-label">Conditions</span>
+              <code className="react-demo__conditions-code">{`{ plan: '${plan}' }`}</code>
             </div>
 
             <div className="react-demo__plan-toggle" aria-label="Plan">
@@ -268,7 +268,7 @@ export default function ReactAdapterDemo() {
             <div className="react-demo__hook-line">
               <span className="react-demo__hook-label">Hook</span>
               <code className="react-demo__hook-code">
-                {'const { check, penalties } = useUmpire(demoUmp, values, context)'}
+                {'const { check, penalties } = useUmpire(demoUmp, values, conditions)'}
               </code>
             </div>
 

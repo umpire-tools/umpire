@@ -88,17 +88,17 @@ describe('fromStore', () => {
     us.destroy()
   })
 
-  it('context selector works', () => {
+  it('conditions selector works', () => {
     type Ctx = { requireInvite: boolean }
 
-    const contextFields = {
+    const conditionsFields = {
       username: {},
       inviteCode: {},
     } as const
 
-    type CFields = typeof contextFields
+    type CFields = typeof conditionsFields
 
-    const contextRules = [
+    const conditionsRules = [
       enabledWhen<CFields, Ctx>('inviteCode', (_values, ctx) => {
         return ctx.requireInvite
       }),
@@ -112,13 +112,13 @@ describe('fromStore', () => {
       }),
     )
 
-    const ump = umpire<CFields, Ctx>({ fields: contextFields, rules: contextRules })
+    const ump = umpire<CFields, Ctx>({ fields: conditionsFields, rules: conditionsRules })
     const us = fromStore(ump, store, {
       select: (state) => ({
         username: state.username,
         inviteCode: state.inviteCode,
       }),
-      context: (state) => ({ requireInvite: state.requireInvite }),
+      conditions: (state) => ({ requireInvite: state.requireInvite }),
     })
 
     expect(us.field('inviteCode').enabled).toBe(false)

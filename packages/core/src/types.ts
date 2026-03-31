@@ -24,7 +24,7 @@ export type Snapshot<
   C extends Record<string, unknown>,
 > = {
   values: FieldValues<F>
-  context?: C
+  conditions?: C
 }
 
 export type ResetRecommendation<F extends Record<string, FieldDef>> = {
@@ -71,7 +71,7 @@ export type Rule<
   sources: (keyof F & string)[]
   evaluate: (
     values: FieldValues<F>,
-    context: C,
+    conditions: C,
     prev?: FieldValues<F>,
     fields?: F,
   ) => Map<string, RuleEvaluation>
@@ -81,13 +81,13 @@ export interface Umpire<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
 > {
-  check(values: FieldValues<F>, context?: C, prev?: FieldValues<F>): AvailabilityMap<F>
+  check(values: FieldValues<F>, conditions?: C, prev?: FieldValues<F>): AvailabilityMap<F>
   flag(before: Snapshot<F, C>, after: Snapshot<F, C>): ResetRecommendation<F>[]
   init(overrides?: Partial<FieldValues<F>>): FieldValues<F>
   challenge(
     field: keyof F & string,
     values: FieldValues<F>,
-    context?: C,
+    conditions?: C,
     prev?: FieldValues<F>,
   ): ChallengeTrace
   graph(): { nodes: string[]; edges: Array<{ from: string; to: string; type: string }> }

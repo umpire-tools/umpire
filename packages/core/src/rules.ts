@@ -6,14 +6,14 @@ type RuleResult = RuleEvaluation
 type Predicate<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-> = ((values: FieldValues<F>, context: C) => boolean) & {
+> = ((values: FieldValues<F>, conditions: C) => boolean) & {
   _checkField?: keyof F & string
 }
 
 type ReasonOption<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-> = string | ((values: FieldValues<F>, context: C) => string)
+> = string | ((values: FieldValues<F>, conditions: C) => string)
 
 type RuleOptions<
   F extends Record<string, FieldDef>,
@@ -36,7 +36,7 @@ type OneOfOptions<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 > = RuleOptions<F, C> & {
-  activeBranch?: string | ((values: FieldValues<F>, context: C) => string | null | undefined)
+  activeBranch?: string | ((values: FieldValues<F>, conditions: C) => string | null | undefined)
 }
 
 type FunctionValidator = (value: unknown) => boolean
@@ -121,11 +121,11 @@ export function resolveReason<
 >(
   reason: ReasonOption<F, C> | undefined,
   values: FieldValues<F>,
-  context: C,
+  conditions: C,
   fallback: string,
 ): string {
   if (typeof reason === 'function') {
-    return reason(values, context)
+    return reason(values, conditions)
   }
 
   return reason ?? fallback
@@ -168,14 +168,14 @@ function getSourceLabel<F extends Record<string, FieldDef>, C extends Record<str
 function isSourceActive<F extends Record<string, FieldDef>, C extends Record<string, unknown>>(
   source: Source<F, C>,
   values: FieldValues<F>,
-  context: C,
+  conditions: C,
   fields?: F,
 ): boolean {
   if (typeof source === 'string') {
     return isSatisfied(values[source], fields?.[source])
   }
 
-  return source(values, context)
+  return source(values, conditions)
 }
 
 function isReasonOptions<
@@ -228,7 +228,7 @@ export function resolveOneOfState<
   prev: FieldValues<F> | undefined,
   activeBranch: OneOfOptions<F, C>['activeBranch'],
   fields?: F,
-  context?: C,
+  conditions?: C,
 ): OneOfResolution {
   const branchNames = Object.keys(branches)
   const branchStates = Object.fromEntries(
@@ -250,7 +250,7 @@ export function resolveOneOfState<
   }
 
   if (typeof activeBranch === 'function') {
-    const resolvedBranch = activeBranch(values, context as C)
+    const resolvedBranch = activeBranch(values, conditions as C)
     if (resolvedBranch == null) {
       return {
         activeBranch: null,
@@ -336,14 +336,14 @@ export function enabledWhen<
     type: 'enabledWhen',
     targets: [field],
     sources: [],
-    evaluate(values, context) {
-      const passed = predicate(values, context)
+    evaluate(values, conditions) {
+      const passed = predicate(values, conditions)
 
       return createResultMap([field], () => ({
         enabled: passed,
         reason: passed
           ? null
-          : resolveReason(options?.reason, values, context, 'condition not met'),
+          : resolveReason(options?.reason, values, conditions, 'condition not met'),
       }))
     },
   }
@@ -374,12 +374,12 @@ export function disables<
     type: 'disables',
     targets,
     sources: getSourceFields(source),
-    evaluate(values, context, _prev, fields) {
-      const active = isSourceActive(source, values, context, fields)
+    evaluate(values, conditions, _prev, fields) {
+      const active = isSourceActive(source, values, conditions, fields)
 
       return createResultMap(targets, () => ({
         enabled: !active,
-        reason: active ? resolveReason(options?.reason, values, context, defaultReason) : null,
+        reason: active ? resolveReason(options?.reason, values, conditions, defaultReason) : null,
       }))
     },
   }
@@ -410,12 +410,12 @@ export function requires<
     sources: uniqueFields(
       dependencies.flatMap((dependency) => getSourceFields(dependency)),
     ),
-    evaluate(values, context, _prev, fields) {
+    evaluate(values, conditions, _prev, fields) {
       const reasons = dependencies.flatMap((dependency) => {
         const passed =
           typeof dependency === 'string'
             ? isSatisfied(values[dependency], fields?.[dependency])
-            : dependency(values, context)
+            : dependency(values, conditions)
 
         if (passed) {
           return []
@@ -426,7 +426,7 @@ export function requires<
             ? `requires ${dependency}`
             : `required condition not met`
 
-        return [resolveReason(options?.reason, values, context, fallback)]
+        return [resolveReason(options?.reason, values, conditions, fallback)]
       })
 
       return createResultMap([field], () => ({
@@ -485,7 +485,7 @@ export function oneOf<
     type: 'oneOf',
     targets,
     sources: uniqueFields([...targets]),
-    evaluate(values, context, prev, fields) {
+    evaluate(values, conditions, prev, fields) {
       const resolution = resolveOneOfState(
         groupName,
         branches,
@@ -493,7 +493,7 @@ export function oneOf<
         prev,
         options?.activeBranch,
         fields,
-        context,
+        conditions,
       )
 
       if (resolution.activeBranch === null) {
@@ -509,7 +509,7 @@ export function oneOf<
             : resolveReason(
                 options?.reason,
                 values,
-                context,
+                conditions,
                 `conflicts with ${resolution.activeBranch} strategy`,
               ),
         }
@@ -553,8 +553,8 @@ export function anyOf<
     type: 'anyOf',
     targets: [...rules[0].targets],
     sources,
-    evaluate(values, context, prev, fields) {
-      const evaluations = rules.map((rule) => rule.evaluate(values, context, prev, fields))
+    evaluate(values, conditions, prev, fields) {
+      const evaluations = rules.map((rule) => rule.evaluate(values, conditions, prev, fields))
 
       return createResultMap(rules[0].targets, (target) => {
         const targetResults = evaluations

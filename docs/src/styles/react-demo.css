@@ -129,7 +129,7 @@
   line-height: 1.45;
 }
 
-.react-demo__context {
+.react-demo__conditions {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -141,7 +141,7 @@
   background: rgba(255, 255, 255, 0.02);
 }
 
-.react-demo__context-label,
+.react-demo__conditions-label,
 .react-demo__hook-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
@@ -150,7 +150,7 @@
   color: var(--react-demo-text-muted);
 }
 
-.react-demo__context-code,
+.react-demo__conditions-code,
 .react-demo__hook-code {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.79rem;
@@ -436,7 +436,7 @@
     grid-template-columns: 1fr;
   }
 
-  .react-demo__context,
+  .react-demo__conditions,
   .react-demo__field-meta,
   .react-demo__json-header {
     flex-direction: column;

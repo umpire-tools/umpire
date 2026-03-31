@@ -14,14 +14,17 @@ type TestFields = {
   delta: {}
 }
 
-type TestContext = {
+type TestConditions = {
   allow: boolean
   activeBranch?: string
 }
 
 describe('enabledWhen', () => {
   test('returns correct type, targets, and sources', () => {
-    const rule = enabledWhen<TestFields, TestContext>('alpha', (_values, context) => context.allow)
+    const rule = enabledWhen<TestFields, TestConditions>(
+      'alpha',
+      (_values, conditions) => conditions.allow,
+    )
 
     expect(rule.type).toBe('enabledWhen')
     expect(rule.targets).toEqual(['alpha'])
@@ -29,7 +32,10 @@ describe('enabledWhen', () => {
   })
 
   test('evaluate returns the target map entry', () => {
-    const rule = enabledWhen<TestFields, TestContext>('alpha', (_values, context) => context.allow)
+    const rule = enabledWhen<TestFields, TestConditions>(
+      'alpha',
+      (_values, conditions) => conditions.allow,
+    )
 
     expect(rule.evaluate({}, { allow: true }).get('alpha')).toEqual({
       enabled: true,
@@ -42,15 +48,15 @@ describe('enabledWhen', () => {
   })
 
   test('supports string and function reasons', () => {
-    const staticReasonRule = enabledWhen<TestFields, TestContext>(
+    const staticReasonRule = enabledWhen<TestFields, TestConditions>(
       'alpha',
       () => false,
       { reason: 'blocked' },
     )
-    const dynamicReasonRule = enabledWhen<TestFields, TestContext>(
+    const dynamicReasonRule = enabledWhen<TestFields, TestConditions>(
       'alpha',
       () => false,
-      { reason: (_values, context) => (context.allow ? 'allowed' : 'denied') },
+      { reason: (_values, conditions) => (conditions.allow ? 'allowed' : 'denied') },
     )
 
     expect(staticReasonRule.evaluate({}, { allow: false }).get('alpha')?.reason).toBe('blocked')
@@ -60,7 +66,7 @@ describe('enabledWhen', () => {
 
 describe('disables', () => {
   test('with field name source uses source metadata and satisfaction semantics', () => {
-    const rule = disables<TestFields, TestContext>('beta', ['alpha', 'gamma'])
+    const rule = disables<TestFields, TestConditions>('beta', ['alpha', 'gamma'])
 
     expect(rule.type).toBe('disables')
     expect(rule.sources).toEqual(['beta'])
@@ -77,8 +83,8 @@ describe('disables', () => {
   })
 
   test('with predicate source keeps sources empty', () => {
-    const rule = disables<TestFields, TestContext>(
-      (_values, context) => context.allow,
+    const rule = disables<TestFields, TestConditions>(
+      (_values, conditions) => conditions.allow,
       ['alpha'],
     )
 
@@ -87,7 +93,7 @@ describe('disables', () => {
   })
 
   test('with check() source extracts the source field', () => {
-    const rule = disables<TestFields, TestContext>(check('beta', (value) => value === 'ok'), [
+    const rule = disables<TestFields, TestConditions>(check('beta', (value) => value === 'ok'), [
       'alpha',
     ])
 
@@ -100,7 +106,7 @@ describe('disables', () => {
 
 describe('requires', () => {
   test('with field name dependency exposes correct targets and sources', () => {
-    const rule = requires<TestFields, TestContext>('alpha', 'beta')
+    const rule = requires<TestFields, TestConditions>('alpha', 'beta')
 
     expect(rule.type).toBe('requires')
     expect(rule.targets).toEqual(['alpha'])
@@ -116,7 +122,7 @@ describe('requires', () => {
   })
 
   test('detects options when the last arg has a reason property', () => {
-    const rule = requires<TestFields, TestContext>('alpha', 'beta', { reason: 'custom reason' })
+    const rule = requires<TestFields, TestConditions>('alpha', 'beta', { reason: 'custom reason' })
 
     expect(rule.evaluate({ beta: undefined }, { allow: true }).get('alpha')).toMatchObject({
       enabled: false,
@@ -125,9 +131,9 @@ describe('requires', () => {
   })
 
   test('supports predicate dependencies', () => {
-    const rule = requires<TestFields, TestContext>(
+    const rule = requires<TestFields, TestConditions>(
       'alpha',
-      (_values, context) => context.allow,
+      (_values, conditions) => conditions.allow,
     )
 
     expect(rule.sources).toEqual([])
@@ -141,7 +147,7 @@ describe('requires', () => {
 describe('oneOf', () => {
   test('throws on overlapping fields', () => {
     expect(() =>
-      oneOf<TestFields, TestContext>('strategy', {
+      oneOf<TestFields, TestConditions>('strategy', {
         first: ['alpha', 'beta'],
         second: ['beta', 'gamma'],
       }),
@@ -150,7 +156,7 @@ describe('oneOf', () => {
 
   test('throws on empty branches', () => {
     expect(() =>
-      oneOf<TestFields, TestContext>('strategy', {
+      oneOf<TestFields, TestConditions>('strategy', {
         first: [],
         second: ['beta'],
       }),
@@ -158,7 +164,7 @@ describe('oneOf', () => {
   })
 
   test('returns all fields as targets', () => {
-    const rule = oneOf<TestFields, TestContext>('strategy', {
+    const rule = oneOf<TestFields, TestConditions>('strategy', {
       first: ['alpha'],
       second: ['beta', 'gamma'],
     })
@@ -168,7 +174,7 @@ describe('oneOf', () => {
   })
 
   test('auto-detects the active branch from satisfied fields', () => {
-    const rule = oneOf<TestFields, TestContext>('strategy', {
+    const rule = oneOf<TestFields, TestConditions>('strategy', {
       first: ['alpha'],
       second: ['beta', 'gamma'],
     })
@@ -190,7 +196,7 @@ describe('oneOf', () => {
   })
 
   test('uses prev to resolve ambiguity', () => {
-    const rule = oneOf<TestFields, TestContext>('strategy', {
+    const rule = oneOf<TestFields, TestConditions>('strategy', {
       first: ['alpha'],
       second: ['beta'],
     })
@@ -212,7 +218,7 @@ describe('oneOf', () => {
   })
 
   test('supports static activeBranch', () => {
-    const rule = oneOf<TestFields, TestContext>(
+    const rule = oneOf<TestFields, TestConditions>(
       'strategy',
       {
         first: ['alpha'],
@@ -228,7 +234,7 @@ describe('oneOf', () => {
   })
 
   test('supports function activeBranch', () => {
-    const rule = oneOf<TestFields, TestContext>(
+    const rule = oneOf<TestFields, TestConditions>(
       'strategy',
       {
         first: ['alpha'],
@@ -247,7 +253,7 @@ describe('oneOf', () => {
 describe('anyOf', () => {
   test('validates that all inner rules target the same fields', () => {
     expect(() =>
-      anyOf<TestFields, TestContext>(
+      anyOf<TestFields, TestConditions>(
         enabledWhen('alpha', () => true),
         enabledWhen('beta', () => true),
       ),
@@ -255,7 +261,7 @@ describe('anyOf', () => {
   })
 
   test('passes if any inner rule passes', () => {
-    const rule = anyOf<TestFields, TestContext>(
+    const rule = anyOf<TestFields, TestConditions>(
       enabledWhen('alpha', () => false, { reason: 'first failed' }),
       enabledWhen('alpha', () => true, { reason: 'second failed' }),
     )
@@ -267,7 +273,7 @@ describe('anyOf', () => {
   })
 
   test('collects all failure reasons when every inner rule fails', () => {
-    const rule = anyOf<TestFields, TestContext>(
+    const rule = anyOf<TestFields, TestConditions>(
       enabledWhen('alpha', () => false, { reason: 'first failed' }),
       enabledWhen('alpha', () => false, { reason: 'second failed' }),
     )
@@ -288,14 +294,14 @@ describe('anyOf', () => {
 
 describe('check', () => {
   test('supports function validators', () => {
-    const predicate = check<TestFields, TestContext>('alpha', (value) => value === 'ok')
+    const predicate = check<TestFields, TestConditions>('alpha', (value) => value === 'ok')
 
     expect(predicate({ alpha: 'ok' }, { allow: true })).toBe(true)
     expect(predicate({ alpha: 'nope' }, { allow: true })).toBe(false)
   })
 
   test('supports zod-like safeParse validators', () => {
-    const predicate = check<TestFields, TestContext>('alpha', {
+    const predicate = check<TestFields, TestConditions>('alpha', {
       safeParse: (value: unknown) => ({ success: value === 'ok' }),
     })
 
@@ -304,7 +310,7 @@ describe('check', () => {
   })
 
   test('supports regex-like test validators', () => {
-    const predicate = check<TestFields, TestContext>('alpha', {
+    const predicate = check<TestFields, TestConditions>('alpha', {
       test: (value: unknown) => typeof value === 'string' && /^a/.test(value),
     })
 
@@ -313,7 +319,7 @@ describe('check', () => {
   })
 
   test('attaches _checkField metadata', () => {
-    const predicate = check<TestFields, TestContext>('alpha', () => true)
+    const predicate = check<TestFields, TestConditions>('alpha', () => true)
 
     expect(predicate._checkField).toBe('alpha')
   })

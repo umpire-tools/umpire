@@ -31,10 +31,10 @@ const signupUmp = umpire({
 
     // Company fields only on business plan
     enabledWhen('companyName',
-      (_v, ctx) => ctx.plan === 'business',
+      (_v, cond) => cond.plan === 'business',
       { reason: 'business plan required' }),
     enabledWhen('companySize',
-      (_v, ctx) => ctx.plan === 'business',
+      (_v, cond) => cond.plan === 'business',
       { reason: 'business plan required' }),
 
     // Company size needs a company name first
@@ -67,7 +67,7 @@ Company fields are off the field on a personal plan. `confirmPassword` is availa
 
 ## Step 2 — Switch To Business Plan
 
-Same values, different context:
+Same values, different conditions:
 
 ```ts
 const result = signupUmp.check(
@@ -112,10 +112,10 @@ The user filled the business-only fields, then switched back to personal. The va
 const penalties = signupUmp.flag(
   { values: { email: 'alex@example.com', password: 'hunter2',
               companyName: 'Acme', companySize: '50' },
-    context: { plan: 'business' } },
+    conditions: { plan: 'business' } },
   { values: { email: 'alex@example.com', password: 'hunter2',
               companyName: 'Acme', companySize: '50' },
-    context: { plan: 'personal' } },
+    conditions: { plan: 'personal' } },
 )
 
 // [
@@ -126,7 +126,7 @@ const penalties = signupUmp.flag(
 // ]
 ```
 
-Only context changed. The values are identical. Because snapshots include `context`, `flag()` handles context-only transitions naturally.
+Only conditions changed. The values are identical. Because snapshots include `conditions`, `flag()` handles conditions-only transitions naturally.
 
 Three conditions must be true for each recommendation:
 
@@ -140,9 +140,9 @@ Apply the recommendations to converge:
 signupUmp.flag(
   { values: { email: 'alex@example.com', password: 'hunter2',
               companyName: 'Acme', companySize: '50' },
-    context: { plan: 'personal' } },
+    conditions: { plan: 'personal' } },
   { values: { email: 'alex@example.com', password: 'hunter2' },
-    context: { plan: 'personal' } },
+    conditions: { plan: 'personal' } },
 )
 // -> [] (nothing left to clean up)
 ```

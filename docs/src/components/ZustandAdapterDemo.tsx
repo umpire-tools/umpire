@@ -10,8 +10,8 @@ const fields = {
   companySize: { isEmpty: (v: unknown) => !v },
 }
 
-type Ctx = { plan: 'personal' | 'business' }
-type Plan = Ctx['plan']
+type Cond = { plan: 'personal' | 'business' }
+type Plan = Cond['plan']
 type DemoField = keyof typeof fields
 type DemoState = {
   email: string
@@ -21,13 +21,13 @@ type DemoState = {
   plan: Plan
 }
 
-const demoUmp = umpire<typeof fields, Ctx>({
+const demoUmp = umpire<typeof fields, Cond>({
   fields,
   rules: [
-    enabledWhen('companyName', (_v, ctx) => ctx.plan === 'business', {
+    enabledWhen('companyName', (_v, cond) => cond.plan === 'business', {
       reason: 'business plan required',
     }),
-    enabledWhen('companySize', (_v, ctx) => ctx.plan === 'business', {
+    enabledWhen('companySize', (_v, cond) => cond.plan === 'business', {
       reason: 'business plan required',
     }),
     requires('companySize', 'companyName'),
@@ -108,7 +108,7 @@ export default function ZustandAdapterDemo() {
         companyName,
         companySize,
       }),
-      context: (state) => ({ plan: state.plan }),
+      conditions: (state) => ({ plan: state.plan }),
     })
   }
 
@@ -207,7 +207,7 @@ export default function ZustandAdapterDemo() {
               </div>
 
               <div className="zustand-demo__control-group">
-                <div className="zustand-demo__control-label">Plan Context</div>
+                <div className="zustand-demo__control-label">Plan Conditions</div>
                 <div className="zustand-demo__button-row">
                   <button
                     type="button"

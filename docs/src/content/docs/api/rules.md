@@ -12,9 +12,9 @@ Every rule helper returns a `Rule<F, C>` object. Rules are plain values, so they
 ```ts
 enabledWhen(
   field,
-  (values, context) => boolean,
+  (values, conditions) => boolean,
   {
-    reason?: string | ((values, context) => string)
+    reason?: string | ((values, conditions) => string)
   },
 )
 ```
@@ -22,7 +22,7 @@ enabledWhen(
 Enables a field only when the predicate returns `true`.
 
 ```ts
-enabledWhen('companyName', (_values, context) => context.plan === 'business', {
+enabledWhen('companyName', (_values, conditions) => conditions.plan === 'business', {
   reason: 'business plan required',
 })
 ```
@@ -36,7 +36,7 @@ disables(
   source,
   ['targetA', 'targetB'],
   {
-    reason?: string | ((values, context) => string)
+    reason?: string | ((values, conditions) => string)
   },
 )
 ```
@@ -44,7 +44,7 @@ disables(
 `source` can be:
 
 - a field name
-- a predicate `(values, context) => boolean`
+- a predicate `(values, conditions) => boolean`
 - a `check(field, validator)` helper
 
 If the source is active, the targets are disabled.
@@ -108,8 +108,8 @@ oneOf(
     interval: ['startTime', 'endTime', 'repeatEvery'],
   },
   {
-    reason?: string | ((values, context) => string)
-    activeBranch?: string | ((values, context) => string | null | undefined)
+    reason?: string | ((values, conditions) => string)
+    activeBranch?: string | ((values, conditions) => string | null | undefined)
   },
 )
 ```
@@ -119,7 +119,7 @@ Only one branch stays enabled at a time.
 Branch resolution is:
 
 1. Explicit static `activeBranch`, if provided.
-2. Explicit function `activeBranch(values, context)`, if provided.
+2. Explicit function `activeBranch(values, conditions)`, if provided.
 3. Auto-detection from satisfied fields.
 4. `prev`-assisted resolution when multiple branches are satisfied.
 5. First satisfied branch as a fallback, with a development warning.
@@ -148,7 +148,7 @@ anyOf(
   enabledWhen('submit', ({ password }) => !!password, {
     reason: 'Enter a password',
   }),
-  enabledWhen('submit', (_values, context) => context.bypass === true, {
+  enabledWhen('submit', (_values, conditions) => conditions.bypass === true, {
     reason: 'Bypass flag missing',
   }),
 )
@@ -181,8 +181,8 @@ Because `check()` preserves the field name internally, the graph can still under
 All rule helpers that accept `options.reason` support either a static string or a function.
 
 ```ts
-enabledWhen('companyName', (_values, context) => context.plan === 'business', {
-  reason: (_values, context) => `Plan "${context.plan}" cannot edit company details`,
+enabledWhen('companyName', (_values, conditions) => conditions.plan === 'business', {
+  reason: (_values, conditions) => `Plan "${conditions.plan}" cannot edit company details`,
 })
 ```
 

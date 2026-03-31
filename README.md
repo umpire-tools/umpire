@@ -2,7 +2,7 @@
 
 > Rule the form. Flag the field.
 
-Umpire is a reactive field availability library for forms with interdependent options. It answers a structural question, not a validation question: given the current values and context, which fields should be in play right now, and which stale values should be flagged for cleanup?
+Umpire is a reactive field availability library for forms with interdependent options. It answers a structural question, not a validation question: given the current values and conditions, which fields should be in play right now, and which stale values should be flagged for cleanup?
 
 [Docs](https://sdougbrown.github.io/umpire/) • [GitHub](https://github.com/sdougbrown/umpire)
 
@@ -22,10 +22,10 @@ const signupUmp = umpire({
   },
   rules: [
     requires('confirmPassword', 'password'),
-    enabledWhen('companyName', (_values, ctx) => ctx.plan === 'business', {
+    enabledWhen('companyName', (_values, cond) => cond.plan === 'business', {
       reason: 'business plan required',
     }),
-    enabledWhen('companySize', (_values, ctx) => ctx.plan === 'business', {
+    enabledWhen('companySize', (_values, cond) => cond.plan === 'business', {
       reason: 'business plan required',
     }),
     requires('companySize', 'companyName'),
@@ -48,7 +48,7 @@ const penalties = signupUmp.flag(
       companyName: 'Acme',
       companySize: '50',
     },
-    context: { plan: 'business' },
+    conditions: { plan: 'business' },
   },
   {
     values: {
@@ -57,7 +57,7 @@ const penalties = signupUmp.flag(
       companyName: 'Acme',
       companySize: '50',
     },
-    context: { plan: 'personal' },
+    conditions: { plan: 'personal' },
   },
 )
 

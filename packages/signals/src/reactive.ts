@@ -32,7 +32,7 @@ export type ReactiveUmpOptions<F extends Record<string, FieldDef>> = {
   signals?: Partial<
     Record<keyof F & string, { get(): unknown; set(value: unknown): void }>
   >
-  context?: Record<string, { get(): unknown }>
+  conditions?: Record<string, { get(): unknown }>
 }
 
 // ---------------------------------------------------------------------------
@@ -66,8 +66,8 @@ export function reactiveUmp<
     }
   }
 
-  // --- 2. Context signals ---
-  const contextSignals = options?.context ?? {}
+  // --- 2. Conditions signals ---
+  const conditionSignals = options?.conditions ?? {}
 
   // --- 3. Lazy proxy for fine-grained predicate tracking ---
   function createValuesProxy(): FieldValues<F> {
@@ -91,36 +91,36 @@ export function reactiveUmp<
     })
   }
 
-  function createContextProxy(): C {
+  function createConditionsProxy(): C {
     return new Proxy({} as C, {
       get(_target, prop) {
         if (typeof prop !== 'string') return undefined
-        const sig = contextSignals[prop]
+        const sig = conditionSignals[prop]
         return sig ? sig.get() : undefined
       },
       has(_target, prop) {
         if (typeof prop !== 'string') return false
-        return prop in contextSignals
+        return prop in conditionSignals
       },
       ownKeys() {
-        return Object.keys(contextSignals)
+        return Object.keys(conditionSignals)
       },
       getOwnPropertyDescriptor(_target, prop) {
-        if (typeof prop !== 'string' || !(prop in contextSignals)) return undefined
+        if (typeof prop !== 'string' || !(prop in conditionSignals)) return undefined
         return { configurable: true, enumerable: true, writable: true }
       },
     })
   }
 
   const valuesProxy = createValuesProxy()
-  const contextProxy = createContextProxy()
+  const conditionsProxy = createConditionsProxy()
 
   // --- 4. Computed availability per field ---
   // One computed that runs ump.check() — all field computeds derive from it.
   // This is more efficient than running check() per field since check()
   // evaluates the full graph in topological order.
   const availabilityComputed = adapter.computed<AvailabilityMap<F>>(() => {
-    return ump.check(valuesProxy, contextProxy)
+    return ump.check(valuesProxy, conditionsProxy)
   })
 
   // Per-field computed signals for each availability property.
@@ -162,8 +162,8 @@ export function reactiveUmp<
     // Penalties tracking via effect + mutable snapshots.
     //
     // We maintain two mutable snapshots (plain variables, not signals):
-    // - `beforeValues`/`beforeContext`: the state BEFORE the most recent change
-    // - `lastValues`/`lastContext`: the state we saw on the last effect run
+    // - `beforeValues`/`beforeConditions`: the state BEFORE the most recent change
+    // - `lastValues`/`lastConditions`: the state we saw on the last effect run
     //
     // When the effect fires (a dependency changed):
     // 1. `beforeValues` = `lastValues` (the old "current" is now "before")
@@ -176,11 +176,11 @@ export function reactiveUmp<
     let beforeValues: FieldValues<F> = Object.fromEntries(
       fieldNames.map((n) => [n, fieldSignals.get(n)!.get()]),
     ) as FieldValues<F>
-    let beforeContext: C = Object.fromEntries(
-      Object.keys(contextSignals).map((k) => [k, contextSignals[k].get()]),
+    let beforeConditions: C = Object.fromEntries(
+      Object.keys(conditionSignals).map((k) => [k, conditionSignals[k].get()]),
     ) as C
     let lastValues: FieldValues<F> = { ...beforeValues } as FieldValues<F>
-    let lastContext: C = { ...beforeContext } as C
+    let lastConditions: C = { ...beforeConditions } as C
 
     const version = adapter.signal(0)
     let isFirstRun = true
@@ -191,25 +191,25 @@ export function reactiveUmp<
       for (const name of fieldNames) {
         currentVals[name] = fieldSignals.get(name)!.get()
       }
-      const currentCtx = {} as Record<string, unknown>
-      for (const k of Object.keys(contextSignals)) {
-        currentCtx[k] = contextSignals[k].get()
+      const currentCond = {} as Record<string, unknown>
+      for (const k of Object.keys(conditionSignals)) {
+        currentCond[k] = conditionSignals[k].get()
       }
 
       if (isFirstRun) {
         isFirstRun = false
         lastValues = currentVals
-        lastContext = currentCtx as C
+        lastConditions = currentCond as C
         return
       }
 
       // Advance: what was "current" becomes "before"
       beforeValues = lastValues
-      beforeContext = lastContext
+      beforeConditions = lastConditions
 
       // Store new current
       lastValues = currentVals
-      lastContext = currentCtx as C
+      lastConditions = currentCond as C
 
       // Bump version to notify penalties computed
       version.set(version.get() + 1)
@@ -225,8 +225,8 @@ export function reactiveUmp<
 
       // Read current values through proxy for signal tracking
       return ump.flag(
-        { values: beforeValues, context: beforeContext },
-        { values: valuesProxy, context: contextProxy },
+        { values: beforeValues, conditions: beforeConditions },
+        { values: valuesProxy, conditions: conditionsProxy },
       )
     })
   } else {

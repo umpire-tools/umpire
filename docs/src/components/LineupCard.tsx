@@ -53,26 +53,26 @@ const fields: Record<string, FieldDef> = {}
 for (const id of Object.keys(roster)) fields[id] = {}
 fields.morrisonRested = {}
 
-type Ctx = { opposingPitcher: 'L' | 'R' }
+type Cond = { opposingPitcher: 'L' | 'R' }
 
-const lineupUmp = umpire<typeof fields, Ctx>({
+const lineupUmp = umpire<typeof fields, Cond>({
   fields,
   rules: [
     oneOf('firstBasePlatoon', {
       vsRighty: ['delgado'],
       vsLefty:  ['vega'],
     }, {
-      activeBranch: (_v, ctx) => ctx.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
+      activeBranch: (_v, cond) => cond.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
       reason: 'platoon matchup',
     }),
     oneOf('leftFieldPlatoon', {
       vsRighty: ['reyes'],
       vsLefty:  ['patterson'],
     }, {
-      activeBranch: (_v, ctx) => ctx.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
+      activeBranch: (_v, cond) => cond.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
       reason: 'platoon matchup',
     }),
-    enabledWhen('silva', (_v, ctx) => ctx.opposingPitcher !== 'L', {
+    enabledWhen('silva', (_v, cond) => cond.opposingPitcher !== 'L', {
       reason: 'platoon — lefty sits vs LHP',
     }),
     requires('morrison', 'morrisonRested'),
@@ -114,13 +114,13 @@ export default function LineupCard() {
     return v as FieldValues<typeof fields>
   }, [injuries, morrisonRested])
 
-  const context: Ctx = useMemo(() => ({ opposingPitcher }), [opposingPitcher])
-  const availability = useMemo(() => lineupUmp.check(values, context), [values, context])
+  const conditions: Cond = useMemo(() => ({ opposingPitcher }), [opposingPitcher])
+  const availability = useMemo(() => lineupUmp.check(values, conditions), [values, conditions])
 
   const penalties = useMemo(() => {
     if (!prevValues) return []
-    return lineupUmp.flag({ values: prevValues, context }, { values, context })
-  }, [values, context, prevValues])
+    return lineupUmp.flag({ values: prevValues, conditions }, { values, conditions })
+  }, [values, conditions, prevValues])
 
   const assignedPlayers = new Set(Object.values(lineup).filter(Boolean) as string[])
 

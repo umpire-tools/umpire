@@ -22,7 +22,7 @@ export function evaluateRuleForField<
   field: keyof F & string,
   fields: F,
   values: FieldValues<F>,
-  context: C,
+  conditions: C,
   prev: FieldValues<F> | undefined,
   availability: Partial<AvailabilityMap<F>>,
   baseRuleCache: Map<Rule<F, C>, Map<string, RuleEvaluation>>,
@@ -36,7 +36,7 @@ export function evaluateRuleForField<
         field,
         fields,
         values,
-        context,
+        conditions,
         prev,
         availability,
         baseRuleCache,
@@ -58,12 +58,12 @@ export function evaluateRuleForField<
   if (metadata?.kind === 'requires') {
     const reasons = metadata.dependencies.flatMap((dependency) => {
       if (typeof dependency !== 'string') {
-        if (dependency(values, context)) {
+        if (dependency(values, conditions)) {
           return []
         }
 
         return [
-          resolveReason(metadata.options?.reason, values, context, 'required condition not met'),
+          resolveReason(metadata.options?.reason, values, conditions, 'required condition not met'),
         ]
       }
 
@@ -74,7 +74,9 @@ export function evaluateRuleForField<
         return []
       }
 
-      return [resolveReason(metadata.options?.reason, values, context, `requires ${dependency}`)]
+      return [
+        resolveReason(metadata.options?.reason, values, conditions, `requires ${dependency}`),
+      ]
     })
 
     return {
@@ -86,7 +88,7 @@ export function evaluateRuleForField<
 
   let evaluation = baseRuleCache.get(rule)
   if (!evaluation) {
-    evaluation = rule.evaluate(values, context, prev, fields)
+    evaluation = rule.evaluate(values, conditions, prev, fields)
     baseRuleCache.set(rule, evaluation)
   }
 
@@ -111,7 +113,7 @@ export function evaluate<
   rules: Rule<F, C>[],
   topoOrder: Array<keyof F & string>,
   values: FieldValues<F>,
-  context: C,
+  conditions: C,
   prev?: FieldValues<F>,
 ): AvailabilityMap<F> {
   const availability = {} as AvailabilityMap<F>
@@ -142,7 +144,7 @@ export function evaluate<
         field,
         fields,
         values,
-        context,
+        conditions,
         prev,
         availability,
         baseRuleCache,

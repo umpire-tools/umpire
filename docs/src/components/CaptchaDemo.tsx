@@ -9,7 +9,7 @@ const loginFields = {
   submit:   { required: true },
 }
 
-type LoginContext = {
+type LoginConditions = {
   captchaToken: string | null
 }
 
@@ -19,10 +19,10 @@ const allReasons = [
   'Enter a password',
 ] as const
 
-const loginUmp = umpire<typeof loginFields, LoginContext>({
+const loginUmp = umpire<typeof loginFields, LoginConditions>({
   fields: loginFields,
   rules: [
-    enabledWhen('submit', (_v, ctx) => !!ctx.captchaToken, {
+    enabledWhen('submit', (_v, cond) => !!cond.captchaToken, {
       reason: allReasons[0],
     }),
     enabledWhen('submit', check('email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/), {
@@ -48,8 +48,8 @@ export default function CaptchaDemo() {
   const [captchaSolved, setCaptchaSolved] = useState(false)
 
   const values = { email, password, submit: undefined }
-  const context: LoginContext = { captchaToken: captchaSolved ? 'cf-turnstile-demo' : null }
-  const availability = loginUmp.check(values, context)
+  const conditions: LoginConditions = { captchaToken: captchaSolved ? 'cf-turnstile-demo' : null }
+  const availability = loginUmp.check(values, conditions)
 
   const submitAv = availability.submit
   const isEnabled = submitAv.enabled

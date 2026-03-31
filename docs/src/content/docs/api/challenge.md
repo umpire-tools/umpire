@@ -13,7 +13,7 @@ description: Inspect why a field is enabled or disabled, including direct failur
 ump.challenge(
   field: keyof F & string,
   values: FieldValues<F>,
-  context?: C,
+  conditions?: C,
   prev?: FieldValues<F>,
 ): ChallengeTrace
 ```
@@ -102,7 +102,7 @@ trace.oneOfResolution
 
 ```ts
 if (!result.submit.enabled) {
-  console.table(loginUmp.challenge('submit', values, context).directReasons)
+  console.table(loginUmp.challenge('submit', values, conditions).directReasons)
 }
 ```
 

@@ -58,13 +58,13 @@ interface Umpire<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
 > {
-  check(values: FieldValues<F>, context?: C, prev?: FieldValues<F>): AvailabilityMap<F>
+  check(values: FieldValues<F>, conditions?: C, prev?: FieldValues<F>): AvailabilityMap<F>
   flag(before: Snapshot<F, C>, after: Snapshot<F, C>): ResetRecommendation<F>[]
   init(overrides?: Partial<FieldValues<F>>): FieldValues<F>
   challenge(
     field: keyof F & string,
     values: FieldValues<F>,
-    context?: C,
+    conditions?: C,
     prev?: FieldValues<F>,
   ): ChallengeTrace
   graph(): {
@@ -85,17 +85,17 @@ const fields = {
   companySize: {},
 }
 
-type Context = {
+type Conditions = {
   plan: 'personal' | 'business'
 }
 
-const signupUmp = umpire<typeof fields, Context>({
+const signupUmp = umpire<typeof fields, Conditions>({
   fields,
   rules: [
-    enabledWhen('companyName', (_values, context) => context.plan === 'business', {
+    enabledWhen('companyName', (_values, conditions) => conditions.plan === 'business', {
       reason: 'business plan required',
     }),
-    enabledWhen('companySize', (_values, context) => context.plan === 'business', {
+    enabledWhen('companySize', (_values, conditions) => conditions.plan === 'business', {
       reason: 'business plan required',
     }),
     requires('companySize', 'companyName'),

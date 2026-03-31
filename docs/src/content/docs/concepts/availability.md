@@ -24,7 +24,7 @@ Umpire works the same way. It doesn't care if your email is well-formed or your 
 Good Umpire rules describe field relationships:
 
 - `requires('repeatEvery', 'startTime')` — can't set a repeat interval without a start time
-- `enabledWhen('companyName', (_v, ctx) => ctx.plan === 'business')` — company fields only appear for business accounts
+- `enabledWhen('companyName', (_v, cond) => cond.plan === 'business')` — company fields only appear for business accounts
 - `oneOf('subDayStrategy', { hourList: ['everyHour'], interval: ['startTime', 'endTime'] })` — pick one scheduling approach
 
 Not Umpire's job:
@@ -46,7 +46,7 @@ Umpire works the same way. When a field becomes disabled, Umpire doesn't clear i
 
 ## Pure Core, Reactive Adapters
 
-`@umpire/core` is a pure function engine. Hand it values and context, get availability back. No framework, no DOM, no subscriptions.
+`@umpire/core` is a pure function engine. Hand it values and conditions, get availability back. No framework, no DOM, no subscriptions.
 
 The adapter packages layer reactivity on top:
 

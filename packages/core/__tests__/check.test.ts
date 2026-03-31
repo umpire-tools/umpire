@@ -10,14 +10,14 @@ type TestFields = {
   delta: { required?: boolean }
 }
 
-type TestContext = {
+type TestConditions = {
   allow?: boolean
   plan?: 'basic' | 'pro'
 }
 
 function createOrder(
   fields: TestFields,
-  rules: Rule<TestFields, TestContext>[],
+  rules: Rule<TestFields, TestConditions>[],
 ) {
   const graph = buildGraph(fields, rules)
   return topologicalSort(graph, Object.keys(fields))
@@ -32,21 +32,21 @@ describe('evaluate', () => {
       delta: {},
     }
     const rules = [
-      enabledWhen<TestFields, TestContext>('beta', (values) => values.alpha === 'on', {
+      enabledWhen<TestFields, TestConditions>('beta', (values) => values.alpha === 'on', {
         reason: 'alpha must be on',
       }),
     ]
 
     const topoOrder = createOrder(fields, rules)
 
-    expect(evaluate(fields, rules, topoOrder, { alpha: 'on' }, {} as TestContext).beta).toEqual({
+    expect(evaluate(fields, rules, topoOrder, { alpha: 'on' }, {} as TestConditions).beta).toEqual({
       enabled: true,
       required: false,
       reason: null,
       reasons: [],
     })
     expect(
-      evaluate(fields, rules, topoOrder, { alpha: 'off' }, {} as TestContext).beta,
+      evaluate(fields, rules, topoOrder, { alpha: 'off' }, {} as TestConditions).beta,
     ).toEqual({
       enabled: false,
       required: false,
@@ -63,16 +63,16 @@ describe('evaluate', () => {
       delta: {},
     }
     const rules = [
-      enabledWhen<TestFields, TestContext>('gamma', () => false, {
+      enabledWhen<TestFields, TestConditions>('gamma', () => false, {
         reason: 'feature gate closed',
       }),
-      requires<TestFields, TestContext>('gamma', 'beta', {
+      requires<TestFields, TestConditions>('gamma', 'beta', {
         reason: 'beta is required',
       }),
     ]
 
     const topoOrder = createOrder(fields, rules)
-    const result = evaluate(fields, rules, topoOrder, {}, {} as TestContext)
+    const result = evaluate(fields, rules, topoOrder, {}, {} as TestConditions)
 
     expect(result.gamma).toEqual({
       enabled: false,
@@ -90,19 +90,19 @@ describe('evaluate', () => {
       delta: {},
     }
     const rules = [
-      enabledWhen<TestFields, TestContext>('beta', () => false, {
+      enabledWhen<TestFields, TestConditions>('beta', () => false, {
         reason: 'beta hidden',
       }),
     ]
 
     const topoOrder = createOrder(fields, rules)
-    const result = evaluate(fields, rules, topoOrder, {}, {} as TestContext)
+    const result = evaluate(fields, rules, topoOrder, {}, {} as TestConditions)
 
     expect(result.beta.required).toBe(false)
     expect(result.beta.enabled).toBe(false)
   })
 
-  test('passes context to predicates', () => {
+  test('passes conditions to predicates', () => {
     const fields: TestFields = {
       alpha: {},
       beta: {},
@@ -110,9 +110,11 @@ describe('evaluate', () => {
       delta: {},
     }
     const rules = [
-      enabledWhen<TestFields, TestContext>('delta', (_values, context) => context.plan === 'pro', {
-        reason: 'pro plan required',
-      }),
+      enabledWhen<TestFields, TestConditions>(
+        'delta',
+        (_values, conditions) => conditions.plan === 'pro',
+        { reason: 'pro plan required' },
+      ),
     ]
 
     const topoOrder = createOrder(fields, rules)
@@ -138,11 +140,11 @@ describe('evaluate', () => {
       gamma: {},
       delta: { required: true },
     }
-    const rules: Rule<TestFields, TestContext>[] = []
+    const rules: Rule<TestFields, TestConditions>[] = []
 
     const graph = buildGraph(fields, rules)
     const topoOrder = topologicalSort(graph, Object.keys(fields))
-    const result = evaluate(fields, rules, topoOrder, {}, {} as TestContext)
+    const result = evaluate(fields, rules, topoOrder, {}, {} as TestConditions)
 
     expect(result).toEqual({
       alpha: { enabled: true, required: true, reason: null, reasons: [] },

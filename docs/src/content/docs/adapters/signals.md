@@ -42,7 +42,7 @@ function reactiveUmp<
   adapter: SignalProtocol,
   options?: {
     signals?: Partial<Record<keyof F & string, { get(): unknown; set(value: unknown): void }>>
-    context?: Record<string, { get(): unknown }>
+    conditions?: Record<string, { get(): unknown }>
   },
 ): ReactiveUmpire<F>
 ```
@@ -96,13 +96,13 @@ const reactive = reactiveUmp(recurrenceUmp, adapter, {
 
 That avoids duplicating state.
 
-## Context Signals
+## Conditions Signals
 
-Context can also be reactive.
+Conditions can also be reactive.
 
 ```ts
 const reactive = reactiveUmp(loginUmp, adapter, {
-  context: {
+  conditions: {
     captchaToken: captchaTokenSignal,
   },
 })
@@ -114,7 +114,7 @@ Changing `captchaTokenSignal` recomputes availability just like changing a field
 
 `penalties` depends on `effect()`.
 
-The adapter uses an effect to advance an internal "before" snapshot whenever field or context signals change, then computes `ump.flag(before, after)` from that transition.
+The adapter uses an effect to advance an internal "before" snapshot whenever field or conditions signals change, then computes `ump.flag(before, after)` from that transition.
 
 If the protocol does not provide `effect()`:
 

@@ -10,17 +10,17 @@ const signupFields = {
   companySize:     { isEmpty: (v: unknown) => !v },
 }
 
-type SignupContext = { plan: 'personal' | 'business' }
+type SignupConditions = { plan: 'personal' | 'business' }
 type SignupField = keyof typeof signupFields
 
-const signupUmp = umpire<typeof signupFields, SignupContext>({
+const signupUmp = umpire<typeof signupFields, SignupConditions>({
   fields: signupFields,
   rules: [
     requires('confirmPassword', 'password'),
-    enabledWhen('companyName', (_v, ctx) => ctx.plan === 'business', {
+    enabledWhen('companyName', (_v, cond) => cond.plan === 'business', {
       reason: 'business plan required',
     }),
-    enabledWhen('companySize', (_v, ctx) => ctx.plan === 'business', {
+    enabledWhen('companySize', (_v, cond) => cond.plan === 'business', {
       reason: 'business plan required',
     }),
     requires('companySize', 'companyName'),
@@ -81,11 +81,11 @@ function cls(...parts: (string | false | null | undefined)[]) {
 export default function SignupDemo() {
   const [values, setValues] = useState(() => signupUmp.init())
   const [plan, setPlan] = useState<'personal' | 'business'>('personal')
-  const prevSnapshotRef = useRef({ values, context: { plan } })
+  const prevSnapshotRef = useRef({ values, conditions: { plan } })
 
-  const context: SignupContext = { plan }
-  const availability = signupUmp.check(values, context)
-  const currentSnapshot = { values, context }
+  const conditions: SignupConditions = { plan }
+  const availability = signupUmp.check(values, conditions)
+  const currentSnapshot = { values, conditions }
   const penalties = signupUmp.flag(prevSnapshotRef.current, currentSnapshot)
   prevSnapshotRef.current = currentSnapshot
 

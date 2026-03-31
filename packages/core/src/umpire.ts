@@ -13,8 +13,8 @@ import type {
   Umpire,
 } from './types.js'
 
-function createEmptyContext<C extends Record<string, unknown>>(context: C | undefined): C {
-  return (context ?? ({} as C)) as C
+function createEmptyConditions<C extends Record<string, unknown>>(conditions: C | undefined): C {
+  return (conditions ?? ({} as C)) as C
 }
 
 function describeRuleForField<
@@ -25,7 +25,7 @@ function describeRuleForField<
   field: keyof F & string,
   fields: F,
   values: FieldValues<F>,
-  context: C,
+  conditions: C,
   prev: FieldValues<F> | undefined,
   availability: AvailabilityMap<F>,
   baseRuleCache: Map<Rule<F, C>, Map<string, RuleEvaluation>>,
@@ -36,7 +36,7 @@ function describeRuleForField<
     field,
     fields,
     values,
-    context,
+    conditions,
     prev,
     availability,
     baseRuleCache,
@@ -61,7 +61,9 @@ function describeRuleForField<
       reason: evaluation.reason,
       source,
       sourceValue:
-        typeof metadata.source === 'string' ? values[metadata.source] : metadata.source(values, context),
+        typeof metadata.source === 'string'
+          ? values[metadata.source]
+          : metadata.source(values, conditions),
     }
   }
 
@@ -70,7 +72,7 @@ function describeRuleForField<
       if (typeof dependency !== 'string') {
         return {
           dependency: dependency.toString(),
-          satisfied: dependency(values, context),
+          satisfied: dependency(values, conditions),
         }
       }
 
@@ -100,7 +102,7 @@ function describeRuleForField<
       prev,
       metadata.options?.activeBranch,
       fields,
-      context,
+      conditions,
     )
     const thisBranch =
       Object.entries(metadata.branches).find(([, branchFields]) => branchFields.includes(field))?.[0] ?? null
@@ -122,7 +124,7 @@ function describeRuleForField<
         field,
         fields,
         values,
-        context,
+        conditions,
         prev,
         availability,
         baseRuleCache,
@@ -152,7 +154,7 @@ function describeCausedBy<
   fields: F,
   rules: Rule<F, C>[],
   values: FieldValues<F>,
-  context: C,
+  conditions: C,
   prev: FieldValues<F> | undefined,
   availability: AvailabilityMap<F>,
   baseRuleCache: Map<Rule<F, C>, Map<string, RuleEvaluation>>,
@@ -165,7 +167,7 @@ function describeCausedBy<
         field,
         fields,
         values,
-        context,
+        conditions,
         prev,
         availability,
         baseRuleCache,
@@ -186,7 +188,7 @@ function buildTransitiveDeps<
   fields: F,
   rules: Rule<F, C>[],
   values: FieldValues<F>,
-  context: C,
+  conditions: C,
   prev: FieldValues<F> | undefined,
   availability: AvailabilityMap<F>,
   baseRuleCache: Map<Rule<F, C>, Map<string, RuleEvaluation>>,
@@ -231,7 +233,7 @@ function buildTransitiveDeps<
             fields,
             rules,
             values,
-            context,
+            conditions,
             prev,
             availability,
             baseRuleCache,
@@ -293,8 +295,8 @@ export function umpire<
   const topoOrder = topologicalSort(graph, fieldNames)
 
   return {
-    check(values, context, prev) {
-      return evaluate(fields, rules, topoOrder, values, createEmptyContext(context), prev)
+    check(values, conditions, prev) {
+      return evaluate(fields, rules, topoOrder, values, createEmptyConditions(conditions), prev)
     },
 
     flag(before, after) {
@@ -303,14 +305,14 @@ export function umpire<
         rules,
         topoOrder,
         before.values,
-        createEmptyContext(before.context),
+        createEmptyConditions(before.conditions),
       )
       const afterAvailability = evaluate(
         fields,
         rules,
         topoOrder,
         after.values,
-        createEmptyContext(after.context),
+        createEmptyConditions(after.conditions),
         before.values,
       )
       const recommendations: ResetRecommendation<F>[] = []
@@ -361,13 +363,13 @@ export function umpire<
       return values
     },
 
-    challenge(field, values, context, prev) {
+    challenge(field, values, conditions, prev) {
       if (!(field in fields)) {
         throw new Error(`Unknown field "${field}"`)
       }
 
-      const resolvedContext = createEmptyContext(context)
-      const availability = evaluate(fields, rules, topoOrder, values, resolvedContext, prev)
+      const resolvedConditions = createEmptyConditions(conditions)
+      const availability = evaluate(fields, rules, topoOrder, values, resolvedConditions, prev)
       const baseRuleCache = new Map<Rule<F, C>, Map<string, RuleEvaluation>>()
       const directReasons = rules
         .filter((rule) => rule.targets.includes(field))
@@ -377,7 +379,7 @@ export function umpire<
             field,
             fields,
             values,
-            resolvedContext,
+            resolvedConditions,
             prev,
             availability,
             baseRuleCache,
@@ -400,7 +402,7 @@ export function umpire<
                 prev,
                 oneOfMetadata.options?.activeBranch,
                 fields,
-                resolvedContext,
+                resolvedConditions,
               ),
             }
           : null
@@ -414,7 +416,7 @@ export function umpire<
           fields,
           rules,
           values,
-          resolvedContext,
+          resolvedConditions,
           prev,
           availability,
           baseRuleCache,

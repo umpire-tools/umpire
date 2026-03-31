@@ -14,7 +14,7 @@ export function useUmpire<
 >(
   ump: Umpire<F, C>,
   values: FieldValues<F>,
-  context?: C,
+  conditions?: C,
 ): {
   check: AvailabilityMap<F>
   penalties: ResetRecommendation<F>[]
@@ -22,8 +22,8 @@ export function useUmpire<
   const prevRef = useRef<Snapshot<F, C> | undefined>(undefined)
 
   const check = useMemo(
-    () => ump.check(values, context, prevRef.current?.values),
-    [ump, values, context],
+    () => ump.check(values, conditions, prevRef.current?.values),
+    [ump, values, conditions],
   )
 
   const penalties = useMemo(() => {
@@ -31,11 +31,11 @@ export function useUmpire<
     if (!prev) {
       return []
     }
-    return ump.flag(prev, { values, context })
-  }, [ump, values, context])
+    return ump.flag(prev, { values, conditions })
+  }, [ump, values, conditions])
 
   // Update prev ref after computing check and penalties
-  prevRef.current = { values, context }
+  prevRef.current = { values, conditions }
 
   return { check, penalties }
 }

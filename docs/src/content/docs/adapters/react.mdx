@@ -30,7 +30,7 @@ function useUmpire<
 >(
   ump: Umpire<F, C>,
   values: FieldValues<F>,
-  context?: C,
+  conditions?: C,
 ): {
   check: AvailabilityMap<F>
   penalties: ResetRecommendation<F>[]
@@ -39,7 +39,7 @@ function useUmpire<
 
 ## Behavior
 
-- `check` is memoized from `ump.check(values, context, prevValues)`.
+- `check` is memoized from `ump.check(values, conditions, prevValues)`.
 - `penalties` is memoized from `ump.flag(previousSnapshot, currentSnapshot)`.
 - Previous values are tracked internally with `useRef`.
 - There is no `useEffect()`.
@@ -61,18 +61,18 @@ const fields = {
   companySize: {},
 }
 
-type SignupContext = {
+type SignupConditions = {
   plan: 'personal' | 'business'
 }
 
-const signupUmp = umpire<typeof fields, SignupContext>({
+const signupUmp = umpire<typeof fields, SignupConditions>({
   fields,
   rules: [
     requires('confirmPassword', 'password'),
-    enabledWhen('companyName', (_values, context) => context.plan === 'business', {
+    enabledWhen('companyName', (_values, conditions) => conditions.plan === 'business', {
       reason: 'business plan required',
     }),
-    enabledWhen('companySize', (_values, context) => context.plan === 'business', {
+    enabledWhen('companySize', (_values, conditions) => conditions.plan === 'business', {
       reason: 'business plan required',
     }),
     requires('companySize', 'companyName'),
@@ -80,7 +80,7 @@ const signupUmp = umpire<typeof fields, SignupContext>({
 })
 
 export function SignupForm() {
-  const [plan, setPlan] = useState<SignupContext['plan']>('personal')
+  const [plan, setPlan] = useState<SignupConditions['plan']>('personal')
   const [values, setValues] = useState(() => signupUmp.init())
   const { check, penalties } = useUmpire(signupUmp, values, { plan })
 
@@ -90,7 +90,7 @@ export function SignupForm() {
         Plan
         <select
           value={plan}
-          onChange={(event) => setPlan(event.currentTarget.value as SignupContext['plan'])}
+          onChange={(event) => setPlan(event.currentTarget.value as SignupConditions['plan'])}
         >
           <option value="personal">Personal</option>
           <option value="business">Business</option>
@@ -144,5 +144,5 @@ export function SignupForm() {
 ## Notes
 
 - The hook does not apply recommendations automatically.
-- Passing stable `values` and `context` objects keeps memoization effective.
+- Passing stable `values` and `conditions` objects keeps memoization effective.
 - `prev` handling for `oneOf()` is already wired in through the internal ref.

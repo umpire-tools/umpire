@@ -1,6 +1,6 @@
 ---
 title: ump.check()
-description: Compute the availability map for the current values, context, and optional previous values.
+description: Compute the availability map for the current values, conditions, and optional previous values.
 ---
 
 # `ump.check()`
@@ -12,7 +12,7 @@ description: Compute the availability map for the current values, context, and o
 ```ts
 ump.check(
   values: FieldValues<F>,
-  context?: C,
+  conditions?: C,
   prev?: FieldValues<F>,
 ): AvailabilityMap<F>
 ```
@@ -39,15 +39,15 @@ type AvailabilityMap<F extends Record<string, FieldDef>> = {
 - `reason` is the first failure in declaration order.
 - `reasons` includes every failure in declaration order.
 
-## Context
+## Conditions
 
-Use `context` for external data that affects availability but is not itself a field value.
+Use `conditions` for external data that affects availability but is not itself a field value.
 
 ```ts
 const availability = signupUmp.check(values, { plan: 'business' })
 ```
 
-Typical context inputs:
+Typical conditions inputs:
 
 - plan tier
 - captcha token

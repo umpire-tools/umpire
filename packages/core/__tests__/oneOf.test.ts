@@ -159,7 +159,7 @@ describe('oneOf resolution', () => {
     expect(result.beta.enabled).toBe(true)
   })
 
-  test('activeBranch function receives context', () => {
+  test('activeBranch function receives conditions', () => {
     type Ctx = { pitcher: 'L' | 'R' }
 
     const ump = umpire<TestFields, Ctx>({
@@ -171,7 +171,7 @@ describe('oneOf resolution', () => {
             vsLefty: ['alpha'],
             vsRighty: ['beta'],
           },
-          { activeBranch: (_values, ctx) => ctx.pitcher === 'L' ? 'vsLefty' : 'vsRighty' },
+          { activeBranch: (_values, conditions) => conditions.pitcher === 'L' ? 'vsLefty' : 'vsRighty' },
         ),
       ],
     })

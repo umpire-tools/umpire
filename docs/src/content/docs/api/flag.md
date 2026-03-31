@@ -15,7 +15,7 @@ type Snapshot<
   C extends Record<string, unknown>,
 > = {
   values: FieldValues<F>
-  context?: C
+  conditions?: C
 }
 
 ump.flag(
@@ -64,14 +64,14 @@ const ump = umpire({
 
 Disabling `startTime` recommends `'09:00'`. Disabling `endTime` recommends `undefined`.
 
-## Context-Only Transitions
+## Conditions-Only Transitions
 
-Because snapshots include `context`, `flag()` works even when field values do not change.
+Because snapshots include `conditions`, `flag()` works even when field values do not change.
 
 ```ts
 signupUmp.flag(
-  { values: formValues, context: { plan: 'business' } },
-  { values: formValues, context: { plan: 'personal' } },
+  { values: formValues, conditions: { plan: 'business' } },
+  { values: formValues, conditions: { plan: 'personal' } },
 )
 ```
 
@@ -92,14 +92,14 @@ const penalties = signupUmp.flag(
       companyName: 'Acme',
       companySize: '50',
     },
-    context: { plan: 'business' },
+    conditions: { plan: 'business' },
   },
   {
     values: {
       companyName: 'Acme',
       companySize: '50',
     },
-    context: { plan: 'personal' },
+    conditions: { plan: 'personal' },
   },
 )
 

@@ -30,10 +30,10 @@ That means declaration order does not control dependency correctness. Upstream f
 
 ## What Predicates See
 
-Predicates receive the current `values` snapshot and optional `context`. They do not receive availability.
+Predicates receive the current `values` snapshot and optional `conditions`. They do not receive availability.
 
 ```ts
-enabledWhen('colorLabel', (_values, context) => !!context.palette)
+enabledWhen('colorLabel', (_values, conditions) => !!conditions.palette)
 requires('submit', (values) => typeof values.password === 'string' && values.password.length > 0)
 ```
 

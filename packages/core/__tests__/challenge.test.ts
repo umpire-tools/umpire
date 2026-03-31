@@ -12,13 +12,13 @@ type TestFields = {
   repeatEvery: {}
 }
 
-type TestContext = {
+type TestConditions = {
   captchaToken?: string
 }
 
 describe('challenge', () => {
   test('includes all direct reasons, including passed rules', () => {
-    const ump = umpire<TestFields, TestContext>({
+    const ump = umpire<TestFields, TestConditions>({
       fields: {
         email: {},
         password: {},
@@ -30,13 +30,15 @@ describe('challenge', () => {
         repeatEvery: {},
       },
       rules: [
-        enabledWhen<TestFields, TestContext>('submit', (_values, context) => !!context.captchaToken, {
-          reason: 'Complete the captcha to continue',
-        }),
-        requires<TestFields, TestContext>('submit', 'email', {
+        enabledWhen<TestFields, TestConditions>(
+          'submit',
+          (_values, conditions) => !!conditions.captchaToken,
+          { reason: 'Complete the captcha to continue' },
+        ),
+        requires<TestFields, TestConditions>('submit', 'email', {
           reason: 'Enter a valid email address',
         }),
-        enabledWhen<TestFields, TestContext>('submit', (values) => values.password === 'secret', {
+        enabledWhen<TestFields, TestConditions>('submit', (values) => values.password === 'secret', {
           reason: 'Enter a password',
         }),
       ],

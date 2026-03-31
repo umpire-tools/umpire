@@ -7,7 +7,7 @@ type TestFields = {
   other: { default?: unknown; isEmpty?: (value: unknown) => boolean }
 }
 
-type TestContext = {
+type TestConditions = {
   plan?: 'basic' | 'pro'
 }
 
@@ -19,7 +19,7 @@ describe('flag', () => {
         dependent: {},
         other: {},
       },
-      rules: [enabledWhen<TestFields, TestContext>('dependent', (values) => values.toggle === true)],
+      rules: [enabledWhen<TestFields, TestConditions>('dependent', (values) => values.toggle === true)],
     })
 
     const recommendations = ump.flag(
@@ -43,7 +43,7 @@ describe('flag', () => {
         dependent: {},
         other: {},
       },
-      rules: [enabledWhen<TestFields, TestContext>('dependent', (values) => values.toggle === true)],
+      rules: [enabledWhen<TestFields, TestConditions>('dependent', (values) => values.toggle === true)],
     })
 
     const recommendations = ump.flag(
@@ -61,7 +61,7 @@ describe('flag', () => {
         dependent: { isEmpty: (value) => value === '' || value == null },
         other: {},
       },
-      rules: [enabledWhen<TestFields, TestContext>('dependent', (values) => values.toggle === true)],
+      rules: [enabledWhen<TestFields, TestConditions>('dependent', (values) => values.toggle === true)],
     })
 
     const recommendations = ump.flag(
@@ -79,7 +79,7 @@ describe('flag', () => {
         dependent: { default: '09:00' },
         other: {},
       },
-      rules: [enabledWhen<TestFields, TestContext>('dependent', (values) => values.toggle === true)],
+      rules: [enabledWhen<TestFields, TestConditions>('dependent', (values) => values.toggle === true)],
     })
 
     const recommendations = ump.flag(
@@ -98,8 +98,8 @@ describe('flag', () => {
         other: {},
       },
       rules: [
-        enabledWhen<TestFields, TestContext>('dependent', (values) => values.toggle === true),
-        enabledWhen<TestFields, TestContext>('other', (values) => values.toggle === true),
+        enabledWhen<TestFields, TestConditions>('dependent', (values) => values.toggle === true),
+        enabledWhen<TestFields, TestConditions>('other', (values) => values.toggle === true),
       ],
     })
 
@@ -114,23 +114,25 @@ describe('flag', () => {
     ])
   })
 
-  test('supports context-only transitions', () => {
-    const ump = umpire<TestFields, TestContext>({
+  test('supports conditions-only transitions', () => {
+    const ump = umpire<TestFields, TestConditions>({
       fields: {
         toggle: {},
         dependent: {},
         other: {},
       },
       rules: [
-        enabledWhen<TestFields, TestContext>('dependent', (_values, context) => context.plan === 'pro', {
-          reason: 'pro plan required',
-        }),
+        enabledWhen<TestFields, TestConditions>(
+          'dependent',
+          (_values, conditions) => conditions.plan === 'pro',
+          { reason: 'pro plan required' },
+        ),
       ],
     })
 
     const recommendations = ump.flag(
-      { values: { dependent: 'kept' }, context: { plan: 'pro' } },
-      { values: { dependent: 'kept' }, context: { plan: 'basic' } },
+      { values: { dependent: 'kept' }, conditions: { plan: 'pro' } },
+      { values: { dependent: 'kept' }, conditions: { plan: 'basic' } },
     )
 
     expect(recommendations).toEqual([
@@ -150,8 +152,8 @@ describe('flag', () => {
         other: { default: '09:00' },
       },
       rules: [
-        enabledWhen<TestFields, TestContext>('dependent', (values) => values.toggle === true),
-        enabledWhen<TestFields, TestContext>('other', (values) => values.toggle === true),
+        enabledWhen<TestFields, TestConditions>('dependent', (values) => values.toggle === true),
+        enabledWhen<TestFields, TestConditions>('other', (values) => values.toggle === true),
       ],
     })
 

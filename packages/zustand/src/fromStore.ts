@@ -14,7 +14,7 @@ type StoreApi<S> = {
 
 type FromStoreOptions<S, F extends Record<string, FieldDef>, C extends Record<string, unknown>> = {
   select: (state: S) => FieldValues<F>
-  context?: (state: S) => C
+  conditions?: (state: S) => C
 }
 
 export interface UmpireStore<F extends Record<string, FieldDef>> {
@@ -34,33 +34,33 @@ export function fromStore<
   store: StoreApi<S>,
   options: FromStoreOptions<S, F, C>,
 ): UmpireStore<F> {
-  const { select, context } = options
+  const { select, conditions } = options
 
   const initialState = store.getState()
   const initialValues = select(initialState)
-  const initialCtx = context ? context(initialState) : (undefined as unknown as C)
+  const initialCond = conditions ? conditions(initialState) : (undefined as unknown as C)
 
-  let currentAvailability = ump.check(initialValues, initialCtx)
+  let currentAvailability = ump.check(initialValues, initialCond)
   let currentPenalties: ResetRecommendation<F>[] = []
   let prevValues = initialValues
-  let prevCtx = initialCtx
+  let prevCond = initialCond
 
   const listeners = new Set<(availability: AvailabilityMap<F>) => void>()
 
   const unsubscribe = store.subscribe((state, prevState) => {
     const nextValues = select(state)
-    const nextCtx = context ? context(state) : (undefined as unknown as C)
+    const nextCond = conditions ? conditions(state) : (undefined as unknown as C)
     const prev = select(prevState)
-    const prevContext = context ? context(prevState) : (undefined as unknown as C)
+    const prevConditions = conditions ? conditions(prevState) : (undefined as unknown as C)
 
-    currentAvailability = ump.check(nextValues, nextCtx, prev)
+    currentAvailability = ump.check(nextValues, nextCond, prev)
     currentPenalties = ump.flag(
-      { values: prev, context: prevContext },
-      { values: nextValues, context: nextCtx },
+      { values: prev, conditions: prevConditions },
+      { values: nextValues, conditions: nextCond },
     )
 
     prevValues = nextValues
-    prevCtx = nextCtx
+    prevCond = nextCond
 
     for (const listener of listeners) {
       listener(currentAvailability)

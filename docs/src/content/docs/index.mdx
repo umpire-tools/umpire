@@ -54,7 +54,7 @@ Use `@umpire/core` when you just need pure availability logic. Add `@umpire/reac
 
 ## What It Does
 
-Umpire answers one question: given the current field values and optional context, which fields should be enabled, required, or flagged for cleanup?
+Umpire answers one question: given the current field values and conditions, which fields should be enabled, required, or flagged for cleanup?
 
 It does not manage state, render UI, validate data correctness, or mutate values for you. It recommends resets with `flag()`, but the consumer decides whether to apply them.
 
@@ -79,11 +79,11 @@ const ump = umpire({
     requires('confirmPassword', 'password'),
 
     enabledWhen('companyName',
-      (_v, ctx) => ctx.plan === 'business',
+      (_v, cond) => cond.plan === 'business',
       { reason: 'business plan required' }),
 
     enabledWhen('companySize',
-      (_v, ctx) => ctx.plan === 'business',
+      (_v, cond) => cond.plan === 'business',
       { reason: 'business plan required' }),
 
     requires('companySize', 'companyName'),
@@ -112,9 +112,9 @@ ump.check(
 // Switch plans — what should reset?
 ump.flag(
   { values: { companyName: 'Acme', companySize: '50' },
-    context: { plan: 'business' } },
+    conditions: { plan: 'business' } },
   { values: { companyName: 'Acme', companySize: '50' },
-    context: { plan: 'personal' } },
+    conditions: { plan: 'personal' } },
 )
 // → [
 //   { field: 'companyName', suggestedValue: undefined },
@@ -152,7 +152,7 @@ const lineupUmp = umpire({
       vsRighty: ['delgado'],
       vsLefty:  ['vega'],
     }, {
-      activeBranch: (_v, ctx) => ctx.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
+      activeBranch: (_v, cond) => cond.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
     }),
 
     // Morrison can't pitch without rest
@@ -175,8 +175,8 @@ const availability = lineupUmp.check(values, { opposingPitcher })
 ```ts title="Flag — compare two snapshots to find stale values"
 // After any state change, compare the previous snapshot to the current one.
 // flag() finds fields that just became disabled but still hold non-empty values.
-const prevSnapshot = { values: prevValues, context: prevContext }
-const currentSnapshot = { values, context }
+const prevSnapshot = { values: prevValues, conditions: prevConditions }
+const currentSnapshot = { values, conditions }
 
 const penalties = lineupUmp.flag(prevSnapshot, currentSnapshot)
 // User flips the opposing pitcher from RHP → LHP:

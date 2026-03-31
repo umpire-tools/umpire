@@ -125,7 +125,7 @@ describe('useUmpire', () => {
     expect(result.current.penalties).toEqual([])
   })
 
-  it('passes context to check', () => {
+  it('passes conditions to check', () => {
     type Ctx = { premium: boolean }
 
     const ctxFields = {
@@ -141,13 +141,13 @@ describe('useUmpire', () => {
     })
 
     const { result, rerender } = renderHook(
-      ({ ctx }) => useUmpire(ump, { advanced: '', basic: '' }, ctx),
-      { initialProps: { ctx: { premium: false } as Ctx } },
+      ({ conditions }) => useUmpire(ump, { advanced: '', basic: '' }, conditions),
+      { initialProps: { conditions: { premium: false } as Ctx } },
     )
 
     expect(result.current.check.advanced.enabled).toBe(false)
 
-    rerender({ ctx: { premium: true } })
+    rerender({ conditions: { premium: true } })
 
     expect(result.current.check.advanced.enabled).toBe(true)
   })
