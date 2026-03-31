@@ -145,18 +145,18 @@ export default function ZustandAdapterDemo() {
   const enabledCount = fieldOrder.filter((field) => availability[field].enabled).length
 
   return (
-    <div className="zustand-demo">
-      <div className="zustand-demo__layout">
-        <section className="zustand-demo__panel">
-          <div className="zustand-demo__panel-header">
+    <div className="zustand-demo umpire-demo">
+      <div className="umpire-demo__layout">
+        <section className="umpire-demo__panel">
+          <div className="umpire-demo__panel-header">
             <div>
-              <div className="zustand-demo__eyebrow">Vanilla Zustand Store</div>
-              <h2 className="zustand-demo__title">Store State</h2>
+              <div className="umpire-demo__eyebrow">Vanilla Zustand Store</div>
+              <h2 className="umpire-demo__title">Store State</h2>
             </div>
-            <span className="zustand-demo__panel-accent">store.setState()</span>
+            <span className="umpire-demo__panel-accent">store.setState()</span>
           </div>
 
-          <div className="zustand-demo__panel-body">
+          <div className="umpire-demo__panel-body">
             <div className="zustand-demo__callout">
               <span className="zustand-demo__badge">source of truth</span>
               <p className="zustand-demo__callout-text">
@@ -256,11 +256,11 @@ export default function ZustandAdapterDemo() {
           </div>
         </section>
 
-        <section className="zustand-demo__panel">
-          <div className="zustand-demo__panel-header">
+        <section className="umpire-demo__panel">
+          <div className="umpire-demo__panel-header">
             <div>
-              <div className="zustand-demo__eyebrow">Real Adapter Output</div>
-              <h2 className="zustand-demo__title">Umpire Availability</h2>
+              <div className="umpire-demo__eyebrow">Real Adapter Output</div>
+              <h2 className="umpire-demo__title">Umpire Availability</h2>
             </div>
             <div className="zustand-demo__counter">
               <span className="zustand-demo__counter-label">subscribe()</span>
@@ -268,7 +268,7 @@ export default function ZustandAdapterDemo() {
             </div>
           </div>
 
-          <div className="zustand-demo__panel-body">
+          <div className="umpire-demo__panel-body">
             <div className="zustand-demo__summary">
               <div className="zustand-demo__summary-card">
                 <div className="zustand-demo__summary-label">Adapter</div>

@@ -3,8 +3,6 @@ title: Field Satisfaction Semantics
 description: Understand the default presence-based model and when to override it with isEmpty.
 ---
 
-# Field Satisfaction Semantics
-
 Most rules need to know whether a field is "present enough" to count. Umpire uses presence-based satisfaction by default, not JavaScript truthiness.
 
 ## Default Truth Table

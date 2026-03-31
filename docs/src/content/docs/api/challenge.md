@@ -3,8 +3,6 @@ title: ump.challenge()
 description: Inspect why a field is enabled or disabled, including direct failures, transitive dependencies, and oneOf resolution.
 ---
 
-# `ump.challenge()`
-
 `challenge()` is the debug view of the availability engine. It is meant for development, tests, and tooling, not for rendering directly in a production UI.
 
 ## Signature

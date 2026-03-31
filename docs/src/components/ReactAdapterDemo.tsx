@@ -146,18 +146,18 @@ export default function ReactAdapterDemo() {
   }
 
   return (
-    <div className="react-demo">
-      <div className="react-demo__layout">
-        <section className="react-demo__panel react-demo__panel--component">
-          <div className="react-demo__panel-header">
+    <div className="react-demo umpire-demo">
+      <div className="umpire-demo__layout">
+        <section className="umpire-demo__panel react-demo__panel--component">
+          <div className="umpire-demo__panel-header">
             <div>
-              <div className="react-demo__eyebrow">Live component</div>
-              <h2 className="react-demo__title">Component</h2>
+              <div className="umpire-demo__eyebrow">Live component</div>
+              <h2 className="umpire-demo__title">Component</h2>
             </div>
-            <span className="react-demo__panel-accent">useUmpire()</span>
+            <span className="umpire-demo__panel-accent">useUmpire()</span>
           </div>
 
-          <div className="react-demo__panel-body">
+          <div className="umpire-demo__panel-body">
             <div className="react-demo__callout">
               <span className="react-demo__badge">No useEffect</span>
               <div className="react-demo__callout-copy">
@@ -173,15 +173,15 @@ export default function ReactAdapterDemo() {
               <code className="react-demo__conditions-code">{`{ plan: '${plan}' }`}</code>
             </div>
 
-            <div className="react-demo__plan-toggle" aria-label="Plan">
+            <div className="umpire-demo__plan-toggle" aria-label="Plan">
               {planOptions.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   aria-pressed={plan === option.value}
                   className={cls(
-                    'react-demo__plan-option',
-                    plan === option.value && 'react-demo__plan-option--active',
+                    'umpire-demo__plan-option',
+                    plan === option.value && 'umpire-demo__plan-option--active',
                   )}
                   onClick={() => setPlan(option.value)}
                 >
@@ -190,7 +190,7 @@ export default function ReactAdapterDemo() {
               ))}
             </div>
 
-            <div className="react-demo__fields">
+            <div className="umpire-demo__fields">
               {fieldOrder.map((field) => {
                 const meta = fieldMeta[field]
                 const availability = check[field]
@@ -200,12 +200,12 @@ export default function ReactAdapterDemo() {
                   <div
                     key={field}
                     className={cls(
-                      'react-demo__field',
-                      !availability.enabled && 'react-demo__field--disabled',
+                      'umpire-demo__field',
+                      !availability.enabled && 'umpire-demo__field--disabled',
                     )}
                   >
                     <div className="react-demo__field-header">
-                      <label className="react-demo__label" htmlFor={`react-demo-${field}`}>
+                      <label className="umpire-demo__label" htmlFor={`react-demo-${field}`}>
                         {meta.label}
                       </label>
 
@@ -230,7 +230,7 @@ export default function ReactAdapterDemo() {
 
                     <input
                       id={`react-demo-${field}`}
-                      className="react-demo__input"
+                      className="umpire-demo__input"
                       type={meta.type}
                       placeholder={meta.placeholder}
                       disabled={!availability.enabled}
@@ -255,16 +255,16 @@ export default function ReactAdapterDemo() {
           </div>
         </section>
 
-        <section className="react-demo__panel react-demo__panel--output">
-          <div className="react-demo__panel-header">
+        <section className="umpire-demo__panel react-demo__panel--output">
+          <div className="umpire-demo__panel-header">
             <div>
-              <div className="react-demo__eyebrow">Derived hook state</div>
-              <h2 className="react-demo__title">Hook Output</h2>
+              <div className="umpire-demo__eyebrow">Derived hook state</div>
+              <h2 className="umpire-demo__title">Hook Output</h2>
             </div>
-            <span className="react-demo__panel-accent">live JSON</span>
+            <span className="umpire-demo__panel-accent">live JSON</span>
           </div>
 
-          <div className="react-demo__panel-body react-demo__panel-body--output">
+          <div className="umpire-demo__panel-body react-demo__panel-body--output">
             <div className="react-demo__hook-line">
               <span className="react-demo__hook-label">Hook</span>
               <code className="react-demo__hook-code">

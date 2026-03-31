@@ -3,8 +3,6 @@ title: Topological Evaluation Order
 description: Umpire builds a structural graph once, sorts it topologically, and evaluates fields in dependency order.
 ---
 
-# Topological Evaluation Order
-
 `ump.check()` computes the whole availability map in one pass. The order of that pass is fixed when you create the umpire.
 
 ## How The Structural Graph Is Built

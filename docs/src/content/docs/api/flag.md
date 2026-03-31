@@ -3,8 +3,6 @@ title: ump.flag()
 description: Compare two snapshots and return reset recommendations for fields that just became disabled.
 ---
 
-# `ump.flag()`
-
 `flag()` is the cleanup companion to `check()`. It never mutates values. It only recommends what the consumer should clear or reset.
 
 ## Signature

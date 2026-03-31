@@ -7,13 +7,13 @@ hero:
   tagline: "Umpire is a pure field-availability engine for forms with interdependent options. Declare the rules once, derive availability everywhere, and let reset recommendations stay recommendations."
   actions:
     - text: Read the concepts
-      link: ./concepts/availability/
+      link: /umpire/concepts/availability/
       variant: primary
     - text: Browse the API
-      link: ./api/umpire/
+      link: /umpire/api/umpire/
       variant: secondary
     - text: Walk through signup
-      link: ./examples/signup/
+      link: /umpire/examples/signup/
       variant: minimal
   image:
     html: |
@@ -52,11 +52,15 @@ npm install @umpire/core
 
 Use `@umpire/core` when you just need pure availability logic. Add `@umpire/react`, `@umpire/signals`, or `@umpire/zustand` when you want an adapter on top.
 
+<div class="umpire-divider"></div>
+
 ## What It Does
 
 Umpire answers one question: given the current field values and conditions, which fields should be enabled, required, or flagged for cleanup?
 
 It does not manage state, render UI, validate data correctness, or mutate values for you. It recommends resets with `flag()`, but the consumer decides whether to apply them.
+
+<div class="umpire-divider"></div>
 
 ## Plain TypeScript — No Framework Required
 
@@ -119,6 +123,8 @@ migrate.check(
 ```
 
 Same `check()` call, same result shape — the environment condition reshapes what's available. No React, no DOM, no build step. This works in Node, Deno, Bun, or a browser `<script>` tag.
+
+<div class="umpire-divider"></div>
 
 ## Signup Example
 
@@ -189,6 +195,8 @@ ump.flag(
 
 This example is intentionally about availability, not validation. `confirmPassword` depends on `password` being present, but Umpire does not check whether the two values match. That belongs in your validation layer.
 
+<div class="umpire-divider"></div>
+
 ## Try It Live — Tonight's Lineup
 
 Same concept, different domain. A baseball manager filling out a lineup card for tonight's game. Player eligibility depends on injuries, rest days, and platoon matchups — build the lineup from the available roster and watch what happens when conditions change.
@@ -258,12 +266,16 @@ const { check: availability, penalties } = useUmpire(lineupUmp, values, conditio
 
 `check()` tells you what's available *right now*. `flag()` tells you what *just broke* — fields that were enabled before but disabled after, and still hold values that should be cleaned up. You call both on every state change: `check()` to derive the UI, `flag()` to surface reset recommendations.
 
+<div class="umpire-divider"></div>
+
 ## What It Does Not Do
 
 - It does not own form state.
 - It does not validate that values are correct.
 - It does not hide your fields or render your UI.
 - It does not clear stale values automatically.
+
+<div class="umpire-divider"></div>
 
 ## Where To Next
 

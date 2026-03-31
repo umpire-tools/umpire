@@ -106,7 +106,7 @@ export default function SignupDemo() {
   }
 
   return (
-    <div className="signup-demo">
+    <div className="signup-demo umpire-demo">
       {penalties.length > 0 && (
         <div className="signup-demo__penalties">
           <div className="signup-demo__penalties-copy">
@@ -133,26 +133,26 @@ export default function SignupDemo() {
         </div>
       )}
 
-      <div className="signup-demo__layout">
-        <section className="signup-demo__panel signup-demo__panel--form">
-          <div className="signup-demo__panel-header">
+      <div className="umpire-demo__layout">
+        <section className="umpire-demo__panel signup-demo__panel--form">
+          <div className="umpire-demo__panel-header">
             <div>
-              <div className="signup-demo__eyebrow">Live example</div>
-              <h2 className="signup-demo__title">Signup Form</h2>
+              <div className="umpire-demo__eyebrow">Live example</div>
+              <h2 className="umpire-demo__title">Signup Form</h2>
             </div>
-            <span className="signup-demo__panel-accent">real umpire()</span>
+            <span className="umpire-demo__panel-accent">real umpire()</span>
           </div>
 
-          <div className="signup-demo__panel-body">
-            <div className="signup-demo__plan-toggle" aria-label="Plan">
+          <div className="umpire-demo__panel-body">
+            <div className="umpire-demo__plan-toggle" aria-label="Plan">
               {planOptions.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   aria-pressed={plan === option.value}
                   className={cls(
-                    'signup-demo__plan-option',
-                    plan === option.value && 'signup-demo__plan-option--active',
+                    'umpire-demo__plan-option',
+                    plan === option.value && 'umpire-demo__plan-option--active',
                   )}
                   onClick={() => setPlan(option.value)}
                 >
@@ -161,7 +161,7 @@ export default function SignupDemo() {
               ))}
             </div>
 
-            <div className="signup-demo__fields">
+            <div className="umpire-demo__fields">
               {fieldOrder.map((field) => {
                 const meta = fieldMeta[field]
                 const fieldAvailability = availability[field]
@@ -171,11 +171,11 @@ export default function SignupDemo() {
                   <div
                     key={field}
                     className={cls(
-                      'signup-demo__field',
-                      !isEnabled && 'signup-demo__field--disabled',
+                      'umpire-demo__field',
+                      !isEnabled && 'umpire-demo__field--disabled',
                     )}
                   >
-                    <label className="signup-demo__label" htmlFor={`signup-demo-${field}`}>
+                    <label className="umpire-demo__label" htmlFor={`signup-demo-${field}`}>
                       <span>{meta.label}</span>
                       {fieldAvailability.required && (
                         <span className="signup-demo__required">*</span>
@@ -183,7 +183,7 @@ export default function SignupDemo() {
                     </label>
                     <input
                       id={`signup-demo-${field}`}
-                      className="signup-demo__input"
+                      className="umpire-demo__input"
                       type={meta.type}
                       placeholder={meta.placeholder}
                       value={String(values[field] ?? '')}
@@ -200,18 +200,18 @@ export default function SignupDemo() {
           </div>
         </section>
 
-        <section className="signup-demo__panel signup-demo__panel--availability">
-          <div className="signup-demo__panel-header">
+        <section className="umpire-demo__panel signup-demo__panel--availability">
+          <div className="umpire-demo__panel-header">
             <div>
-              <div className="signup-demo__eyebrow">Live state</div>
-              <h2 className="signup-demo__title">Availability</h2>
+              <div className="umpire-demo__eyebrow">Live state</div>
+              <h2 className="umpire-demo__title">Availability</h2>
             </div>
-            <span className="signup-demo__panel-accent">
+            <span className="umpire-demo__panel-accent">
               plan: {plan}
             </span>
           </div>
 
-          <div className="signup-demo__panel-body signup-demo__panel-body--table">
+          <div className="umpire-demo__panel-body signup-demo__panel-body--table">
             <div className="signup-demo__table-shell">
               <table className="signup-demo__table">
                 <thead>

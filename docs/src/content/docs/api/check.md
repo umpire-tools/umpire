@@ -3,8 +3,6 @@ title: ump.check()
 description: Compute the availability map for the current values, conditions, and optional previous values.
 ---
 
-# `ump.check()`
-
 `check()` is the main evaluation API. It is pure, synchronous, and side-effect free.
 
 ## Signature

@@ -3,8 +3,6 @@ title: umpire()
 description: Create an Umpire instance from field definitions and rules.
 ---
 
-# `umpire()`
-
 `umpire()` is the factory that turns field definitions plus rules into a reusable availability engine.
 
 ## Signature

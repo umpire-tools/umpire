@@ -3,8 +3,6 @@ title: Rule Primitives
 description: The built-in rule helpers for composing field availability.
 ---
 
-# Rule Primitives
-
 Every rule helper returns a `Rule<F, C>` object. Rules are plain values, so they can be composed, stored, and combined with `anyOf()`.
 
 ## `enabledWhen(field, predicate, options?)`

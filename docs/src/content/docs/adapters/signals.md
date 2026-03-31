@@ -3,8 +3,6 @@ title: '@umpire/signals'
 description: Signal-backed availability with fine-grained tracking through a minimal protocol.
 ---
 
-# `@umpire/signals`
-
 `@umpire/signals` adapts the pure core to any signal library that matches the `SignalProtocol` interface.
 
 ## Install
