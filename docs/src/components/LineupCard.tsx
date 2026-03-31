@@ -137,7 +137,7 @@ export default function LineupCard() {
       {/* Controls */}
       <div style={{
         display: 'flex', gap: '1rem', flexWrap: 'wrap',
-        marginBottom: '1.25rem', alignItems: 'center',
+        marginBottom: '1.25rem', alignItems: 'stretch',
       }}>
         <button
           onClick={togglePitcher}
@@ -145,9 +145,9 @@ export default function LineupCard() {
             background: opposingPitcher === 'L' ? 'rgba(107,254,156,0.15)' : 'rgba(254,208,35,0.15)',
             border: `1px solid ${opposingPitcher === 'L' ? 'rgba(107,254,156,0.4)' : 'rgba(254,208,35,0.4)'}`,
             color: opposingPitcher === 'L' ? '#6bfe9c' : '#fed023',
-            padding: '0.4rem 1rem', borderRadius: '6px', cursor: 'pointer',
+            margin: 0, padding: '0.4rem 1rem', borderRadius: '6px', cursor: 'pointer',
             fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8rem',
-            fontWeight: 600, letterSpacing: '0.05em',
+            fontWeight: 600, letterSpacing: '0.05em', lineHeight: 1.4,
           }}
         >
           Opposing pitcher: {opposingPitcher === 'L' ? 'LHP' : 'RHP'}
@@ -159,9 +159,9 @@ export default function LineupCard() {
             background: morrisonRested ? 'rgba(107,254,156,0.15)' : 'rgba(255,113,108,0.12)',
             border: `1px solid ${morrisonRested ? 'rgba(107,254,156,0.4)' : 'rgba(255,113,108,0.3)'}`,
             color: morrisonRested ? '#6bfe9c' : '#ff716c',
-            padding: '0.4rem 1rem', borderRadius: '6px', cursor: 'pointer',
+            margin: 0, padding: '0.4rem 1rem', borderRadius: '6px', cursor: 'pointer',
             fontFamily: "'JetBrains Mono', monospace", fontSize: '0.8rem',
-            fontWeight: 600, letterSpacing: '0.05em',
+            fontWeight: 600, letterSpacing: '0.05em', lineHeight: 1.4,
           }}
         >
           Morrison rest: {morrisonRested ? 'rested' : 'fatigued'}
