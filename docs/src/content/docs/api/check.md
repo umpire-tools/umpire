@@ -17,6 +17,12 @@ ump.check(
 ): AvailabilityMap<F>
 ```
 
+## Values
+
+`values` accepts any `Record<string, unknown>` — pass your form state, store snapshot, or any object directly. Umpire only reads keys that match declared field names; extra keys are silently ignored. This means you don't need to transform or filter your state before calling `check()`.
+
+**What about typos?** If you pass `{ emai: 'alex@example.com' }` when the field is named `email`, umpire won't error — it just sees `email` as empty. But the result will tell you: any rule that depends on `email` being satisfied (like `requires('confirmPassword', 'email')`) will report it as disabled with its reason. The availability map always uses the field names you declared, so the mismatch is visible in the output.
+
 ## Return Shape
 
 ```ts
