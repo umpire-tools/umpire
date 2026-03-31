@@ -3,7 +3,7 @@ title: Signup Form Walkthrough
 description: Step-by-step walkthrough of a signup form with availability checks and reset recommendations.
 ---
 
-A signup form with business/personal plans. Small enough to follow in one sitting, complex enough to show how `check()`, `flag()`, and rule layering work together.
+Users pick a plan — personal or business. Business accounts get extra fields for company name and size. When they switch back to personal, those fields need to go away and their stale values need to be flagged for cleanup. Four rules handle the whole thing.
 
 ## The Rules
 
