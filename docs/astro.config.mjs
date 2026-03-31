@@ -10,7 +10,7 @@ export default defineConfig({
     starlight({
       title: '🛂 Umpire',
       description: 'Rule the form. Flag the field.',
-      customCss: ['./src/styles/custom.css', './src/styles/lineup.css', './src/styles/captcha-demo.css', './src/styles/signup-demo.css', './src/styles/react-demo.css'],
+      customCss: ['./src/styles/custom.css', './src/styles/lineup.css', './src/styles/captcha-demo.css', './src/styles/signup-demo.css', './src/styles/react-demo.css', './src/styles/zustand-demo.css'],
       expressiveCode: {
         themes: ['github-dark'],
         styleOverrides: {
