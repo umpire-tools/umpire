@@ -99,6 +99,11 @@ export type OneOfResolution = {
   branches: Record<string, { fields: string[]; anySatisfied: boolean }>
 }
 
+export type GraphSourceInfo<F extends Record<string, FieldDef>> = {
+  ordering: Array<keyof F & string>
+  informational: Array<keyof F & string>
+}
+
 function createResultMap<F extends Record<string, FieldDef>>(
   targets: Array<keyof F & string>,
   resultForTarget: (target: keyof F & string) => RuleResult,
@@ -142,6 +147,42 @@ export function getInternalRuleMetadata<
   C extends Record<string, unknown>,
 >(rule: Rule<F, C>): InternalRuleMetadata<F, C> | undefined {
   return (rule as InternalRuleCarrier<F, C>)._umpire
+}
+
+export function getGraphSourceInfo<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(rule: Rule<F, C>): GraphSourceInfo<F> {
+  const metadata = getInternalRuleMetadata(rule)
+
+  if (metadata?.kind === 'enabledWhen') {
+    return {
+      ordering: [],
+      informational: getSourceFields(metadata.predicate),
+    }
+  }
+
+  if (metadata?.kind === 'anyOf') {
+    const ordering = uniqueFields(
+      metadata.rules.flatMap((innerRule) => getGraphSourceInfo(innerRule).ordering),
+    )
+    const orderingSet = new Set(ordering)
+    const informational = uniqueFields(
+      metadata.rules
+        .flatMap((innerRule) => getGraphSourceInfo(innerRule).informational)
+        .filter((field) => !orderingSet.has(field)),
+    )
+
+    return {
+      ordering,
+      informational,
+    }
+  }
+
+  return {
+    ordering: [...rule.sources],
+    informational: [],
+  }
 }
 
 function getSourceFields<F extends Record<string, FieldDef>, C extends Record<string, unknown>>(

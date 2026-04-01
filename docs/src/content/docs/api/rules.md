@@ -174,6 +174,8 @@ enabledWhen('submit', check('email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/), {
 
 Because `check()` preserves the field name internally, the graph can still understand it as depending on `email`.
 
+For `enabledWhen()`, that preserved relationship is informational: it shows up in graph export and field validation, but it does not become an ordering edge.
+
 ## Custom Reasons
 
 All rule helpers that accept `options.reason` support either a static string or a function.

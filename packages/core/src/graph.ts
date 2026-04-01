@@ -1,10 +1,11 @@
-import { getInternalRuleMetadata } from './rules.js'
+import { getGraphSourceInfo, getInternalRuleMetadata } from './rules.js'
 import type { FieldDef, Rule } from './types.js'
 
 export type GraphEdge = {
   from: string
   to: string
   type: string
+  ordering: boolean
 }
 
 export type DependencyGraph = {
@@ -19,7 +20,7 @@ function uniqueNodes(fieldNames: string[]): string[] {
 }
 
 function isOrderingEdge(edge: GraphEdge): boolean {
-  return edge.type !== 'oneOf'
+  return edge.ordering
 }
 
 export function buildGraph<
@@ -31,6 +32,36 @@ export function buildGraph<
   const incomingCounts = new Map<string, number>()
   const edges: GraphEdge[] = []
   const seenEdges = new Set<string>()
+
+  function addEdge(from: string, to: string, type: string, ordering: boolean): void {
+    const edgeKey = `${from}:${to}:${type}:${ordering ? 'ordering' : 'informational'}`
+    if (seenEdges.has(edgeKey)) {
+      return
+    }
+    seenEdges.add(edgeKey)
+
+    edges.push({ from, to, type, ordering })
+
+    if (!ordering) {
+      return
+    }
+
+    if (!adjacency.has(from)) {
+      adjacency.set(from, [])
+    }
+    if (!adjacency.has(to)) {
+      adjacency.set(to, [])
+    }
+    if (!incomingCounts.has(from)) {
+      incomingCounts.set(from, 0)
+    }
+    if (!incomingCounts.has(to)) {
+      incomingCounts.set(to, 0)
+    }
+
+    adjacency.get(from)?.push(to)
+    incomingCounts.set(to, (incomingCounts.get(to) ?? 0) + 1)
+  }
 
   for (const node of nodes) {
     adjacency.set(node, [])
@@ -55,13 +86,7 @@ export function buildGraph<
 
           for (const source of sourceBranch) {
             for (const target of targetBranch) {
-              const edgeKey = `${source}:${target}:${rule.type}`
-              if (seenEdges.has(edgeKey)) {
-                continue
-              }
-              seenEdges.add(edgeKey)
-
-              edges.push({ from: source, to: target, type: rule.type })
+              addEdge(source, target, rule.type, false)
             }
           }
         }
@@ -70,35 +95,25 @@ export function buildGraph<
       continue
     }
 
-    for (const source of rule.sources) {
+    const { ordering, informational } = getGraphSourceInfo(rule)
+
+    for (const source of ordering) {
       for (const target of rule.targets) {
         if (source === target) {
           continue
         }
 
-        const edgeKey = `${source}:${target}:${rule.type}`
-        if (seenEdges.has(edgeKey)) {
+        addEdge(source, target, rule.type, true)
+      }
+    }
+
+    for (const source of informational) {
+      for (const target of rule.targets) {
+        if (source === target) {
           continue
         }
-        seenEdges.add(edgeKey)
 
-        edges.push({ from: source, to: target, type: rule.type })
-
-        if (!adjacency.has(source)) {
-          adjacency.set(source, [])
-        }
-        if (!adjacency.has(target)) {
-          adjacency.set(target, [])
-        }
-        if (!incomingCounts.has(source)) {
-          incomingCounts.set(source, 0)
-        }
-        if (!incomingCounts.has(target)) {
-          incomingCounts.set(target, 0)
-        }
-
-        adjacency.get(source)?.push(target)
-        incomingCounts.set(target, (incomingCounts.get(target) ?? 0) + 1)
+        addEdge(source, target, rule.type, false)
       }
     }
   }
@@ -206,6 +221,10 @@ export function exportGraph(graph: DependencyGraph): {
 } {
   return {
     nodes: [...graph.nodes],
-    edges: graph.edges.map((edge) => ({ ...edge })),
+    edges: graph.edges.map((edge) => ({
+      from: edge.from,
+      to: edge.to,
+      type: edge.type,
+    })),
   }
 }

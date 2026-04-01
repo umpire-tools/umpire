@@ -1,4 +1,4 @@
-import { anyOf, enabledWhen, requires } from '../src/rules.js'
+import { anyOf, check, enabledWhen, requires } from '../src/rules.js'
 import { umpire } from '../src/umpire.js'
 
 type TestFields = {
@@ -92,5 +92,21 @@ describe('edge cases', () => {
       reason: null,
       reasons: [],
     })
+  })
+
+  test('validates check() field references inside enabledWhen()', () => {
+    expect(() =>
+      umpire<TestFields>({
+        fields: {
+          alpha: {},
+          beta: {},
+          gamma: {},
+          delta: {},
+        },
+        rules: [
+          enabledWhen<TestFields>('alpha', check('missing' as keyof TestFields & string, () => true)),
+        ],
+      }),
+    ).toThrow('Unknown field "missing" referenced by enabledWhen rule')
   })
 })

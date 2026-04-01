@@ -1,4 +1,4 @@
-import { disables, requires } from '../src/rules.js'
+import { check, disables, enabledWhen, requires } from '../src/rules.js'
 import { buildGraph, detectCycles, exportGraph, topologicalSort } from '../src/graph.js'
 
 type TestFields = {
@@ -106,5 +106,32 @@ describe('graph utilities', () => {
         { from: 'alpha', to: 'delta', type: 'disables' },
       ],
     })
+  })
+
+  test('exports enabledWhen check() dependencies without treating them as ordering edges', () => {
+    const fields: TestFields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+      delta: {},
+      epsilon: {},
+    }
+    const graph = buildGraph(fields, [
+      enabledWhen<TestFields>('beta', check('alpha', (value) => value === 'ready')),
+      requires<TestFields>('alpha', 'beta'),
+    ])
+
+    expect(exportGraph(graph)).toEqual({
+      nodes: ['alpha', 'beta', 'gamma', 'delta', 'epsilon'],
+      edges: [
+        { from: 'alpha', to: 'beta', type: 'enabledWhen' },
+        { from: 'beta', to: 'alpha', type: 'requires' },
+      ],
+    })
+
+    expect(() => detectCycles(graph)).not.toThrow()
+
+    const order = topologicalSort(graph, Object.keys(fields))
+    expect(order.indexOf('beta')).toBeLessThan(order.indexOf('alpha'))
   })
 })

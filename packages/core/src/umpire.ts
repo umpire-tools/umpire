@@ -1,6 +1,6 @@
 import { evaluate, evaluateRuleForField } from './evaluator.js'
 import { buildGraph, detectCycles, exportGraph, topologicalSort } from './graph.js'
-import { getInternalRuleMetadata, resolveOneOfState } from './rules.js'
+import { getGraphSourceInfo, getInternalRuleMetadata, resolveOneOfState } from './rules.js'
 import { isSatisfied } from './satisfaction.js'
 import type {
   AvailabilityMap,
@@ -260,6 +260,7 @@ function validateRules<
 
   for (const rule of rules) {
     const metadata = getInternalRuleMetadata(rule)
+    const { ordering, informational } = getGraphSourceInfo(rule)
 
     if (metadata?.kind === 'oneOf') {
       for (const [branchName, branchFields] of Object.entries(metadata.branches)) {
@@ -273,7 +274,7 @@ function validateRules<
       }
     }
 
-    for (const field of [...rule.sources, ...rule.targets]) {
+    for (const field of [...ordering, ...informational, ...rule.targets]) {
       if (!fieldNames.has(field)) {
         throw new Error(`Unknown field "${field}" referenced by ${rule.type} rule`)
       }

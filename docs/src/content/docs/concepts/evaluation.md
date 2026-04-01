@@ -18,6 +18,8 @@ Structural edges come from:
 
 Predicate-only rules like `enabledWhen('field', predicate)` do not add ordering edges because their dependencies are opaque to the graph.
 
+When `enabledWhen()` uses `check('field', validator)`, Umpire can preserve that field relationship for graph export and creation-time validation, but it still stays non-ordering.
+
 ## Why Topological Order Matters
 
 Field-name dependencies in `requires()` need final availability for upstream fields.
