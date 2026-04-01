@@ -137,6 +137,14 @@ if $DRY_RUN; then
   exit 0
 fi
 
+# Check npm auth before prompting for OTP
+if ! npm whoami &>/dev/null; then
+  echo -e "  ${C_RED}not logged in to npm${C_RESET}"
+  echo -e "  ${C_DIM}run: npm login${C_RESET}"
+  echo ""
+  exit 1
+fi
+
 read -rsp "  OTP: " OTP
 echo ""
 echo ""
