@@ -1,14 +1,21 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { enabledWhen, requires, umpire } from '@umpire/core'
 import { useUmpire } from '@umpire/react'
 
+// -- Field definitions --
+// Each field declares its presence semantics.
+// `required` and `isEmpty` influence whether umpire considers the field "satisfied"
+// — other rules can depend on satisfaction (e.g. requires()).
 const fields = {
-  email:           { required: true, isEmpty: (v: unknown) => !v },
-  password:        { required: true, isEmpty: (v: unknown) => !v },
-  confirmPassword: { required: true, isEmpty: (v: unknown) => !v },
-  companyName:     { isEmpty: (v: unknown) => !v },
+  email:           { required: true, default: '', isEmpty: (v: unknown) => !v },
+  password:        { required: true, default: '', isEmpty: (v: unknown) => !v },
+  confirmPassword: { required: true, default: '', isEmpty: (v: unknown) => !v },
+  companyName:     { default: '', isEmpty: (v: unknown) => !v },
+  companySize:     { default: '', isEmpty: (v: unknown) => !v },
 }
 
+// Conditions are external facts that aren't part of the form values themselves.
+// The plan tier comes from account state, not user input — so it's a condition.
 type Cond = { plan: 'personal' | 'business' }
 type Plan = Cond['plan']
 type DemoField = keyof typeof fields
@@ -16,10 +23,23 @@ type DemoField = keyof typeof fields
 const demoUmp = umpire<typeof fields, Cond>({
   fields,
   rules: [
+    // requires() — confirmPassword is only available when password is satisfied.
+    // "Satisfied" means non-empty per the isEmpty definition above.
     requires('confirmPassword', 'password'),
+
+    // enabledWhen() — company fields gate on the plan condition, not field values.
+    // The reason string appears in check.companyName.reason when disabled.
     enabledWhen('companyName', (_v, cond) => cond.plan === 'business', {
       reason: 'business plan required',
     }),
+    enabledWhen('companySize', (_v, cond) => cond.plan === 'business', {
+      reason: 'business plan required',
+    }),
+
+    // requires() chain — companySize depends on companyName being filled in.
+    // Combined with the enabledWhen above, this creates a transitive dependency:
+    // business plan → companyName filled → companySize available.
+    requires('companySize', 'companyName'),
   ],
 })
 
@@ -28,29 +48,15 @@ const fieldOrder = [
   'password',
   'confirmPassword',
   'companyName',
+  'companySize',
 ] as const satisfies readonly DemoField[]
 
 const fieldMeta: Record<DemoField, { label: string; type: string; placeholder: string }> = {
-  email: {
-    label: 'Email',
-    type: 'email',
-    placeholder: 'alex@example.com',
-  },
-  password: {
-    label: 'Password',
-    type: 'password',
-    placeholder: 'Choose a password',
-  },
-  confirmPassword: {
-    label: 'Confirm Password',
-    type: 'password',
-    placeholder: 'Re-enter password',
-  },
-  companyName: {
-    label: 'Company Name',
-    type: 'text',
-    placeholder: 'Acme Stadium Ops',
-  },
+  email:           { label: 'Email',            type: 'email',    placeholder: 'alex@example.com' },
+  password:        { label: 'Password',         type: 'password', placeholder: 'Choose a password' },
+  confirmPassword: { label: 'Confirm Password', type: 'password', placeholder: 'Re-enter password' },
+  companyName:     { label: 'Company Name',     type: 'text',     placeholder: 'Acme Stadium Ops' },
+  companySize:     { label: 'Company Size',     type: 'text',     placeholder: '50 employees' },
 }
 
 const planOptions = [
@@ -62,97 +68,63 @@ function cls(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(' ')
 }
 
-function prettyJson(obj: unknown) {
-  return JSON.stringify(obj, null, 2)
-}
-
-function tokenizeJsonLine(line: string, lineIndex: number) {
-  const tokenPattern = /("(?:\\.|[^"\\])*"(?=\s*:))|("(?:\\.|[^"\\])*")|\b(true|false)\b|\bnull\b|(-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)/g
-  const tokens: ReactNode[] = []
-  let lastIndex = 0
-
-  for (const match of line.matchAll(tokenPattern)) {
-    const start = match.index ?? 0
-    const token = match[0]
-
-    if (start > lastIndex) {
-      tokens.push(
-        <span key={`plain-${lineIndex}-${lastIndex}`}>
-          {line.slice(lastIndex, start)}
-        </span>,
-      )
-    }
-
-    let className = 'react-demo__token react-demo__token--punctuation'
-
-    if (match[1]) {
-      className = 'react-demo__token react-demo__token--key'
-    } else if (match[2]) {
-      className = 'react-demo__token react-demo__token--string'
-    } else if (match[3]) {
-      className = 'react-demo__token react-demo__token--boolean'
-    } else if (token === 'null') {
-      className = 'react-demo__token react-demo__token--null'
-    } else if (match[4]) {
-      className = 'react-demo__token react-demo__token--number'
-    }
-
-    tokens.push(
-      <span key={`token-${lineIndex}-${start}`} className={className}>
-        {token}
-      </span>,
-    )
-
-    lastIndex = start + token.length
-  }
-
-  if (lastIndex < line.length) {
-    tokens.push(
-      <span key={`tail-${lineIndex}-${lastIndex}`}>
-        {line.slice(lastIndex)}
-      </span>,
-    )
-  }
-
-  return tokens
-}
-
-function JsonBlock({ value }: { value: string }) {
-  return (
-    <pre className="react-demo__code-block">
-      <code>
-        {value.split('\n').map((line, index) => (
-          <span key={`${index}-${line}`} className="react-demo__code-line">
-            {tokenizeJsonLine(line, index)}
-          </span>
-        ))}
-      </code>
-    </pre>
-  )
-}
-
 export default function ReactAdapterDemo() {
+  // init() returns default values for all fields — no manual bookkeeping.
   const [values, setValues] = useState(() => demoUmp.init())
   const [plan, setPlan] = useState<Plan>('personal')
 
+  // useUmpire is the entire integration surface.
+  // Pass current values + conditions in, get availability + reset guidance back.
+  // No useEffect — this is pure derivation on every render.
+  // Previous values are tracked internally via useRef for fouls detection.
   const conditions: Cond = { plan }
   const { check, fouls } = useUmpire(demoUmp, values, conditions)
 
   function updateValue(field: DemoField, nextValue: string) {
-    setValues((current) => ({
-      ...current,
-      [field]: nextValue,
-    }))
+    setValues((current) => ({ ...current, [field]: nextValue }))
+  }
+
+  // fouls are reset recommendations — when a field had a value but becomes disabled,
+  // umpire suggests clearing it. applyResets acts on those suggestions.
+  function applyResets() {
+    setValues((current) => {
+      const next = { ...current }
+      for (const foul of fouls) {
+        next[foul.field] = foul.suggestedValue
+      }
+      return next
+    })
   }
 
   return (
     <div className="react-demo umpire-demo">
+      {fouls.length > 0 && (
+        <div className="react-demo__fouls">
+          <div className="react-demo__fouls-copy">
+            <div className="react-demo__fouls-kicker">Reset recommendations</div>
+            <div className="react-demo__fouls-list">
+              {fouls.map((foul) => (
+                <div key={foul.field} className="react-demo__foul">
+                  <span className="react-demo__foul-field">
+                    {fieldMeta[foul.field].label}
+                  </span>
+                  <span className="react-demo__foul-reason">{foul.reason}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <button type="button" className="react-demo__reset-button" onClick={applyResets}>
+            Apply resets
+          </button>
+        </div>
+      )}
+
       <div className="umpire-demo__layout">
-        <section className="umpire-demo__panel react-demo__panel--component">
+        <section className="umpire-demo__panel react-demo__panel--form">
           <div className="umpire-demo__panel-header">
             <div>
               <div className="umpire-demo__eyebrow">Live component</div>
-              <h2 className="umpire-demo__title">Component</h2>
+              <h2 className="umpire-demo__title">Signup Form</h2>
             </div>
             <span className="umpire-demo__panel-accent">useUmpire()</span>
           </div>
@@ -160,12 +132,10 @@ export default function ReactAdapterDemo() {
           <div className="umpire-demo__panel-body">
             <div className="react-demo__callout">
               <span className="react-demo__badge">No useEffect</span>
-              <div className="react-demo__callout-copy">
-                <div className="react-demo__callout-title">Pure derivation on render</div>
-                <p className="react-demo__callout-text">
-                  Pass current values and conditions in. Get live availability and reset guidance back.
-                </p>
-              </div>
+              <p className="react-demo__callout-text">
+                Pass current values and conditions in. Get live availability and reset guidance back.
+                Pure derivation on render.
+              </p>
             </div>
 
             <div className="react-demo__conditions">
@@ -250,7 +220,8 @@ export default function ReactAdapterDemo() {
             </div>
 
             <p className="react-demo__note">
-              Type a company name on the business plan, then switch back to personal to surface a foul.
+              Fill in a company name on the business plan, then switch back to personal — a foul
+              recommends clearing the stale value.
             </p>
           </div>
         </section>
@@ -278,7 +249,9 @@ export default function ReactAdapterDemo() {
                 <span className="react-demo__json-meta">AvailabilityMap</span>
               </div>
               <div className="react-demo__code-shell">
-                <JsonBlock value={prettyJson(check)} />
+                <pre className="react-demo__code-block">
+                  <code>{JSON.stringify(check, null, 2)}</code>
+                </pre>
               </div>
             </section>
 
@@ -296,7 +269,9 @@ export default function ReactAdapterDemo() {
                 </span>
               </div>
               <div className="react-demo__code-shell">
-                <JsonBlock value={fouls.length > 0 ? prettyJson(fouls) : '[]'} />
+                <pre className="react-demo__code-block">
+                  <code>{fouls.length > 0 ? JSON.stringify(fouls, null, 2) : '[]'}</code>
+                </pre>
               </div>
             </section>
           </div>

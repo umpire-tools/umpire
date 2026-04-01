@@ -11,11 +11,83 @@
   gap: 0.9rem;
 }
 
+/* -- Fouls banner -- */
+
+.react-demo__fouls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(254, 208, 35, 0.18);
+  border-radius: 1rem;
+  background:
+    linear-gradient(90deg, rgba(254, 208, 35, 0.14), rgba(254, 208, 35, 0.05)),
+    rgba(18, 18, 18, 0.92);
+}
+
+.react-demo__fouls-copy {
+  min-width: 0;
+}
+
+.react-demo__fouls-kicker {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.67rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(254, 208, 35, 0.8);
+}
+
+.react-demo__fouls-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
+  margin-top: 0.45rem;
+}
+
+.react-demo__foul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: baseline;
+  font-size: 0.9rem;
+}
+
+.react-demo__foul-field {
+  font-weight: 700;
+  color: #fff3b8;
+}
+
+.react-demo__foul-reason {
+  color: rgba(255, 243, 184, 0.78);
+}
+
+.react-demo__reset-button {
+  flex-shrink: 0;
+  border: 1px solid rgba(254, 208, 35, 0.34);
+  border-radius: 999px;
+  padding: 0.72rem 1rem;
+  background: rgba(254, 208, 35, 0.16);
+  color: #fff1a8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.react-demo__reset-button:hover {
+  background: rgba(254, 208, 35, 0.24);
+  transform: translateY(-1px);
+}
+
+/* -- Callout -- */
+
 .react-demo__callout {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.8rem;
-  align-items: start;
+  gap: 0.7rem;
   padding: 0.95rem 1rem;
   border: 1px solid rgba(107, 254, 156, 0.18);
   border-radius: 1rem;
@@ -57,6 +129,8 @@
   line-height: 1.45;
 }
 
+/* -- Conditions + hook -- */
+
 .react-demo__conditions {
   display: flex;
   justify-content: space-between;
@@ -84,6 +158,8 @@
   font-size: 0.79rem;
   color: var(--umpire-demo-text);
 }
+
+/* -- Field cards -- */
 
 .react-demo__field-header {
   display: flex;
@@ -154,6 +230,8 @@
   font-size: 0.88rem;
   line-height: 1.45;
 }
+
+/* -- Output panel -- */
 
 .react-demo__hook-line {
   display: flex;
@@ -226,32 +304,15 @@
   font-size: 0.8rem;
   line-height: 1.65;
   color: var(--umpire-demo-text);
-}
-
-.react-demo__code-line {
-  display: block;
   white-space: pre;
 }
 
-.react-demo__token--key {
-  color: var(--umpire-demo-green);
-}
-
-.react-demo__token--string,
-.react-demo__token--number {
-  color: #fff1a8;
-}
-
-.react-demo__token--boolean {
-  color: #ff9c97;
-}
-
-.react-demo__token--null,
-.react-demo__token--punctuation {
-  color: rgba(245, 247, 244, 0.5);
-}
-
 @media (max-width: 50rem) {
+  .react-demo__fouls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .react-demo__conditions,
   .react-demo__field-meta,
   .react-demo__json-header {

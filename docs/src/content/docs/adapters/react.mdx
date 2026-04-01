@@ -52,27 +52,32 @@ import { useUmpire } from '@umpire/react'
 import { enabledWhen, requires, umpire } from '@umpire/core'
 
 const fields = {
-  email: { required: true, isEmpty: (value) => !value },
-  password: { required: true, isEmpty: (value) => !value },
-  confirmPassword: { required: true, isEmpty: (value) => !value },
-  companyName: {},
-  companySize: {},
+  email:           { required: true, isEmpty: (v: unknown) => !v },
+  password:        { required: true, isEmpty: (v: unknown) => !v },
+  confirmPassword: { required: true, isEmpty: (v: unknown) => !v },
+  companyName:     { isEmpty: (v: unknown) => !v },
+  companySize:     { isEmpty: (v: unknown) => !v },
 }
 
-type SignupConditions = {
-  plan: 'personal' | 'business'
-}
+// Conditions represent external facts — not user input.
+// The plan tier comes from account state, so it's a condition.
+type SignupConditions = { plan: 'personal' | 'business' }
 
 const signupUmp = umpire<typeof fields, SignupConditions>({
   fields,
   rules: [
+    // confirmPassword is only available once password is satisfied (non-empty).
     requires('confirmPassword', 'password'),
-    enabledWhen('companyName', (_values, conditions) => conditions.plan === 'business', {
+
+    // Company fields gate on the plan condition.
+    enabledWhen('companyName', (_v, cond) => cond.plan === 'business', {
       reason: 'business plan required',
     }),
-    enabledWhen('companySize', (_values, conditions) => conditions.plan === 'business', {
+    enabledWhen('companySize', (_v, cond) => cond.plan === 'business', {
       reason: 'business plan required',
     }),
+
+    // Transitive chain: business plan → companyName filled → companySize available.
     requires('companySize', 'companyName'),
   ],
 })
@@ -82,58 +87,64 @@ export function SignupForm() {
   const [values, setValues] = useState(() => signupUmp.init())
   const { check, fouls } = useUmpire(signupUmp, values, { plan })
 
+  // fouls recommend clearing stale values when fields become disabled.
+  function applyResets() {
+    setValues((current) => {
+      const next = { ...current }
+      for (const foul of fouls) {
+        next[foul.field] = foul.suggestedValue
+      }
+      return next
+    })
+  }
+
   return (
     <form>
-      <label>
-        Plan
-        <select
-          value={plan}
-          onChange={(event) => setPlan(event.currentTarget.value as SignupConditions['plan'])}
-        >
-          <option value="personal">Personal</option>
-          <option value="business">Business</option>
-        </select>
-      </label>
+      <select
+        value={plan}
+        onChange={(e) => setPlan(e.currentTarget.value as SignupConditions['plan'])}
+      >
+        <option value="personal">Personal</option>
+        <option value="business">Business</option>
+      </select>
 
-      <label>
-        Password
-        <input
-          value={String(values.password ?? '')}
-          onChange={(event) =>
-            setValues((current) => ({ ...current, password: event.currentTarget.value }))
-          }
-        />
-      </label>
+      <input
+        placeholder="Password"
+        value={String(values.password ?? '')}
+        onChange={(e) =>
+          setValues((cur) => ({ ...cur, password: e.currentTarget.value }))
+        }
+      />
 
       {check.confirmPassword.enabled && (
-        <label>
-          Confirm password
-          <input
-            value={String(values.confirmPassword ?? '')}
-            onChange={(event) =>
-              setValues((current) => ({
-                ...current,
-                confirmPassword: event.currentTarget.value,
-              }))
-            }
-          />
-        </label>
+        <input
+          placeholder="Confirm password"
+          value={String(values.confirmPassword ?? '')}
+          onChange={(e) =>
+            setValues((cur) => ({ ...cur, confirmPassword: e.currentTarget.value }))
+          }
+        />
       )}
 
       {check.companyName.enabled && (
-        <label>
-          Company name
-          <input
-            value={String(values.companyName ?? '')}
-            onChange={(event) =>
-              setValues((current) => ({ ...current, companyName: event.currentTarget.value }))
-            }
-          />
-        </label>
+        <input
+          placeholder="Company name"
+          value={String(values.companyName ?? '')}
+          onChange={(e) =>
+            setValues((cur) => ({ ...cur, companyName: e.currentTarget.value }))
+          }
+        />
       )}
 
       {!check.companyName.enabled && <p>{check.companyName.reason}</p>}
-      {fouls.length > 0 && <pre>{JSON.stringify(fouls, null, 2)}</pre>}
+
+      {fouls.length > 0 && (
+        <div>
+          <p>Stale values detected:</p>
+          <pre>{JSON.stringify(fouls, null, 2)}</pre>
+          <button type="button" onClick={applyResets}>Apply resets</button>
+        </div>
+      )}
     </form>
   )
 }
@@ -141,6 +152,6 @@ export function SignupForm() {
 
 ## Notes
 
-- The hook does not apply recommendations automatically.
+- The hook does not apply recommendations automatically — you decide when and how to act on fouls.
 - Passing stable `values` and `conditions` objects keeps memoization effective.
 - `prev` handling for `oneOf()` is already wired in through the internal ref.

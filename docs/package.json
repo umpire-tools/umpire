@@ -24,7 +24,8 @@
     "zustand": "^5.0.0"
   },
   "resolutions": {
-    "@umpire/core": "portal:../packages/core"
+    "@umpire/core": "portal:../packages/core",
+    "vite": "^6.4.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",

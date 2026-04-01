@@ -5,9 +5,9 @@ description: Subscribe Umpire directly to a Zustand store using native next and 
 
 import ZustandAdapterDemo from '../../../components/ZustandAdapterDemo.tsx'
 
-`@umpire/zustand` connects an umpire to a store slice. It works with vanilla Zustand stores and in React applications that already use Zustand for state ownership.
+`@umpire/zustand` connects an umpire to a store slice. It works with vanilla Zustand stores and in any environment — no React required. The demo below is pure vanilla JS with small DOM helpers.
 
-<div class="umpire-demo">
+<div class="zustand-demo umpire-demo">
   <ZustandAdapterDemo client:load />
 </div>
 
@@ -51,7 +51,7 @@ interface UmpireStore<F extends Record<string, FieldDef>> {
 
 ## Why Zustand Fits Well
 
-Zustand’s `subscribe()` already passes both `next` and `prev` state. That gives the adapter:
+Zustand's `subscribe()` already passes both `next` and `prev` state. That gives the adapter:
 
 - previous values for `oneOf()` resolution
 - previous and next snapshots for `flag()`
@@ -62,46 +62,84 @@ No extra effect system is needed.
 
 ```ts
 import { createStore } from 'zustand/vanilla'
+import { umpire, enabledWhen, requires } from '@umpire/core'
 import { fromStore } from '@umpire/zustand'
 
-type RecurrenceState = {
-  recurrenceFields: {
-    dates?: string[]
-    everyWeekday?: number[]
-    everyHour?: number[]
-    startTime?: string
-    endTime?: string
-    repeatEvery?: number
-  }
-  userPlan: 'free' | 'pro'
+// Define fields and rules — same as any umpire setup.
+const fields = {
+  email:       { required: true, isEmpty: (v: unknown) => !v },
+  password:    { required: true, isEmpty: (v: unknown) => !v },
+  companyName: { isEmpty: (v: unknown) => !v },
+  companySize: { isEmpty: (v: unknown) => !v },
 }
 
-const store = createStore<RecurrenceState>(() => ({
-  recurrenceFields: {},
-  userPlan: 'free',
+type Conditions = { plan: 'personal' | 'business' }
+
+const signupUmp = umpire<typeof fields, Conditions>({
+  fields,
+  rules: [
+    enabledWhen('companyName', (_v, cond) => cond.plan === 'business', {
+      reason: 'business plan required',
+    }),
+    enabledWhen('companySize', (_v, cond) => cond.plan === 'business', {
+      reason: 'business plan required',
+    }),
+    requires('companySize', 'companyName'),
+  ],
+})
+
+// Create a vanilla Zustand store — your form state lives here.
+const store = createStore(() => ({
+  email: '', password: '', companyName: '', companySize: '',
+  plan: 'personal' as Conditions['plan'],
 }))
 
-const umpStore = fromStore(recurrenceUmp, store, {
-  select: (state) => state.recurrenceFields,
-  conditions: (state) => ({ plan: state.userPlan }),
+// Wire umpire to the store. select() picks field values;
+// conditions() extracts external facts from the same store.
+const umpStore = fromStore(signupUmp, store, {
+  select: ({ email, password, companyName, companySize }) => ({
+    email, password, companyName, companySize,
+  }),
+  conditions: (state) => ({ plan: state.plan }),
 })
 
-const stop = umpStore.subscribe((availability) => {
-  console.log(availability.startTime.enabled)
-  console.log(umpStore.fouls)
+// Subscribe to availability changes — runs on every store update.
+umpStore.subscribe((availability) => {
+  console.log(availability.companyName.enabled)  // false (personal plan)
+  console.log(availability.companyName.reason)    // 'business plan required'
+  console.log(umpStore.fouls)                     // reset recommendations
 })
+
+// Mutate the store — umpire reacts automatically.
+store.setState({ plan: 'business' })
+// → companyName.enabled becomes true
+
+// Clean up when done.
+umpStore.destroy()
 ```
 
-## In React And Outside React
+## Using with React
 
-You can use the returned store-like object from:
+The adapter itself doesn't depend on React. If your app uses Zustand with React, bridge the `UmpireStore` using `useStore` from `zustand`:
 
-- a React hook built with `useSyncExternalStore`
-- plain imperative code
-- tests
-- non-React environments
+```tsx
+import { useStore } from 'zustand'
 
-The adapter itself does not depend on React.
+// Use the same vanilla store + fromStore setup from above.
+// Then subscribe React components with selectors:
+function CompanyField() {
+  const companyName = useStore(store, (s) => s.companyName)
+  const availability = umpStore.field('companyName')
+
+  return (
+    <input
+      value={companyName}
+      disabled={!availability.enabled}
+      onChange={(e) => store.setState({ companyName: e.target.value })}
+    />
+  )
+}
+```
 
 ## Cleanup
 
