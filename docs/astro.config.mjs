@@ -9,10 +9,13 @@ export default defineConfig({
     plugins: [{
       name: 'reload-starlight-css',
       handleHotUpdate({ file, server }) {
+        // Starlight injects customCss at build time, so Vite's HMR doesn't
+        // know they've changed. Force a full reload for style edits.
         if (file.includes('/src/styles/')) {
           server.ws.send({ type: 'full-reload' })
-          return []
         }
+        // Don't return [] — let Vite continue processing so components
+        // and other modules still get normal HMR.
       },
     }],
   },
@@ -30,6 +33,8 @@ export default defineConfig({
         './src/styles/signup-demo.css',
         './src/styles/react-demo.css',
         './src/styles/zustand-demo.css',
+        './src/styles/signals-demo.css',
+        './src/styles/calendar-demo.css',
       ],
       expressiveCode: {
         themes: ['github-dark'],
@@ -53,7 +58,10 @@ export default defineConfig({
         },
       ],
       sidebar: [
-        { label: 'Getting Started', items: [{ label: 'Introduction', slug: '' }] },
+        { label: 'Getting Started', items: [
+          { label: 'Introduction', slug: '' },
+          { label: 'Droid-First Development', slug: 'droid-first' },
+        ] },
         {
           label: 'Concepts',
           items: [

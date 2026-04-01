@@ -3,15 +3,55 @@ title: '@umpire/signals'
 description: Signal-backed availability with fine-grained tracking through a minimal protocol.
 ---
 
-import SignalsAdapterDemo from '../../../components/SignalsAdapterDemo.tsx'
+import SignalsFineGrainedDemo from '../../../components/SignalsFineGrainedDemo.tsx'
 
 `@umpire/signals` adapts the pure core to any signal library that matches the `SignalProtocol` interface.
 
 <div class="umpire-demo">
-  <SignalsAdapterDemo client:load />
+  <SignalsFineGrainedDemo client:load />
 </div>
 
-The demo above uses `@preact/signals-core` with a tiny inline adapter and bridges the reactive output into React through `useSyncExternalStore()`.
+Each field is a self-contained `FieldControl` component with its own `effect()`. When the plan signal changes, only the fields whose availability actually moved re-render — the rest stay frozen.
+
+```tsx
+function FieldControl({ field, reactive }) {
+  const [state, setState] = useState(() => ({
+    value: reactive.values[field],
+    ...reactive.field(field),  // { enabled, required, reason }
+  }))
+
+  // One effect per field — tracks only this field's signals
+  const effectRef = useRef(null)
+  if (!effectRef.current) {
+    effectRef.current = effect(() => {
+      const next = {
+        value: reactive.values[field],
+        ...reactive.field(field),
+      }
+      queueMicrotask(() => setState(next))
+    })
+  }
+
+  return (
+    // Controls + availability in one place:
+    // - "Set" disabled when field is disabled
+    // - "Clear" disabled when field is empty (always available for foul cleanup)
+    // - Reason shown when disabled
+  )
+}
+```
+
+Each effect calls `reactive.field(field)` and `reactive.values[field]`, which reads that field's computed signals — so it only tracks what that field depends on. The component owns its value, its controls, and its availability display. That's the natural unit of fine-grained reactivity.
+
+### Why signals instead of `useUmpire`?
+
+[`useUmpire`](/umpire/adapters/react/) derives everything on every render — `check()` runs, the full availability map rebuilds, React reconciles the whole tree. For most forms that's fine.
+
+`@umpire/signals` gives you per-field subscriptions. Each consumer only recomputes when its own dependencies move. If you have dozens of interdependent fields and want surgical updates, that's the difference.
+
+If you'd collapse all signals into one blob and re-render everything anyway, just use `useUmpire` — it's simpler and does exactly that.
+
+---
 
 ## Install
 
