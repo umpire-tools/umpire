@@ -1,4 +1,4 @@
-import { anyOf, disables, enabledWhen, oneOf, requires } from '../src/rules.js'
+import { anyOf, check, disables, enabledWhen, oneOf, requires } from '../src/rules.js'
 import { umpire } from '../src/umpire.js'
 
 type TestFields = {
@@ -199,6 +199,73 @@ describe('challenge', () => {
           expect.objectContaining({ rule: 'enabledWhen', reason: 'first failed', passed: false }),
           expect.objectContaining({ rule: 'enabledWhen', reason: 'second failed', passed: false }),
         ],
+      }),
+    ])
+  })
+
+  test('surfaces preserved field metadata for check()-based predicates', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        enabledWhen<TestFields>(
+          'submit',
+          check('email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/),
+          { reason: 'Enter a valid email address' },
+        ),
+        requires<TestFields>(
+          'submit',
+          check('password', (value) => typeof value === 'string' && value.length >= 8),
+          { reason: 'Enter a longer password' },
+        ),
+        disables<TestFields>(
+          check('dates', (value) => Array.isArray(value) && value.length > 0),
+          ['startTime'],
+          { reason: 'Dates override start time' },
+        ),
+      ],
+    })
+
+    const submitTrace = ump.challenge('submit', {
+      email: 'not-an-email',
+      password: 'short',
+    })
+
+    expect(submitTrace.directReasons).toEqual([
+      expect.objectContaining({
+        rule: 'enabledWhen',
+        source: 'email',
+        sourceValue: 'not-an-email',
+        passed: false,
+      }),
+      expect.objectContaining({
+        rule: 'requires',
+        dependency: 'password',
+        dependencyValue: 'short',
+        satisfied: false,
+      }),
+    ])
+
+    const startTimeTrace = ump.challenge('startTime', {
+      dates: ['2026-04-01'],
+      startTime: '09:00',
+    })
+
+    expect(startTimeTrace.directReasons).toEqual([
+      expect.objectContaining({
+        rule: 'disables',
+        source: 'dates',
+        sourceValue: ['2026-04-01'],
+        sourceSatisfied: true,
+        passed: false,
       }),
     ])
   })

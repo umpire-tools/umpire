@@ -49,9 +49,9 @@ type ChallengeTrace = {
 
 Rule-specific metadata is attached where possible:
 
-- `enabledWhen` includes the predicate source string.
-- `disables` includes the source description and source value.
-- `requires` includes dependency satisfaction details.
+- `enabledWhen` includes the predicate source string, and for `check()`-based predicates it also includes the preserved source field and current source value.
+- `disables` includes the source description and source value, plus `sourceSatisfied` when that helps explain the rule.
+- `requires` includes dependency satisfaction details, and `check()`-based dependencies also include the current dependency value.
 - `oneOf` includes the group, winning branch, and current field branch.
 - `anyOf` nests inner rule traces.
 

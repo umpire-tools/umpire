@@ -1,6 +1,11 @@
 import { evaluate, evaluateRuleForField } from './evaluator.js'
 import { buildGraph, detectCycles, exportGraph, topologicalSort } from './graph.js'
-import { getGraphSourceInfo, getInternalRuleMetadata, resolveOneOfState } from './rules.js'
+import {
+  getGraphSourceInfo,
+  getInternalRuleMetadata,
+  getSourceField,
+  resolveOneOfState,
+} from './rules.js'
 import { isSatisfied } from './satisfaction.js'
 import type {
   AvailabilityMap,
@@ -43,35 +48,44 @@ function describeRuleForField<
   )
 
   if (metadata?.kind === 'enabledWhen') {
+    const source = getSourceField(metadata.predicate)
+
     return {
       rule: 'enabledWhen',
       passed: evaluation.enabled,
       reason: evaluation.reason,
       predicate: metadata.predicate.toString(),
+      source,
+      sourceValue: source ? values[source] : undefined,
     }
   }
 
   if (metadata?.kind === 'disables') {
-    const source =
-      typeof metadata.source === 'string' ? metadata.source : metadata.source.toString()
+    const sourceField = getSourceField(metadata.source)
+    const sourceSatisfied =
+      typeof metadata.source === 'string'
+        ? isSatisfied(values[metadata.source], fields[metadata.source])
+        : metadata.source(values, conditions)
+    const source = sourceField ?? metadata.source.toString()
 
     return {
       rule: 'disables',
       passed: evaluation.enabled,
       reason: evaluation.reason,
       source,
-      sourceValue:
-        typeof metadata.source === 'string'
-          ? values[metadata.source]
-          : metadata.source(values, conditions),
+      sourceValue: sourceField ? values[sourceField] : sourceSatisfied,
+      sourceSatisfied,
     }
   }
 
   if (metadata?.kind === 'requires') {
     const dependencies = metadata.dependencies.map((dependency) => {
+      const dependencyField = getSourceField(dependency)
+
       if (typeof dependency !== 'string') {
         return {
-          dependency: dependency.toString(),
+          dependency: dependencyField ?? dependency.toString(),
+          dependencyValue: dependencyField ? values[dependencyField] : undefined,
           satisfied: dependency(values, conditions),
         }
       }
@@ -88,6 +102,7 @@ function describeRuleForField<
       passed: evaluation.enabled,
       reason: evaluation.reason,
       dependency: dependencies[0]?.dependency,
+      dependencyValue: dependencies[0]?.dependencyValue,
       satisfied: dependencies[0]?.satisfied,
       dependencyEnabled: dependencies[0]?.dependencyEnabled,
       dependencies,

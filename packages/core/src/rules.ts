@@ -142,6 +142,19 @@ function getCheckField<F extends Record<string, FieldDef>, C extends Record<stri
   return source._checkField
 }
 
+export function getSourceField<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  source: InternalSource<F, C>,
+): (keyof F & string) | undefined {
+  if (typeof source === 'string') {
+    return source
+  }
+
+  return getCheckField(source)
+}
+
 export function getInternalRuleMetadata<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -186,13 +199,9 @@ export function getGraphSourceInfo<
 }
 
 function getSourceFields<F extends Record<string, FieldDef>, C extends Record<string, unknown>>(
-  source: Source<F, C>,
+  source: InternalSource<F, C>,
 ): Array<keyof F & string> {
-  if (typeof source === 'string') {
-    return [source]
-  }
-
-  const checkField = getCheckField(source)
+  const checkField = getSourceField(source)
   return checkField ? [checkField] : []
 }
 
