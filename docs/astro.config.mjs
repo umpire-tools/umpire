@@ -33,6 +33,7 @@ export default defineConfig({
         './src/styles/signup-demo.css',
         './src/styles/react-demo.css',
         './src/styles/zustand-demo.css',
+        './src/styles/printer-demo.css',
         './src/styles/signals-demo.css',
         './src/styles/calendar-demo.css',
       ],

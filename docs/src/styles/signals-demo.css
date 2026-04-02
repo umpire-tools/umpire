@@ -65,6 +65,10 @@
   transition: border-color 0.18s ease, background 0.18s ease, opacity 0.18s ease;
 }
 
+.signals-demo__field:first-child {
+  margin-top: var(--sl-content-gap-y);
+}
+
 .signals-demo__field--disabled {
   border-color: rgba(255, 113, 108, 0.14);
   background:

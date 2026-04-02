@@ -143,7 +143,7 @@ function FieldControl({
             <span className="signals-demo__field-required">required</span>
           )}
         </div>
-        <div
+        <span
           className={cls(
             'signals-demo__status',
             state.enabled ? 'signals-demo__status--enabled' : 'signals-demo__status--disabled',
@@ -151,7 +151,7 @@ function FieldControl({
         >
           <span className="signals-demo__status-dot" />
           {state.enabled ? 'enabled' : 'disabled'}
-        </div>
+        </span>
       </div>
 
       <div className="signals-demo__field-value">
@@ -230,35 +230,6 @@ export default function SignalsFineGrainedDemo() {
 
   return (
     <div className="signals-demo umpire-demo">
-      {/* Fouls banner — shows when switching modes leaves stale values */}
-      {fouls.length > 0 && (
-        <div className="signals-demo__fouls-banner">
-          <div className="signals-demo__fouls-copy">
-            <div className="signals-demo__fouls-kicker">Fouls</div>
-            <div className="signals-demo__fouls-list">
-              {fouls.map((foul) => (
-                <div key={foul.field} className="signals-demo__foul">
-                  <span className="signals-demo__foul-field">
-                    {fieldLabels[foul.field]}
-                  </span>
-                  <span className="signals-demo__foul-reason">{foul.reason}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <button
-            type="button"
-            className="signals-demo__reset-button"
-            onClick={() => {
-              for (const foul of fouls) {
-                reactive.set(foul.field, foul.suggestedValue ?? '')
-              }
-            }}
-          >
-            Apply resets
-          </button>
-        </div>
-      )}
 
       <div className="signals-demo__panel">
         <div className="umpire-demo__panel-header">
@@ -292,6 +263,36 @@ export default function SignalsFineGrainedDemo() {
               </button>
             ))}
           </div>
+
+          {/* Fouls banner — shows when switching modes leaves stale values */}
+          {fouls.length > 0 && (
+            <div className="signals-demo__fouls-banner">
+              <div className="signals-demo__fouls-copy">
+                <div className="signals-demo__fouls-kicker">Fouls</div>
+                <div className="signals-demo__fouls-list">
+                  {fouls.map((foul) => (
+                    <div key={foul.field} className="signals-demo__foul">
+                      <span className="signals-demo__foul-field">
+                        {fieldLabels[foul.field]}
+                      </span>
+                      <span className="signals-demo__foul-reason">{foul.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="signals-demo__reset-button"
+                onClick={() => {
+                  for (const foul of fouls) {
+                    reactive.set(foul.field, foul.suggestedValue ?? '')
+                  }
+                }}
+              >
+                Apply resets
+              </button>
+            </div>
+          )}
 
           {/* Each field is a self-contained component with its own signal effect */}
           <div className="signals-demo__fields">

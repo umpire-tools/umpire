@@ -177,6 +177,10 @@
   transition: border-color 0.18s ease, background 0.18s ease, opacity 0.18s ease;
 }
 
+.umpire-demo__field:first-child {
+  margin-top: var(--sl-content-gap-y);
+}
+
 .umpire-demo__field:focus-within {
   border-color: rgba(107, 254, 156, 0.24);
   background: var(--umpire-demo-field-focus-bg);

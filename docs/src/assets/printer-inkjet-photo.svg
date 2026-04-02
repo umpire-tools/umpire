@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Compact body -->
+  <rect x="6" y="22" width="52" height="22" rx="4"/>
+  <!-- Rounded top cover -->
+  <path d="M10 22 Q10 14 20 14 L44 14 Q54 14 54 22" stroke-width="2"/>
+  <!-- Paper feed (back, angled) -->
+  <path d="M16 14 L12 6 L52 6 L48 14" stroke-width="1.5"/>
+  <!-- Paper in feeder -->
+  <rect x="16" y="4" width="32" height="4" rx="1" opacity="0.3" fill="currentColor"/>
+  <!-- Output slot -->
+  <rect x="14" y="44" width="36" height="2" rx="1"/>
+  <!-- Photo coming out! -->
+  <rect x="16" y="46" width="32" height="14" rx="2" stroke-width="1.5"/>
+  <!-- Photo content: landscape scene -->
+  <path d="M20 54 L26 50 L30 53 L36 48 L44 54" stroke-width="1.5" opacity="0.5"/>
+  <!-- Sun in photo -->
+  <circle cx="40" cy="50" r="2" fill="currentColor" opacity="0.3"/>
+  <!-- Photo border bottom -->
+  <line x1="16" y1="57" x2="48" y2="57" stroke-width="0.5" opacity="0.3"/>
+  <!-- Power button -->
+  <circle cx="50" cy="30" r="2.5"/>
+  <path d="M50 28 L50 30" stroke-width="1.5"/>
+</svg>

@@ -1,15 +1,25 @@
-/**
- * Zustand adapter demo — currently disabled while the vanilla JS
- * implementation is being refined. The adapter docs and code examples
- * below are still accurate.
- */
+import { useEffect, useRef } from 'react'
+
 export default function ZustandAdapterDemo() {
-  return (
-    <div className="zustand-demo__placeholder">
-      <span className="zustand-demo__placeholder-badge">demo coming soon</span>
-      <p className="zustand-demo__placeholder-text">
-        Interactive vanilla JS demo in progress. See the code example below.
-      </p>
-    </div>
-  )
+  const rootRef = useRef<HTMLDivElement>(null)
+  const cleanupRef = useRef<(() => void) | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!rootRef.current) return
+
+    void import('./printer-demo.js').then(({ mount }) => {
+      if (cancelled || !rootRef.current) return
+      cleanupRef.current = mount(rootRef.current)
+    })
+
+    return () => {
+      cancelled = true
+      cleanupRef.current?.()
+      cleanupRef.current = null
+    }
+  }, [])
+
+  return <div ref={rootRef} />
 }
