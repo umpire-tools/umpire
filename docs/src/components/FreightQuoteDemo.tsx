@@ -1,0 +1,589 @@
+import { useRef, useState } from 'react'
+import { computed, effect, signal } from '@preact/signals-core'
+import { enabledWhen, oneOf, requires, umpire, type Foul } from '@umpire/core'
+import { reactiveUmp, type ReactiveUmpire, type SignalProtocol } from '@umpire/signals'
+import '../styles/freight-demo.css'
+
+const fields = {
+  accountType:      { required: true, default: 'personal', isEmpty: (v: unknown) => !v },
+  companyName:      { isEmpty: (v: unknown) => !v },
+  serviceLevel:     { required: true, default: 'standard', isEmpty: (v: unknown) => !v },
+  vehicleType:      { required: true, default: 'van', isEmpty: (v: unknown) => !v },
+  hazardous:        {},
+  hazClass:         { isEmpty: (v: unknown) => !v },
+  handlingMode:     { default: 'none', isEmpty: (v: unknown) => !v },
+  blankets:         {},
+  crateType:        { isEmpty: (v: unknown) => !v },
+  tempRange:        { isEmpty: (v: unknown) => !v },
+  humidity:         { isEmpty: (v: unknown) => !v },
+  discountOverride: { isEmpty: (v: unknown) => !v },
+  priceHold:        {},
+}
+
+type FreightConditions = { isAdmin: boolean; promoActive: boolean }
+type FreightField = keyof typeof fields
+type FieldKind = 'select' | 'checkbox' | 'text'
+type Option = { value: string; label: string }
+
+const freightUmp = umpire<typeof fields, FreightConditions>({
+  fields,
+  rules: [
+    requires('companyName', (v) => v.accountType === 'business', {
+      reason: 'Only business accounts need a company name',
+    }),
+    requires('hazClass', 'hazardous', {
+      reason: 'Enable hazardous materials first',
+    }),
+    oneOf('handlingMode', {
+      fragile: ['blankets', 'crateType'],
+      climate: ['tempRange', 'humidity'],
+    }, { activeBranch: (v) => v.handlingMode === 'none' ? null : v.handlingMode as string | null }),
+    enabledWhen('discountOverride', (_v, c) => c.isAdmin, { reason: 'Admin only' }),
+    enabledWhen('priceHold', (_v, c) => c.isAdmin, { reason: 'Admin only' }),
+    enabledWhen('serviceLevel', (_v, c) => !c.promoActive, { reason: 'Locked by FREIGHT50 promo' }),
+    enabledWhen('vehicleType', (_v, c) => !c.promoActive, { reason: 'Locked by FREIGHT50 promo' }),
+  ],
+})
+
+const preactAdapter: SignalProtocol = {
+  signal(initial) {
+    const s = signal(initial)
+    return { get: () => s.value, set: (v) => { s.value = v } }
+  },
+  computed(fn) {
+    const c = computed(fn)
+    return { get: () => c.value }
+  },
+  effect,
+}
+
+const accountTypeOptions = [
+  { value: 'personal', label: 'Personal' },
+  { value: 'business', label: 'Business' },
+] as const satisfies readonly Option[]
+
+const serviceLevelOptions = [
+  { value: 'standard', label: 'Standard' },
+  { value: 'express', label: 'Express' },
+  { value: 'whiteGlove', label: 'White Glove' },
+] as const satisfies readonly Option[]
+
+const vehicleTypeOptions = [
+  { value: 'van', label: 'Van' },
+  { value: 'truck', label: 'Truck' },
+  { value: 'flatbed', label: 'Flatbed' },
+] as const satisfies readonly Option[]
+
+const hazClassOptions = [
+  { value: '', label: 'Select class...' },
+  { value: '1', label: 'Class 1 — Explosives' },
+  { value: '2', label: 'Class 2 — Gases' },
+  { value: '3', label: 'Class 3 — Flammable Liquids' },
+  { value: '6', label: 'Class 6 — Toxic' },
+  { value: '8', label: 'Class 8 — Corrosive' },
+] as const satisfies readonly Option[]
+
+const handlingModeOptions = [
+  { value: 'none', label: 'Standard handling' },
+  { value: 'fragile', label: 'Fragile' },
+  { value: 'climate', label: 'Climate-controlled' },
+] as const satisfies readonly Option[]
+
+const crateTypeOptions = [
+  { value: '', label: 'Select crate...' },
+  { value: 'wood', label: 'Wood crate' },
+  { value: 'foam', label: 'Foam-lined' },
+  { value: 'custom', label: 'Custom build' },
+] as const satisfies readonly Option[]
+
+const tempRangeOptions = [
+  { value: '', label: 'Select range...' },
+  { value: 'frozen', label: 'Frozen (-18°C)' },
+  { value: 'chilled', label: 'Chilled (2-8°C)' },
+  { value: 'ambient', label: 'Ambient (15-25°C)' },
+  { value: 'warm', label: 'Warm (25-35°C)' },
+] as const satisfies readonly Option[]
+
+const humidityOptions = [
+  { value: '', label: 'Select humidity...' },
+  { value: 'low', label: 'Low (<30%)' },
+  { value: 'medium', label: 'Medium (30-60%)' },
+  { value: 'high', label: 'High (>60%)' },
+] as const satisfies readonly Option[]
+
+const fieldGroups = [
+  {
+    label: 'Shipment',
+    fields: ['accountType', 'companyName', 'serviceLevel', 'vehicleType'],
+  },
+  {
+    label: 'Hazmat',
+    fields: ['hazardous', 'hazClass'],
+  },
+  {
+    label: 'Handling',
+    fields: ['handlingMode', 'blankets', 'crateType', 'tempRange', 'humidity'],
+  },
+  {
+    label: 'Admin',
+    fields: ['discountOverride', 'priceHold'],
+  },
+] as const satisfies readonly {
+  label: string
+  fields: readonly FreightField[]
+}[]
+
+const fieldMeta: Record<
+  FreightField,
+  {
+    label: string
+    kind: FieldKind
+    options?: readonly Option[]
+    checkboxLabel?: string
+    placeholder?: string
+  }
+> = {
+  accountType: {
+    label: 'Account Type',
+    kind: 'select',
+    options: accountTypeOptions,
+  },
+  companyName: {
+    label: 'Company Name',
+    kind: 'text',
+    placeholder: 'Acme Logistics',
+  },
+  serviceLevel: {
+    label: 'Service Level',
+    kind: 'select',
+    options: serviceLevelOptions,
+  },
+  vehicleType: {
+    label: 'Vehicle Type',
+    kind: 'select',
+    options: vehicleTypeOptions,
+  },
+  hazardous: {
+    label: 'Hazardous',
+    kind: 'checkbox',
+    checkboxLabel: 'Shipment contains hazardous materials',
+  },
+  hazClass: {
+    label: 'Hazmat Class',
+    kind: 'select',
+    options: hazClassOptions,
+  },
+  handlingMode: {
+    label: 'Handling Mode',
+    kind: 'select',
+    options: handlingModeOptions,
+  },
+  blankets: {
+    label: 'Moving Blankets',
+    kind: 'checkbox',
+    checkboxLabel: 'Add protective moving blankets',
+  },
+  crateType: {
+    label: 'Crate Type',
+    kind: 'select',
+    options: crateTypeOptions,
+  },
+  tempRange: {
+    label: 'Temperature Range',
+    kind: 'select',
+    options: tempRangeOptions,
+  },
+  humidity: {
+    label: 'Humidity Target',
+    kind: 'select',
+    options: humidityOptions,
+  },
+  discountOverride: {
+    label: 'Discount Override',
+    kind: 'text',
+    placeholder: 'FLEET-10',
+  },
+  priceHold: {
+    label: 'Price Hold',
+    kind: 'checkbox',
+    checkboxLabel: 'Hold this quote for 14 days',
+  },
+}
+
+function cls(...parts: (string | false | null | undefined)[]) {
+  return parts.filter(Boolean).join(' ')
+}
+
+function prettyJson(value: unknown) {
+  return JSON.stringify(value, null, 2)
+}
+
+function isFieldHidden(
+  field: FreightField,
+  values: Record<FreightField, unknown>,
+  conditions: FreightConditions,
+) {
+  if ((field === 'discountOverride' || field === 'priceHold') && !conditions.isAdmin) {
+    return true
+  }
+
+  if ((field === 'serviceLevel' || field === 'vehicleType') && conditions.promoActive) {
+    return true
+  }
+
+  const handlingMode =
+    values.handlingMode === 'fragile' || values.handlingMode === 'climate'
+      ? values.handlingMode
+      : 'none'
+
+  if (field === 'blankets' || field === 'crateType') {
+    return handlingMode !== 'fragile'
+  }
+
+  if (field === 'tempRange' || field === 'humidity') {
+    return handlingMode !== 'climate'
+  }
+
+  return false
+}
+
+type FieldState = {
+  value: unknown
+  enabled: boolean
+  required: boolean
+  reason: string | null
+  hidden: boolean
+}
+
+function FieldControl({
+  field,
+  reactive,
+  hidden,
+}: {
+  field: FreightField
+  reactive: ReactiveUmpire<typeof fields>
+  hidden: () => boolean
+}) {
+  const meta = fieldMeta[field]
+  const controlId = `freight-demo-${field}`
+
+  const [state, setState] = useState<FieldState>(() => {
+    const availability = reactive.field(field)
+    return {
+      value: reactive.values[field],
+      enabled: availability.enabled,
+      required: availability.required,
+      reason: availability.reason,
+      hidden: hidden(),
+    }
+  })
+
+  const effectRef = useRef<(() => void) | null>(null)
+  if (!effectRef.current) {
+    effectRef.current = effect(() => {
+      const availability = reactive.field(field)
+      const next: FieldState = {
+        value: reactive.values[field],
+        enabled: availability.enabled,
+        required: availability.required,
+        reason: availability.reason,
+        hidden: hidden(),
+      }
+      queueMicrotask(() => setState(next))
+    })
+  }
+
+  return (
+    <div
+      className={cls(
+        'umpire-demo__field',
+        !state.enabled && 'umpire-demo__field--disabled',
+        state.hidden && 'freight-demo__field--hidden',
+      )}
+    >
+      <div className="umpire-demo__field-header">
+        <div className="umpire-demo__field-label">
+          <label htmlFor={controlId}>{meta.label}</label>
+          {state.required && (
+            <span className="umpire-demo__required-pill">required</span>
+          )}
+        </div>
+        <span
+          className={cls(
+            'umpire-demo__status',
+            state.enabled ? 'umpire-demo__status--enabled' : 'umpire-demo__status--disabled',
+          )}
+        >
+          <span className="umpire-demo__status-dot" />
+          <span className="umpire-demo__status-text">
+            {state.enabled ? 'enabled' : 'disabled'}
+          </span>
+        </span>
+      </div>
+
+      {meta.kind === 'select' && (
+        <select
+          id={controlId}
+          className="umpire-demo__input"
+          disabled={!state.enabled}
+          value={typeof state.value === 'string' ? state.value : ''}
+          onChange={(event) => reactive.set(field, event.currentTarget.value)}
+        >
+          {meta.options?.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {meta.kind === 'text' && (
+        <input
+          id={controlId}
+          className="umpire-demo__input"
+          type="text"
+          disabled={!state.enabled}
+          placeholder={meta.placeholder}
+          value={typeof state.value === 'string' ? state.value : ''}
+          onChange={(event) => reactive.set(field, event.currentTarget.value)}
+        />
+      )}
+
+      {meta.kind === 'checkbox' && (
+        <label className="freight-demo__checkbox-row" htmlFor={controlId}>
+          <input
+            id={controlId}
+            type="checkbox"
+            disabled={!state.enabled}
+            checked={state.value === true}
+            onChange={(event) => reactive.set(field, event.currentTarget.checked ? true : undefined)}
+          />
+          <span>{meta.checkboxLabel ?? meta.label}</span>
+        </label>
+      )}
+
+      {!state.enabled && state.reason && (
+        <div className="umpire-demo__field-reason">{state.reason}</div>
+      )}
+    </div>
+  )
+}
+
+function ConditionToggle({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: boolean
+  onChange: (next: boolean) => void
+}) {
+  return (
+    <div className="umpire-demo__field">
+      <div className="umpire-demo__field-header">
+        <div className="umpire-demo__field-label">
+          <span>{label}</span>
+        </div>
+        <span
+          className={cls(
+            'umpire-demo__status',
+            value ? 'umpire-demo__status--enabled' : 'umpire-demo__status--disabled',
+          )}
+        >
+          <span className="umpire-demo__status-dot" />
+          <span className="umpire-demo__status-text">
+            {value ? 'active' : 'inactive'}
+          </span>
+        </span>
+      </div>
+
+      <div className="umpire-demo__plan-toggle" aria-label={label}>
+        {[
+          { label: 'Off', value: false },
+          { label: 'On', value: true },
+        ].map((option) => (
+          <button
+            key={option.label}
+            type="button"
+            aria-pressed={value === option.value}
+            className={cls(
+              'umpire-demo__plan-option',
+              value === option.value && 'umpire-demo__plan-option--active',
+            )}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export default function FreightQuoteDemo() {
+  const ref = useRef<{
+    reactive: ReactiveUmpire<typeof fields>
+    isAdminSignal: { value: boolean }
+    promoActiveSignal: { value: boolean }
+  } | null>(null)
+
+  if (!ref.current) {
+    const isAdminSignal = signal(false)
+    const promoActiveSignal = signal(false)
+    const reactive = reactiveUmp(freightUmp, preactAdapter, {
+      conditions: {
+        isAdmin: { get: () => isAdminSignal.value },
+        promoActive: { get: () => promoActiveSignal.value },
+      },
+    })
+
+    ref.current = {
+      reactive,
+      isAdminSignal,
+      promoActiveSignal,
+    }
+  }
+
+  const { reactive, isAdminSignal, promoActiveSignal } = ref.current
+
+  const [conditions, setConditions] = useState<FreightConditions>({
+    isAdmin: false,
+    promoActive: false,
+  })
+  const [values, setValues] = useState(() => reactive.values)
+  const [fouls, setFouls] = useState<Foul<typeof fields>[]>([])
+
+  const effectRef = useRef<(() => void) | null>(null)
+  if (!effectRef.current) {
+    effectRef.current = effect(() => {
+      const nextConditions: FreightConditions = {
+        isAdmin: isAdminSignal.value,
+        promoActive: promoActiveSignal.value,
+      }
+      const nextValues = reactive.values
+      const nextFouls = reactive.fouls
+
+      queueMicrotask(() => {
+        setConditions(nextConditions)
+        setValues(nextValues)
+        setFouls(nextFouls)
+      })
+    })
+  }
+
+  return (
+    <div className="freight-demo umpire-demo">
+      <div className="freight-demo__panel">
+        <div className="umpire-demo__panel-header">
+          <div>
+            <div className="umpire-demo__eyebrow">Signals Adapter</div>
+            <h2 className="umpire-demo__title">Freight Quote</h2>
+          </div>
+          <span className="umpire-demo__panel-accent">reactiveUmp()</span>
+        </div>
+
+        <div className="umpire-demo__panel-body">
+          <div className="freight-demo__callout">
+            <span className="freight-demo__badge">5 rule types</span>
+            <p className="freight-demo__callout-text">
+              Quote logic mixes predicate requirements, direct field dependencies,
+              mutually exclusive handling branches, admin gating, and promo locks
+              without hand-written orchestration code.
+            </p>
+          </div>
+
+          <div className="umpire-demo__conditions">
+            <span className="umpire-demo__conditions-label">Conditions</span>
+            <code className="umpire-demo__conditions-code">
+              {`{ isAdmin: ${conditions.isAdmin}, promoActive: ${conditions.promoActive} }`}
+            </code>
+          </div>
+
+          <section className="freight-demo__field-group">
+            <div className="freight-demo__group-label">Conditions</div>
+            <div className="freight-demo__group-fields">
+              <ConditionToggle
+                label="Admin Mode"
+                value={conditions.isAdmin}
+                onChange={(next) => { isAdminSignal.value = next }}
+              />
+              <ConditionToggle
+                label="FREIGHT50 Promo"
+                value={conditions.promoActive}
+                onChange={(next) => { promoActiveSignal.value = next }}
+              />
+            </div>
+          </section>
+
+          {fouls.length > 0 && (
+            <div className="umpire-demo__fouls">
+              <div className="umpire-demo__fouls-copy">
+                <div className="umpire-demo__fouls-kicker">Fouls</div>
+                <div className="umpire-demo__fouls-list">
+                  {fouls.map((foul) => (
+                    <div key={foul.field} className="umpire-demo__foul">
+                      <span className="umpire-demo__foul-field">
+                        {fieldMeta[foul.field].label}
+                      </span>
+                      <span className="umpire-demo__foul-reason">{foul.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="umpire-demo__reset-button"
+                onClick={() => {
+                  for (const foul of fouls) {
+                    reactive.set(foul.field, foul.suggestedValue)
+                  }
+                }}
+              >
+                Apply resets
+              </button>
+            </div>
+          )}
+
+          <div className="umpire-demo__fields">
+            {fieldGroups.map((group) => {
+              const visibleFields = group.fields.filter((field) => !isFieldHidden(field, values, conditions))
+
+              if (visibleFields.length === 0) {
+                return null
+              }
+
+              return (
+                <section key={group.label} className="freight-demo__field-group">
+                  <div className="freight-demo__group-label">{group.label}</div>
+                  <div className="freight-demo__group-fields">
+                    {group.fields.map((field) => (
+                      <FieldControl
+                        key={field}
+                        field={field}
+                        reactive={reactive}
+                        hidden={() => isFieldHidden(field, reactive.values, {
+                          isAdmin: isAdminSignal.value,
+                          promoActive: promoActiveSignal.value,
+                        })}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+
+          <section className="umpire-demo__json-shell">
+            <div className="umpire-demo__json-header">
+              <span className="umpire-demo__json-title">signal state</span>
+              <span className="umpire-demo__json-meta">@preact/signals-core</span>
+            </div>
+            <pre className="umpire-demo__code-block">
+              <code>{prettyJson({ conditions, values, fouls })}</code>
+            </pre>
+          </section>
+        </div>
+      </div>
+    </div>
+  )
+}

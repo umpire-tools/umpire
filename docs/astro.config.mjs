@@ -5,20 +5,6 @@ import react from '@astrojs/react'
 export default defineConfig({
   site: 'https://sdougbrown.github.io',
   base: '/umpire',
-  vite: {
-    plugins: [{
-      name: 'reload-starlight-css',
-      handleHotUpdate({ file, server }) {
-        // Starlight injects customCss at build time, so Vite's HMR doesn't
-        // know they've changed. Force a full reload for style edits.
-        if (file.includes('/src/styles/')) {
-          server.ws.send({ type: 'full-reload' })
-        }
-        // Don't return [] — let Vite continue processing so components
-        // and other modules still get normal HMR.
-      },
-    }],
-  },
   integrations: [
     react(),
     starlight({
@@ -34,6 +20,7 @@ export default defineConfig({
         './src/styles/react-demo.css',
         './src/styles/zustand-demo.css',
         './src/styles/printer-demo.css',
+        './src/styles/freight-demo.css',
         './src/styles/signals-demo.css',
         './src/styles/calendar-demo.css',
       ],
@@ -95,6 +82,7 @@ export default defineConfig({
           items: [
             { label: 'Signup Form', slug: 'examples/signup' },
             { label: 'Calendar Recurrence', slug: 'examples/calendar' },
+            { label: 'Freight Quote', slug: 'examples/freight-quote' },
             { label: 'Login + Captcha', slug: 'examples/captcha' },
           ],
         },
