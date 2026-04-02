@@ -665,3 +665,26 @@ export function check<
 
   return predicate
 }
+
+/**
+ * Returns typed versions of all rule factories, narrowed to your field and
+ * condition types. Purely a type-level convenience — zero runtime overhead.
+ *
+ * ```ts
+ * const { enabledWhen, requires } = createRules<typeof fields, MyConditions>()
+ * // Predicate callbacks now have typed conditions automatically
+ * ```
+ */
+export function createRules<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>() {
+  return {
+    enabledWhen: enabledWhen as typeof enabledWhen<F, C>,
+    disables: disables as typeof disables<F, C>,
+    requires: requires as typeof requires<F, C>,
+    oneOf: oneOf as typeof oneOf<F, C>,
+    anyOf: anyOf as typeof anyOf<F, C>,
+    check: check as typeof check<F, C>,
+  }
+}

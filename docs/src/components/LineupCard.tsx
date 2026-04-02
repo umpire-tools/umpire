@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { umpire, enabledWhen, oneOf } from '@umpire/core'
+import { umpire, createRules } from '@umpire/core'
 import { useUmpire } from '@umpire/react'
 import type { FieldDef } from '@umpire/core'
 
@@ -72,6 +72,8 @@ type Conditions = {
   injuries: Record<string, boolean>
   morrisonRested: boolean
 }
+
+const { enabledWhen, oneOf } = createRules<typeof fields, Conditions>()
 
 const lineupUmp = umpire<typeof fields, Conditions>({
   fields,

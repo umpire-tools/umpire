@@ -11,5 +11,5 @@ export type {
   Umpire,
 } from './types.js'
 export { isSatisfied } from './satisfaction.js'
-export { enabledWhen, disables, requires, oneOf, anyOf, check } from './rules.js'
+export { enabledWhen, disables, requires, oneOf, anyOf, check, createRules } from './rules.js'
 export { umpire } from './umpire.js'

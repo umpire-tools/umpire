@@ -187,3 +187,58 @@ enabledWhen('companyName', (_values, conditions) => conditions.plan === 'busines
 ```
 
 Dynamic reasons are useful when the UI should explain a specific plan tier, feature flag, or external gate.
+
+## Typing Conditions
+
+Rule factories have their own generic parameters, so TypeScript can't always infer your conditions type from the `umpire()` call. When a predicate receives `conditions`, it may be typed as `Record<string, unknown>` instead of your specific type.
+
+Two ways to fix this:
+
+### Annotate the predicate
+
+Type `conditions` directly in the callback. This works well for a handful of rules.
+
+```ts
+type Conditions = { plan: 'personal' | 'business' }
+
+enabledWhen('companyName', (_v, c: Conditions) => c.plan === 'business', {
+  reason: 'business plan required',
+})
+```
+
+### `createRules()` for many rules
+
+When you have many rules sharing the same field and condition types, `createRules()` returns typed versions of all rule factories. Type once, use everywhere.
+
+```ts
+import { createRules, umpire } from '@umpire/core'
+
+type Conditions = {
+  plan: 'personal' | 'business'
+  isAdmin: boolean
+}
+
+const fields = {
+  companyName: {},
+  companySize: {},
+  discountOverride: {},
+}
+
+const { enabledWhen, requires } = createRules<typeof fields, Conditions>()
+
+// c.plan and c.isAdmin are fully typed in every predicate
+const ump = umpire({
+  fields,
+  rules: [
+    enabledWhen('companyName', (_v, c) => c.plan === 'business', {
+      reason: 'business plan required',
+    }),
+    enabledWhen('discountOverride', (_v, c) => c.isAdmin, {
+      reason: 'admin only',
+    }),
+    requires('companySize', 'companyName'),
+  ],
+})
+```
+
+`createRules()` is purely a type-level convenience — zero runtime overhead. The returned functions are the same rule factories with narrowed generics.
