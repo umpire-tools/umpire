@@ -1,0 +1,170 @@
+---
+title: Quick Start
+description: Learn each Umpire rule with interactive demos.
+---
+
+import {
+  RequiresDemo,
+  EnabledWhenDemo,
+  DisablesDemo,
+  OneOfDemo,
+  CheckDemo,
+  AnyOfDemo,
+  FlagDemo,
+} from '../../components/LearnDemos.tsx'
+
+This page teaches one Umpire primitive at a time. Each section shows the smallest useful rule, the result of one call, and a live demo using the real library.
+
+```bash
+yarn add @umpire/core
+```
+
+Add `@umpire/react` when you want the snapshot-tracking hook used in the final `flag()` example.
+
+## `requires()`
+
+Use `requires()` when one field should stay unavailable until another field is both filled in and still eligible. It is the simplest way to build stepwise flows without mutating the form.
+
+```ts
+const ump = umpire({
+  fields: { password: {}, confirmPassword: {} },
+  rules: [requires('confirmPassword', 'password')],
+})
+
+ump.check({ password: '', confirmPassword: '' }).confirmPassword
+// disabled: reason = 'requires password'
+```
+
+<div class="umpire-demo learn-demo">
+  <RequiresDemo client:load />
+</div>
+
+## `enabledWhen()`
+
+Use `enabledWhen()` when a field depends on an external fact instead of another field value. Plan tiers, feature flags, permissions, and environment checks usually belong here.
+
+```ts
+const ump = umpire({
+  fields: { companyName: {} },
+  rules: [enabledWhen('companyName', (_v, c) => c.plan === 'business', {
+    reason: 'business plan required',
+  })],
+})
+
+ump.check({ companyName: '' }, { plan: 'personal' }).companyName
+// disabled: reason = 'business plan required'
+```
+
+<div class="umpire-demo learn-demo">
+  <EnabledWhenDemo client:load />
+</div>
+
+## `disables()`
+
+Use `disables()` when one active field should override another. Unlike `requires()`, it only cares that the source is active, not whether the target would otherwise be available.
+
+```ts
+const ump = umpire({
+  fields: { bannerMode: {}, paperSize: {} },
+  rules: [disables('bannerMode', ['paperSize'], {
+    reason: 'banner mode uses continuous feed',
+  })],
+})
+
+ump.check({ bannerMode: 'on', paperSize: 'A4' }).paperSize
+// disabled: reason = 'banner mode uses continuous feed'
+```
+
+<div class="umpire-demo learn-demo">
+  <DisablesDemo client:load />
+</div>
+
+## `oneOf()`
+
+Use `oneOf()` when only one branch of fields should be active at a time. It is the right fit for mutually exclusive modes like shipping methods, scheduling strategies, or pickup vs delivery.
+
+```ts
+const ump = umpire({
+  fields: { standardRate: {}, expressRate: {}, pickupLocation: {} },
+  rules: [oneOf('handling', {
+    standard: ['standardRate'], express: ['expressRate'], pickup: ['pickupLocation'],
+  }, { activeBranch: (_v, c) => c.handling })],
+})
+
+ump.check({ standardRate: '12.00' }, { handling: 'express' }).standardRate
+// disabled: reason = 'conflicts with express strategy'
+```
+
+<div class="umpire-demo learn-demo">
+  <OneOfDemo client:load />
+</div>
+
+## `check()`
+
+`check()` is a predicate factory, not a standalone rule. It lets you feed validation logic into availability rules so a field can unlock only when another field is actually valid.
+
+```ts
+const ump = umpire({
+  fields: { email: {}, submit: {} },
+  rules: [enabledWhen('submit', check('email', /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/), {
+    reason: 'enter a valid email',
+  })],
+})
+
+ump.check({ email: 'bad', submit: undefined }).submit
+// disabled: reason = 'enter a valid email'
+```
+
+<div class="umpire-demo learn-demo">
+  <CheckDemo client:load />
+</div>
+
+## `anyOf()`
+
+Multiple rules targeting the same field are ANDed by default. Wrap them in `anyOf()` when any one successful path should unlock the target instead.
+
+```ts
+const ump = umpire({
+  fields: { phone: {}, email: {}, submit: {} },
+  rules: [anyOf(
+    enabledWhen('submit', check('phone', /^\\d{10,}$/), { reason: 'enter a valid phone' }),
+    enabledWhen('submit', check('email', /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/), { reason: 'enter a valid email' }),
+  )],
+})
+
+ump.check({ phone: '', email: '', submit: undefined }).submit
+// disabled: reasons = ['enter a valid phone', 'enter a valid email']
+```
+
+<div class="umpire-demo learn-demo">
+  <AnyOfDemo client:load />
+</div>
+
+## `flag()`
+
+`check()` tells you what is available now. `flag()` tells you what just became stale after a transition, which is why plan switches and feature flips can surface reset recommendations even if the values did not change.
+
+```ts
+const ump = umpire({
+  fields: { companyName: {}, companySize: {} },
+  rules: [enabledWhen('companyName', (_v, c) => c.plan === 'business'),
+    enabledWhen('companySize', (_v, c) => c.plan === 'business'),
+    requires('companySize', 'companyName')],
+})
+
+ump.flag(
+  { values: { companyName: 'Acme', companySize: '50' }, conditions: { plan: 'business' } },
+  { values: { companyName: 'Acme', companySize: '50' }, conditions: { plan: 'personal' } },
+)
+// fouls: companyName, companySize
+```
+
+<div class="umpire-demo learn-demo">
+  <FlagDemo client:only="preact" />
+</div>
+
+## Where to next
+
+- Read [Availability](/umpire/concepts/availability/) for the mental model behind `enabled`, `required`, and reason precedence.
+- Browse [Rule Primitives](/umpire/api/rules/) for full helper signatures, defaults, and composition rules.
+- See the [Signup example](/umpire/examples/signup/) and the [React adapter](/umpire/adapters/react/) when you want a larger end-to-end form.

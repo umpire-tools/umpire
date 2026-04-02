@@ -26,8 +26,8 @@ export default defineConfig({
     }],
   },
   integrations: [
-    preact({ include: ['**/SignalsFineGrainedDemo.*', '**/FreightQuoteDemo.*'] }),
-    react({ exclude: ['**/SignalsFineGrainedDemo.*', '**/FreightQuoteDemo.*'] }),
+    preact({ include: ['**/SignalsFineGrainedDemo.*', '**/FreightQuoteDemo.*', '**/LearnDemos.*'] }),
+    react({ exclude: ['**/SignalsFineGrainedDemo.*', '**/FreightQuoteDemo.*', '**/LearnDemos.*'] }),
     starlight({
       title: '🛂 Umpire',
       description: 'Rule the form. Flag the field.',
@@ -37,6 +37,7 @@ export default defineConfig({
         './src/styles/lineup.css',
         './src/styles/captcha-demo.css',
         './src/styles/demo-common.css',
+        './src/styles/learn-demo.css',
         './src/styles/signup-demo.css',
         './src/styles/react-demo.css',
         './src/styles/zustand-demo.css',
@@ -69,6 +70,7 @@ export default defineConfig({
       sidebar: [
         { label: 'Getting Started', items: [
           { label: 'Introduction', slug: '' },
+          { label: 'Quick Start', slug: 'learn' },
           { label: 'Droid-First Development', slug: 'droid-first' },
         ] },
         {
