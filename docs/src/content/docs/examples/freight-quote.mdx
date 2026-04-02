@@ -7,4 +7,50 @@ import FreightQuoteDemo from '../../../components/FreightQuoteDemo.tsx'
 
 <FreightQuoteDemo client:load />
 
-An interactive shipping quote form that shows how `@umpire/signals` handles field dependencies, hidden branches, admin-only controls, and promo-driven availability changes in one place.
+## What this demonstrates
+
+A freight quoting form with 13 fields and 7 rules spanning **5 of Umpire's 6 rule types**. The form adapts to user input, external conditions, and mutually exclusive handling modes — all without hand-written orchestration code.
+
+### Rule types in play
+
+| Rule | What it does here |
+|---|---|
+| **`requires`** | Company name only matters for business accounts. Hazmat class requires the hazardous toggle. |
+| **`enabledWhen`** | Admin-only fields (discount override, price hold) gate on the `isAdmin` condition. Promo locks service level and vehicle type. |
+| **`oneOf`** | Fragile and climate-controlled handling are mutually exclusive branches — picking one hides the other's fields. |
+| **`disables`** | _(not used here — see the [Printer Menu](/umpire/adapters/zustand/) for `disables` in action)_ |
+| **conditions** | `isAdmin` and `promoActive` are external facts, not field values. Toggle them with the switches at the top. |
+
+### Things to try
+
+1. **Switch account type** from Personal to Business — Company Name enables. Switch back and Umpire flags the stale value with an inline reset button.
+2. **Check "Hazardous materials"** — Hazmat Class enables. Uncheck it and the class value gets flagged.
+3. **Change handling mode** from Standard to Fragile — blankets and crate type appear. Switch to Climate-controlled — the fragile fields foul, temp/humidity appear. This is `oneOf` in action.
+4. **Toggle the FREIGHT50 promo** — Service Level and Vehicle Type disappear (condition-driven hiding).
+5. **Toggle Admin Mode** — Discount Override and Price Hold appear.
+
+### Implementation
+
+This demo uses [`@umpire/signals`](/umpire/adapters/signals/) with [Preact](https://preactjs.com/) and [`@preact/signals`](https://preactjs.com/guide/v10/signals/). Each field component reads signal-backed values during render — Preact auto-subscribes and re-renders only the fields that changed.
+
+The entire Umpire integration is the rule definitions and a ~10-line signal adapter. No `useEffect`, no state synchronization, no manual subscriptions.
+
+```tsx
+const freightUmp = umpire({
+  fields,
+  rules: [
+    requires('companyName', v => v.accountType === 'business'),
+    requires('hazClass', 'hazardous'),
+    oneOf('handlingMode', {
+      fragile: ['blankets', 'crateType'],
+      climate: ['tempRange', 'humidity'],
+    }, { activeBranch: v => v.handlingMode === 'none' ? null : v.handlingMode }),
+    enabledWhen('discountOverride', (_, c) => c.isAdmin),
+    enabledWhen('priceHold', (_, c) => c.isAdmin),
+    enabledWhen('serviceLevel', (_, c) => !c.promoActive),
+    enabledWhen('vehicleType', (_, c) => !c.promoActive),
+  ],
+})
+```
+
+Seven rules. That's the entire form logic. Umpire handles the cascading availability, the fouls when stale values need cleanup, and the per-field reason messages.

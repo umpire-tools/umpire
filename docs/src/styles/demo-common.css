@@ -267,6 +267,51 @@
   text-transform: uppercase;
 }
 
+.umpire-demo__field--fouled {
+  border-color: rgba(254, 208, 35, 0.24);
+  background:
+    linear-gradient(135deg, rgba(254, 208, 35, 0.08), transparent 50%),
+    rgba(255, 255, 255, 0.02);
+}
+
+.umpire-demo__field-foul {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid rgba(254, 208, 35, 0.18);
+  border-radius: 0.6rem;
+  background: rgba(254, 208, 35, 0.06);
+}
+
+.umpire-demo__field-foul-reason {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: rgba(254, 208, 35, 0.85);
+}
+
+.umpire-demo__field-foul-reset {
+  flex-shrink: 0;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgba(254, 208, 35, 0.28);
+  border-radius: 999px;
+  background: rgba(254, 208, 35, 0.1);
+  color: var(--umpire-demo-yellow);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.umpire-demo__field-foul-reset:hover {
+  background: rgba(254, 208, 35, 0.2);
+}
+
 .umpire-demo__field-reason {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
@@ -303,6 +348,12 @@
   color: var(--umpire-demo-red);
   border-color: rgba(255, 113, 108, 0.2);
   background: rgba(255, 113, 108, 0.08);
+}
+
+.umpire-demo__status--fouled {
+  color: var(--umpire-demo-yellow);
+  border-color: rgba(254, 208, 35, 0.2);
+  background: rgba(254, 208, 35, 0.08);
 }
 
 .umpire-demo__status-dot {

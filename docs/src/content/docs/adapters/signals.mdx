@@ -5,26 +5,39 @@ description: Signal-backed availability with fine-grained tracking through a min
 
 import SignalsFineGrainedDemo from '../../../components/SignalsFineGrainedDemo.tsx'
 
-`@umpire/signals` adapts the pure core to any signal library that matches the `SignalProtocol` interface.
+`@umpire/signals` adapts the pure core to any signal library that matches the `SignalProtocol` interface. The demo below uses [Preact signals](https://preactjs.com/guide/v10/signals/) — components read signal-backed values directly during render and Preact auto-subscribes to changes. No hooks, no effects, no manual bridging.
 
 <div class="umpire-demo">
   <SignalsFineGrainedDemo client:load />
 </div>
 
-Each field reads the signals it touches directly during render. When the plan signal changes, only the fields whose availability actually moved re-render — the rest stay frozen.
+Each field is a self-contained component. When the plan signal changes, only the fields whose availability actually moved re-render — the rest stay frozen.
 
 ```tsx
+import { signal } from '@preact/signals'
+import { reactiveUmp } from '@umpire/signals'
+
+// Preact components auto-subscribe to signal reads during render.
+// No useEffect, no useState, no queueMicrotask.
 function FieldControl({ field, reactive }) {
   const availability = reactive.field(field)
   const value = reactive.values[field]
 
   return (
-    // Preact auto-subscribes when signal-backed values are read in render.
+    <div class={availability.enabled ? '' : 'disabled'}>
+      <span>{availability.enabled ? 'enabled' : 'disabled'}</span>
+      <span>{availability.reason}</span>
+      <input
+        value={value}
+        disabled={!availability.enabled}
+        onInput={(e) => reactive.set(field, e.currentTarget.value)}
+      />
+    </div>
   )
 }
 ```
 
-Each render reads `reactive.field(field)` and `reactive.values[field]`, which touches only that field's computed signals. The component owns its value, its controls, and its availability display. That's the natural unit of fine-grained reactivity.
+When `reactive.field(field).enabled` changes, only this component re-renders. The parent, the sibling fields, and the rest of the page don't move.
 
 ### Why signals instead of `useUmpire`?
 
@@ -42,7 +55,7 @@ If you'd collapse all signals into one blob and re-render everything anyway, jus
 yarn add @umpire/core @umpire/signals @preact/signals @preact/signals-core
 ```
 
-Bring your own signal implementation or one of the shipped adapter entry points.
+`@preact/signals-core` is the framework-agnostic signal primitive. `@preact/signals` adds Preact integration on top. Any library that implements the `SignalProtocol` interface works — Preact signals is just one option.
 
 ## `SignalProtocol`
 
@@ -173,6 +186,8 @@ Those patterns cause all field signals to be read.
 
 ## Adapter Examples
 
+### Preact
+
 ```ts
 import { batch, computed, effect, signal } from '@preact/signals'
 
@@ -189,6 +204,8 @@ const preactAdapter: SignalProtocol = {
   batch,
 }
 ```
+
+### TC39 Signal Proposal
 
 ```ts
 import { Signal } from 'signal-polyfill'

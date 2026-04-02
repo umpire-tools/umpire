@@ -264,12 +264,14 @@ function FieldControl({
   const required = availability.required
   const reason = availability.reason
   const isHidden = hidden()
+  const foul = reactive.fouls.find((f) => f.field === field)
 
   return (
     <div
       class={cls(
         'umpire-demo__field',
         !enabled && 'umpire-demo__field--disabled',
+        foul && 'umpire-demo__field--fouled',
         isHidden && 'freight-demo__field--hidden',
       )}
     >
@@ -283,12 +285,13 @@ function FieldControl({
         <span
           class={cls(
             'umpire-demo__status',
+            foul ? 'umpire-demo__status--fouled' :
             enabled ? 'umpire-demo__status--enabled' : 'umpire-demo__status--disabled',
           )}
         >
           <span class="umpire-demo__status-dot" />
           <span class="umpire-demo__status-text">
-            {enabled ? 'enabled' : 'disabled'}
+            {foul ? 'fouled' : enabled ? 'enabled' : 'disabled'}
           </span>
         </span>
       </div>
@@ -334,7 +337,20 @@ function FieldControl({
         </label>
       )}
 
-      {!enabled && reason && (
+      {foul && (
+        <div class="umpire-demo__field-foul">
+          <span class="umpire-demo__field-foul-reason">{foul.reason}</span>
+          <button
+            type="button"
+            class="umpire-demo__field-foul-reset"
+            onClick={() => reactive.set(field, foul.suggestedValue)}
+          >
+            Reset
+          </button>
+        </div>
+      )}
+
+      {!foul && !enabled && reason && (
         <div class="umpire-demo__field-reason">{reason}</div>
       )}
     </div>
