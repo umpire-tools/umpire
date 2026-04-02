@@ -1,5 +1,13 @@
 /* --- Signals Demo --- */
 
+.signals-demo {
+  --umpire-demo-field-disabled-bg:
+    linear-gradient(135deg, rgba(255, 113, 108, 0.08), transparent 50%),
+    rgba(255, 255, 255, 0.02);
+  --umpire-demo-field-disabled-border-color: rgba(255, 113, 108, 0.14);
+  --umpire-demo-field-disabled-opacity: 1;
+}
+
 .signals-demo .umpire-demo__panel-body {
   display: flex;
   flex-direction: column;
@@ -17,42 +25,11 @@
   backdrop-filter: blur(18px);
 }
 
-/* --- Conditions display --- */
-
-.signals-demo__conditions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.72rem 0.85rem;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  border-radius: 0.85rem;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.signals-demo__conditions-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--umpire-demo-text-muted);
-}
-
-.signals-demo__conditions-code {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.79rem;
-  color: var(--umpire-demo-text);
-}
-
-/* --- Field grid (2x2) --- */
-
 .signals-demo__fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
-
-/* --- Individual field card --- */
 
 .signals-demo__field {
   display: flex;
@@ -69,43 +46,6 @@
   margin-top: var(--sl-content-gap-y);
 }
 
-.signals-demo__field--disabled {
-  border-color: rgba(255, 113, 108, 0.14);
-  background:
-    linear-gradient(135deg, rgba(255, 113, 108, 0.08), transparent 50%),
-    rgba(255, 255, 255, 0.02);
-}
-
-.signals-demo__field-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.signals-demo__field-label {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.1;
-}
-
-.signals-demo__field-required {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--umpire-demo-yellow);
-  padding: 0.15rem 0.4rem;
-  border-radius: 999px;
-  border: 1px solid rgba(254, 208, 35, 0.16);
-  background: rgba(254, 208, 35, 0.08);
-}
-
 .signals-demo__field-value {
   padding: 0.45rem 0.6rem;
   border-radius: 0.6rem;
@@ -118,52 +58,6 @@
   font-size: 0.78rem;
   color: var(--umpire-demo-text-dim);
 }
-
-.signals-demo__field-reason {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  color: rgba(255, 113, 108, 0.85);
-  line-height: 1.35;
-}
-
-/* --- Status pill --- */
-
-.signals-demo__status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.28rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.signals-demo__status--enabled {
-  color: var(--umpire-demo-green);
-  border-color: rgba(107, 254, 156, 0.2);
-  background: rgba(107, 254, 156, 0.08);
-}
-
-.signals-demo__status--disabled {
-  color: var(--umpire-demo-red);
-  border-color: rgba(255, 113, 108, 0.2);
-  background: rgba(255, 113, 108, 0.08);
-}
-
-.signals-demo__status-dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 999px;
-  background: currentColor;
-  box-shadow: 0 0 10px currentColor;
-}
-
-/* --- Buttons --- */
 
 .signals-demo__button-row {
   display: flex;
@@ -215,150 +109,8 @@
   box-shadow: none;
 }
 
-/* --- Fouls banner --- */
-
-.signals-demo__fouls-banner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.85rem 1rem;
-  border: 1px solid rgba(254, 208, 35, 0.28);
-  border-radius: 0.95rem;
-  background:
-    linear-gradient(135deg, rgba(254, 208, 35, 0.12), transparent 60%),
-    rgba(255, 255, 255, 0.02);
-  box-shadow: 0 0 0 1px rgba(254, 208, 35, 0.08), 0 0 24px rgba(254, 208, 35, 0.08);
-}
-
-.signals-demo__fouls-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.signals-demo__fouls-kicker {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--umpire-demo-yellow);
-}
-
-.signals-demo__fouls-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.signals-demo__foul {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  line-height: 1.3;
-}
-
-.signals-demo__foul-field {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--umpire-demo-text);
-}
-
-.signals-demo__foul-reason {
-  color: var(--umpire-demo-text-dim);
-  font-size: 0.82rem;
-}
-
-.signals-demo__reset-button {
-  flex-shrink: 0;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid rgba(254, 208, 35, 0.35);
-  border-radius: 999px;
-  background: rgba(254, 208, 35, 0.12);
-  color: var(--umpire-demo-yellow);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.18s ease, box-shadow 0.18s ease;
-}
-
-.signals-demo__reset-button:hover {
-  background: rgba(254, 208, 35, 0.22);
-  box-shadow: 0 0 18px rgba(254, 208, 35, 0.14);
-}
-
-/* --- JSON output --- */
-
-.signals-demo__json-shell {
-  border: 1px solid rgba(107, 254, 156, 0.1);
-  border-radius: 0.95rem;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.signals-demo__json-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 0.85rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.signals-demo__json-title {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--umpire-demo-text-dim);
-}
-
-.signals-demo__json-meta {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--umpire-demo-green);
-}
-
-.signals-demo__code-block {
-  margin: 0;
-  overflow: auto;
-  padding: 0.9rem 0.95rem 1rem;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 18%),
-    rgba(10, 10, 10, 0.8);
-  color: var(--umpire-demo-text);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
-  line-height: 1.65;
-}
-
-/* --- Responsive --- */
-
 @media (max-width: 50rem) {
   .signals-demo__fields {
     grid-template-columns: 1fr;
-  }
-
-  .signals-demo__fouls-banner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .signals-demo__conditions {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .signals-demo__field-header {
-    flex-direction: column;
-    align-items: flex-start;
   }
 }

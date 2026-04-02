@@ -133,24 +133,26 @@ function FieldControl({
     <div
       className={cls(
         'signals-demo__field',
-        !state.enabled && 'signals-demo__field--disabled',
+        !state.enabled && 'umpire-demo__field--disabled',
       )}
     >
-      <div className="signals-demo__field-header">
-        <div className="signals-demo__field-label">
+      <div className="umpire-demo__field-header">
+        <div className="umpire-demo__field-label">
           <span>{label}</span>
           {state.required && (
-            <span className="signals-demo__field-required">required</span>
+            <span className="umpire-demo__required-pill">required</span>
           )}
         </div>
         <span
           className={cls(
-            'signals-demo__status',
-            state.enabled ? 'signals-demo__status--enabled' : 'signals-demo__status--disabled',
+            'umpire-demo__status',
+            state.enabled ? 'umpire-demo__status--enabled' : 'umpire-demo__status--disabled',
           )}
         >
-          <span className="signals-demo__status-dot" />
-          {state.enabled ? 'enabled' : 'disabled'}
+          <span className="umpire-demo__status-dot" />
+          <span className="umpire-demo__status-text">
+            {state.enabled ? 'enabled' : 'disabled'}
+          </span>
         </span>
       </div>
 
@@ -180,7 +182,7 @@ function FieldControl({
       </div>
 
       {!state.enabled && state.reason && (
-        <div className="signals-demo__field-reason">{state.reason}</div>
+        <div className="umpire-demo__field-reason">{state.reason}</div>
       )}
     </div>
   )
@@ -242,9 +244,9 @@ export default function SignalsFineGrainedDemo() {
 
         <div className="umpire-demo__panel-body">
           {/* Plan toggle — condition signal, not a field value */}
-          <div className="signals-demo__conditions">
-            <span className="signals-demo__conditions-label">Conditions</span>
-            <code className="signals-demo__conditions-code">{`{ plan: '${plan}' }`}</code>
+          <div className="umpire-demo__conditions">
+            <span className="umpire-demo__conditions-label">Conditions</span>
+            <code className="umpire-demo__conditions-code">{`{ plan: '${plan}' }`}</code>
           </div>
 
           <div className="umpire-demo__plan-toggle" aria-label="Plan">
@@ -266,23 +268,23 @@ export default function SignalsFineGrainedDemo() {
 
           {/* Fouls banner — shows when switching modes leaves stale values */}
           {fouls.length > 0 && (
-            <div className="signals-demo__fouls-banner">
-              <div className="signals-demo__fouls-copy">
-                <div className="signals-demo__fouls-kicker">Fouls</div>
-                <div className="signals-demo__fouls-list">
+            <div className="umpire-demo__fouls">
+              <div className="umpire-demo__fouls-copy">
+                <div className="umpire-demo__fouls-kicker">Fouls</div>
+                <div className="umpire-demo__fouls-list">
                   {fouls.map((foul) => (
-                    <div key={foul.field} className="signals-demo__foul">
-                      <span className="signals-demo__foul-field">
+                    <div key={foul.field} className="umpire-demo__foul">
+                      <span className="umpire-demo__foul-field">
                         {fieldLabels[foul.field]}
                       </span>
-                      <span className="signals-demo__foul-reason">{foul.reason}</span>
+                      <span className="umpire-demo__foul-reason">{foul.reason}</span>
                     </div>
                   ))}
                 </div>
               </div>
               <button
                 type="button"
-                className="signals-demo__reset-button"
+                className="umpire-demo__reset-button"
                 onClick={() => {
                   for (const foul of fouls) {
                     reactive.set(foul.field, foul.suggestedValue ?? '')
@@ -308,12 +310,12 @@ export default function SignalsFineGrainedDemo() {
           </div>
 
           {/* Live signal state — shows what's happening under the hood */}
-          <section className="signals-demo__json-shell">
-            <div className="signals-demo__json-header">
-              <span className="signals-demo__json-title">signal state</span>
-              <span className="signals-demo__json-meta">@preact/signals-core</span>
+          <section className="umpire-demo__json-shell">
+            <div className="umpire-demo__json-header">
+              <span className="umpire-demo__json-title">signal state</span>
+              <span className="umpire-demo__json-meta">@preact/signals-core</span>
             </div>
-            <pre className="signals-demo__code-block">
+            <pre className="umpire-demo__code-block">
               <code>{prettyJson({ conditions: { plan }, values })}</code>
             </pre>
           </section>

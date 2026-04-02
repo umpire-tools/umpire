@@ -22,6 +22,38 @@
   --umpire-demo-input-radius: 0.7rem;
   --umpire-demo-input-padding: 0.72rem 0.82rem;
   --umpire-demo-input-bg: rgba(255, 255, 255, 0.045);
+  --umpire-demo-fouls-padding: 0.9rem 1rem;
+  --umpire-demo-fouls-border-color: rgba(254, 208, 35, 0.18);
+  --umpire-demo-fouls-radius: 1rem;
+  --umpire-demo-fouls-bg:
+    linear-gradient(90deg, rgba(254, 208, 35, 0.14), rgba(254, 208, 35, 0.05)),
+    rgba(18, 18, 18, 0.92);
+  --umpire-demo-fouls-shadow: none;
+  --umpire-demo-fouls-copy-gap: 0;
+  --umpire-demo-fouls-list-direction: row;
+  --umpire-demo-fouls-list-wrap: wrap;
+  --umpire-demo-fouls-list-gap: 0.45rem 1rem;
+  --umpire-demo-fouls-list-margin-top: 0.45rem;
+  --umpire-demo-fouls-kicker-font-size: 0.67rem;
+  --umpire-demo-fouls-kicker-letter-spacing: 0.16em;
+  --umpire-demo-fouls-kicker-color: rgba(254, 208, 35, 0.8);
+  --umpire-demo-foul-wrap: wrap;
+  --umpire-demo-foul-gap: 0.45rem;
+  --umpire-demo-foul-font-size: 0.9rem;
+  --umpire-demo-foul-field-font-size: 0.9rem;
+  --umpire-demo-foul-field-font-weight: 700;
+  --umpire-demo-foul-field-color: #fff3b8;
+  --umpire-demo-foul-reason-font-size: 0.9rem;
+  --umpire-demo-foul-reason-color: rgba(255, 243, 184, 0.78);
+  --umpire-demo-reset-button-padding: 0.72rem 1rem;
+  --umpire-demo-reset-button-border-color: rgba(254, 208, 35, 0.34);
+  --umpire-demo-reset-button-bg: rgba(254, 208, 35, 0.16);
+  --umpire-demo-reset-button-color: #fff1a8;
+  --umpire-demo-reset-button-font-size: 0.76rem;
+  --umpire-demo-reset-button-font-weight: 700;
+  --umpire-demo-reset-button-hover-bg: rgba(254, 208, 35, 0.24);
+  --umpire-demo-reset-button-hover-shadow: none;
+  --umpire-demo-reset-button-hover-transform: translateY(-1px);
 }
 
 .signup-demo__panel-body--table {
@@ -36,76 +68,6 @@
   font-size: 0.83rem;
   font-style: italic;
   color: rgba(245, 247, 244, 0.52);
-}
-
-.signup-demo__fouls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid rgba(254, 208, 35, 0.18);
-  border-radius: 1rem;
-  background:
-    linear-gradient(90deg, rgba(254, 208, 35, 0.14), rgba(254, 208, 35, 0.05)),
-    rgba(18, 18, 18, 0.92);
-}
-
-.signup-demo__fouls-copy {
-  min-width: 0;
-}
-
-.signup-demo__fouls-kicker {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.67rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(254, 208, 35, 0.8);
-}
-
-.signup-demo__fouls-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 1rem;
-  margin-top: 0.45rem;
-}
-
-.signup-demo__foul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  align-items: baseline;
-  font-size: 0.9rem;
-}
-
-.signup-demo__foul-field {
-  font-weight: 700;
-  color: #fff3b8;
-}
-
-.signup-demo__foul-reason {
-  color: rgba(255, 243, 184, 0.78);
-}
-
-.signup-demo__reset-button {
-  flex-shrink: 0;
-  border: 1px solid rgba(254, 208, 35, 0.34);
-  border-radius: 999px;
-  padding: 0.72rem 1rem;
-  background: rgba(254, 208, 35, 0.16);
-  color: #fff1a8;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.18s ease, transform 0.18s ease;
-}
-
-.signup-demo__reset-button:hover {
-  background: rgba(254, 208, 35, 0.24);
-  transform: translateY(-1px);
 }
 
 .signup-demo__table-shell {
@@ -175,12 +137,12 @@
 }
 
 @media (max-width: 50rem) {
-  .signup-demo__fouls {
+  .signup-demo .umpire-demo__fouls {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .signup-demo__reset-button {
+  .signup-demo .umpire-demo__reset-button {
     width: 100%;
   }
 

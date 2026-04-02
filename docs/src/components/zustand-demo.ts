@@ -115,8 +115,8 @@ export function mount(root: HTMLElement) {
 
   // -- Render initial HTML --
   root.innerHTML = renderShell()
-  const foulsEl = $('.zustand-demo__fouls', root)!
-  const foulsListEl = $('.zustand-demo__fouls-list', root)!
+  const foulsEl = $('.umpire-demo__fouls', root)!
+  const foulsListEl = $('.umpire-demo__fouls-list', root)!
   const stateJsonEl = $('.zustand-demo__state-json', root)!
   const planLabelEl = $('.zustand-demo__plan-label', root)!
   const enabledCountEl = $('.zustand-demo__enabled-count', root)!
@@ -138,7 +138,7 @@ export function mount(root: HTMLElement) {
   }
 
   // -- Wire apply resets button --
-  $('.zustand-demo__reset-button', root)?.addEventListener('click', () => {
+  $('.umpire-demo__reset-button', root)?.addEventListener('click', () => {
     const fouls = umpStore.fouls
     const patch: Partial<DemoState> = {}
     for (const foul of fouls) {
@@ -181,10 +181,10 @@ export function mount(root: HTMLElement) {
 
       toggleClass(card, 'zustand-demo__field-card--disabled', !fa.enabled)
 
-      const dot = $('.zustand-demo__status', card)
-      toggleClass(dot, 'zustand-demo__status--enabled', fa.enabled)
-      toggleClass(dot, 'zustand-demo__status--disabled', !fa.enabled)
-      setText($('.zustand-demo__status-text', card), fa.enabled ? 'enabled' : 'disabled')
+      const dot = $('.umpire-demo__status', card)
+      toggleClass(dot, 'umpire-demo__status--enabled', fa.enabled)
+      toggleClass(dot, 'umpire-demo__status--disabled', !fa.enabled)
+      setText($('.umpire-demo__status-text', card), fa.enabled ? 'enabled' : 'disabled')
 
       const pill = $('.zustand-demo__pill', card)
       toggleClass(pill, 'zustand-demo__pill--required', fa.required)
@@ -203,18 +203,18 @@ export function mount(root: HTMLElement) {
     setText(enabledCountEl, String(enabledCount))
 
     // Update fouls banner — use textContent, never innerHTML with dynamic values
-    toggleClass(foulsEl, 'zustand-demo__fouls--visible', fouls.length > 0)
+    toggleClass(foulsEl, 'umpire-demo__fouls--visible', fouls.length > 0)
     foulsListEl.replaceChildren()
     for (const foul of fouls) {
       const row = document.createElement('div')
-      row.className = 'zustand-demo__foul'
+      row.className = 'umpire-demo__foul'
 
       const fieldSpan = document.createElement('span')
-      fieldSpan.className = 'zustand-demo__foul-field'
+      fieldSpan.className = 'umpire-demo__foul-field'
       fieldSpan.textContent = fieldLabels[foul.field as DemoField] ?? foul.field
 
       const reasonSpan = document.createElement('span')
-      reasonSpan.className = 'zustand-demo__foul-reason'
+      reasonSpan.className = 'umpire-demo__foul-reason'
       reasonSpan.textContent = foul.reason
 
       row.append(fieldSpan, reasonSpan)
@@ -230,10 +230,10 @@ export function mount(root: HTMLElement) {
     const card = $(`.zustand-demo__field-card[data-field="${field}"]`, root)
     if (!card) continue
     toggleClass(card, 'zustand-demo__field-card--disabled', !fa.enabled)
-    const dot = $('.zustand-demo__status', card)
-    toggleClass(dot, 'zustand-demo__status--enabled', fa.enabled)
-    toggleClass(dot, 'zustand-demo__status--disabled', !fa.enabled)
-    setText($('.zustand-demo__status-text', card), fa.enabled ? 'enabled' : 'disabled')
+    const dot = $('.umpire-demo__status', card)
+    toggleClass(dot, 'umpire-demo__status--enabled', fa.enabled)
+    toggleClass(dot, 'umpire-demo__status--disabled', !fa.enabled)
+    setText($('.umpire-demo__status-text', card), fa.enabled ? 'enabled' : 'disabled')
     const pill = $('.zustand-demo__pill', card)
     toggleClass(pill, 'zustand-demo__pill--required', fa.required)
     toggleClass(pill, 'zustand-demo__pill--optional', !fa.required)
@@ -253,12 +253,12 @@ export function mount(root: HTMLElement) {
 
 function renderShell(): string {
   return `
-    <div class="zustand-demo__fouls">
-      <div class="zustand-demo__fouls-copy">
-        <div class="zustand-demo__fouls-kicker">Reset recommendations</div>
-        <div class="zustand-demo__fouls-list"></div>
+    <div class="umpire-demo__fouls">
+      <div class="umpire-demo__fouls-copy">
+        <div class="umpire-demo__fouls-kicker">Reset recommendations</div>
+        <div class="umpire-demo__fouls-list"></div>
       </div>
-      <button type="button" class="zustand-demo__reset-button">Apply resets</button>
+      <button type="button" class="umpire-demo__reset-button">Apply resets</button>
     </div>
 
     <div class="umpire-demo__layout">
@@ -306,12 +306,12 @@ function renderShell(): string {
             `).join('')}
           </div>
 
-          <section class="zustand-demo__json-shell">
-            <div class="zustand-demo__json-header">
-              <span class="zustand-demo__json-title">store.getState()</span>
-              <span class="zustand-demo__json-meta zustand-demo__plan-label">personal plan</span>
+          <section class="umpire-demo__json-shell">
+            <div class="umpire-demo__json-header">
+              <span class="umpire-demo__json-title">store.getState()</span>
+              <span class="umpire-demo__json-meta zustand-demo__plan-label">personal plan</span>
             </div>
-            <pre class="zustand-demo__code-block"><code class="zustand-demo__state-json"></code></pre>
+            <pre class="umpire-demo__code-block"><code class="zustand-demo__state-json"></code></pre>
           </section>
         </div>
       </section>
@@ -348,9 +348,9 @@ function renderShell(): string {
                     <div class="zustand-demo__field-name">${fieldLabels[field]}</div>
                     <code class="zustand-demo__field-code">field('${field}')</code>
                   </div>
-                  <div class="zustand-demo__status">
-                    <span class="zustand-demo__status-dot"></span>
-                    <span class="zustand-demo__status-text">enabled</span>
+                  <div class="umpire-demo__status">
+                    <span class="umpire-demo__status-dot"></span>
+                    <span class="umpire-demo__status-text">enabled</span>
                   </div>
                 </div>
                 <div class="zustand-demo__field-grid">

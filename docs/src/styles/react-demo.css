@@ -3,6 +3,38 @@
   --umpire-demo-text-muted: rgba(245, 247, 244, 0.36);
   --umpire-demo-shadow: rgba(0, 0, 0, 0.34);
   --umpire-demo-layout-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  --umpire-demo-fouls-padding: 0.9rem 1rem;
+  --umpire-demo-fouls-border-color: rgba(254, 208, 35, 0.18);
+  --umpire-demo-fouls-radius: 1rem;
+  --umpire-demo-fouls-bg:
+    linear-gradient(90deg, rgba(254, 208, 35, 0.14), rgba(254, 208, 35, 0.05)),
+    rgba(18, 18, 18, 0.92);
+  --umpire-demo-fouls-shadow: none;
+  --umpire-demo-fouls-copy-gap: 0;
+  --umpire-demo-fouls-list-direction: row;
+  --umpire-demo-fouls-list-wrap: wrap;
+  --umpire-demo-fouls-list-gap: 0.45rem 1rem;
+  --umpire-demo-fouls-list-margin-top: 0.45rem;
+  --umpire-demo-fouls-kicker-font-size: 0.67rem;
+  --umpire-demo-fouls-kicker-letter-spacing: 0.16em;
+  --umpire-demo-fouls-kicker-color: rgba(254, 208, 35, 0.8);
+  --umpire-demo-foul-wrap: wrap;
+  --umpire-demo-foul-gap: 0.45rem;
+  --umpire-demo-foul-font-size: 0.9rem;
+  --umpire-demo-foul-field-font-size: 0.9rem;
+  --umpire-demo-foul-field-font-weight: 700;
+  --umpire-demo-foul-field-color: #fff3b8;
+  --umpire-demo-foul-reason-font-size: 0.9rem;
+  --umpire-demo-foul-reason-color: rgba(255, 243, 184, 0.78);
+  --umpire-demo-reset-button-padding: 0.72rem 1rem;
+  --umpire-demo-reset-button-border-color: rgba(254, 208, 35, 0.34);
+  --umpire-demo-reset-button-bg: rgba(254, 208, 35, 0.16);
+  --umpire-demo-reset-button-color: #fff1a8;
+  --umpire-demo-reset-button-font-size: 0.76rem;
+  --umpire-demo-reset-button-font-weight: 700;
+  --umpire-demo-reset-button-hover-bg: rgba(254, 208, 35, 0.24);
+  --umpire-demo-reset-button-hover-shadow: none;
+  --umpire-demo-reset-button-hover-transform: translateY(-1px);
 }
 
 .react-demo__panel-body--output {
@@ -10,80 +42,6 @@
   flex-direction: column;
   gap: 0.9rem;
 }
-
-/* -- Fouls banner -- */
-
-.react-demo__fouls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid rgba(254, 208, 35, 0.18);
-  border-radius: 1rem;
-  background:
-    linear-gradient(90deg, rgba(254, 208, 35, 0.14), rgba(254, 208, 35, 0.05)),
-    rgba(18, 18, 18, 0.92);
-}
-
-.react-demo__fouls-copy {
-  min-width: 0;
-}
-
-.react-demo__fouls-kicker {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.67rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(254, 208, 35, 0.8);
-}
-
-.react-demo__fouls-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 1rem;
-  margin-top: 0.45rem;
-}
-
-.react-demo__foul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  align-items: baseline;
-  font-size: 0.9rem;
-}
-
-.react-demo__foul-field {
-  font-weight: 700;
-  color: #fff3b8;
-}
-
-.react-demo__foul-reason {
-  color: rgba(255, 243, 184, 0.78);
-}
-
-.react-demo__reset-button {
-  flex-shrink: 0;
-  border: 1px solid rgba(254, 208, 35, 0.34);
-  border-radius: 999px;
-  padding: 0.72rem 1rem;
-  background: rgba(254, 208, 35, 0.16);
-  color: #fff1a8;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background 0.18s ease, transform 0.18s ease;
-}
-
-.react-demo__reset-button:hover {
-  background: rgba(254, 208, 35, 0.24);
-  transform: translateY(-1px);
-}
-
-/* -- Callout -- */
 
 .react-demo__callout {
   display: grid;
@@ -129,21 +87,10 @@
   line-height: 1.45;
 }
 
-/* -- Conditions + hook -- */
-
-.react-demo__conditions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
+.react-demo .umpire-demo__conditions {
   margin-top: 1rem;
-  padding: 0.72rem 0.85rem;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  border-radius: 0.85rem;
-  background: rgba(255, 255, 255, 0.02);
 }
 
-.react-demo__conditions-label,
 .react-demo__hook-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
@@ -152,14 +99,11 @@
   color: var(--umpire-demo-text-muted);
 }
 
-.react-demo__conditions-code,
 .react-demo__hook-code {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.79rem;
   color: var(--umpire-demo-text);
 }
-
-/* -- Field cards -- */
 
 .react-demo__field-header {
   display: flex;
@@ -231,8 +175,6 @@
   line-height: 1.45;
 }
 
-/* -- Output panel -- */
-
 .react-demo__hook-line {
   display: flex;
   flex-direction: column;
@@ -243,79 +185,23 @@
   background: rgba(107, 254, 156, 0.035);
 }
 
-.react-demo__json-section {
-  border: 1px solid rgba(107, 254, 156, 0.1);
-  border-radius: 0.95rem;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
-}
-
 .react-demo__json-section--alert {
   border-color: rgba(254, 208, 35, 0.28);
   box-shadow: 0 0 0 1px rgba(254, 208, 35, 0.08), 0 0 24px rgba(254, 208, 35, 0.08);
 }
 
-.react-demo__json-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 0.85rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.react-demo__json-section--alert .react-demo__json-header {
+.react-demo__json-section--alert .umpire-demo__json-header {
   background: rgba(254, 208, 35, 0.08);
 }
 
-.react-demo__json-title,
-.react-demo__json-meta {
-  font-family: 'JetBrains Mono', monospace;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.react-demo__json-title {
-  font-size: 0.68rem;
-  color: var(--umpire-demo-text-dim);
-}
-
-.react-demo__json-meta {
-  font-size: 0.62rem;
-  color: var(--umpire-demo-green);
-}
-
-.react-demo__json-section--alert .react-demo__json-meta {
+.react-demo__json-section--alert .umpire-demo__json-meta {
   color: var(--umpire-demo-yellow);
 }
 
-.react-demo__code-shell {
-  overflow: auto;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 18%),
-    rgba(10, 10, 10, 0.8);
-}
-
-.react-demo__code-block {
-  margin: 0;
-  padding: 0.9rem 0.95rem 1rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
-  line-height: 1.65;
-  color: var(--umpire-demo-text);
-  white-space: pre;
-}
-
 @media (max-width: 50rem) {
-  .react-demo__fouls {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .react-demo__conditions,
-  .react-demo__field-meta,
-  .react-demo__json-header {
+  .react-demo .umpire-demo__conditions,
+  .react-demo .umpire-demo__json-header,
+  .react-demo__field-meta {
     flex-direction: column;
     align-items: flex-start;
   }

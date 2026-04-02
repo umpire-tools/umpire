@@ -29,11 +29,52 @@
   --umpire-demo-field-radius: 0.9rem;
   --umpire-demo-field-focus-bg: rgba(255, 255, 255, 0.04);
   --umpire-demo-field-disabled-bg: rgba(255, 255, 255, 0.018);
+  --umpire-demo-field-disabled-border-color: rgba(255, 255, 255, 0.045);
   --umpire-demo-field-disabled-opacity: 0.7;
   --umpire-demo-label-color: var(--umpire-demo-text-dim);
   --umpire-demo-input-radius: 0.75rem;
   --umpire-demo-input-padding: 0.75rem 0.82rem;
   --umpire-demo-input-bg: rgba(255, 255, 255, 0.04);
+  --umpire-demo-fouls-padding: 0.85rem 1rem;
+  --umpire-demo-fouls-border-color: rgba(254, 208, 35, 0.28);
+  --umpire-demo-fouls-radius: 0.95rem;
+  --umpire-demo-fouls-bg:
+    linear-gradient(135deg, rgba(254, 208, 35, 0.12), transparent 60%),
+    rgba(255, 255, 255, 0.02);
+  --umpire-demo-fouls-shadow: 0 0 0 1px rgba(254, 208, 35, 0.08), 0 0 24px rgba(254, 208, 35, 0.08);
+  --umpire-demo-fouls-copy-display: flex;
+  --umpire-demo-fouls-copy-direction: column;
+  --umpire-demo-fouls-copy-gap: 0.35rem;
+  --umpire-demo-fouls-list-direction: column;
+  --umpire-demo-fouls-list-wrap: nowrap;
+  --umpire-demo-fouls-list-gap: 0.2rem;
+  --umpire-demo-fouls-list-margin-top: 0;
+  --umpire-demo-fouls-kicker-font-size: 0.62rem;
+  --umpire-demo-fouls-kicker-letter-spacing: 0.14em;
+  --umpire-demo-fouls-kicker-color: var(--umpire-demo-yellow);
+  --umpire-demo-foul-wrap: nowrap;
+  --umpire-demo-foul-gap: 0.5rem;
+  --umpire-demo-foul-font-size: 0.85rem;
+  --umpire-demo-foul-field-font-size: 0.75rem;
+  --umpire-demo-foul-field-font-weight: 400;
+  --umpire-demo-foul-field-color: var(--umpire-demo-text);
+  --umpire-demo-foul-reason-font-size: 0.82rem;
+  --umpire-demo-foul-reason-color: var(--umpire-demo-text-dim);
+  --umpire-demo-reset-button-padding: 0.5rem 0.9rem;
+  --umpire-demo-reset-button-border-color: rgba(254, 208, 35, 0.35);
+  --umpire-demo-reset-button-bg: rgba(254, 208, 35, 0.12);
+  --umpire-demo-reset-button-color: var(--umpire-demo-yellow);
+  --umpire-demo-reset-button-font-size: 0.68rem;
+  --umpire-demo-reset-button-font-weight: 600;
+  --umpire-demo-reset-button-letter-spacing: 0.08em;
+  --umpire-demo-reset-button-hover-bg: rgba(254, 208, 35, 0.22);
+  --umpire-demo-reset-button-hover-shadow: 0 0 18px rgba(254, 208, 35, 0.14);
+  --umpire-demo-reset-button-hover-transform: none;
+  --umpire-demo-status-gap: 0.4rem;
+  --umpire-demo-status-padding: 0.28rem 0.5rem;
+  --umpire-demo-status-font-size: 0.6rem;
+  --umpire-demo-status-dot-size: 0.45rem;
+  --umpire-demo-status-dot-glow: 0 0 10px currentColor;
   font-family: 'Work Sans', sans-serif;
   color: var(--umpire-demo-text);
   display: flex;
@@ -187,9 +228,248 @@
 }
 
 .umpire-demo__field--disabled {
-  border-color: rgba(255, 255, 255, 0.045);
+  border-color: var(--umpire-demo-field-disabled-border-color);
   background: var(--umpire-demo-field-disabled-bg);
   opacity: var(--umpire-demo-field-disabled-opacity);
+}
+
+.umpire-demo__field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.umpire-demo__field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.umpire-demo__required-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid rgba(254, 208, 35, 0.16);
+  border-radius: 999px;
+  background: rgba(254, 208, 35, 0.08);
+  color: var(--umpire-demo-yellow);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.umpire-demo__field-reason {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: rgba(255, 113, 108, 0.85);
+}
+
+.umpire-demo__field-reason:empty {
+  display: none;
+}
+
+.umpire-demo__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--umpire-demo-status-gap);
+  padding: var(--umpire-demo-status-padding);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--umpire-demo-status-font-size);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.umpire-demo__status--enabled {
+  color: var(--umpire-demo-green);
+  border-color: rgba(107, 254, 156, 0.2);
+  background: rgba(107, 254, 156, 0.08);
+}
+
+.umpire-demo__status--disabled {
+  color: var(--umpire-demo-red);
+  border-color: rgba(255, 113, 108, 0.2);
+  background: rgba(255, 113, 108, 0.08);
+}
+
+.umpire-demo__status-dot {
+  width: var(--umpire-demo-status-dot-size);
+  height: var(--umpire-demo-status-dot-size);
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: var(--umpire-demo-status-dot-glow);
+}
+
+.umpire-demo__status-text {
+  line-height: 1;
+}
+
+.umpire-demo__conditions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.72rem 0.85rem;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.umpire-demo__conditions-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--umpire-demo-text-muted);
+}
+
+.umpire-demo__conditions-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.79rem;
+  color: var(--umpire-demo-text);
+}
+
+.umpire-demo__fouls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: var(--umpire-demo-fouls-padding);
+  border: 1px solid var(--umpire-demo-fouls-border-color);
+  border-radius: var(--umpire-demo-fouls-radius);
+  background: var(--umpire-demo-fouls-bg);
+  box-shadow: var(--umpire-demo-fouls-shadow);
+}
+
+.umpire-demo__fouls--visible {
+  display: flex;
+}
+
+.umpire-demo__fouls-copy {
+  display: var(--umpire-demo-fouls-copy-display);
+  flex-direction: var(--umpire-demo-fouls-copy-direction);
+  gap: var(--umpire-demo-fouls-copy-gap);
+  min-width: 0;
+}
+
+.umpire-demo__fouls-kicker {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--umpire-demo-fouls-kicker-font-size);
+  font-weight: 700;
+  letter-spacing: var(--umpire-demo-fouls-kicker-letter-spacing);
+  text-transform: uppercase;
+  color: var(--umpire-demo-fouls-kicker-color);
+}
+
+.umpire-demo__fouls-list {
+  display: flex;
+  flex-direction: var(--umpire-demo-fouls-list-direction);
+  flex-wrap: var(--umpire-demo-fouls-list-wrap);
+  gap: var(--umpire-demo-fouls-list-gap);
+  margin-top: var(--umpire-demo-fouls-list-margin-top);
+}
+
+.umpire-demo__foul {
+  display: flex;
+  flex-wrap: var(--umpire-demo-foul-wrap);
+  align-items: baseline;
+  gap: var(--umpire-demo-foul-gap);
+  font-size: var(--umpire-demo-foul-font-size);
+  line-height: 1.3;
+}
+
+.umpire-demo__foul-field {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--umpire-demo-foul-field-font-size);
+  font-weight: var(--umpire-demo-foul-field-font-weight);
+  color: var(--umpire-demo-foul-field-color);
+}
+
+.umpire-demo__foul-reason {
+  color: var(--umpire-demo-foul-reason-color);
+  font-size: var(--umpire-demo-foul-reason-font-size);
+}
+
+.umpire-demo__reset-button {
+  flex-shrink: 0;
+  padding: var(--umpire-demo-reset-button-padding);
+  border: 1px solid var(--umpire-demo-reset-button-border-color);
+  border-radius: 999px;
+  background: var(--umpire-demo-reset-button-bg);
+  color: var(--umpire-demo-reset-button-color);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--umpire-demo-reset-button-font-size);
+  font-weight: var(--umpire-demo-reset-button-font-weight);
+  letter-spacing: var(--umpire-demo-reset-button-letter-spacing);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.umpire-demo__reset-button:hover {
+  background: var(--umpire-demo-reset-button-hover-bg);
+  box-shadow: var(--umpire-demo-reset-button-hover-shadow);
+  transform: var(--umpire-demo-reset-button-hover-transform);
+}
+
+.umpire-demo__json-shell {
+  border: 1px solid rgba(107, 254, 156, 0.1);
+  border-radius: 0.95rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.umpire-demo__json-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.umpire-demo__json-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--umpire-demo-text-dim);
+}
+
+.umpire-demo__json-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--umpire-demo-green);
+}
+
+.umpire-demo__code-block {
+  margin: 0;
+  overflow: auto;
+  padding: 0.9rem 0.95rem 1rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 18%),
+    rgba(10, 10, 10, 0.8);
+  color: var(--umpire-demo-text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  line-height: 1.65;
+  white-space: pre;
 }
 
 .umpire-demo__label {
@@ -239,5 +519,12 @@
 
   .umpire-demo__layout {
     grid-template-columns: 1fr;
+  }
+
+  .umpire-demo__conditions,
+  .umpire-demo__field-header,
+  .umpire-demo__fouls {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

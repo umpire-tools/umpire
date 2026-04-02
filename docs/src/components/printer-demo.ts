@@ -452,9 +452,9 @@ export function mount(root: HTMLElement) {
 
   root.innerHTML = renderShell()
 
-  const foulsEl = $('.zustand-demo__fouls', root)
-  const foulsListEl = $('.zustand-demo__fouls-list', root)
-  const resetButton = $('.zustand-demo__reset-button', root) as HTMLButtonElement | null
+  const foulsEl = $('.umpire-demo__fouls', root)
+  const foulsListEl = $('.umpire-demo__fouls-list', root)
+  const resetButton = $('.umpire-demo__reset-button', root) as HTMLButtonElement | null
 
   for (const button of $$('.printer-demo__printer-btn', root)) {
     button.addEventListener('click', () => {
@@ -541,9 +541,8 @@ function renderForm(root: HTMLElement, state: PrintState, availability: Availabi
 
     toggleClass(shell, 'printer-demo__field--hidden', !visible)
     toggleClass(shell, 'umpire-demo__field--disabled', disabled)
-    toggleClass(shell, 'printer-demo__field--disabled', disabled)
-    toggleClass(statusEl, 'printer-demo__status--enabled', fieldAvailability.enabled)
-    toggleClass(statusEl, 'printer-demo__status--disabled', !fieldAvailability.enabled)
+    toggleClass(statusEl, 'umpire-demo__status--enabled', fieldAvailability.enabled)
+    toggleClass(statusEl, 'umpire-demo__status--disabled', !fieldAvailability.enabled)
 
     control.disabled = !visible || disabled
     syncControlValue(control, field, state)
@@ -566,7 +565,7 @@ function renderFouls(
   resetButton: HTMLButtonElement | null,
   fouls: UmpireStore<typeof fields>['fouls'],
 ) {
-  toggleClass(foulsEl, 'zustand-demo__fouls--visible', fouls.length > 0)
+  toggleClass(foulsEl, 'umpire-demo__fouls--visible', fouls.length > 0)
   setAttr(resetButton, 'disabled', fouls.length === 0)
 
   if (!foulsListEl) return
@@ -574,14 +573,14 @@ function renderFouls(
 
   for (const foul of fouls) {
     const row = document.createElement('div')
-    row.className = 'zustand-demo__foul'
+    row.className = 'umpire-demo__foul'
 
     const fieldSpan = document.createElement('span')
-    fieldSpan.className = 'zustand-demo__foul-field'
+    fieldSpan.className = 'umpire-demo__foul-field'
     fieldSpan.textContent = fieldMeta[foul.field].label
 
     const reasonSpan = document.createElement('span')
-    reasonSpan.className = 'zustand-demo__foul-reason'
+    reasonSpan.className = 'umpire-demo__foul-reason'
     reasonSpan.textContent = foul.reason
 
     row.append(fieldSpan, reasonSpan)
@@ -763,12 +762,12 @@ function renderShell(): string {
             </div>
           </section>
 
-          <div class="zustand-demo__fouls">
-            <div class="zustand-demo__fouls-copy">
-              <div class="zustand-demo__fouls-kicker">Reset recommendations</div>
-              <div class="zustand-demo__fouls-list"></div>
+          <div class="umpire-demo__fouls">
+            <div class="umpire-demo__fouls-copy">
+              <div class="umpire-demo__fouls-kicker">Reset recommendations</div>
+              <div class="umpire-demo__fouls-list"></div>
             </div>
-            <button type="button" class="zustand-demo__reset-button" disabled>Apply resets</button>
+            <button type="button" class="umpire-demo__reset-button" disabled>Apply resets</button>
           </div>
 
           <div class="umpire-demo__fields printer-demo__groups">
@@ -782,12 +781,12 @@ function renderShell(): string {
             `).join('')}
           </div>
 
-          <section class="zustand-demo__json-shell">
-            <div class="zustand-demo__json-header">
-              <span class="zustand-demo__json-title">store.getState()</span>
-              <span class="zustand-demo__json-meta">zustand/vanilla</span>
+          <section class="umpire-demo__json-shell">
+            <div class="umpire-demo__json-header">
+              <span class="umpire-demo__json-title">store.getState()</span>
+              <span class="umpire-demo__json-meta">zustand/vanilla</span>
             </div>
-            <pre class="zustand-demo__code-block"><code data-state-json></code></pre>
+            <pre class="umpire-demo__code-block"><code data-state-json></code></pre>
           </section>
         </div>
       </section>
@@ -802,21 +801,21 @@ function renderFieldShell(field: Exclude<PrintField, 'printer'>): string {
   if (meta.kind === 'checkbox') {
     return `
       <div class="umpire-demo__field" data-field-shell="${field}">
-        <div class="printer-demo__field-header">
-          <div class="printer-demo__field-label">
+        <div class="umpire-demo__field-header">
+          <div class="umpire-demo__field-label">
             <label class="printer-demo__field-title" for="${id}">${meta.label}</label>
-            <span class="printer-demo__field-required" data-field-required="${field}" hidden>required</span>
+            <span class="umpire-demo__required-pill" data-field-required="${field}" hidden>required</span>
           </div>
-          <div class="printer-demo__status printer-demo__status--enabled" data-field-status="${field}">
-            <span class="printer-demo__status-dot"></span>
-            <span data-field-status-text="${field}">enabled</span>
+          <div class="umpire-demo__status umpire-demo__status--enabled" data-field-status="${field}">
+            <span class="umpire-demo__status-dot"></span>
+            <span class="umpire-demo__status-text" data-field-status-text="${field}">enabled</span>
           </div>
         </div>
         <label class="printer-demo__checkbox-row" for="${id}">
           <input id="${id}" type="checkbox" data-field-control="${field}" />
           <span>${meta.checkboxLabel}</span>
         </label>
-        <div class="printer-demo__field-reason" data-field-reason="${field}"></div>
+        <div class="umpire-demo__field-reason" data-field-reason="${field}"></div>
       </div>
     `
   }
@@ -824,14 +823,14 @@ function renderFieldShell(field: Exclude<PrintField, 'printer'>): string {
   if (meta.kind === 'number') {
     return `
       <div class="umpire-demo__field" data-field-shell="${field}">
-        <div class="printer-demo__field-header">
-          <div class="printer-demo__field-label">
+        <div class="umpire-demo__field-header">
+          <div class="umpire-demo__field-label">
             <label class="printer-demo__field-title" for="${id}">${meta.label}</label>
-            <span class="printer-demo__field-required" data-field-required="${field}" hidden>required</span>
+            <span class="umpire-demo__required-pill" data-field-required="${field}" hidden>required</span>
           </div>
-          <div class="printer-demo__status printer-demo__status--enabled" data-field-status="${field}">
-            <span class="printer-demo__status-dot"></span>
-            <span data-field-status-text="${field}">enabled</span>
+          <div class="umpire-demo__status umpire-demo__status--enabled" data-field-status="${field}">
+            <span class="umpire-demo__status-dot"></span>
+            <span class="umpire-demo__status-text" data-field-status-text="${field}">enabled</span>
           </div>
         </div>
         <input
@@ -843,25 +842,25 @@ function renderFieldShell(field: Exclude<PrintField, 'printer'>): string {
           inputmode="numeric"
           data-field-control="${field}"
         />
-        <div class="printer-demo__field-reason" data-field-reason="${field}"></div>
+        <div class="umpire-demo__field-reason" data-field-reason="${field}"></div>
       </div>
     `
   }
 
   return `
     <div class="umpire-demo__field" data-field-shell="${field}">
-      <div class="printer-demo__field-header">
-        <div class="printer-demo__field-label">
+      <div class="umpire-demo__field-header">
+        <div class="umpire-demo__field-label">
           <label class="printer-demo__field-title" for="${id}">${meta.label}</label>
-          <span class="printer-demo__field-required" data-field-required="${field}" hidden>required</span>
+          <span class="umpire-demo__required-pill" data-field-required="${field}" hidden>required</span>
         </div>
-        <div class="printer-demo__status printer-demo__status--enabled" data-field-status="${field}">
-          <span class="printer-demo__status-dot"></span>
-          <span data-field-status-text="${field}">enabled</span>
+        <div class="umpire-demo__status umpire-demo__status--enabled" data-field-status="${field}">
+          <span class="umpire-demo__status-dot"></span>
+          <span class="umpire-demo__status-text" data-field-status-text="${field}">enabled</span>
         </div>
       </div>
       <select id="${id}" class="umpire-demo__input" data-field-control="${field}"></select>
-      <div class="printer-demo__field-reason" data-field-reason="${field}"></div>
+      <div class="umpire-demo__field-reason" data-field-reason="${field}"></div>
     </div>
   `
 }

@@ -108,16 +108,16 @@ export default function SignupDemo() {
   return (
     <div className="signup-demo umpire-demo">
       {fouls.length > 0 && (
-        <div className="signup-demo__fouls">
-          <div className="signup-demo__fouls-copy">
-            <div className="signup-demo__fouls-kicker">Flag fouls</div>
-            <div className="signup-demo__fouls-list">
+        <div className="umpire-demo__fouls">
+          <div className="umpire-demo__fouls-copy">
+            <div className="umpire-demo__fouls-kicker">Flag fouls</div>
+            <div className="umpire-demo__fouls-list">
               {fouls.map((foul) => (
-                <div key={foul.field} className="signup-demo__foul">
-                  <span className="signup-demo__foul-field">
+                <div key={foul.field} className="umpire-demo__foul">
+                  <span className="umpire-demo__foul-field">
                     {fieldMeta[foul.field].label}
                   </span>
-                  <span className="signup-demo__foul-reason">{foul.reason}</span>
+                  <span className="umpire-demo__foul-reason">{foul.reason}</span>
                 </div>
               ))}
             </div>
@@ -125,7 +125,7 @@ export default function SignupDemo() {
 
           <button
             type="button"
-            className="signup-demo__reset-button"
+            className="umpire-demo__reset-button"
             onClick={applyResets}
           >
             Apply resets

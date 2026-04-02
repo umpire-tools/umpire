@@ -99,21 +99,21 @@ export default function ReactAdapterDemo() {
   return (
     <div className="react-demo umpire-demo">
       {fouls.length > 0 && (
-        <div className="react-demo__fouls">
-          <div className="react-demo__fouls-copy">
-            <div className="react-demo__fouls-kicker">Reset recommendations</div>
-            <div className="react-demo__fouls-list">
+        <div className="umpire-demo__fouls">
+          <div className="umpire-demo__fouls-copy">
+            <div className="umpire-demo__fouls-kicker">Reset recommendations</div>
+            <div className="umpire-demo__fouls-list">
               {fouls.map((foul) => (
-                <div key={foul.field} className="react-demo__foul">
-                  <span className="react-demo__foul-field">
+                <div key={foul.field} className="umpire-demo__foul">
+                  <span className="umpire-demo__foul-field">
                     {fieldMeta[foul.field].label}
                   </span>
-                  <span className="react-demo__foul-reason">{foul.reason}</span>
+                  <span className="umpire-demo__foul-reason">{foul.reason}</span>
                 </div>
               ))}
             </div>
           </div>
-          <button type="button" className="react-demo__reset-button" onClick={applyResets}>
+          <button type="button" className="umpire-demo__reset-button" onClick={applyResets}>
             Apply resets
           </button>
         </div>
@@ -138,9 +138,9 @@ export default function ReactAdapterDemo() {
               </p>
             </div>
 
-            <div className="react-demo__conditions">
-              <span className="react-demo__conditions-label">Conditions</span>
-              <code className="react-demo__conditions-code">{`{ plan: '${plan}' }`}</code>
+            <div className="umpire-demo__conditions">
+              <span className="umpire-demo__conditions-label">Conditions</span>
+              <code className="umpire-demo__conditions-code">{`{ plan: '${plan}' }`}</code>
             </div>
 
             <div className="umpire-demo__plan-toggle" aria-label="Plan">
@@ -243,36 +243,32 @@ export default function ReactAdapterDemo() {
               </code>
             </div>
 
-            <section className="react-demo__json-section">
-              <div className="react-demo__json-header">
-                <span className="react-demo__json-title">check</span>
-                <span className="react-demo__json-meta">AvailabilityMap</span>
+            <section className="umpire-demo__json-shell">
+              <div className="umpire-demo__json-header">
+                <span className="umpire-demo__json-title">check</span>
+                <span className="umpire-demo__json-meta">AvailabilityMap</span>
               </div>
-              <div className="react-demo__code-shell">
-                <pre className="react-demo__code-block">
-                  <code>{JSON.stringify(check, null, 2)}</code>
-                </pre>
-              </div>
+              <pre className="umpire-demo__code-block">
+                <code>{JSON.stringify(check, null, 2)}</code>
+              </pre>
             </section>
 
             <section
               className={cls(
-                'react-demo__json-section',
+                'umpire-demo__json-shell',
                 'react-demo__json-section--fouls',
                 fouls.length > 0 && 'react-demo__json-section--alert',
               )}
             >
-              <div className="react-demo__json-header">
-                <span className="react-demo__json-title">fouls</span>
-                <span className="react-demo__json-meta">
+              <div className="umpire-demo__json-header">
+                <span className="umpire-demo__json-title">fouls</span>
+                <span className="umpire-demo__json-meta">
                   {fouls.length > 0 ? 'reset recommendations' : '[]'}
                 </span>
               </div>
-              <div className="react-demo__code-shell">
-                <pre className="react-demo__code-block">
-                  <code>{fouls.length > 0 ? JSON.stringify(fouls, null, 2) : '[]'}</code>
-                </pre>
-              </div>
+              <pre className="umpire-demo__code-block">
+                <code>{fouls.length > 0 ? JSON.stringify(fouls, null, 2) : '[]'}</code>
+              </pre>
             </section>
           </div>
         </section>

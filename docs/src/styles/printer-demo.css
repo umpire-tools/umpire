@@ -1,4 +1,9 @@
 .printer-demo__frame {
+  --umpire-demo-field-disabled-bg:
+    linear-gradient(135deg, rgba(255, 113, 108, 0.08), transparent 50%),
+    rgba(255, 255, 255, 0.02);
+  --umpire-demo-field-disabled-border-color: rgba(255, 113, 108, 0.14);
+  --umpire-demo-field-disabled-opacity: 1;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -83,84 +88,12 @@
   color: var(--umpire-demo-text-muted);
 }
 
-.printer-demo__field-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.printer-demo__field-label {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-width: 0;
-}
-
 .printer-demo__field-title {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.1;
   color: var(--umpire-demo-text);
-}
-
-.printer-demo__field-required {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.15rem 0.4rem;
-  border-radius: 999px;
-  border: 1px solid rgba(254, 208, 35, 0.16);
-  background: rgba(254, 208, 35, 0.08);
-  color: var(--umpire-demo-yellow);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.printer-demo__status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.28rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.printer-demo__status--enabled {
-  color: var(--umpire-demo-green);
-  border-color: rgba(107, 254, 156, 0.2);
-  background: rgba(107, 254, 156, 0.08);
-}
-
-.printer-demo__status--disabled {
-  color: var(--umpire-demo-red);
-  border-color: rgba(255, 113, 108, 0.2);
-  background: rgba(255, 113, 108, 0.08);
-}
-
-.printer-demo__status-dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 999px;
-  background: currentColor;
-  box-shadow: 0 0 10px currentColor;
-}
-
-.printer-demo__field--disabled {
-  border-color: rgba(255, 113, 108, 0.14);
-  background:
-    linear-gradient(135deg, rgba(255, 113, 108, 0.08), transparent 50%),
-    rgba(255, 255, 255, 0.02);
 }
 
 .printer-demo__checkbox-row {
@@ -182,17 +115,6 @@
   margin-top: 0.14rem;
   flex-shrink: 0;
   accent-color: var(--umpire-demo-green);
-}
-
-.printer-demo__field-reason {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
-  line-height: 1.35;
-  color: rgba(255, 113, 108, 0.85);
-}
-
-.printer-demo__field-reason:empty {
-  display: none;
 }
 
 .printer-demo__field--hidden {
@@ -220,7 +142,7 @@
     align-self: center;
   }
 
-  .printer-demo__field-header {
+  .printer-demo__frame .umpire-demo__field-header {
     flex-direction: column;
     align-items: flex-start;
   }
