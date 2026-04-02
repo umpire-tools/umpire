@@ -1,0 +1,39 @@
+{
+  "name": "@umpire/zod",
+  "version": "0.1.0-alpha.5",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    ".claude"
+  ],
+  "dependencies": {
+    "@umpire/core": "workspace:^"
+  },
+  "peerDependencies": {
+    "zod": "^3.0.0 || ^4.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdougbrown/umpire.git",
+    "directory": "packages/zod"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "zod": "^3.23.8"
+  }
+}
