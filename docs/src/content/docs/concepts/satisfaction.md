@@ -98,3 +98,5 @@ const loginUmp = umpire({
 ```
 
 `requires()` handles presence. `check()` bridges into richer validation logic when you need it.
+
+For full validation composition — building dynamic Zod schemas from availability, filtering errors to enabled fields, gating submit on both layers — see the [Signup Form + Zod](/umpire/examples/signup/) example and [`@umpire/zod`](/umpire/concepts/validation/) adapter.

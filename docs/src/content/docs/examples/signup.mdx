@@ -1,6 +1,6 @@
 ---
-title: Interactive Signup Form
-description: Interactive walkthrough of a signup form with availability checks and reset recommendations.
+title: Signup Form + Zod Validation
+description: Availability and validation composed — Umpire decides which fields are in play, Zod validates the ones that are.
 ---
 
 import SignupDemo from '../../../components/SignupDemo.tsx'
@@ -9,9 +9,9 @@ import SignupDemo from '../../../components/SignupDemo.tsx'
   <SignupDemo client:load />
 </div>
 
-Users pick a plan: personal or business. Business accounts get extra fields for company name and size. When they switch back to personal, those stale values need to be flagged for cleanup. Four rules handle the whole flow.
+This demo composes two layers: **Umpire** decides which fields are available (enabled, required, flagged for cleanup), and **Zod** validates the ones that are. Neither knows about the other — they compose through [`@umpire/zod`](/umpire/api/rules/#typing-conditions), a thin adapter that builds a dynamic Zod schema from the availability map.
 
-## The Rules
+## The Availability Rules
 
 ```ts
 import { enabledWhen, requires, umpire } from '@umpire/core'
@@ -22,131 +22,123 @@ const signupUmp = umpire({
     password:        { required: true, isEmpty: (v) => !v },
     confirmPassword: { required: true, isEmpty: (v) => !v },
     referralCode:    {},
-    companyName:     { isEmpty: (v) => !v },
-    companySize:     { isEmpty: (v) => !v },
+    companyName:     { required: true, isEmpty: (v) => !v },
+    companySize:     { required: true, isEmpty: (v) => !v },
   },
   rules: [
-    // Can't confirm what doesn't exist yet
     requires('confirmPassword', 'password'),
-
-    // Company fields only on business plan
-    enabledWhen('companyName',
-      (_v, cond) => cond.plan === 'business',
-      { reason: 'business plan required' }),
-    enabledWhen('companySize',
-      (_v, cond) => cond.plan === 'business',
-      { reason: 'business plan required' }),
-
-    // Company size needs a company name first
+    enabledWhen('companyName', (_v, c) => c.plan === 'business', {
+      reason: 'business plan required',
+    }),
+    enabledWhen('companySize', (_v, c) => c.plan === 'business', {
+      reason: 'business plan required',
+    }),
     requires('companySize', 'companyName'),
   ],
 })
 ```
 
-Six fields, four rules. The rules read top-to-bottom as English: "confirmPassword requires password. Company fields are enabled when the plan is business. Company size requires company name."
+Six fields, four rules. `confirmPassword` waits for `password`. Company fields gate on the business plan. Company size waits for company name. When a field is disabled, Umpire suppresses `required` to `false` — a validation library should never complain about a field that isn't in play.
 
-## Step 1 — Personal Plan, Password Entered
-
-```ts
-const result = signupUmp.check(
-  { email: 'alex@example.com', password: 'hunter2' },
-  { plan: 'personal' },
-)
-```
-
-| Field | enabled | required | reason |
-| --- | --- | --- | --- |
-| email | `true` | `true` | `null` |
-| password | `true` | `true` | `null` |
-| confirmPassword | `true` | `true` | `null` |
-| referralCode | `true` | `false` | `null` |
-| companyName | `false` | `false` | `'business plan required'` |
-| companySize | `false` | `false` | `'business plan required'` |
-
-Company fields are off the field on a personal plan. `confirmPassword` is available because `password` is present. Notice that `required` is suppressed to `false` on disabled fields. You cannot require something that is not available.
-
-## Step 2 — Switch To Business Plan
-
-Same values, different conditions:
+## The Validation Schemas
 
 ```ts
-const result = signupUmp.check(
-  { email: 'alex@example.com', password: 'hunter2' },
-  { plan: 'business' },
-)
+import { z } from 'zod'
+
+const fieldSchemas = z.object({
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(8, 'At least 8 characters'),
+  confirmPassword: z.string().min(1, 'Confirm your password'),
+  referralCode: z.string(),
+  companyName: z.string().min(1, 'Company name is required'),
+  companySize: z.string().min(1, 'Company size is required').regex(/^\d+$/, 'Must be a number'),
+})
 ```
 
-Now `companyName` is enabled, but `companySize` is still off:
+These are pure correctness checks — is the email well-formed, is the password long enough, is company size a number. They say nothing about whether a field should be visible or required. That's Umpire's job.
+
+## Composing Them
 
 ```ts
-result.companyName
-// { enabled: true, required: false, reason: null, reasons: [] }
+import { activeSchema, activeErrors, zodErrors } from '@umpire/zod'
 
-result.companySize
-// { enabled: false, required: false,
-//   reason: 'requires companyName', reasons: ['requires companyName'] }
+const availability = signupUmp.check(values, { plan })
+
+// Build a Zod schema that only validates enabled fields.
+// Enabled + required → base schema. Enabled + optional → .optional().
+// Disabled → excluded entirely.
+const schema = activeSchema(availability, fieldSchemas.shape, z)
+  .refine(
+    (data) => !data.confirmPassword || !data.password
+      || data.confirmPassword === data.password,
+    { message: 'Passwords do not match', path: ['confirmPassword'] },
+  )
+
+const result = schema.safeParse(values)
+
+if (!result.success) {
+  // Filter to enabled fields only — disabled fields produce no errors
+  const errors = activeErrors(availability, zodErrors(result.error))
+  // errors.email → 'Enter a valid email'
+  // errors.companyName → undefined (disabled on personal plan)
+}
 ```
 
-Two rules layer here. `enabledWhen` opens the gate for the business plan, then `requires` keeps `companySize` waiting until `companyName` has a value. The rules compose cleanly without imperative branching.
+Three functions from `@umpire/zod`:
 
-## Step 3 — No Password Yet
+- **`activeSchema`** builds a Zod object from availability. Disabled fields are excluded. Required/optional follows Umpire's output. Pass `fieldSchemas.shape` (not the `z.object()` directly).
+- **`zodErrors`** normalizes Zod's issue array into `{ field, message }` pairs.
+- **`activeErrors`** filters those pairs to only include enabled fields.
 
-```ts
-const result = signupUmp.check(
-  { email: 'alex@example.com' },
-  { plan: 'personal' },
-)
+Cross-field refinements (like password matching) chain normally on the result of `activeSchema`. The refinement references `confirmPassword` — if that field is disabled (no password yet), `activeSchema` excludes it and the refinement sees `undefined`, which the guard handles.
 
-result.confirmPassword
-// { enabled: false, required: false,
-//   reason: 'requires password', reasons: ['requires password'] }
+## The Render Loop
+
+The entire form is one loop. No branching per field, no special cases for "this one has validation," "this one has availability," "this one might be fouled." Every field goes through the same path:
+
+```tsx
+{fieldOrder.map((field) => {
+  const av = availability[field]
+  const error = touched.has(field) ? validationErrors[field] : undefined
+
+  return (
+    <div className={cls('field', !av.enabled && 'field--disabled')}>
+      <label>
+        {meta.label}
+        {av.required && <span className="required">*</span>}
+      </label>
+      <input
+        disabled={!av.enabled}
+        value={values[field]}
+        onChange={(e) => updateValue(field, e.currentTarget.value)}
+        onBlur={() => markTouched(field)}
+      />
+      {!av.enabled && av.reason && <div className="reason">{av.reason}</div>}
+      {av.enabled && error && <div className="error">{error}</div>}
+    </div>
+  )
+})}
 ```
 
-`password` is absent, so `confirmPassword` is disabled. The `required: false` suppression matters here because a validation layer should not complain about a field that is not even available.
+That's it. Availability, validation, required markers, disabled states, inline errors — all derived from two objects (`availability` and `validationErrors`) that update together. No `if (field === 'companyName' && plan === 'business')` scattered through the JSX. The rules live in the umpire declaration and the Zod schemas. The render loop just reads the results.
 
-## Step 4 — Switching Plans, Flagging Resets
+## What Happens When You Interact
 
-The user filled the business-only fields, then switched back to personal. The values are still there, but the fields are no longer available. `flag()` recommends the cleanup:
+**Personal plan** — company fields are disabled by Umpire. Zod never sees them. No validation errors for fields that aren't in play.
 
-```ts
-const fouls = signupUmp.flag(
-  { values: { email: 'alex@example.com', password: 'hunter2',
-              companyName: 'Acme', companySize: '50' },
-    conditions: { plan: 'business' } },
-  { values: { email: 'alex@example.com', password: 'hunter2',
-              companyName: 'Acme', companySize: '50' },
-    conditions: { plan: 'personal' } },
-)
+**Business plan** — company fields enable. `companyName` becomes required, and Zod validates it's non-empty. `companySize` must be digits only.
 
-// [
-//   { field: 'companyName', reason: 'business plan required',
-//     suggestedValue: undefined },
-//   { field: 'companySize', reason: 'business plan required',
-//     suggestedValue: undefined },
-// ]
-```
+**Switch plans with stale values** — `flag()` recommends clearing company fields. Apply resets and the validation errors disappear with the values.
 
-Only conditions changed. The values are identical. Because snapshots include `conditions`, `flag()` handles conditions-only transitions naturally.
+**Type a bad email** — Umpire says `email` is enabled and required. Zod says the value is malformed. Both layers contribute, neither steps on the other.
 
-Three conditions must be true for each recommendation:
+## The Boundary
 
-1. The field was enabled in the before snapshot but disabled in the after snapshot.
-2. The field's current value is not empty, according to its `isEmpty`.
-3. The current value differs from `suggestedValue`, which is the field `default` or `undefined`.
+| Concern | Owner | Example |
+| --- | --- | --- |
+| Should this field be in play? | Umpire | `companyName` disabled on personal plan |
+| Is this value well-formed? | Zod | `email` must match a pattern |
+| What should reset after a transition? | Umpire `flag()` | Company fields flagged when switching to personal |
+| Should we show this validation error? | `@umpire/zod` | Only for enabled fields |
 
-Apply the recommendations to converge:
-
-```ts
-signupUmp.flag(
-  { values: { email: 'alex@example.com', password: 'hunter2',
-              companyName: 'Acme', companySize: '50' },
-    conditions: { plan: 'personal' } },
-  { values: { email: 'alex@example.com', password: 'hunter2' },
-    conditions: { plan: 'personal' } },
-)
-// -> [] (nothing left to clean up)
-```
-
-## What This Doesn't Cover
-
-Umpire does not validate that the email is well-formed, the password meets policy, or `confirmPassword` matches `password`. Those are correctness concerns. Umpire handles availability: whether fields should be on the field at all.
+See [Composing with Validation](/umpire/concepts/validation/) for the full patterns, including dynamic schema building and the `check()` bridge for gating availability on validity.
