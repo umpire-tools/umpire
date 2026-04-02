@@ -47,6 +47,17 @@
   color: #ff716c;
 }
 
+.lineup__toggle--dim {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(245, 247, 244, 0.5);
+}
+
+.lineup__toggle--dim:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(245, 247, 244, 0.75);
+}
+
 /* Fouls */
 
 .lineup__fouls {
@@ -162,7 +173,7 @@
   opacity: 1;
 }
 
-.lineup__player--assigned {
+.lineup__player--assigned > .lineup__player-name{
   opacity: 0.4;
 }
 

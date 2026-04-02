@@ -132,12 +132,19 @@ export default function LineupCard() {
   // --- User-controlled state ---
   const [opposingPitcher, setOpposingPitcher] = useState<'L' | 'R'>('R')
   const [injuries, setInjuries] = useState<Record<string, boolean>>({})
-  const [morrisonRested, setMorrisonRested] = useState(false)
+  const [morrisonRested, setMorrisonRested] = useState(true)
   const [selectingSlot, setSelectingSlot] = useState<string | null>(null)
-  const [lineup, setLineup] = useState<Record<string, string | null>>(() => {
-    const slots: Record<string, string | null> = {}
-    for (const slot of lineupSlots) slots[slot.label] = null
-    return slots
+  const [lineup, setLineup] = useState<Record<string, string | null>>({
+    'SP': 'morrison',   // Starting pitcher — rested and ready (try toggling fatigue)
+    '1':  'chen',       // C
+    '2':  'russo',      // 2B
+    '3':  'nakamura',   // SS
+    '4':  'delgado',    // 1B (platoon vs RHP — try flipping the pitcher)
+    '5':  'kowalski',   // 3B
+    '6':  'reyes',      // LF (platoon vs RHP)
+    '7':  'summer',     // CF
+    '8':  'williams',   // RF
+    '9':  'silva',      // DH
   })
 
   // --- Build the inputs to Umpire ---
@@ -201,6 +208,44 @@ export default function LineupCard() {
     setMorrisonRested(r => !r)
   }, [])
 
+  const resetAll = useCallback(() => {
+    setOpposingPitcher('R')
+    setMorrisonRested(true)
+    setInjuries({})
+    setSelectingSlot(null)
+    setLineup({
+      'SP': 'morrison',
+      '1':  'chen',
+      '2':  'russo',
+      '3':  'nakamura',
+      '4':  'delgado',
+      '5':  'kowalski',
+      '6':  'reyes',
+      '7':  'summer',
+      '8':  'williams',
+      '9':  'silva',
+    })
+  }, [])
+
+  const clearAll = useCallback(() => {
+    setOpposingPitcher('R')
+    setMorrisonRested(true)
+    setInjuries({})
+    setSelectingSlot(null)
+    const slots: Record<string, string | null> = {}
+    for (const slot of lineupSlots) slots[slot.label] = null
+    setLineup(slots)
+  }, [])
+
+  const randomInjury = useCallback(() => {
+    // Pick a random player who is currently healthy and in the lineup
+    const inLineup = Object.values(lineup).filter(Boolean) as string[]
+    const healthy = inLineup.filter(id => !injuries[id])
+    if (healthy.length === 0) return
+    const victim = healthy[Math.floor(Math.random() * healthy.length)]
+    setInjuries(prev => ({ ...prev, [victim]: true }))
+  }, [lineup, injuries])
+
   const assignPlayer = useCallback((slot: string, playerId: string) => {
     setLineup(prev => ({ ...prev, [slot]: playerId }))
     setSelectingSlot(null)
@@ -256,12 +301,31 @@ export default function LineupCard() {
         >
           Morrison: {morrisonRested ? 'rested' : 'fatigued'}
         </button>
+        <button
+          className="lineup__toggle lineup__toggle--red"
+          onClick={randomInjury}
+        >
+          🤕 Random injury
+        </button>
+        <span style={{ flex: 1 }} />
+        <button
+          className="lineup__toggle lineup__toggle--dim"
+          onClick={clearAll}
+        >
+          Clear
+        </button>
+        <button
+          className="lineup__toggle lineup__toggle--dim"
+          onClick={resetAll}
+        >
+          Reset
+        </button>
       </div>
 
       {/* Foul flags — useUmpire detected fields that just became ineligible */}
       {fouls.length > 0 && (
         <div className="lineup__fouls">
-          <div className="lineup__fouls-title">🚩 Flag on the play</div>
+          <div className="lineup__fouls-title">🚩 Fouls</div>
           {fouls.map((p, i) => (
             <div key={i} className="lineup__foul">
               <strong>{roster[p.field]?.name ?? p.field}</strong>

@@ -6,15 +6,12 @@ hero:
   title: "<span>Help your app</span><br /><span>play by the rules.</span>"
   tagline: "Umpire is a pure field-availability engine for forms with interdependent options. Declare the rules once, derive availability everywhere, and let reset recommendations stay recommendations."
   actions:
+    - text: Quick Start
+      link: /umpire/learn/
+      variant: primary
     - text: Read the concepts
       link: /umpire/concepts/availability/
-      variant: primary
-    - text: Browse the API
-      link: /umpire/api/umpire/
       variant: secondary
-    - text: See more examples
-      link: /umpire/examples/signup/
-      variant: minimal
   image:
     html: |
       <div class="umpire-scoreboard">
@@ -44,85 +41,74 @@ hero:
       </div>
 ---
 
-## Install
+import LineupCard from '../../components/LineupCard.tsx'
 
-```bash
-npm install @umpire/core
-```
+## Try It Live — Tonight's Lineup
 
-Use `@umpire/core` when you just need pure availability logic. Add `@umpire/react`, `@umpire/signals`, or `@umpire/zustand` when you want an adapter on top.
+Tonight's card is set — full roster against a right-handed pitcher. Now break it. Toggle Morrison to fatigued and watch him get pulled from the mound. Flip the opposing pitcher to a lefty and the platoon swaps kick in. Hit "Random injury" a few times and see slots empty out as players land on the IL.
 
-<div class="umpire-divider"></div>
+<div class="umpire-lineup-demo">
+  <LineupCard client:load />
+</div>
 
-## What It Does
+Three rule types drive the whole card: **`enabledWhen`** (injuries and fatigue scratch players), **`oneOf`** (platoon matchups swap batters when the pitcher flips), and **`requires`** (Morrison needs rest before he can start). Every change produces fouls — fields that just lost their player and need a replacement. Clear the card and rebuild from scratch if you want to see it from the other direction.
 
-Umpire answers one question: given the current field values and conditions, which fields should be enabled, required, or flagged for cleanup?
+## How the Demo Works
 
-It does not manage state, render UI, validate data correctness, or mutate values for you. It recommends resets with `flag()`, but the consumer decides whether to apply them.
+The lineup card is a React component backed by a real `@umpire/core` instance. Here's how the state flows:
 
-<div class="umpire-divider"></div>
+```ts title="Fields and conditions — declared once"
+// One field per player. Everything that affects eligibility is a condition.
+type Conditions = {
+  opposingPitcher: 'L' | 'R'
+  injuries: Record<string, boolean>
+  morrisonRested: boolean
+}
 
-## Plain TypeScript — No Framework Required
-
-Umpire is a pure function. No hooks, no subscriptions, no render cycle. Declare rules, call `check()`, get a result. Here's a database migration tool where what you're allowed to do depends on the environment:
-
-```ts title="migrate.ts"
-import { umpire, enabledWhen } from '@umpire/core'
-
-const migrate = umpire({
-  fields: {
-    migration:   { required: true },
-    backup:      {},
-    seed:        {},
-    schemaReset: {},
-  },
+const lineupUmp = umpire<typeof fields, Conditions>({
+  fields,
   rules: [
-    // Can't back up dev — nothing worth saving
-    enabledWhen('backup', (_v, c) => c.env !== 'development', {
-      reason: 'no backup in dev',
+    // oneOf: only one branch is active at a time.
+    // Delgado (L) starts vs righties, Vega (R) starts vs lefties.
+    oneOf('firstBasePlatoon', {
+      vsRighty: ['delgado'],
+      vsLefty:  ['vega'],
+    }, {
+      activeBranch: (_v, c) => c.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
+      reason: 'platoon matchup',
     }),
-    // Prod migrations require a backup first
-    enabledWhen('migration', (v, c) =>
-      c.env !== 'production' || !!v.backup, {
-      reason: 'backup required in prod',
-    }),
-    // Seed data is dev/staging only
-    enabledWhen('seed', (_v, c) => c.env !== 'production', {
-      reason: 'no seeding in prod',
-    }),
-    // Schema reset is dev only — too destructive anywhere else
-    enabledWhen('schemaReset', (_v, c) => c.env === 'development', {
-      reason: 'dev only — too destructive',
+
+    // enabledWhen: disabled when the predicate returns false.
+    ...playerIds.map(id =>
+      enabledWhen(id, (_v, c) => !c.injuries[id], {
+        reason: 'on the injured list',
+      })
+    ),
+
+    // Morrison can't pitch without rest.
+    enabledWhen('morrison', (_v, c) => c.morrisonRested, {
+      reason: 'needs rest',
     }),
   ],
 })
-
-// Dev — do whatever you want
-migrate.check({ migration: 'add-users-table' }, { env: 'development' })
-// → backup:      { enabled: false, reason: 'no backup in dev' }
-// → seed:        { enabled: true }
-// → schemaReset: { enabled: true }
-
-// Staging — test your infra, but no schema nuking
-migrate.check({ migration: 'add-users-table' }, { env: 'staging' })
-// → seed:        { enabled: true }
-// → schemaReset: { enabled: false, reason: 'dev only — too destructive' }
-
-// Prod — migration blocked until you back up
-migrate.check({ migration: 'add-users-table' }, { env: 'production' })
-// → migration:   { enabled: false, reason: 'backup required in prod' }
-// → seed:        { enabled: false, reason: 'no seeding in prod' }
-// → schemaReset: { enabled: false, reason: 'dev only — too destructive' }
-
-// Prod with backup — now the migration is cleared
-migrate.check(
-  { migration: 'add-users-table', backup: 'snapshot-2024-03-15' },
-  { env: 'production' },
-)
-// → migration:   { enabled: true }
 ```
 
-Same `check()` call, same result shape — the environment condition reshapes what's available. No React, no DOM, no build step. This works in Node, Deno, Bun, or a browser `<script>` tag.
+```ts title="In the component — useUmpire does the rest"
+// Values: only players assigned to lineup slots. Bench players have no
+// values, so flag() only fires for players actually in the lineup.
+const values = Object.fromEntries(
+  Object.values(lineup).filter(Boolean).map(id => [id, id]),
+)
+
+// useUmpire handles check() + flag() + snapshot tracking internally.
+const { check: availability, fouls } = useUmpire(lineupUmp, values, conditions)
+
+// availability.delgado → { enabled: false, reason: 'platoon matchup' }
+// fouls → [{ field: 'delgado', reason: 'platoon matchup', ... }]
+//   (only if Delgado was in the lineup when the pitcher flipped)
+```
+
+`check()` tells you what's available *right now*. `flag()` tells you what *just broke* — fields that were enabled before but disabled after, and still hold values that should be cleaned up.
 
 <div class="umpire-divider"></div>
 
@@ -197,76 +183,11 @@ This example is intentionally about availability, not validation. `confirmPasswo
 
 <div class="umpire-divider"></div>
 
-## Try It Live — Tonight's Lineup
+## What It Does
 
-Same concept, different domain. A baseball manager filling out a lineup card for tonight's game. Player eligibility depends on injuries, rest days, and platoon matchups — build the lineup from the available roster and watch what happens when conditions change.
+Umpire answers one question: given the current field values and conditions, which fields should be enabled, required, or flagged for cleanup?
 
-import LineupCard from '../../components/LineupCard.tsx'
-
-<div class="umpire-lineup-demo">
-  <LineupCard client:load />
-</div>
-
-Three rule types in action: **`enabledWhen`** (injuries scratch players from the roster), **`oneOf`** (platoon matchups swap batters when the opposing pitcher changes), and **`requires`** (Morrison needs rest days before he can start). Fill the lineup, then flip the opposing pitcher or injure a starter — the lineup card shows which slots just lost their player and which bench players are now eligible. Same library, same `check()` call, same result shape — just a different set of fields.
-
-## How the Demo Works
-
-The lineup card above is a React component backed by a real `@umpire/core` instance. Here's how the state flows:
-
-```ts title="Fields and conditions — declared once"
-// One field per player. Everything that affects eligibility is a condition.
-type Conditions = {
-  opposingPitcher: 'L' | 'R'
-  injuries: Record<string, boolean>
-  morrisonRested: boolean
-}
-
-const lineupUmp = umpire<typeof fields, Conditions>({
-  fields,
-  rules: [
-    // oneOf: only one branch is active at a time.
-    // Delgado (L) starts vs righties, Vega (R) starts vs lefties.
-    oneOf('firstBasePlatoon', {
-      vsRighty: ['delgado'],
-      vsLefty:  ['vega'],
-    }, {
-      activeBranch: (_v, c) => c.opposingPitcher === 'L' ? 'vsLefty' : 'vsRighty',
-      reason: 'platoon matchup',
-    }),
-
-    // enabledWhen: disabled when the predicate returns false.
-    ...playerIds.map(id =>
-      enabledWhen(id, (_v, c) => !c.injuries[id], {
-        reason: 'on the injured list',
-      })
-    ),
-
-    // Morrison can't pitch without rest.
-    enabledWhen('morrison', (_v, c) => c.morrisonRested, {
-      reason: 'needs rest',
-    }),
-  ],
-})
-```
-
-```ts title="In the component — useUmpire does the rest"
-// Values: only players assigned to lineup slots. Bench players have no
-// values, so flag() only fires for players actually in the lineup.
-const values = Object.fromEntries(
-  Object.values(lineup).filter(Boolean).map(id => [id, id]),
-)
-
-// useUmpire handles check() + flag() + snapshot tracking internally.
-const { check: availability, fouls } = useUmpire(lineupUmp, values, conditions)
-
-// availability.delgado → { enabled: false, reason: 'platoon matchup' }
-// fouls → [{ field: 'delgado', reason: 'platoon matchup', ... }]
-//   (only if Delgado was in the lineup when the pitcher flipped)
-```
-
-`check()` tells you what's available *right now*. `flag()` tells you what *just broke* — fields that were enabled before but disabled after, and still hold values that should be cleaned up. You call both on every state change: `check()` to derive the UI, `flag()` to surface reset recommendations.
-
-<div class="umpire-divider"></div>
+It does not manage state, render UI, validate data correctness, or mutate values for you. It recommends resets with `flag()`, but the consumer decides whether to apply them.
 
 ## What It Does Not Do
 
@@ -277,9 +198,20 @@ const { check: availability, fouls } = useUmpire(lineupUmp, values, conditions)
 
 <div class="umpire-divider"></div>
 
+## Install
+
+```bash
+npm install @umpire/core
+```
+
+Use `@umpire/core` when you just need pure availability logic. Add `@umpire/react`, `@umpire/signals`, or `@umpire/zustand` when you want an adapter on top.
+
+<div class="umpire-divider"></div>
+
 ## Where To Next
 
-- Start with [Availability vs Validation](./concepts/availability/) for the mental model.
+- Try the [Quick Start](/umpire/learn/) to learn each rule primitive with interactive demos.
+- Read [Availability vs Validation](./concepts/availability/) for the mental model.
 - Read [Field Satisfaction Semantics](./concepts/satisfaction/) before writing rules with `isEmpty`.
 - Use [umpire()](./api/umpire/) and [Rules](./api/rules/) as the reference for the core API.
 - See [Signup Form Walkthrough](./examples/signup/) for the same example broken down step by step.
