@@ -45,6 +45,7 @@ export default defineConfig({
         './src/styles/freight-demo.css',
         './src/styles/signals-demo.css',
         './src/styles/calendar-demo.css',
+        './src/styles/minesweeper-demo.css',
       ],
       expressiveCode: {
         themes: ['github-dark'],
@@ -112,6 +113,7 @@ export default defineConfig({
         {
           label: 'Examples',
           items: [
+            { label: 'Minesweeper', slug: 'examples/minesweeper' },
             { label: 'Login + Captcha', slug: 'examples/captcha' },
             { label: 'Calendar Recurrence', slug: 'examples/calendar' },
             { label: 'Freight Quote', slug: 'examples/freight-quote' },
