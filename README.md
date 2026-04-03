@@ -2,7 +2,9 @@
 
 > Rule the form. Play the field.
 
-Umpire is a reactive field availability library for forms with interdependent options. It answers a structural question, not a validation question: given the current values and conditions, which fields should be in play right now, and which stale values just fell out of play and need cleanup?
+Umpire is a declarative field-availability engine. Define fields, declare rules between them, and Umpire tells you which fields are in play — and which stale values just fell out. It answers a structural question, not a validation question: given the current values and conditions, what should be enabled right now?
+
+Forms are the most common use case, but Umpire works anywhere state fits a POJO with interdependent options — game boards, config panels, pricing calculators, permission matrices. If it has fields and rules, Umpire can call the game.
 
 [Docs](https://sdougbrown.github.io/umpire/) • [GitHub](https://github.com/sdougbrown/umpire)
 

@@ -30,7 +30,7 @@ export default defineConfig({
     react({ exclude: ['**/SignalsFineGrainedDemo.*', '**/FreightQuoteDemo.*', '**/LearnDemos.*'] }),
     starlight({
       title: '🛂 Umpire',
-      description: 'Rule the form. Play the field.',
+      description: 'Declare rules. Derive availability. Play the field.',
       favicon: '/favicon.svg',
       customCss: [
         './src/styles/custom.css',
