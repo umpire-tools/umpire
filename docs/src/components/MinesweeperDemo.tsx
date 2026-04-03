@@ -22,10 +22,10 @@ const CELL_ORDER = Object.values(EMPTY_BOARD)
 const MINESWEEPER_UMP = createMinesweeperUmpire(EMPTY_BOARD)
 
 const STATUS_FACE: Record<GameConditions['gameStatus'], string> = {
-  idle: '•‿•',
+  idle: '•_•',
   playing: '•‿•',
   lost: '•︵•',
-  won: '•̀‿•́',
+  won: '◝(ᵔᗜᵔ)◜',
 }
 
 const STATUS_LABEL: Record<GameConditions['gameStatus'], string> = {
@@ -246,11 +246,10 @@ export default function MinesweeperDemo({ compact = false }: { compact?: boolean
       className={cls(
         'minesweeper-demo',
         'umpire-demo',
-        'umpire-demo--styled',
         compact && 'minesweeper-demo--compact',
       )}
     >
-      <div className={cls('umpire-demo__layout', 'minesweeper-demo__layout')}>
+      <div className={cls('minesweeper-demo__layout')}>
         <section className={cls('umpire-demo__panel', 'minesweeper-demo__panel', 'minesweeper-demo__panel--board')}>
           <div className="umpire-demo__panel-header">
             <div>
@@ -322,74 +321,64 @@ export default function MinesweeperDemo({ compact = false }: { compact?: boolean
               </button>
             </div>
 
-            <div className="minesweeper-demo__board-shell">
-              <div
-                className="minesweeper-demo__grid"
-                style={{ gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(44px, 1fr))` }}
-              >
-                {CELL_ORDER.map((cell) => {
-                  const key = cellKey(cell.x, cell.y)
-                  const cellAvailability = availability[key]
-                  const value = values[key]
-                  const currentCell = activeBoard[key]
-                  const isRevealed = value === 'revealed'
-                  const isMine = isRevealed && currentCell.isMine
-                  const adjacentMines = currentCell.adjacentMines
+            <section className="minesweeper-demo-board">
+              <div className="minesweeper-demo-board__shell">
+                <div
+                  className="minesweeper-demo__grid"
+                  style={{ gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(44px, 1fr))` }}
+                >
+                  {CELL_ORDER.map((cell) => {
+                    const key = cellKey(cell.x, cell.y)
+                    const cellAvailability = availability[key]
+                    const value = values[key]
+                    const currentCell = activeBoard[key]
+                    const isRevealed = value === 'revealed'
+                    const isMine = isRevealed && currentCell.isMine
+                    const adjacentMines = currentCell.adjacentMines
 
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      aria-disabled={!cellAvailability.enabled}
-                      aria-label={`Cell ${cell.x + 1}, ${cell.y + 1}: ${describeCellValue(value)}`}
-                      className={cls(
-                        'minesweeper-demo__cell',
-                        !isRevealed && 'minesweeper-demo__cell--hidden',
-                        isRevealed && 'minesweeper-demo__cell--revealed',
-                        value === 'flagged' && 'minesweeper-demo__cell--flagged',
-                        isMine && 'minesweeper-demo__cell--mine',
-                        !cellAvailability.enabled && 'minesweeper-demo__cell--disabled',
-                      )}
-                      onClick={() => handleCellClick(cell)}
-                      onContextMenu={(event) => {
-                        event.preventDefault()
-                        // Touch devices use the explicit mode toggle instead of long-press hacks.
-                        toggleFlag(cell)
-                      }}
-                      onMouseEnter={() => inspect(cell)}
-                      onFocus={() => inspect(cell)}
-                    >
-                      {value === 'flagged' && <span className="minesweeper-demo__flag">⚑</span>}
-                      {isMine && <span className="minesweeper-demo__mine">✺</span>}
-                      {isRevealed && !isMine && adjacentMines > 0 && (
-                        <span
-                          className={cls(
-                            'minesweeper-demo__number',
-                            numberClass(adjacentMines),
-                          )}
-                        >
-                          {adjacentMines}
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        aria-disabled={!cellAvailability.enabled}
+                        aria-label={`Cell ${cell.x + 1}, ${cell.y + 1}: ${describeCellValue(value)}`}
+                        className={cls(
+                          'minesweeper-demo__cell',
+                          !isRevealed && 'minesweeper-demo__cell--hidden',
+                          isRevealed && 'minesweeper-demo__cell--revealed',
+                          value === 'flagged' && 'minesweeper-demo__cell--flagged',
+                          isMine && 'minesweeper-demo__cell--mine',
+                          !cellAvailability.enabled && 'minesweeper-demo__cell--disabled',
+                        )}
+                        onClick={() => handleCellClick(cell)}
+                        onContextMenu={(event) => {
+                          event.preventDefault()
+                          // Touch devices use the explicit mode toggle instead of long-press hacks.
+                          toggleFlag(cell)
+                        }}
+                        onMouseEnter={() => inspect(cell)}
+                        onFocus={() => inspect(cell)}
+                      >
+                        {value === 'flagged' && <span className="minesweeper-demo__flag">⚑</span>}
+                        {isMine && <span className="minesweeper-demo__mine">✺</span>}
+                        {isRevealed && !isMine && adjacentMines > 0 && (
+                          <span
+                            className={cls(
+                              'minesweeper-demo__number',
+                              numberClass(adjacentMines),
+                            )}
+                          >
+                            {adjacentMines}
+                          </span>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          </div>
-        </section>
-
         {!compact && (
-          <section className={cls('umpire-demo__panel', 'minesweeper-demo__panel', 'minesweeper-demo__panel--inspector')}>
-            <div className="umpire-demo__panel-header">
-              <div>
-                <div className="umpire-demo__eyebrow">Live state</div>
-                <h2 className="umpire-demo__title">Cell Inspector</h2>
-              </div>
-              <span className="umpire-demo__panel-accent">{inspectedCell.key}</span>
-            </div>
-
-            <div className="umpire-demo__panel-body minesweeper-demo__inspector-body">
+          <section className={cls('minesweeper-demo-board__panel', 'minesweeper-demo__panel', 'minesweeper-demo__panel--inspector')}>
+            <div className="minesweeper-demo__inspector-body">
               <div className="minesweeper-demo__inspector-meta">
                 <div className="minesweeper-demo__inspector-row">
                   <span className="minesweeper-demo__inspector-label">Coords</span>
@@ -417,13 +406,6 @@ export default function MinesweeperDemo({ compact = false }: { compact?: boolean
                 </div>
               </div>
 
-              <div className="umpire-demo__conditions">
-                <span className="umpire-demo__conditions-label">Conditions</span>
-                <code className="umpire-demo__conditions-code">
-                  {`{ gameStatus: '${conditions.gameStatus}', flagMode: ${conditions.flagMode} }`}
-                </code>
-              </div>
-
               <section className="umpire-demo__json-shell">
                 <div className="umpire-demo__json-header">
                   <span className="umpire-demo__json-title">availability</span>
@@ -436,6 +418,9 @@ export default function MinesweeperDemo({ compact = false }: { compact?: boolean
             </div>
           </section>
         )}
+      </section>
+          </div>
+        </section>
       </div>
     </div>
   )

@@ -10,8 +10,17 @@
   --minesweeper-demo-cell-revealed-border: #888888;
   --umpire-demo-layout-columns: minmax(0, auto) minmax(18rem, 22rem);
   width: min(100%, 60rem);
-  margin: 0 auto;
+  margin: 1.5rem auto;
 }
+
+
+.sl-markdown-content .minesweeper-demo__status-bar > div + div,
+.sl-markdown-content .minesweeper-demo__controls div + button,
+.sl-markdown-content .minesweeper-demo-board .minesweeper-demo-board__shell + .minesweeper-demo-board__panel {
+  margin-top: 0;
+}
+
+
 
 .minesweeper-demo--compact {
   --umpire-demo-root-padding: 0.8rem;
@@ -163,7 +172,24 @@
   transform: translateY(-1px);
 }
 
-.minesweeper-demo__board-shell {
+.minesweeper-demo-board {
+  display: flex;
+  flex-direction: 'row';
+}
+
+.minesweeper-demo-board__panel {
+  flex-shrink: 1;
+  padding-top: 0;
+}
+
+.minesweeper-demo__panel--inspector {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.minesweeper-demo-board__shell {
+  flex-shrink: 0;
+  align-self: start;
   overflow: auto;
   padding: 0.85rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -260,7 +286,7 @@
 .minesweeper-demo__inspector-body {
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  padding-left: 1rem;
 }
 
 .minesweeper-demo__inspector-meta {

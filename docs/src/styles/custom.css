@@ -289,6 +289,40 @@ th:last-child {
   box-shadow: var(--umpire-glow);
 }
 
+/* ── Minefield callout (homepage reverse-hero) ─────────────── */
+
+.umpire-minefield-callout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: center;
+}
+
+@media (min-width: 60rem) {
+  .umpire-minefield-callout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.umpire-minefield-callout__copy {
+  max-width: 28rem;
+}
+
+.umpire-minefield-callout__copy h2 {
+  margin-top: 0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.umpire-minefield-callout__copy code {
+  color: var(--umpire-green, #6bfe9c);
+  font-size: 0.85em;
+}
+
+.umpire-minefield-callout__copy .sl-link-button {
+  margin-top: 1rem;
+}
+
 .umpire-content {
   max-width: 45rem;
 }
