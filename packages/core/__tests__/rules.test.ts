@@ -142,9 +142,21 @@ describe('requires', () => {
       reason: 'required condition not met',
     })
   })
+
+  test('throws when no dependencies are provided', () => {
+    expect(() =>
+      requires<TestFields, TestConditions>('alpha', { reason: 'custom reason' }),
+    ).toThrow('requires("alpha") requires at least one dependency')
+  })
 })
 
 describe('oneOf', () => {
+  test('throws when no branches are provided', () => {
+    expect(() => oneOf<TestFields, TestConditions>('strategy', {})).toThrow(
+      'oneOf("strategy") must include at least one branch',
+    )
+  })
+
   test('throws on overlapping fields', () => {
     expect(() =>
       oneOf<TestFields, TestConditions>('strategy', {
@@ -288,6 +300,38 @@ describe('anyOf', () => {
       enabled: false,
       reason: 'first failed',
       reasons: ['first failed', 'second failed'],
+    })
+  })
+
+  test('uses supplied dependency availability when evaluating inner requires directly', () => {
+    const fields: TestFields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+      delta: {},
+    }
+    const rule = anyOf<TestFields, TestConditions>(
+      requires('gamma', 'beta', { reason: 'need beta' }),
+      enabledWhen('gamma', () => false, { reason: 'fallback false' }),
+    )
+
+    expect(
+      rule.evaluate(
+        { beta: 'stale' },
+        { allow: true },
+        undefined,
+        fields,
+        {
+          alpha: { enabled: true, required: false, reason: null, reasons: [] },
+          beta: { enabled: false, required: false, reason: 'disabled', reasons: ['disabled'] },
+          gamma: { enabled: true, required: false, reason: null, reasons: [] },
+          delta: { enabled: true, required: false, reason: null, reasons: [] },
+        },
+      ).get('gamma'),
+    ).toEqual({
+      enabled: false,
+      reason: 'need beta',
+      reasons: ['need beta', 'fallback false'],
     })
   })
 })

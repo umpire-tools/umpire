@@ -1,4 +1,4 @@
-import { evaluate, evaluateRuleForField } from './evaluator.js'
+import { evaluate, evaluateRuleForField, indexRulesByTarget } from './evaluator.js'
 import { buildGraph, detectCycles, exportGraph, topologicalSort } from './graph.js'
 import {
   getGraphSourceInfo,
@@ -161,21 +161,96 @@ function describeRuleForField<
   }
 }
 
+function collectFailedDependenciesForRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  rule: Rule<F, C>,
+  field: keyof F & string,
+  fields: F,
+  values: FieldValues<F>,
+  conditions: C,
+  prev: FieldValues<F> | undefined,
+  availability: AvailabilityMap<F>,
+  baseRuleCache: Map<Rule<F, C>, Map<string, RuleEvaluation>>,
+): Array<keyof F & string> {
+  const metadata = getInternalRuleMetadata(rule)
+
+  if (metadata?.kind === 'anyOf') {
+    const evaluation = evaluateRuleForField(
+      rule,
+      field,
+      fields,
+      values,
+      conditions,
+      prev,
+      availability,
+      baseRuleCache,
+    )
+
+    if (evaluation.enabled) {
+      return []
+    }
+
+    return metadata.rules.flatMap((innerRule) =>
+      collectFailedDependenciesForRule(
+        innerRule,
+        field,
+        fields,
+        values,
+        conditions,
+        prev,
+        availability,
+        baseRuleCache,
+      ),
+    )
+  }
+
+  if (metadata?.kind !== 'requires') {
+    return []
+  }
+
+  const evaluation = evaluateRuleForField(
+    rule,
+    field,
+    fields,
+    values,
+    conditions,
+    prev,
+    availability,
+    baseRuleCache,
+  )
+
+  if (evaluation.enabled) {
+    return []
+  }
+
+  return metadata.dependencies.filter((dependency): dependency is keyof F & string => {
+    if (typeof dependency !== 'string') {
+      return false
+    }
+
+    const dependencySatisfied = isSatisfied(values[dependency], fields[dependency])
+    const dependencyAvailability = availability[dependency]
+
+    return !(dependencySatisfied && dependencyAvailability.enabled)
+  })
+}
+
 function describeCausedBy<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 >(
   field: keyof F & string,
   fields: F,
-  rules: Rule<F, C>[],
+  rulesByTarget: Map<string, Rule<F, C>[]>,
   values: FieldValues<F>,
   conditions: C,
   prev: FieldValues<F> | undefined,
   availability: AvailabilityMap<F>,
   baseRuleCache: Map<Rule<F, C>, Map<string, RuleEvaluation>>,
 ): ChallengeTrace['transitiveDeps'][number]['causedBy'] {
-  return rules
-    .filter((rule) => rule.targets.includes(field))
+  return (rulesByTarget.get(field) ?? [])
     .map((rule) =>
       describeRuleForField(
         rule,
@@ -201,7 +276,7 @@ function buildTransitiveDeps<
 >(
   startField: keyof F & string,
   fields: F,
-  rules: Rule<F, C>[],
+  rulesByTarget: Map<string, Rule<F, C>[]>,
   values: FieldValues<F>,
   conditions: C,
   prev: FieldValues<F> | undefined,
@@ -212,21 +287,17 @@ function buildTransitiveDeps<
   const result: ChallengeTrace['transitiveDeps'] = []
 
   const visit = (field: keyof F & string) => {
-    for (const rule of rules) {
-      if (!rule.targets.includes(field)) {
-        continue
-      }
-
-      const metadata = getInternalRuleMetadata(rule)
-      if (metadata?.kind !== 'requires') {
-        continue
-      }
-
-      for (const dependency of metadata.dependencies) {
-        if (typeof dependency !== 'string') {
-          continue
-        }
-
+    for (const rule of rulesByTarget.get(field) ?? []) {
+      for (const dependency of collectFailedDependenciesForRule(
+        rule,
+        field,
+        fields,
+        values,
+        conditions,
+        prev,
+        availability,
+        baseRuleCache,
+      )) {
         const dependencySatisfied = isSatisfied(values[dependency], fields[dependency])
         const dependencyAvailability = availability[dependency]
 
@@ -246,7 +317,7 @@ function buildTransitiveDeps<
           causedBy: describeCausedBy(
             dependency,
             fields,
-            rules,
+            rulesByTarget,
             values,
             conditions,
             prev,
@@ -282,7 +353,7 @@ function validateRules<
         for (const field of branchFields) {
           if (!fieldNames.has(field)) {
             throw new Error(
-              `Unknown field "${field}" in oneOf("${metadata.groupName}") branch "${branchName}"`,
+              `[umpire] Unknown field "${field}" in oneOf("${metadata.groupName}") branch "${branchName}"`,
             )
           }
         }
@@ -291,7 +362,7 @@ function validateRules<
 
     for (const field of [...ordering, ...informational, ...rule.targets]) {
       if (!fieldNames.has(field)) {
-        throw new Error(`Unknown field "${field}" referenced by ${rule.type} rule`)
+        throw new Error(`[umpire] Unknown field "${field}" referenced by ${rule.type} rule`)
       }
     }
   }
@@ -309,6 +380,7 @@ export function umpire<
   const graph = buildGraph(fields, rules)
   detectCycles(graph)
   const topoOrder = topologicalSort(graph, fieldNames)
+  const rulesByTarget = indexRulesByTarget(rules)
 
   return {
     check(values, conditions, prev) {
@@ -319,6 +391,7 @@ export function umpire<
         values as FieldValues<F>,
         createEmptyConditions(conditions),
         prev as FieldValues<F> | undefined,
+        rulesByTarget,
       )
     },
 
@@ -329,6 +402,8 @@ export function umpire<
         topoOrder,
         before.values as FieldValues<F>,
         createEmptyConditions(before.conditions),
+        undefined,
+        rulesByTarget,
       )
       const afterAvailability = evaluate(
         fields,
@@ -337,6 +412,7 @@ export function umpire<
         after.values as FieldValues<F>,
         createEmptyConditions(after.conditions),
         before.values as FieldValues<F>,
+        rulesByTarget,
       )
       const recommendations: Foul<F>[] = []
 
@@ -388,16 +464,23 @@ export function umpire<
 
     challenge(field, values, conditions, prev) {
       if (!(field in fields)) {
-        throw new Error(`Unknown field "${field}"`)
+        throw new Error(`[umpire] Unknown field "${field}"`)
       }
 
       const resolvedConditions = createEmptyConditions(conditions)
       const typedValues = values as FieldValues<F>
       const typedPrev = prev as FieldValues<F> | undefined
-      const availability = evaluate(fields, rules, topoOrder, typedValues, resolvedConditions, typedPrev)
+      const availability = evaluate(
+        fields,
+        rules,
+        topoOrder,
+        typedValues,
+        resolvedConditions,
+        typedPrev,
+        rulesByTarget,
+      )
       const baseRuleCache = new Map<Rule<F, C>, Map<string, RuleEvaluation>>()
-      const directReasons = rules
-        .filter((rule) => rule.targets.includes(field))
+      const directReasons = (rulesByTarget.get(field) ?? [])
         .map((rule) =>
           describeRuleForField(
             rule,
@@ -411,9 +494,9 @@ export function umpire<
           ),
         )
 
-      const oneOfRule = rules.find((rule) => {
+      const oneOfRule = (rulesByTarget.get(field) ?? []).find((rule) => {
         const metadata = getInternalRuleMetadata(rule)
-        return metadata?.kind === 'oneOf' && rule.targets.includes(field)
+        return metadata?.kind === 'oneOf'
       })
       const oneOfMetadata = oneOfRule ? getInternalRuleMetadata(oneOfRule) : undefined
       const oneOfResolution =
@@ -439,7 +522,7 @@ export function umpire<
         transitiveDeps: buildTransitiveDeps(
           field,
           fields,
-          rules,
+          rulesByTarget,
           typedValues,
           resolvedConditions,
           typedPrev,

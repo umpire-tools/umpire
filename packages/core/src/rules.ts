@@ -309,7 +309,7 @@ export function resolveOneOfState<
       }
     }
     if (!(resolvedBranch in branches)) {
-      throw new Error(`Unknown active branch "${resolvedBranch}" for oneOf("${groupName}")`)
+      throw new Error(`[umpire] Unknown active branch "${resolvedBranch}" for oneOf("${groupName}")`)
     }
     return {
       activeBranch: resolvedBranch,
@@ -454,17 +454,22 @@ export function requires<
   const options = isReasonOptions<F, C>(maybeOptions) ? maybeOptions : undefined
   const dependencies = (options ? deps.slice(0, -1) : deps) as Array<Source<F, C>>
 
+  if (dependencies.length === 0) {
+    throw new Error(`[umpire] requires("${field}") requires at least one dependency`)
+  }
+
   const rule: InternalRuleCarrier<F, C> = {
     type: 'requires',
     targets: [field],
     sources: uniqueFields(
       dependencies.flatMap((dependency) => getSourceFields(dependency)),
     ),
-    evaluate(values, conditions, _prev, fields) {
+    evaluate(values, conditions, _prev, fields, availability) {
       const reasons = dependencies.flatMap((dependency) => {
         const passed =
           typeof dependency === 'string'
-            ? isSatisfied(values[dependency], fields?.[dependency])
+            ? isSatisfied(values[dependency], fields?.[dependency]) &&
+              (availability?.[dependency]?.enabled ?? true)
             : dependency(values, conditions)
 
         if (passed) {
@@ -507,16 +512,20 @@ export function oneOf<
   const seenFields = new Set<string>()
   const branchNames = Object.keys(branches)
 
+  if (branchNames.length === 0) {
+    throw new Error(`[umpire] oneOf("${groupName}") must include at least one branch`)
+  }
+
   for (const branchName of branchNames) {
     const fields = branches[branchName]
 
     if (fields.length === 0) {
-      throw new Error(`oneOf("${groupName}") branch "${branchName}" must not be empty`)
+      throw new Error(`[umpire] oneOf("${groupName}") branch "${branchName}" must not be empty`)
     }
 
     for (const field of fields) {
       if (seenFields.has(field)) {
-        throw new Error(`oneOf("${groupName}") field "${field}" appears in multiple branches`)
+        throw new Error(`[umpire] oneOf("${groupName}") field "${field}" appears in multiple branches`)
       }
 
       seenFields.add(field)
@@ -525,7 +534,7 @@ export function oneOf<
 
   if (typeof options?.activeBranch === 'string' && !(options.activeBranch in branches)) {
     throw new Error(
-      `Unknown active branch "${options.activeBranch}" for oneOf("${groupName}")`,
+      `[umpire] Unknown active branch "${options.activeBranch}" for oneOf("${groupName}")`,
     )
   }
 
@@ -582,7 +591,7 @@ export function anyOf<
   C extends Record<string, unknown> = Record<string, unknown>,
 >(...rules: Rule<F, C>[]): Rule<F, C> {
   if (rules.length === 0) {
-    throw new Error('anyOf() requires at least one rule')
+    throw new Error('[umpire] anyOf() requires at least one rule')
   }
 
   const expectedTargets = uniqueFields([...rules[0].targets]).sort()
@@ -593,7 +602,7 @@ export function anyOf<
       currentTargets.length !== expectedTargets.length ||
       currentTargets.some((target, index) => target !== expectedTargets[index])
     ) {
-      throw new Error('anyOf() rules must target the same fields')
+      throw new Error('[umpire] anyOf() rules must target the same fields')
     }
   }
 
@@ -603,8 +612,10 @@ export function anyOf<
     type: 'anyOf',
     targets: [...rules[0].targets],
     sources,
-    evaluate(values, conditions, prev, fields) {
-      const evaluations = rules.map((rule) => rule.evaluate(values, conditions, prev, fields))
+    evaluate(values, conditions, prev, fields, availability) {
+      const evaluations = rules.map((rule) =>
+        rule.evaluate(values, conditions, prev, fields, availability),
+      )
 
       return createResultMap(rules[0].targets, (target) => {
         const targetResults = evaluations

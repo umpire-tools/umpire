@@ -1,4 +1,4 @@
-import { check, disables, enabledWhen, requires } from '../src/rules.js'
+import { check, disables, enabledWhen, oneOf, requires } from '../src/rules.js'
 import { buildGraph, detectCycles, exportGraph, topologicalSort } from '../src/graph.js'
 
 type TestFields = {
@@ -133,5 +133,60 @@ describe('graph utilities', () => {
 
     const order = topologicalSort(graph, Object.keys(fields))
     expect(order.indexOf('beta')).toBeLessThan(order.indexOf('alpha'))
+  })
+
+  test('stores oneOf informational edges compactly until export', () => {
+    const fields: TestFields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+      delta: {},
+      epsilon: {},
+    }
+    const graph = buildGraph(fields, [
+      oneOf<TestFields>('strategy', {
+        first: ['alpha', 'beta'],
+        second: ['gamma'],
+      }),
+    ])
+
+    expect(graph.edges).toEqual([])
+    expect(exportGraph(graph)).toEqual({
+      nodes: ['alpha', 'beta', 'gamma', 'delta', 'epsilon'],
+      edges: [
+        { from: 'alpha', to: 'gamma', type: 'oneOf' },
+        { from: 'beta', to: 'gamma', type: 'oneOf' },
+        { from: 'gamma', to: 'alpha', type: 'oneOf' },
+        { from: 'gamma', to: 'beta', type: 'oneOf' },
+      ],
+    })
+  })
+
+  test('reuses precomputed ordering structures without consulting exported edges', () => {
+    const fields: TestFields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+      delta: {},
+      epsilon: {},
+    }
+    const graph = buildGraph(fields, [
+      requires<TestFields>('beta', 'alpha'),
+      requires<TestFields>('gamma', 'beta'),
+      disables<TestFields>('alpha', ['delta']),
+    ])
+
+    graph.edges = new Proxy(graph.edges, {
+      get(_target, prop) {
+        throw new Error(`graph.edges should not be accessed during ordering work (${String(prop)})`)
+      },
+    })
+
+    expect(() => detectCycles(graph)).not.toThrow()
+
+    const order = topologicalSort(graph, Object.keys(fields))
+    expect(order.indexOf('alpha')).toBeLessThan(order.indexOf('beta'))
+    expect(order.indexOf('beta')).toBeLessThan(order.indexOf('gamma'))
+    expect(order.indexOf('alpha')).toBeLessThan(order.indexOf('delta'))
   })
 })

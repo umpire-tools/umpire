@@ -76,6 +76,7 @@ export type Rule<
     conditions: C,
     prev?: FieldValues<F>,
     fields?: F,
+    availability?: Partial<AvailabilityMap<F>>,
   ) => Map<string, RuleEvaluation>
 }
 

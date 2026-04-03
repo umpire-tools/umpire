@@ -109,4 +109,33 @@ describe('edge cases', () => {
       }),
     ).toThrow('Unknown field "missing" referenced by enabledWhen rule')
   })
+
+  test('precomputes rule target lookups at construction time', () => {
+    let targetReads = 0
+    const countedRule = new Proxy(enabledWhen<TestFields>('alpha', () => true), {
+      get(target, prop, receiver) {
+        if (prop === 'targets') {
+          targetReads += 1
+        }
+
+        return Reflect.get(target, prop, receiver)
+      },
+    })
+
+    const ump = umpire<TestFields>({
+      fields: {
+        alpha: {},
+        beta: {},
+        gamma: {},
+        delta: {},
+      },
+      rules: [countedRule],
+    })
+
+    targetReads = 0
+    ump.check({})
+    ump.check({})
+
+    expect(targetReads).toBe(0)
+  })
 })

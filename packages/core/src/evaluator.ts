@@ -14,6 +14,27 @@ function getFailureReasons(result: RuleEvaluation): string[] {
   return []
 }
 
+export function indexRulesByTarget<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(rules: Rule<F, C>[]): Map<string, Rule<F, C>[]> {
+  const rulesByTarget = new Map<string, Rule<F, C>[]>()
+
+  for (const rule of rules) {
+    for (const target of rule.targets) {
+      const targetRules = rulesByTarget.get(target)
+      if (targetRules) {
+        targetRules.push(rule)
+        continue
+      }
+
+      rulesByTarget.set(target, [rule])
+    }
+  }
+
+  return rulesByTarget
+}
+
 export function evaluateRuleForField<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -88,7 +109,7 @@ export function evaluateRuleForField<
 
   let evaluation = baseRuleCache.get(rule)
   if (!evaluation) {
-    evaluation = rule.evaluate(values, conditions, prev, fields)
+    evaluation = rule.evaluate(values, conditions, prev, fields, availability)
     baseRuleCache.set(rule, evaluation)
   }
 
@@ -115,25 +136,14 @@ export function evaluate<
   values: FieldValues<F>,
   conditions: C,
   prev?: FieldValues<F>,
+  rulesByTarget?: Map<string, Rule<F, C>[]>,
 ): AvailabilityMap<F> {
   const availability = {} as AvailabilityMap<F>
-  const rulesByTarget = new Map<string, Rule<F, C>[]>()
   const baseRuleCache = new Map<Rule<F, C>, Map<string, RuleEvaluation>>()
-
-  for (const rule of rules) {
-    for (const target of rule.targets) {
-      const targetRules = rulesByTarget.get(target)
-      if (targetRules) {
-        targetRules.push(rule)
-        continue
-      }
-
-      rulesByTarget.set(target, [rule])
-    }
-  }
+  const resolvedRulesByTarget = rulesByTarget ?? indexRulesByTarget(rules)
 
   for (const field of topoOrder) {
-    const fieldRules = rulesByTarget.get(field) ?? []
+    const fieldRules = resolvedRulesByTarget.get(field) ?? []
     const reasons: string[] = []
     let enabled = true
     let reason: string | null = null

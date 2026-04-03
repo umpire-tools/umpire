@@ -126,6 +126,57 @@ describe('challenge', () => {
     ])
   })
 
+  test('follows nested requires chains inside anyOf rules', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        disables<TestFields>('dates', ['startTime']),
+        anyOf<TestFields>(
+          requires('endTime', 'startTime'),
+          enabledWhen('endTime', () => false, { reason: 'fallback failed' }),
+        ),
+        requires<TestFields>('submit', 'endTime'),
+      ],
+    })
+
+    const challenge = ump.challenge('submit', {
+      dates: ['2026-04-01'],
+      startTime: '09:00',
+      endTime: '10:00',
+    })
+
+    expect(challenge.transitiveDeps).toEqual([
+      expect.objectContaining({
+        field: 'endTime',
+        enabled: false,
+        reason: 'requires startTime',
+        causedBy: [
+          expect.objectContaining({
+            rule: 'anyOf',
+            inner: [
+              expect.objectContaining({ rule: 'requires', dependency: 'startTime' }),
+              expect.objectContaining({ rule: 'enabledWhen', reason: 'fallback failed' }),
+            ],
+          }),
+        ],
+      }),
+      expect.objectContaining({
+        field: 'startTime',
+        enabled: false,
+        reason: 'overridden by dates',
+      }),
+    ])
+  })
+
   test('reports oneOf resolution state', () => {
     const ump = umpire<TestFields>({
       fields: {

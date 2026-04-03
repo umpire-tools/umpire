@@ -8,19 +8,21 @@ export type GraphEdge = {
   ordering: boolean
 }
 
+type DeferredGraphEdgeGroup = {
+  type: string
+  branches: string[][]
+}
+
 export type DependencyGraph = {
   nodes: string[]
   edges: GraphEdge[]
   adjacency: Map<string, string[]>
   incomingCounts: Map<string, number>
+  deferredEdgeGroups: DeferredGraphEdgeGroup[]
 }
 
 function uniqueNodes(fieldNames: string[]): string[] {
   return [...new Set(fieldNames)]
-}
-
-function isOrderingEdge(edge: GraphEdge): boolean {
-  return edge.ordering
 }
 
 export function buildGraph<
@@ -31,6 +33,7 @@ export function buildGraph<
   const adjacency = new Map<string, string[]>()
   const incomingCounts = new Map<string, number>()
   const edges: GraphEdge[] = []
+  const deferredEdgeGroups: DeferredGraphEdgeGroup[] = []
   const seenEdges = new Set<string>()
 
   function addEdge(from: string, to: string, type: string, ordering: boolean): void {
@@ -72,25 +75,10 @@ export function buildGraph<
     const metadata = getInternalRuleMetadata(rule)
 
     if (metadata?.kind === 'oneOf') {
-      const branchNames = Object.keys(metadata.branches)
-
-      for (let sourceIndex = 0; sourceIndex < branchNames.length; sourceIndex += 1) {
-        const sourceBranch = metadata.branches[branchNames[sourceIndex]]
-
-        for (let targetIndex = 0; targetIndex < branchNames.length; targetIndex += 1) {
-          if (sourceIndex === targetIndex) {
-            continue
-          }
-
-          const targetBranch = metadata.branches[branchNames[targetIndex]]
-
-          for (const source of sourceBranch) {
-            for (const target of targetBranch) {
-              addEdge(source, target, rule.type, false)
-            }
-          }
-        }
-      }
+      deferredEdgeGroups.push({
+        type: rule.type,
+        branches: Object.keys(metadata.branches).map((branchName) => [...metadata.branches[branchName]]),
+      })
 
       continue
     }
@@ -123,6 +111,7 @@ export function buildGraph<
     edges,
     adjacency,
     incomingCounts,
+    deferredEdgeGroups,
   }
 }
 
@@ -136,9 +125,7 @@ export function detectCycles(graph: DependencyGraph): void {
     active.add(node)
     stack.push(node)
 
-    for (const next of (graph.adjacency.get(node) ?? []).filter((candidate) =>
-      graph.edges.some((edge) => edge.from === node && edge.to === candidate && isOrderingEdge(edge)),
-    )) {
+    for (const next of graph.adjacency.get(node) ?? []) {
       if (!visited.has(next)) {
         const cycle = visit(next)
         if (cycle) {
@@ -167,7 +154,7 @@ export function detectCycles(graph: DependencyGraph): void {
 
     const cycle = visit(node)
     if (cycle) {
-      throw new Error(`Cycle detected: ${cycle.join(' → ')}`)
+      throw new Error(`[umpire] Cycle detected: ${cycle.join(' → ')}`)
     }
   }
 }
@@ -175,20 +162,9 @@ export function detectCycles(graph: DependencyGraph): void {
 export function topologicalSort(graph: DependencyGraph, fieldNames: string[]): string[] {
   const orderedFields = uniqueNodes(fieldNames)
   const incomingCounts = new Map<string, number>()
-  const orderingAdjacency = new Map<string, string[]>()
 
   for (const field of orderedFields) {
-    incomingCounts.set(field, 0)
-    orderingAdjacency.set(field, [])
-  }
-
-  for (const edge of graph.edges) {
-    if (!isOrderingEdge(edge)) {
-      continue
-    }
-
-    orderingAdjacency.get(edge.from)?.push(edge.to)
-    incomingCounts.set(edge.to, (incomingCounts.get(edge.to) ?? 0) + 1)
+    incomingCounts.set(field, graph.incomingCounts.get(field) ?? 0)
   }
 
   const queue = orderedFields.filter((field) => (incomingCounts.get(field) ?? 0) === 0)
@@ -198,7 +174,7 @@ export function topologicalSort(graph: DependencyGraph, fieldNames: string[]): s
     const node = queue[index]
     result.push(node)
 
-    for (const next of orderingAdjacency.get(node) ?? []) {
+    for (const next of graph.adjacency.get(node) ?? []) {
       const remaining = (incomingCounts.get(next) ?? 0) - 1
       incomingCounts.set(next, remaining)
       if (remaining === 0) {
@@ -209,7 +185,7 @@ export function topologicalSort(graph: DependencyGraph, fieldNames: string[]): s
 
   if (result.length !== orderedFields.length) {
     detectCycles(graph)
-    throw new Error('Unable to produce topological order')
+    throw new Error('[umpire] Unable to produce topological order')
   }
 
   return result
@@ -219,12 +195,45 @@ export function exportGraph(graph: DependencyGraph): {
   nodes: string[]
   edges: Array<{ from: string; to: string; type: string }>
 } {
+  const edges: Array<{ from: string; to: string; type: string }> = []
+  const seenEdges = new Set<string>()
+
+  function addExportEdge(from: string, to: string, type: string): void {
+    const edgeKey = `${from}:${to}:${type}`
+    if (seenEdges.has(edgeKey)) {
+      return
+    }
+
+    seenEdges.add(edgeKey)
+    edges.push({ from, to, type })
+  }
+
+  for (const edge of graph.edges) {
+    addExportEdge(edge.from, edge.to, edge.type)
+  }
+
+  for (const group of graph.deferredEdgeGroups) {
+    for (let sourceIndex = 0; sourceIndex < group.branches.length; sourceIndex += 1) {
+      const sourceBranch = group.branches[sourceIndex]
+
+      for (let targetIndex = 0; targetIndex < group.branches.length; targetIndex += 1) {
+        if (sourceIndex === targetIndex) {
+          continue
+        }
+
+        const targetBranch = group.branches[targetIndex]
+
+        for (const source of sourceBranch) {
+          for (const target of targetBranch) {
+            addExportEdge(source, target, group.type)
+          }
+        }
+      }
+    }
+  }
+
   return {
     nodes: [...graph.nodes],
-    edges: graph.edges.map((edge) => ({
-      from: edge.from,
-      to: edge.to,
-      type: edge.type,
-    })),
+    edges,
   }
 }
