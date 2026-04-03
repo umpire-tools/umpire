@@ -1,0 +1,203 @@
+/**
+ * Pure minesweeper game engine — no Umpire dependency.
+ * Stateless functions that take a board and return new state.
+ */
+
+import { umpire } from '../../src/umpire.js'
+import { enabledWhen } from '../../src/rules.js'
+import type { FieldDef, Umpire } from '../../src/types.js'
+
+// ── Types ──────────────────────────────────────────────────────────────
+
+export type CellMeta = {
+  x: number
+  y: number
+  isMine: boolean
+  adjacentMines: number
+}
+
+export type Board = Record<string, CellMeta>
+
+export type CellValue = 'revealed' | 'flagged' | undefined
+
+export type Values = Record<string, CellValue>
+
+export type GameConditions = {
+  gameStatus: 'idle' | 'playing' | 'won' | 'lost'
+  flagMode: boolean
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────
+
+const OFFSETS = [
+  [-1, -1], [0, -1], [1, -1],
+  [-1,  0],          [1,  0],
+  [-1,  1], [0,  1], [1,  1],
+] as const
+
+export function cellKey(x: number, y: number): string {
+  return `c_${x}_${y}`
+}
+
+function parseCellKey(key: string): [number, number] {
+  const parts = key.split('_')
+  return [Number(parts[1]), Number(parts[2])]
+}
+
+// ── Board creation ─────────────────────────────────────────────────────
+
+export function createBoard(width: number, height: number): Board {
+  const board: Board = {}
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      board[cellKey(x, y)] = { x, y, isMine: false, adjacentMines: 0 }
+    }
+  }
+  return board
+}
+
+export function placeMines(
+  board: Board,
+  minePositions: Array<[number, number]>,
+): Board {
+  const next: Board = {}
+  for (const [key, cell] of Object.entries(board)) {
+    next[key] = { ...cell }
+  }
+  for (const [x, y] of minePositions) {
+    const key = cellKey(x, y)
+    if (next[key]) {
+      next[key] = { ...next[key], isMine: true }
+    }
+  }
+  return next
+}
+
+export function computeAdjacency(board: Board): Board {
+  const next: Board = {}
+  for (const [key, cell] of Object.entries(board)) {
+    const count = OFFSETS.reduce((sum, [dx, dy]) => {
+      const neighbor = board[cellKey(cell.x + dx, cell.y + dy)]
+      return sum + (neighbor?.isMine ? 1 : 0)
+    }, 0)
+    next[key] = { ...cell, adjacentMines: count }
+  }
+  return next
+}
+
+// ── Neighbors ──────────────────────────────────────────────────────────
+
+export function getNeighbors(board: Board, x: number, y: number): CellMeta[] {
+  const result: CellMeta[] = []
+  for (const [dx, dy] of OFFSETS) {
+    const neighbor = board[cellKey(x + dx, y + dy)]
+    if (neighbor) result.push(neighbor)
+  }
+  return result
+}
+
+// ── Cascade reveal (BFS) ──────────────────────────────────────────────
+
+export function cascadeReveal(
+  board: Board,
+  values: Values,
+  x: number,
+  y: number,
+): Values {
+  const next: Values = { ...values }
+  const startKey = cellKey(x, y)
+  const startCell = board[startKey]
+
+  // Don't reveal mines
+  if (!startCell || startCell.isMine) return next
+
+  // Reveal the clicked cell
+  next[startKey] = 'revealed'
+
+  // Only cascade if this cell has 0 adjacent mines
+  if (startCell.adjacentMines > 0) return next
+
+  // BFS flood-fill through zero-adjacent cells
+  const queue: string[] = [startKey]
+  const visited = new Set<string>([startKey])
+
+  while (queue.length > 0) {
+    const currentKey = queue.shift()!
+    const [cx, cy] = parseCellKey(currentKey)
+
+    for (const [dx, dy] of OFFSETS) {
+      const nx = cx + dx
+      const ny = cy + dy
+      const neighborKey = cellKey(nx, ny)
+      const neighbor = board[neighborKey]
+
+      if (!neighbor || visited.has(neighborKey)) continue
+      visited.add(neighborKey)
+
+      // Don't reveal mines
+      if (neighbor.isMine) continue
+
+      // Reveal this neighbor
+      next[neighborKey] = 'revealed'
+
+      // Continue cascading only through zero-adjacent cells
+      if (neighbor.adjacentMines === 0) {
+        queue.push(neighborKey)
+      }
+    }
+  }
+
+  return next
+}
+
+// ── Win detection ──────────────────────────────────────────────────────
+
+export function checkWin(board: Board, values: Values): boolean {
+  for (const [key, cell] of Object.entries(board)) {
+    if (!cell.isMine && values[key] !== 'revealed') return false
+  }
+  return true
+}
+
+// ── Umpire integration ────────────────────────────────────────────────
+
+export function createMinesweeperUmpire(board: Board): Umpire<Record<string, FieldDef>, GameConditions> {
+  const keys = Object.keys(board)
+
+  const fields: Record<string, FieldDef> = {}
+  for (const key of keys) {
+    fields[key] = { default: undefined }
+  }
+
+  const rules = keys.flatMap(key => [
+    // Gate 1: game must be in play
+    enabledWhen(key, (_: unknown, c: GameConditions) => c.gameStatus === 'playing', {
+      reason: 'GAME_OVER',
+    }),
+
+    // Gate 2: cell not already revealed
+    enabledWhen(key, (values: Values) => values[key] !== 'revealed', {
+      reason: 'ALREADY_REVEALED',
+    }),
+
+    // Gate 3: flag interaction gating
+    enabledWhen(key, (values: Values, c: GameConditions) => {
+      if (c.flagMode) return true       // flag mode: can always interact (unflag)
+      return values[key] !== 'flagged'  // reveal mode: blocked by flag
+    }, {
+      reason: 'FLAGGED',
+    }),
+  ])
+
+  return umpire({ fields, rules }) as Umpire<Record<string, FieldDef>, GameConditions>
+}
+
+// ── Convenience: build a ready-to-play board ──────────────────────────
+
+export function buildBoard(
+  width: number,
+  height: number,
+  minePositions: Array<[number, number]>,
+): Board {
+  return computeAdjacency(placeMines(createBoard(width, height), minePositions))
+}
