@@ -1,7 +1,7 @@
-export type FieldDef<V = unknown> = {
+export interface FieldDef<V = unknown> {
   required?: boolean
   default?: V
-  isEmpty?: (value: V | null | undefined) => boolean
+  isEmpty?(value: V | null | undefined): boolean
 }
 
 export type FieldAvailability = {

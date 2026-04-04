@@ -53,10 +53,10 @@ type OneOfOptions<
   activeBranch?: string | ((values: FieldValues<F>, conditions: C) => string | null | undefined)
 }
 
-type FunctionValidator = (value: unknown) => boolean
-type SafeParseValidator = { safeParse: (value: unknown) => { success: boolean } }
-type TestValidator = { test: (value: unknown) => boolean }
-type Validator = FunctionValidator | SafeParseValidator | TestValidator
+type FunctionValidator<V> = (value: V) => boolean
+type SafeParseValidator<V> = { safeParse: (value: V) => { success: boolean } }
+type StringTestValidator = { test: (value: string) => boolean }
+type Validator<V> = FunctionValidator<V> | SafeParseValidator<V> | StringTestValidator
 
 export type InternalPredicate<
   F extends Record<string, FieldDef>,
@@ -831,23 +831,27 @@ export function check<
   V = unknown,
 >(
   field: FieldSelector<F, V>,
-  validator: Validator,
+  validator: Validator<NonNullable<V>>,
 ): Predicate<F, C> {
   const target = getFieldNameOrThrow(field)
 
   const predicate = ((values: FieldValues<F>) => {
     const value = values[target]
 
+    if (value == null) {
+      return false
+    }
+
     if (typeof validator === 'function') {
-      return validator(value)
+      return validator(value as NonNullable<V>)
     }
 
     if ('safeParse' in validator) {
-      return validator.safeParse(value).success
+      return validator.safeParse(value as NonNullable<V>).success
     }
 
     if ('test' in validator) {
-      return validator.test(value)
+      return typeof value === 'string' && validator.test(value)
     }
 
     return false

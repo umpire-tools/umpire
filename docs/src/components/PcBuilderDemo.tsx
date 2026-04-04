@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { enabledWhen, requires, umpire, type Snapshot } from '@umpire/core'
+import { enabledWhen, fairWhen, requires, umpire, type Snapshot } from '@umpire/core'
 import { createHistoryFlags } from '../lib/createHistoryFlags.ts'
 import { inspectUmpre } from '../lib/inspectUmpre.ts'
 import '../styles/pc-builder-demo.css'
@@ -18,7 +18,7 @@ const cpus = [
   { id: 'amd-r5', label: 'AMD Ryzen 5 7600', brand: 'amd', socket: 'AM5', tier: 'mid' },
   { id: 'amd-r7', label: 'AMD Ryzen 7 7700X', brand: 'amd', socket: 'AM5', tier: 'high' },
   { id: 'amd-r9', label: 'AMD Ryzen 9 7950X', brand: 'amd', socket: 'AM5', tier: 'flagship' },
-] as const satisfies readonly Array<{
+] as const satisfies ReadonlyArray<{
   id: string
   label: string
   brand: CpuBrand
@@ -33,7 +33,7 @@ const motherboards = [
   { id: 'asus-x670e', label: 'ASUS ROG X670E', socket: 'AM5', formFactor: 'ATX', ramType: 'ddr5' },
   { id: 'msi-b650', label: 'MSI MAG B650', socket: 'AM5', formFactor: 'ATX', ramType: 'ddr5' },
   { id: 'asrock-a620', label: 'ASRock A620M', socket: 'AM5', formFactor: 'mATX', ramType: 'ddr5' },
-] as const satisfies readonly Array<{
+] as const satisfies ReadonlyArray<{
   id: string
   label: string
   socket: Socket
@@ -49,7 +49,7 @@ const ramKits = [
   { id: 'ddr5-32', label: '32GB DDR5-6000', type: 'ddr5', size: 32 },
   { id: 'ddr5-64', label: '64GB DDR5-6400', type: 'ddr5', size: 64 },
   { id: 'ddr5-128', label: '128GB DDR5-5600', type: 'ddr5', size: 128 },
-] as const satisfies readonly Array<{
+] as const satisfies ReadonlyArray<{
   id: string
   label: string
   type: RamType
@@ -61,7 +61,7 @@ const gpus = [
   { id: 'rtx-4080', label: 'NVIDIA RTX 4080', tier: 'high' },
   { id: 'rx-7800', label: 'AMD RX 7800 XT', tier: 'mid' },
   { id: 'rx-7900', label: 'AMD RX 7900 XTX', tier: 'high' },
-] as const satisfies readonly Array<{
+] as const satisfies ReadonlyArray<{
   id: string
   label: string
   tier: GpuTier
@@ -71,7 +71,7 @@ const storageOptions = [
   { id: '1tb-gen4', label: '1TB NVMe Gen4' },
   { id: '2tb-gen4', label: '2TB NVMe Gen4' },
   { id: '4tb-gen5', label: '4TB NVMe Gen5' },
-] as const satisfies readonly Array<{
+] as const satisfies ReadonlyArray<{
   id: string
   label: string
 }>
@@ -80,7 +80,7 @@ const caseOptions = [
   { id: 'full', label: 'Full Tower', fits: ['ATX', 'mATX'] },
   { id: 'mid', label: 'Mid Tower', fits: ['ATX', 'mATX'] },
   { id: 'mini', label: 'Mini-ITX', fits: ['mATX'] },
-] as const satisfies readonly Array<{
+] as const satisfies ReadonlyArray<{
   id: string
   label: string
   fits: FormFactor[]
@@ -97,11 +97,7 @@ const pcFields = {
 
 type PcField = keyof typeof pcFields
 
-type PcConditions = {
-  motherboardCompatible: boolean
-  ramCompatible: boolean
-  caseCompatible: boolean
-}
+type PcConditions = Record<string, never>
 
 const pcUmp = umpire<typeof pcFields, PcConditions>({
   fields: pcFields,
@@ -109,24 +105,48 @@ const pcUmp = umpire<typeof pcFields, PcConditions>({
     requires('motherboard', 'cpu', {
       reason: 'Pick a CPU first',
     }),
-    enabledWhen('motherboard', (values, conditions) =>
-      !values.motherboard || conditions.motherboardCompatible, {
+    fairWhen('motherboard', (value, values) => {
+      const selectedCpu = cpuById[asString(values.cpu)]
+      const selectedMotherboard = motherboardById[asString(value)]
+
+      return Boolean(
+        selectedCpu &&
+        selectedMotherboard &&
+        selectedMotherboard.socket === selectedCpu.socket,
+      )
+    }, {
       reason: 'Selected motherboard no longer matches the CPU socket',
     }),
 
     requires('ram', 'motherboard', {
       reason: 'Memory depends on an active motherboard selection',
     }),
-    enabledWhen('ram', (values, conditions) =>
-      !values.ram || conditions.ramCompatible, {
+    fairWhen('ram', (value, values) => {
+      const selectedMotherboard = motherboardById[asString(values.motherboard)]
+      const selectedRam = ramById[asString(value)]
+
+      return Boolean(
+        selectedMotherboard &&
+        selectedRam &&
+        selectedRam.type === selectedMotherboard.ramType,
+      )
+    }, {
       reason: 'Selected memory no longer matches the motherboard RAM type',
     }),
 
     requires('caseSize', 'motherboard', {
       reason: 'Pick a valid motherboard first to determine form factor',
     }),
-    enabledWhen('caseSize', (values, conditions) =>
-      !values.caseSize || conditions.caseCompatible, {
+    fairWhen('caseSize', (value, values) => {
+      const selectedMotherboard = motherboardById[asString(values.motherboard)]
+      const selectedCase = caseById[asString(value)]
+
+      return Boolean(
+        selectedMotherboard &&
+        selectedCase &&
+        fitsFormFactor(selectedCase.fits, selectedMotherboard.formFactor),
+      )
+    }, {
       reason: 'Selected case no longer fits the motherboard form factor',
     }),
   ],
@@ -257,6 +277,10 @@ function pluralize(word: string, count: number) {
   return `${count} ${word}${count === 1 ? '' : 's'}`
 }
 
+function fitsFormFactor(fits: readonly FormFactor[], formFactor: FormFactor) {
+  return fits.includes(formFactor)
+}
+
 function buildChoices(
   choices: SelectChoice[],
   selectedValue: string,
@@ -274,7 +298,7 @@ function buildChoices(
 }
 
 function getStepIndexForField(field: PcField) {
-  return steps.find((step) => step.fields.includes(field))?.index ?? 0
+  return steps.find((step) => step.fields.some((stepField) => stepField === field))?.index ?? 0
 }
 
 function getPsuRecommendation(cpuTier?: CpuTier, gpuTier?: GpuTier) {
@@ -321,7 +345,7 @@ function resolvePcCatalog(values: PcValues) {
   const caseCompatible = !caseId || Boolean(
     activeMotherboard &&
     selectedCase &&
-    selectedCase.fits.includes(activeMotherboard.formFactor),
+    fitsFormFactor(selectedCase.fits, activeMotherboard.formFactor),
   )
 
   const compatibleMotherboards = selectedCpu
@@ -333,7 +357,7 @@ function resolvePcCatalog(values: PcValues) {
     : []
 
   const compatibleCases = activeMotherboard
-    ? caseOptions.filter((size) => size.fits.includes(activeMotherboard.formFactor))
+    ? caseOptions.filter((size) => fitsFormFactor(size.fits, activeMotherboard.formFactor))
     : []
 
   return {
@@ -366,14 +390,6 @@ function hasTransitiveCascade(fouls: Array<{ field: string }>) {
 }
 
 type PcCatalogFacts = ReturnType<typeof resolvePcCatalog>
-
-function toPcConditions(analysis: PcCatalogFacts): PcConditions {
-  return {
-    motherboardCompatible: analysis.motherboardCompatible,
-    ramCompatible: analysis.ramCompatible,
-    caseCompatible: analysis.caseCompatible,
-  }
-}
 
 function describePcField(field: PcField, facts: PcCatalogFacts) {
   if (field === 'cpu' && facts.selectedCpu) {
@@ -456,7 +472,7 @@ function SelectField({
       className={cls(
         'pc-builder__field',
         !availability.enabled && 'pc-builder__field--disabled',
-        foul && 'pc-builder__field--fouled',
+        (!availability.fair || foul) && 'pc-builder__field--fouled',
       )}
     >
       <div className="pc-builder__field-header">
@@ -498,7 +514,7 @@ function SelectField({
           <span className="umpire-demo__field-foul-reason">{foul.reason}</span>
         </div>
       ) : (
-        !availability.enabled && availability.reason && (
+        (!availability.enabled || !availability.fair) && availability.reason && (
           <div className="umpire-demo__field-reason">{availability.reason}</div>
         )
       )}
@@ -588,17 +604,15 @@ export default function PcBuilderDemo() {
     Boolean(caseId && !caseCompatible),
   )
 
-  const pcConditions = useMemo(() => toPcConditions(catalogFacts), [catalogFacts])
   const inspection = useMemo(() => inspectUmpre(pcUmp, {
     values,
-    conditions: pcConditions,
   }, {
     before: lastTransition?.before,
     facts: catalogFacts,
     fieldFacts,
+    fields: pcFields,
   }), [
     values,
-    pcConditions,
     lastTransition,
     catalogFacts,
     fieldFacts,
@@ -615,7 +629,7 @@ export default function PcBuilderDemo() {
   // when a transition happens. Rendering still just reads live facts + memory.
   const coachConditions = useMemo<CoachConditions>(() => ({
     cpuBrand: inspection.fields.cpu.facts?.brand as CpuBrand | undefined,
-    hasRamSelection: inspection.fields.ram.hasValue,
+    hasRamSelection: inspection.fields.ram.satisfied,
     sawTransitiveCascade: coachMemory.sawTransitiveCascade || hasLiveTransitiveCascade,
     sawAppliedResets: coachMemory.sawAppliedResets,
   }), [
@@ -639,14 +653,13 @@ export default function PcBuilderDemo() {
       [field]: nextValue,
     } as PcValues
 
-    const nextConditions = toPcConditions(resolvePcCatalog(nextValues))
     const nextFouls = pcUmp.play(
-      { values, conditions: pcConditions },
-      { values: nextValues, conditions: nextConditions },
+      { values },
+      { values: nextValues },
     )
 
     setLastTransition({
-      before: { values, conditions: pcConditions },
+      before: { values },
     })
     setValues(nextValues)
     setCoachMemory((current) => coachHistory.remember(current, {
@@ -672,7 +685,7 @@ export default function PcBuilderDemo() {
     }
 
     setLastTransition({
-      before: { values, conditions: pcConditions },
+      before: { values },
     })
     setValues(nextValues)
     setCoachMemory((current) => coachHistory.remember(current, {
@@ -688,12 +701,13 @@ export default function PcBuilderDemo() {
 
   function getStepStatus(step: StepDefinition) {
     const activeFouls = stepFouls(step)
+    const hasFoulField = step.fields.some((field) => !check[field].fair)
     const hasAnyValue = step.fields.some((field) => Boolean(asString(values[field])))
     const requiredFields = step.fields.filter((field) => check[field].required)
     const requiredComplete = requiredFields.every((field) => Boolean(asString(values[field])))
     const allLocked = step.fields.every((field) => !check[field].enabled)
 
-    if (activeFouls.length > 0) {
+    if (activeFouls.length > 0 || hasFoulField) {
       return {
         tone: 'fouled',
         label: 'Fouled',

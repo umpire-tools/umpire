@@ -21,18 +21,12 @@ That last part is the point of the demo. The user only touched one field. Umpire
 
 ## Two Umpires
 
-The form umpire owns actual build availability:
+The form umpire owns actual build availability and value coherence:
 
 ```ts
-import { enabledWhen, requires, umpire } from '@umpire/core'
+import { fairWhen, requires, umpire } from '@umpire/core'
 
-type PcConditions = {
-  motherboardCompatible: boolean
-  ramCompatible: boolean
-  caseCompatible: boolean
-}
-
-const pcUmp = umpire<typeof pcFields, PcConditions>({
+const pcUmp = umpire({
   fields: {
     cpu:         { required: true, isEmpty: (value) => !value },
     motherboard: { required: true, isEmpty: (value) => !value },
@@ -45,24 +39,24 @@ const pcUmp = umpire<typeof pcFields, PcConditions>({
     requires('motherboard', 'cpu', {
       reason: 'Pick a CPU first',
     }),
-    enabledWhen('motherboard', (values, conditions) =>
-      !values.motherboard || conditions.motherboardCompatible, {
+    fairWhen('motherboard', (value, values) =>
+      socketForMotherboard(value) === socketForCpu(values.cpu), {
       reason: 'Selected motherboard no longer matches the CPU socket',
     }),
 
     requires('ram', 'motherboard', {
       reason: 'Memory depends on an active motherboard selection',
     }),
-    enabledWhen('ram', (values, conditions) =>
-      !values.ram || conditions.ramCompatible, {
+    fairWhen('ram', (value, values) =>
+      ramTypeForKit(value) === ramTypeForMotherboard(values.motherboard), {
       reason: 'Selected memory no longer matches the motherboard RAM type',
     }),
 
     requires('caseSize', 'motherboard', {
       reason: 'Pick a valid motherboard first to determine form factor',
     }),
-    enabledWhen('caseSize', (values, conditions) =>
-      !values.caseSize || conditions.caseCompatible, {
+    fairWhen('caseSize', (value, values) =>
+      caseFitsMotherboard(value, values.motherboard), {
       reason: 'Selected case no longer fits the motherboard form factor',
     }),
   ],
@@ -132,15 +126,15 @@ The next prototype step is an inspection helper:
 ```ts
 const inspection = inspectUmpre(pcUmp, {
   values,
-  conditions: pcConditions,
 }, {
   before: lastTransition?.before,
   facts: catalogFacts,
   fieldFacts,
+  fields: pcFields,
 })
 ```
 
-That helper is where the structure starts to matter. It can use `graph()`, `challenge()`, and `play()` to produce a value tree with dependencies, reasons, fouls, and transition cascades, while still letting userland attach domain facts like “selected CPU socket” or “compatible motherboard count.”
+That helper is where the structure starts to matter. It can use `graph()` and `play()` by default, and `challenge()` only when a richer debugger view wants it, to produce a value tree with field state, fouls, and transition cascades while still letting userland attach domain facts like “selected CPU socket” or “compatible motherboard count.”
 
 ## The Compatibility Layer
 
@@ -150,13 +144,7 @@ The lookup tables still live in the UI:
 - RAM kits are filtered by the selected motherboard RAM type.
 - Cases are filtered by the selected motherboard form factor.
 
-That filtering logic is not what Umpire is responsible for. The component distills it down into three booleans:
-
-- `motherboardCompatible`
-- `ramCompatible`
-- `caseCompatible`
-
-Those booleans are the bridge between “the app knows what options are legal” and “`play()` can foul a stale current selection.” Without that bridge, a value can stay in state forever without ever becoming unavailable.
+That filtering logic is still not what Umpire is responsible for. The component keeps the product catalog in userland, and `fairWhen()` uses that userland knowledge to judge whether a current selection is still coherent. Umpire owns the rule result and the cascade. The app still owns the catalog.
 
 ## What Umpire Doesn't Do
 
