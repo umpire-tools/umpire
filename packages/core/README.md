@@ -1,6 +1,6 @@
 # @umpire/core
 
-Pure field-availability logic for forms with interdependent options. No framework code, no subscriptions, no runtime dependencies.
+Pure field-availability logic for any state with interdependent options. No framework code, no subscriptions, no runtime dependencies.
 
 [Docs](https://sdougbrown.github.io/umpire/)
 

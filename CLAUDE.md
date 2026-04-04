@@ -4,7 +4,7 @@ This file is the canonical project instruction source for the repo. `AGENTS.md` 
 
 ## Project Overview
 
-Umpire (`@umpire/*`) is a reactive field availability library for forms with interdependent options.
+Umpire (`@umpire/*`) is a declarative field-availability engine for any state with interdependent options — forms, game boards, config panels, permission matrices, anything that fits a plain object with fields and rules.
 
 Monorepo packages:
 - `@umpire/core` - pure logic, zero dependencies

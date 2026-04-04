@@ -78,7 +78,7 @@ availability.destroy()
 
 ## Why Zustand Fits
 
-Zustand subscriptions provide both `next` and `prev` state, so `fromStore()` can compute fouls without extra bookkeeping. Availability and reset recommendations stay derived from store transitions rather than form-side effects.
+Zustand subscriptions provide both `next` and `prev` state, so `fromStore()` can compute fouls without extra bookkeeping. Availability and reset recommendations stay derived from store transitions rather than side effects.
 
 ## Docs
 

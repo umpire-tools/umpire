@@ -1,5 +1,6 @@
 # @umpire/core
 
+- Fields are not form fields — they can be minesweeper cells, roster slots, config options, pricing choices, or any named piece of interdependent state. Umpire is not a form library.
 - Create an umpire with `umpire({ fields, rules })`.
 - Field satisfaction is presence-based by default: a field is satisfied unless its value is `null` or `undefined`.
 - Override satisfaction per field with `isEmpty` when empty strings, empty arrays, or domain-specific sentinels should count as unsatisfied.

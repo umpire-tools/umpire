@@ -1,6 +1,6 @@
 # @umpire/react
 
-React hook for deriving Umpire availability and reset recommendations from your current form state.
+React hook for deriving Umpire availability and reset recommendations from component state.
 
 [Docs](https://sdougbrown.github.io/umpire/)
 

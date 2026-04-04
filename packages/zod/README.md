@@ -1,6 +1,6 @@
 # @umpire/zod
 
-Availability-aware Zod validation for forms powered by [@umpire/core](https://www.npmjs.com/package/@umpire/core). Disabled fields produce no validation errors. Required/optional follows Umpire's availability map.
+Availability-aware Zod validation for [@umpire/core](https://www.npmjs.com/package/@umpire/core)-powered state. Disabled fields produce no validation errors. Required/optional follows Umpire's availability map.
 
 [Docs](https://sdougbrown.github.io/umpire/examples/signup/) · [Quick Start](https://sdougbrown.github.io/umpire/learn/)
 
