@@ -69,14 +69,14 @@ const pcUmp = umpire<typeof pcFields, PcConditions>({
 })
 ```
 
-The second umpire is just a coach. It does not control the form. It decides when to surface teaching callouts:
+The second umpire is still just a coach. It does not control the form. It decides when to surface teaching callouts:
 
 ```ts
 type CoachConditions = {
-  cpu?: string
-  ram?: string
-  hasTransitiveFoul: boolean
-  hasAppliedResets: boolean
+  cpuBrand?: 'intel' | 'amd'
+  hasRamSelection: boolean
+  sawTransitiveCascade: boolean
+  sawAppliedResets: boolean
 }
 
 const coachUmp = umpire({
@@ -87,22 +87,60 @@ const coachUmp = umpire({
   },
   rules: [
     enabledWhen('promptSwitchCpu', (_values, conditions) =>
-      Boolean(conditions.ram) && conditions.cpu?.startsWith('intel') === true, {
+      conditions.hasRamSelection && conditions.cpuBrand === 'intel', {
       reason: 'Complete steps 1-3 with Intel first',
     }),
     enabledWhen('explainTransitive', (_values, conditions) =>
-      conditions.hasTransitiveFoul, {
+      conditions.sawTransitiveCascade, {
       reason: 'Trigger the transitive cascade first',
     }),
     enabledWhen('celebrateComplete', (_values, conditions) =>
-      conditions.hasTransitiveFoul && conditions.hasAppliedResets, {
+      conditions.sawTransitiveCascade && conditions.sawAppliedResets, {
       reason: 'Apply the suggested resets first',
     }),
   ],
 })
 ```
 
-The coach state is deliberately awkward in places. It needs live form values, sticky historical flags, and foul-derived milestones. That is the design-discovery question for whether a future `@umpire/coach` helper would be worth it.
+The awkward part turned out not to be the second umpire itself. The awkward part was remembering milestone booleans like “the transitive cascade has happened at least once.” The demo now handles that with a tiny non-React helper:
+
+```ts
+const coachHistory = createHistoryFlags([
+  'sawTransitiveCascade',
+  'sawAppliedResets',
+] as const)
+
+const [coachMemory, setCoachMemory] = useState(() => coachHistory.init())
+
+const coachConditions = {
+  cpuBrand: selectedCpu?.brand,
+  hasRamSelection: Boolean(ramId),
+  sawTransitiveCascade: coachMemory.sawTransitiveCascade || hasLiveTransitiveCascade,
+  sawAppliedResets: coachMemory.sawAppliedResets,
+}
+
+// inside a transition handler
+setCoachMemory((current) => coachHistory.remember(current, {
+  sawTransitiveCascade: hasTransitiveCascade(nextFouls),
+}))
+```
+
+That is the extraction seam. The reusable part is not rendering. It is “remember some history across transitions, then feed live facts plus memory into another umpire.” That could live inside a package without saying anything about React components at all. A dedicated `@umpire/coach` package still only starts making sense if copy sequencing, richer event helpers, or authoring ergonomics need to become first-class too.
+
+The next prototype step is an inspection helper:
+
+```ts
+const inspection = inspectUmpre(pcUmp, {
+  values,
+  conditions: pcConditions,
+}, {
+  before: lastTransition?.before,
+  facts: catalogFacts,
+  fieldFacts,
+})
+```
+
+That helper is where the structure starts to matter. It can use `graph()`, `challenge()`, and `play()` to produce a value tree with dependencies, reasons, fouls, and transition cascades, while still letting userland attach domain facts like “selected CPU socket” or “compatible motherboard count.”
 
 ## The Compatibility Layer
 

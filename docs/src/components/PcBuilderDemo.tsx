@@ -1,24 +1,27 @@
-import { useMemo, useRef, useState, type ReactNode } from 'react'
-import { enabledWhen, foulMap, requires, umpire } from '@umpire/core'
-import { useUmpire } from '@umpire/react'
+import { useMemo, useState, type ReactNode } from 'react'
+import { enabledWhen, requires, umpire, type Snapshot } from '@umpire/core'
+import { createHistoryFlags } from '../lib/createHistoryFlags.ts'
+import { inspectUmpre } from '../lib/inspectUmpre.ts'
 import '../styles/pc-builder-demo.css'
 
 type Socket = 'LGA1700' | 'AM5'
+type CpuBrand = 'intel' | 'amd'
 type CpuTier = 'mid' | 'high' | 'flagship'
 type RamType = 'ddr4' | 'ddr5'
 type FormFactor = 'ATX' | 'mATX'
 type GpuTier = 'mid' | 'high'
 
 const cpus = [
-  { id: 'intel-i5', label: 'Intel Core i5-13600K', socket: 'LGA1700', tier: 'mid' },
-  { id: 'intel-i7', label: 'Intel Core i7-14700K', socket: 'LGA1700', tier: 'high' },
-  { id: 'intel-i9', label: 'Intel Core i9-14900K', socket: 'LGA1700', tier: 'flagship' },
-  { id: 'amd-r5', label: 'AMD Ryzen 5 7600', socket: 'AM5', tier: 'mid' },
-  { id: 'amd-r7', label: 'AMD Ryzen 7 7700X', socket: 'AM5', tier: 'high' },
-  { id: 'amd-r9', label: 'AMD Ryzen 9 7950X', socket: 'AM5', tier: 'flagship' },
+  { id: 'intel-i5', label: 'Intel Core i5-13600K', brand: 'intel', socket: 'LGA1700', tier: 'mid' },
+  { id: 'intel-i7', label: 'Intel Core i7-14700K', brand: 'intel', socket: 'LGA1700', tier: 'high' },
+  { id: 'intel-i9', label: 'Intel Core i9-14900K', brand: 'intel', socket: 'LGA1700', tier: 'flagship' },
+  { id: 'amd-r5', label: 'AMD Ryzen 5 7600', brand: 'amd', socket: 'AM5', tier: 'mid' },
+  { id: 'amd-r7', label: 'AMD Ryzen 7 7700X', brand: 'amd', socket: 'AM5', tier: 'high' },
+  { id: 'amd-r9', label: 'AMD Ryzen 9 7950X', brand: 'amd', socket: 'AM5', tier: 'flagship' },
 ] as const satisfies readonly Array<{
   id: string
   label: string
+  brand: CpuBrand
   socket: Socket
   tier: CpuTier
 }>
@@ -130,10 +133,10 @@ const pcUmp = umpire<typeof pcFields, PcConditions>({
 })
 
 type CoachConditions = {
-  cpu?: string
-  ram?: string
-  hasTransitiveFoul: boolean
-  hasAppliedResets: boolean
+  cpuBrand?: CpuBrand
+  hasRamSelection: boolean
+  sawTransitiveCascade: boolean
+  sawAppliedResets: boolean
 }
 
 const coachFields = {
@@ -146,15 +149,15 @@ const coachUmp = umpire<typeof coachFields, CoachConditions>({
   fields: coachFields,
   rules: [
     enabledWhen('promptSwitchCpu', (_values, conditions) =>
-      Boolean(conditions.ram) && conditions.cpu?.startsWith('intel') === true, {
+      conditions.hasRamSelection && conditions.cpuBrand === 'intel', {
       reason: 'Complete steps 1-3 with Intel first',
     }),
     enabledWhen('explainTransitive', (_values, conditions) =>
-      conditions.hasTransitiveFoul, {
+      conditions.sawTransitiveCascade, {
       reason: 'Trigger the transitive cascade first',
     }),
     enabledWhen('celebrateComplete', (_values, conditions) =>
-      conditions.hasTransitiveFoul && conditions.hasAppliedResets, {
+      conditions.sawTransitiveCascade && conditions.sawAppliedResets, {
       reason: 'Apply the suggested resets first',
     }),
   ],
@@ -163,6 +166,7 @@ const coachUmp = umpire<typeof coachFields, CoachConditions>({
 type PcValues = ReturnType<typeof pcUmp.init>
 type PcCheck = ReturnType<typeof pcUmp.check>
 type CoachCheck = ReturnType<typeof coachUmp.check>
+type PcSnapshot = Snapshot<typeof pcFields, PcConditions>
 
 type StepDefinition = {
   index: number
@@ -228,6 +232,10 @@ const ramById = indexById(ramKits)
 const gpuById = indexById(gpus)
 const storageById = indexById(storageOptions)
 const caseById = indexById(caseOptions)
+const coachHistory = createHistoryFlags([
+  'sawTransitiveCascade',
+  'sawAppliedResets',
+] as const)
 
 function cls(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(' ')
@@ -279,6 +287,145 @@ function getPsuRecommendation(cpuTier?: CpuTier, gpuTier?: GpuTier) {
   }
 
   return '650W'
+}
+
+function resolvePcCatalog(values: PcValues) {
+  const cpuId = asString(values.cpu)
+  const motherboardId = asString(values.motherboard)
+  const ramId = asString(values.ram)
+  const gpuId = asString(values.gpu)
+  const storageId = asString(values.storage)
+  const caseId = asString(values.caseSize)
+
+  const selectedCpu = cpuById[cpuId]
+  const selectedMotherboard = motherboardById[motherboardId]
+  const selectedRam = ramById[ramId]
+  const selectedGpu = gpuById[gpuId]
+  const selectedStorage = storageById[storageId]
+  const selectedCase = caseById[caseId]
+
+  const motherboardCompatible = !motherboardId || Boolean(
+    selectedCpu &&
+    selectedMotherboard &&
+    selectedMotherboard.socket === selectedCpu.socket,
+  )
+
+  const activeMotherboard = motherboardCompatible ? selectedMotherboard : undefined
+
+  const ramCompatible = !ramId || Boolean(
+    activeMotherboard &&
+    selectedRam &&
+    selectedRam.type === activeMotherboard.ramType,
+  )
+
+  const caseCompatible = !caseId || Boolean(
+    activeMotherboard &&
+    selectedCase &&
+    selectedCase.fits.includes(activeMotherboard.formFactor),
+  )
+
+  const compatibleMotherboards = selectedCpu
+    ? motherboards.filter((board) => board.socket === selectedCpu.socket)
+    : []
+
+  const compatibleRamKits = activeMotherboard
+    ? ramKits.filter((kit) => kit.type === activeMotherboard.ramType)
+    : []
+
+  const compatibleCases = activeMotherboard
+    ? caseOptions.filter((size) => size.fits.includes(activeMotherboard.formFactor))
+    : []
+
+  return {
+    cpuId,
+    motherboardId,
+    ramId,
+    gpuId,
+    storageId,
+    caseId,
+    selectedCpu,
+    selectedMotherboard,
+    selectedRam,
+    selectedGpu,
+    selectedStorage,
+    selectedCase,
+    motherboardCompatible,
+    activeMotherboard,
+    ramCompatible,
+    caseCompatible,
+    compatibleMotherboards,
+    compatibleRamKits,
+    compatibleCases,
+    psuRecommendation: getPsuRecommendation(selectedCpu?.tier, selectedGpu?.tier),
+  }
+}
+
+function hasTransitiveCascade(fouls: Array<{ field: string }>) {
+  const foulFields = new Set(fouls.map((foul) => foul.field))
+  return foulFields.has('motherboard') && foulFields.has('ram')
+}
+
+type PcCatalogFacts = ReturnType<typeof resolvePcCatalog>
+
+function toPcConditions(analysis: PcCatalogFacts): PcConditions {
+  return {
+    motherboardCompatible: analysis.motherboardCompatible,
+    ramCompatible: analysis.ramCompatible,
+    caseCompatible: analysis.caseCompatible,
+  }
+}
+
+function describePcField(field: PcField, facts: PcCatalogFacts) {
+  if (field === 'cpu' && facts.selectedCpu) {
+    return {
+      brand: facts.selectedCpu.brand,
+      socket: facts.selectedCpu.socket,
+      tier: facts.selectedCpu.tier,
+    }
+  }
+
+  if (field === 'motherboard') {
+    return {
+      compatible: facts.motherboardCompatible,
+      choiceCount: facts.compatibleMotherboards.length,
+      selectedSocket: facts.selectedMotherboard?.socket,
+      selectedFormFactor: facts.selectedMotherboard?.formFactor,
+      selectedRamType: facts.selectedMotherboard?.ramType,
+      expectedSocket: facts.selectedCpu?.socket,
+    }
+  }
+
+  if (field === 'ram') {
+    return {
+      compatible: facts.ramCompatible,
+      choiceCount: facts.compatibleRamKits.length,
+      selectedType: facts.selectedRam?.type,
+      expectedType: facts.activeMotherboard?.ramType,
+    }
+  }
+
+  if (field === 'caseSize') {
+    return {
+      compatible: facts.caseCompatible,
+      choiceCount: facts.compatibleCases.length,
+      selectedFits: facts.selectedCase?.fits,
+      expectedFormFactor: facts.activeMotherboard?.formFactor,
+    }
+  }
+
+  if (field === 'gpu' && facts.selectedGpu) {
+    return {
+      tier: facts.selectedGpu.tier,
+    }
+  }
+
+  if (field === 'storage' && facts.selectedStorage) {
+    return {
+      label: facts.selectedStorage.label,
+    }
+  }
+
+  return undefined
 }
 
 function SelectField({
@@ -376,60 +523,40 @@ function CoachCallout({
 
 export default function PcBuilderDemo() {
   const [values, setValues] = useState<PcValues>(() => pcUmp.init())
+  const [coachMemory, setCoachMemory] = useState(() => coachHistory.init())
   const [currentStep, setCurrentStep] = useState(0)
-  const [hasTransitiveFoul, setHasTransitiveFoul] = useState(false)
-  const [hasAppliedResets, setHasAppliedResets] = useState(false)
-
-  const transitiveFoulSeenRef = useRef(false)
-  const appliedResetsSeenRef = useRef(false)
-
-  const cpuId = asString(values.cpu)
-  const motherboardId = asString(values.motherboard)
-  const ramId = asString(values.ram)
-  const gpuId = asString(values.gpu)
-  const storageId = asString(values.storage)
-  const caseId = asString(values.caseSize)
-
-  const selectedCpu = cpuById[cpuId]
-  const selectedMotherboard = motherboardById[motherboardId]
-  const selectedRam = ramById[ramId]
-  const selectedGpu = gpuById[gpuId]
-  const selectedStorage = storageById[storageId]
-  const selectedCase = caseById[caseId]
-
-  const motherboardCompatible = !motherboardId || Boolean(
-    selectedCpu &&
-    selectedMotherboard &&
-    selectedMotherboard.socket === selectedCpu.socket,
-  )
-
-  const activeMotherboard = motherboardCompatible ? selectedMotherboard : undefined
-
-  const ramCompatible = !ramId || Boolean(
-    activeMotherboard &&
-    selectedRam &&
-    selectedRam.type === activeMotherboard.ramType,
-  )
-
-  const caseCompatible = !caseId || Boolean(
-    activeMotherboard &&
-    selectedCase &&
-    selectedCase.fits.includes(activeMotherboard.formFactor),
-  )
-
-  const compatibleMotherboards = selectedCpu
-    ? motherboards.filter((board) => board.socket === selectedCpu.socket)
-    : []
-
-  const compatibleRamKits = activeMotherboard
-    ? ramKits.filter((kit) => kit.type === activeMotherboard.ramType)
-    : []
-
-  const compatibleCases = activeMotherboard
-    ? caseOptions.filter((size) => size.fits.includes(activeMotherboard.formFactor))
-    : []
-
-  const psuRecommendation = getPsuRecommendation(selectedCpu?.tier, selectedGpu?.tier)
+  const [lastTransition, setLastTransition] = useState<{ before: PcSnapshot } | null>(null)
+  const catalogFacts = useMemo(() => resolvePcCatalog(values), [values])
+  const {
+    cpuId,
+    motherboardId,
+    ramId,
+    gpuId,
+    storageId,
+    caseId,
+    selectedCpu,
+    selectedMotherboard,
+    selectedRam,
+    selectedGpu,
+    selectedStorage,
+    selectedCase,
+    motherboardCompatible,
+    activeMotherboard,
+    ramCompatible,
+    caseCompatible,
+    compatibleMotherboards,
+    compatibleRamKits,
+    compatibleCases,
+    psuRecommendation,
+  } = catalogFacts
+  const fieldFacts = useMemo(() => ({
+    cpu: describePcField('cpu', catalogFacts),
+    motherboard: describePcField('motherboard', catalogFacts),
+    ram: describePcField('ram', catalogFacts),
+    gpu: describePcField('gpu', catalogFacts),
+    storage: describePcField('storage', catalogFacts),
+    caseSize: describePcField('caseSize', catalogFacts),
+  }), [catalogFacts])
 
   const motherboardChoices = buildChoices(
     compatibleMotherboards.map((board) => ({
@@ -461,58 +588,70 @@ export default function PcBuilderDemo() {
     Boolean(caseId && !caseCompatible),
   )
 
-  const pcConditions = useMemo<PcConditions>(() => ({
-    motherboardCompatible,
-    ramCompatible,
-    caseCompatible,
+  const pcConditions = useMemo(() => toPcConditions(catalogFacts), [catalogFacts])
+  const inspection = useMemo(() => inspectUmpre(pcUmp, {
+    values,
+    conditions: pcConditions,
+  }, {
+    before: lastTransition?.before,
+    facts: catalogFacts,
+    fieldFacts,
   }), [
-    motherboardCompatible,
-    ramCompatible,
-    caseCompatible,
+    values,
+    pcConditions,
+    lastTransition,
+    catalogFacts,
+    fieldFacts,
   ])
+  const { check } = inspection
+  const fouls = inspection.transition.fouls
+  const foulsByField = inspection.transition.foulsByField
+  const hasLiveTransitiveCascade = (
+    inspection.transition.cascadingFields.includes('motherboard') &&
+    inspection.transition.cascadingFields.includes('ram')
+  )
 
-  const {
-    check,
-    fouls,
-  } = useUmpire(pcUmp, values, pcConditions)
-
-  const foulsByField = useMemo(() => foulMap(fouls), [fouls])
-  const foulFields = fouls.map((foul) => foul.field)
-  const hasLiveTransitiveCascade = foulFields.includes('motherboard') && foulFields.includes('ram')
-
-  if (hasLiveTransitiveCascade && !transitiveFoulSeenRef.current) {
-    transitiveFoulSeenRef.current = true
-    setHasTransitiveFoul(true)
-  }
-
-  // COACH NOTE: The coaching umpire needs current form values, sticky milestone flags,
-  // and knowledge of when the foul cascade has happened. A thin helper could derive
-  // this conditions object from the form umpire instead of wiring it by hand.
+  // COACH NOTE: The seam is a tiny bit of remembered history, updated only
+  // when a transition happens. Rendering still just reads live facts + memory.
   const coachConditions = useMemo<CoachConditions>(() => ({
-    cpu: cpuId || undefined,
-    ram: ramId || undefined,
-    hasTransitiveFoul,
-    hasAppliedResets,
+    cpuBrand: inspection.fields.cpu.facts?.brand as CpuBrand | undefined,
+    hasRamSelection: inspection.fields.ram.hasValue,
+    sawTransitiveCascade: coachMemory.sawTransitiveCascade || hasLiveTransitiveCascade,
+    sawAppliedResets: coachMemory.sawAppliedResets,
   }), [
-    cpuId,
-    ramId,
-    hasTransitiveFoul,
-    hasAppliedResets,
+    inspection,
+    hasLiveTransitiveCascade,
+    coachMemory,
   ])
 
-  const { check: coachCheck } = useUmpire(coachUmp, values, coachConditions)
+  const coachCheck = useMemo<CoachCheck>(
+    () => coachUmp.check(coachUmp.init(), coachConditions),
+    [coachConditions],
+  )
 
   function updateField<K extends PcField>(field: K, nextValue: PcValues[K]) {
-    setValues((current) => {
-      if (Object.is(current[field], nextValue)) {
-        return current
-      }
+    if (Object.is(values[field], nextValue)) {
+      return
+    }
 
-      return {
-        ...current,
-        [field]: nextValue,
-      }
+    const nextValues = {
+      ...values,
+      [field]: nextValue,
+    } as PcValues
+
+    const nextConditions = toPcConditions(resolvePcCatalog(nextValues))
+    const nextFouls = pcUmp.play(
+      { values, conditions: pcConditions },
+      { values: nextValues, conditions: nextConditions },
+    )
+
+    setLastTransition({
+      before: { values, conditions: pcConditions },
     })
+    setValues(nextValues)
+    setCoachMemory((current) => coachHistory.remember(current, {
+      sawTransitiveCascade: hasTransitiveCascade(nextFouls),
+    }))
   }
 
   function updateSelectField(field: PcField, nextValue: string) {
@@ -526,21 +665,20 @@ export default function PcBuilderDemo() {
       return
     }
 
-    setValues((current) => {
-      const next = { ...current }
+    const nextValues = { ...values }
 
-      for (const foul of resetTargets) {
-        next[foul.field] = foul.suggestedValue as PcValues[typeof foul.field]
-      }
-
-      return next
-    })
-
-    if (!appliedResetsSeenRef.current) {
-      appliedResetsSeenRef.current = true
-      setHasAppliedResets(true)
+    for (const foul of resetTargets) {
+      nextValues[foul.field] = foul.suggestedValue as PcValues[typeof foul.field]
     }
 
+    setLastTransition({
+      before: { values, conditions: pcConditions },
+    })
+    setValues(nextValues)
+    setCoachMemory((current) => coachHistory.remember(current, {
+      sawTransitiveCascade: hasLiveTransitiveCascade,
+      sawAppliedResets: true,
+    }))
     setCurrentStep(getStepIndexForField(resetTargets[0].field as PcField))
   }
 
