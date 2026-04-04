@@ -11,7 +11,7 @@ import SignalsFineGrainedDemo from '../../../components/SignalsFineGrainedDemo.t
   <SignalsFineGrainedDemo client:load />
 </div>
 
-Each field is a self-contained component. When the plan signal changes, only the fields whose availability actually moved re-render — the rest stay frozen.
+Each field is a self-contained component. When the recurring condition signal changes, only the fields whose availability actually moved re-render — the rest stay frozen.
 
 ```tsx
 import { signal } from '@preact/signals'
@@ -165,7 +165,7 @@ Use `reactive.foul(name)` to get the foul for a specific field, or `undefined` i
 
 ```ts
 // Per-field — use in FieldControl components
-const foul = reactive.foul('companyName')
+const foul = reactive.foul('repeatUnit')
 if (foul) {
   // foul.reason, foul.suggestedValue
 }

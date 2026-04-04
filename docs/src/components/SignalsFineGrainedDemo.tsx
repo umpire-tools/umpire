@@ -7,28 +7,27 @@ import '../styles/signals-demo.css'
 // --- Umpire config ---
 
 const fields = {
-  email:       { required: true, isEmpty: (value: unknown) => !value },
-  password:    { required: true, isEmpty: (value: unknown) => !value },
-  companyName: { isEmpty: (value: unknown) => !value },
-  companySize: { isEmpty: (value: unknown) => !value },
+  startTime:   { required: true, isEmpty: (value: unknown) => !value },
+  endTime:     { required: true, isEmpty: (value: unknown) => !value },
+  repeatEvery: { isEmpty: (value: unknown) => !value },
+  repeatUnit:  { isEmpty: (value: unknown) => !value },
 }
 
-type Cond = { plan: 'personal' | 'business' }
-type Plan = Cond['plan']
+type Cond = { recurring: boolean }
 type DemoField = keyof typeof fields
 
 const demoUmp = umpire<typeof fields, Cond>({
   fields,
   rules: [
-    // Business-only fields gate on a condition signal, not a field value
-    enabledWhen('companyName', (_v, cond) => cond.plan === 'business', {
-      reason: 'business plan required',
+    // Repeat fields gate on a condition signal — whether the event recurs
+    enabledWhen('repeatEvery', (_v, cond) => cond.recurring, {
+      reason: 'only applies to recurring events',
     }),
-    enabledWhen('companySize', (_v, cond) => cond.plan === 'business', {
-      reason: 'business plan required',
+    enabledWhen('repeatUnit', (_v, cond) => cond.recurring, {
+      reason: 'only applies to recurring events',
     }),
-    // companySize requires companyName to be filled and still enabled
-    requires('companySize', 'companyName'),
+    // repeatUnit requires an interval to be set first
+    requires('repeatUnit', 'repeatEvery'),
   ],
 })
 
@@ -49,26 +48,26 @@ const preactAdapter: SignalProtocol = {
 // --- Field metadata ---
 
 const fieldOrder = [
-  'email', 'password', 'companyName', 'companySize',
+  'startTime', 'endTime', 'repeatEvery', 'repeatUnit',
 ] as const satisfies readonly DemoField[]
 
 const fieldLabels: Record<DemoField, string> = {
-  email: 'Email',
-  password: 'Password',
-  companyName: 'Company Name',
-  companySize: 'Company Size',
+  startTime:   'Start Time',
+  endTime:     'End Time',
+  repeatEvery: 'Repeat Every',
+  repeatUnit:  'Repeat Unit',
 }
 
 const fieldSamples: Record<DemoField, string> = {
-  email: 'crew@stadium.dev',
-  password: 'strike-zone',
-  companyName: 'Acme Stadium Ops',
-  companySize: '100-250 employees',
+  startTime:   '09:00',
+  endTime:     '17:00',
+  repeatEvery: '2',
+  repeatUnit:  'weeks',
 }
 
-const planOptions = [
-  { value: 'personal', label: 'Personal' },
-  { value: 'business', label: 'Business' },
+const modeOptions = [
+  { value: false, label: 'Once' },
+  { value: true,  label: 'Recurring' },
 ] as const
 
 function cls(...parts: (string | false | null | undefined)[]) {
@@ -180,25 +179,25 @@ function FieldControl({
 export default function SignalsFineGrainedDemo() {
   const ref = useRef<{
     reactive: ReactiveUmpire<typeof fields>
-    planSignal: { value: Plan }
+    recurringSignal: { value: boolean }
   } | null>(null)
 
   if (!ref.current) {
-    const planSignal = signal<Plan>('personal')
+    const recurringSignal = signal<boolean>(false)
     const reactive = reactiveUmp(demoUmp, preactAdapter, {
-      conditions: { plan: { get: () => planSignal.value } },
+      conditions: { recurring: { get: () => recurringSignal.value } },
     })
-    ref.current = { reactive, planSignal }
+    ref.current = { reactive, recurringSignal }
   }
 
-  const { reactive, planSignal } = ref.current
+  const { reactive, recurringSignal } = ref.current
 
-  const plan = planSignal.value
+  const recurring = recurringSignal.value
   const values = reactive.values
   const fouls = reactive.fouls
 
-  function setPlan(next: Plan) {
-    planSignal.value = next
+  function setRecurring(next: boolean) {
+    recurringSignal.value = next
   }
 
   return (
@@ -207,30 +206,30 @@ export default function SignalsFineGrainedDemo() {
       <div class="signals-demo__panel">
         <div class="umpire-demo__panel-header">
           <div>
-            <div class="umpire-demo__eyebrow">Live form</div>
-            <h2 class="umpire-demo__title">Signup</h2>
+            <div class="umpire-demo__eyebrow">Live config</div>
+            <h2 class="umpire-demo__title">Event Recurrence</h2>
           </div>
           <span class="umpire-demo__panel-accent">reactiveUmp()</span>
         </div>
 
         <div class="umpire-demo__panel-body">
-          {/* Plan toggle — condition signal, not a field value */}
+          {/* Recurring toggle — condition signal, not a field value */}
           <div class="umpire-demo__conditions">
             <span class="umpire-demo__conditions-label">Conditions</span>
-            <code class="umpire-demo__conditions-code">{`{ plan: '${plan}' }`}</code>
+            <code class="umpire-demo__conditions-code">{`{ recurring: ${recurring} }`}</code>
           </div>
 
-          <div class="umpire-demo__plan-toggle" aria-label="Plan">
-            {planOptions.map((opt) => (
+          <div class="umpire-demo__plan-toggle" aria-label="Recurrence mode">
+            {modeOptions.map((opt) => (
               <button
-                key={opt.value}
+                key={String(opt.value)}
                 type="button"
-                aria-pressed={plan === opt.value}
+                aria-pressed={recurring === opt.value}
                 class={cls(
                   'umpire-demo__plan-option',
-                  plan === opt.value && 'umpire-demo__plan-option--active',
+                  recurring === opt.value && 'umpire-demo__plan-option--active',
                 )}
-                onClick={() => setPlan(opt.value)}
+                onClick={() => setRecurring(opt.value)}
               >
                 {opt.label}
               </button>
@@ -287,7 +286,7 @@ export default function SignalsFineGrainedDemo() {
               <span class="umpire-demo__json-meta">@preact/signals</span>
             </div>
             <pre class="umpire-demo__code-block">
-              <code>{prettyJson({ conditions: { plan }, values, fouls })}</code>
+              <code>{prettyJson({ conditions: { recurring }, values, fouls })}</code>
             </pre>
           </section>
         </div>
