@@ -93,3 +93,7 @@ See the docs for full type details and behavior notes: https://sdougbrown.github
 ## Docs
 
 https://sdougbrown.github.io/umpire/
+
+## Benchmarks
+
+Benchmark tooling and baseline timings live in [BENCHMARKS.md](./BENCHMARKS.md).
