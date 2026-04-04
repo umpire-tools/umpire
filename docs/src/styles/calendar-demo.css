@@ -24,6 +24,13 @@
   margin-top: 0;
 }
 
+.sl-markdown-content .calendar-demo h2,
+.sl-markdown-content .calendar-demo h3 {
+  margin: 0.25rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
 .calendar-demo__strip,
 .calendar-demo__panel {
   min-width: 0;

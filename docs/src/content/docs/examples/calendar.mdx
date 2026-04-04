@@ -7,11 +7,11 @@ import CalendarDemo from '../../../components/CalendarDemo.tsx'
 
 <CalendarDemo client:load />
 
-A recurring event scheduler where fields interact in multiple ways at once. This is the kind of form that turns into a mess of `useEffect` chains without a system to manage it.
+A recurring event scheduler where fields interact in multiple ways at once. This is the kind of config panel that turns into a mess of `useEffect` chains without a system to manage it.
 
 ## The Problem
 
-A calendar app lets users define how events repeat. The options are interdependent:
+A calendar app lets users define how events repeat. The options are interdependent — and none of this is a "form" in the traditional sense:
 
 - **Explicit dates** override all pattern-based recurrence (if you pick specific dates, weekday/monthly patterns don't apply)
 - **Two scheduling strategies** are mutually exclusive: pick specific hours, *or* define a start/end time interval — not both
@@ -181,4 +181,4 @@ This form has three interaction patterns layered on top of each other:
 - **`oneOf`** — the two scheduling strategies are mutually exclusive. No `if/else` chain needed — declare the branches and Umpire handles the rest.
 - **`requires`** — availability flows through the dependency chain. `startTime` → `endTime` and `startTime` → `repeatEvery` propagate naturally.
 
-Seven declarative rules replace what would otherwise be a tangled web of `useEffect` hooks and conditional renders.
+Seven declarative rules replace what would otherwise be a tangled web of `useEffect` hooks and conditional renders. Same idea works for any config panel, booking widget, or scheduler — not just forms.
