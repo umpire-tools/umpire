@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import type { DateRange, Month } from '@neo-reckoning/core'
+import { useCalendar } from '@neo-reckoning/react'
 import { disables, enabledWhen, oneOf, requires, umpire } from '@umpire/core'
 import { useUmpire } from '@umpire/react'
 import '../styles/calendar-demo.css'
@@ -67,6 +69,7 @@ const calendarUmp = umpire({
 
 type CalendarField = keyof typeof calendarFields
 type CalendarValues = ReturnType<typeof calendarUmp.init>
+type AvailabilityMap = ReturnType<typeof calendarUmp.check>
 
 type NumberListField = 'everyWeekday' | 'everyDate' | 'everyMonth' | 'everyHour'
 type StringListField = 'dates' | 'exceptDates'
@@ -175,23 +178,13 @@ const months = [
   { value: 12, label: 'Dec' },
 ] as const
 
+const weekdayHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
 const quickDates = [1, 15, 31] as const
 const hourOptions = Array.from({ length: 24 }, (_, hour) => hour)
+const defaultFocusDate = '2026-04-01'
 
 function cls(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(' ')
-}
-
-function isPresent(value: unknown) {
-  if (Array.isArray(value)) {
-    return value.length > 0
-  }
-
-  if (value && typeof value === 'object') {
-    return Object.values(value).some(Boolean)
-  }
-
-  return value !== null && value !== undefined && value !== ''
 }
 
 function toNumberList(value: unknown) {
@@ -217,65 +210,161 @@ function formatHour(hour: number) {
   return `${normalized}:00 ${period}`
 }
 
-function renderValueSummary(field: CalendarField, value: CalendarValues[CalendarField]) {
-  if (!isPresent(value)) {
-    if (field === 'fixedBetween') {
-      return 'off'
+function formatHourChip(hour: number) {
+  return `${String(hour).padStart(2, '0')}:00`
+}
+
+function collectActiveDates(month: Month | undefined) {
+  const activeDates = new Set<string>()
+
+  if (!month) {
+    return activeDates
+  }
+
+  for (const week of month.weeks) {
+    for (const day of week.days) {
+      if (day.ranges.length > 0) {
+        activeDates.add(day.date)
+      }
     }
-
-    return '—'
   }
 
-  if (field === 'fixedBetween') {
-    return value ? 'on' : 'off'
+  return activeDates
+}
+
+function isOutsideBounds(date: string, fromDate?: string, toDate?: string) {
+  if (fromDate && date < fromDate) {
+    return true
   }
 
-  if (field === 'everyWeekday') {
-    return toNumberList(value)
-      .map((day) => weekdays.find((weekday) => weekday.value === day)?.label ?? String(day))
-      .join(', ')
+  if (toDate && date > toDate) {
+    return true
   }
 
-  if (field === 'everyMonth') {
-    return toNumberList(value)
-      .map((month) => months.find((item) => item.value === month)?.label ?? String(month))
-      .join(', ')
+  return false
+}
+
+function buildPreviewRange(
+  values: CalendarValues,
+  availability: AvailabilityMap,
+  includeExceptions: boolean,
+): DateRange | null {
+  const explicitDates = availability.dates.enabled ? toStringList(values.dates) : []
+  const everyWeekday = availability.everyWeekday.enabled ? toNumberList(values.everyWeekday) : []
+  const everyDate = availability.everyDate.enabled ? toNumberList(values.everyDate) : []
+  const everyMonth = availability.everyMonth.enabled ? toNumberList(values.everyMonth) : []
+
+  const hasDayCriteria = (
+    explicitDates.length > 0 ||
+    everyWeekday.length > 0 ||
+    everyDate.length > 0 ||
+    everyMonth.length > 0
+  )
+
+  if (!hasDayCriteria) {
+    return null
   }
 
-  if (field === 'everyHour') {
-    return toNumberList(value).map(formatHour).join(', ')
+  const range: DateRange = {
+    id: includeExceptions ? 'calendar-demo-preview' : 'calendar-demo-preview-base',
+    label: 'Calendar Demo Preview',
   }
 
-  if (field === 'exceptBetween') {
-    const range = toExceptBetween(value)
-    return [range.start, range.end].filter(Boolean).join(' → ')
+  if (explicitDates.length > 0) {
+    range.dates = explicitDates
   }
 
-  if (Array.isArray(value)) {
-    return value.join(', ')
+  if (everyWeekday.length > 0) {
+    range.everyWeekday = everyWeekday
   }
 
-  return String(value)
+  if (everyDate.length > 0) {
+    range.everyDate = everyDate
+  }
+
+  if (everyMonth.length > 0) {
+    range.everyMonth = everyMonth
+  }
+
+  if (availability.fromDate.enabled && values.fromDate) {
+    range.fromDate = values.fromDate
+  }
+
+  if (availability.toDate.enabled && values.toDate) {
+    range.toDate = values.toDate
+  }
+
+  if (availability.fixedBetween.enabled && values.fixedBetween) {
+    range.fixedBetween = true
+  }
+
+  if (!includeExceptions) {
+    return range
+  }
+
+  if (availability.exceptDates.enabled) {
+    const exceptDates = toStringList(values.exceptDates)
+    if (exceptDates.length > 0) {
+      range.exceptDates = exceptDates
+    }
+  }
+
+  if (availability.exceptBetween.enabled) {
+    const exceptBetween = toExceptBetween(values.exceptBetween)
+    if (exceptBetween.start && exceptBetween.end) {
+      range.exceptBetween = [[exceptBetween.start, exceptBetween.end]]
+    }
+  }
+
+  return range
 }
 
 export default function CalendarDemo() {
   const [values, setValues] = useState<CalendarValues>(() => calendarUmp.init())
-  const [dateDraft, setDateDraft] = useState('2026-04-01')
+  const [focusDate, setFocusDate] = useState(defaultFocusDate)
+  const [dateDraft, setDateDraft] = useState(defaultFocusDate)
   const [exceptDateDraft, setExceptDateDraft] = useState('2026-04-12')
-  const [everyDateDraft, setEveryDateDraft] = useState('15')
-  const [hourDraft, setHourDraft] = useState('9')
+  const [everyDateDraft, setEveryDateDraft] = useState('')
 
-  const { check: availability, fouls } = useUmpire(calendarUmp, values)
+  const { check, fouls } = useUmpire(calendarUmp, values)
 
   function updateField<K extends CalendarField>(field: K, nextValue: CalendarValues[K]) {
-    setValues((current) => ({
-      ...current,
-      [field]: nextValue,
-    }))
+    setValues((current) => {
+      if (Object.is(current[field], nextValue)) {
+        return current
+      }
+
+      return {
+        ...current,
+        [field]: nextValue,
+      }
+    })
+  }
+
+  function updateFieldWith<K extends CalendarField>(
+    field: K,
+    getNextValue: (currentValue: CalendarValues[K]) => CalendarValues[K],
+  ) {
+    setValues((current) => {
+      const nextValue = getNextValue(current[field])
+
+      if (Object.is(current[field], nextValue)) {
+        return current
+      }
+
+      return {
+        ...current,
+        [field]: nextValue,
+      }
+    })
   }
 
   function updateStringField(field: StringField, nextValue: string) {
     updateField(field, (nextValue || undefined) as CalendarValues[typeof field])
+
+    if ((field === 'fromDate' || field === 'toDate') && nextValue) {
+      setFocusDate(nextValue)
+    }
   }
 
   function updateNumberField(field: NumberField, nextValue: string) {
@@ -285,13 +374,15 @@ export default function CalendarDemo() {
   }
 
   function toggleNumberList(field: NumberListField, item: number) {
-    const current = toNumberList(values[field])
-    const exists = current.includes(item)
-    const next = exists
-      ? current.filter((value) => value !== item)
-      : [...current, item].sort((left, right) => left - right)
+    updateFieldWith(field, (currentValue) => {
+      const current = toNumberList(currentValue)
+      const exists = current.includes(item)
+      const next = exists
+        ? current.filter((value) => value !== item)
+        : [...current, item].sort((left, right) => left - right)
 
-    updateField(field, (next.length > 0 ? next : undefined) as CalendarValues[typeof field])
+      return (next.length > 0 ? next : undefined) as CalendarValues[typeof field]
+    })
   }
 
   function addNumberListValue(field: NumberListField, rawValue: string, reset: () => void) {
@@ -313,14 +404,15 @@ export default function CalendarDemo() {
       return
     }
 
-    const current = toNumberList(values[field])
+    updateFieldWith(field, (currentValue) => {
+      const current = toNumberList(currentValue)
 
-    if (!current.includes(parsed)) {
-      updateField(
-        field,
-        [...current, parsed].sort((left, right) => left - right) as CalendarValues[typeof field],
-      )
-    }
+      if (current.includes(parsed)) {
+        return currentValue
+      }
+
+      return [...current, parsed].sort((left, right) => left - right) as CalendarValues[typeof field]
+    })
 
     reset()
   }
@@ -332,681 +424,758 @@ export default function CalendarDemo() {
       return
     }
 
-    const current = toStringList(values[field])
+    updateFieldWith(field, (currentValue) => {
+      const current = toStringList(currentValue)
 
-    if (!current.includes(trimmed)) {
-      updateField(field, [...current, trimmed] as CalendarValues[typeof field])
+      if (current.includes(trimmed)) {
+        return currentValue
+      }
+
+      return [...current, trimmed] as CalendarValues[typeof field]
+    })
+
+    if (field === 'dates') {
+      setFocusDate(trimmed)
     }
 
     reset()
   }
 
-  function removeListValue(field: NumberListField | StringListField, item: number | string) {
-    const current = Array.isArray(values[field]) ? values[field] : []
-    const next = current.filter((value) => value !== item)
-    updateField(field, (next.length > 0 ? next : undefined) as CalendarValues[typeof field])
+  function removeNumberListValue(field: NumberListField, item: number) {
+    updateFieldWith(field, (currentValue) => {
+      const current = toNumberList(currentValue)
+      const next = current.filter((value) => value !== item)
+      return (next.length > 0 ? next : undefined) as CalendarValues[typeof field]
+    })
+  }
+
+  function removeStringListValue(field: StringListField, item: string) {
+    updateFieldWith(field, (currentValue) => {
+      const current = toStringList(currentValue)
+      const next = current.filter((value) => value !== item)
+      return (next.length > 0 ? next : undefined) as CalendarValues[typeof field]
+    })
   }
 
   function updateExceptBetween(part: keyof ExceptBetweenValue, nextValue: string) {
-    const current = toExceptBetween(values.exceptBetween)
-    const next = {
-      ...current,
-      [part]: nextValue || undefined,
-    }
+    updateFieldWith('exceptBetween', (currentValue) => {
+      const current = toExceptBetween(currentValue)
+      const next = {
+        ...current,
+        [part]: nextValue || undefined,
+      }
 
-    if (!next.start && !next.end) {
-      updateField('exceptBetween', undefined)
-      return
-    }
+      return (next.start || next.end ? next : undefined) as CalendarValues['exceptBetween']
+    })
 
-    updateField('exceptBetween', next as CalendarValues['exceptBetween'])
+    if (nextValue) {
+      setFocusDate(nextValue)
+    }
   }
 
   function applyResets() {
     setValues((current) => {
       const next = { ...current }
+      let changed = false
 
       for (const foul of fouls) {
-        next[foul.field] = foul.suggestedValue as CalendarValues[typeof foul.field]
+        const suggestedValue = foul.suggestedValue as CalendarValues[typeof foul.field]
+        if (!Object.is(next[foul.field], suggestedValue)) {
+          next[foul.field] = suggestedValue
+          changed = true
+        }
       }
 
-      return next
+      return changed ? next : current
     })
   }
 
-  const modeLabel = isPresent(values.dates)
-    ? 'explicit dates'
-    : isPresent(values.everyWeekday) || isPresent(values.everyDate) || isPresent(values.everyMonth)
-      ? 'pattern recurrence'
-      : isPresent(values.fromDate) || isPresent(values.toDate)
-        ? 'bounded draft'
-        : 'open schedule'
-
-  const strategyLabel = isPresent(values.dates)
-    ? 'pattern fields overridden'
-    : !availability.everyHour.enabled && (
-      availability.startTime.enabled || availability.endTime.enabled || availability.repeatEvery.enabled
-    )
-      ? 'interval branch active'
-      : !availability.startTime.enabled && availability.everyHour.enabled
-        ? 'hour-list branch active'
-        : isPresent(values.startTime) || isPresent(values.endTime) || isPresent(values.repeatEvery)
-          ? 'interval branch active'
-          : isPresent(values.everyHour)
-            ? 'hour-list branch active'
-            : 'strategy undecided'
-
-  const disabledCount = fieldOrder.filter((field) => !availability[field].enabled).length
+  const explicitDates = toStringList(values.dates)
+  const everyWeekdayValues = toNumberList(values.everyWeekday)
+  const everyDateValues = toNumberList(values.everyDate)
+  const everyMonthValues = toNumberList(values.everyMonth)
+  const exceptDateValues = toStringList(values.exceptDates)
+  const everyHourValues = toNumberList(values.everyHour)
   const exceptBetween = toExceptBetween(values.exceptBetween)
+  const hasPreviewCriteria = (
+    explicitDates.length > 0 ||
+    everyWeekdayValues.length > 0 ||
+    everyDateValues.length > 0 ||
+    everyMonthValues.length > 0
+  )
+  const hasExceptions = (
+    exceptDateValues.length > 0 ||
+    Boolean(exceptBetween.start && exceptBetween.end)
+  )
+
+  const previewBaseRange = buildPreviewRange(values, check, false)
+  const previewRange = buildPreviewRange(values, check, true)
+
+  const { months: previewMonths, next, prev } = useCalendar({
+    focusDate,
+    numberOfMonths: 1,
+    ranges: previewRange ? [previewRange] : [],
+    weekStartsOn: 1,
+    fidelity: 'month',
+    onFocusDateChange: setFocusDate,
+  })
+
+  const { months: previewBaseMonths } = useCalendar({
+    focusDate,
+    numberOfMonths: 1,
+    ranges: previewBaseRange ? [previewBaseRange] : [],
+    weekStartsOn: 1,
+    fidelity: 'month',
+    onFocusDateChange: setFocusDate,
+  })
+
+  const previewMonth = previewMonths[0]
+  const previewBaseMonth = previewBaseMonths[0]
+  const activeDates = collectActiveDates(previewMonth)
+  const activeBaseDates = collectActiveDates(previewBaseMonth)
 
   return (
-    <div className="calendar-demo">
-      <div className="calendar-demo__topbar">
-        <div className="calendar-demo__indicators">
-          <div className="calendar-demo__indicator">
-            <div className="calendar-demo__indicator-label">Mode</div>
-            <div className="calendar-demo__indicator-value">{modeLabel}</div>
-          </div>
-          <div className="calendar-demo__indicator">
-            <div className="calendar-demo__indicator-label">Strategy</div>
-            <div className="calendar-demo__indicator-value">{strategyLabel}</div>
-          </div>
-          <div className="calendar-demo__indicator">
-            <div className="calendar-demo__indicator-label">On The Field</div>
-            <div className="calendar-demo__indicator-value">
-              {fieldOrder.length - disabledCount}/{fieldOrder.length} active
+    <div className="calendar-demo umpire-demo umpire-demo--styled">
+      {fouls.length > 0 && (
+        <div className="umpire-demo__fouls">
+          <div className="umpire-demo__fouls-copy">
+            <div className="umpire-demo__fouls-kicker">Fouls</div>
+            <div className="umpire-demo__fouls-list">
+              {fouls.map((foul) => (
+                <div key={foul.field} className="umpire-demo__foul">
+                  <span className="umpire-demo__foul-field">
+                    {fieldMeta[foul.field].label}
+                  </span>
+                  <span className="umpire-demo__foul-reason">{foul.reason}</span>
+                </div>
+              ))}
             </div>
           </div>
+          <button
+            type="button"
+            className="umpire-demo__reset-button"
+            onClick={applyResets}
+          >
+            Apply resets
+          </button>
+        </div>
+      )}
+
+      <section className="calendar-demo__strip">
+        <div className="calendar-demo__strip-header">
+          <div>
+            <div className="calendar-demo__eyebrow">Live config</div>
+            <h2 className="calendar-demo__title">Calendar recurrence</h2>
+          </div>
+          <span className="calendar-demo__accent">14 fields / useUmpire()</span>
         </div>
 
-        <div
-          className={cls(
-            'calendar-demo__fouls',
-            fouls.length > 0 && 'calendar-demo__fouls--alert',
-          )}
-        >
-          <div className="calendar-demo__fouls-copy">
-            <div className="calendar-demo__fouls-kicker">Fouls Banner</div>
-            {fouls.length > 0 ? (
-              <div className="calendar-demo__fouls-list">
-                {fouls.map((foul) => (
-                  <div key={foul.field} className="calendar-demo__foul">
-                    <span className="calendar-demo__foul-field">
-                      {fieldMeta[foul.field].label}
-                    </span>
-                    <span className="calendar-demo__foul-reason">{foul.reason}</span>
-                  </div>
+        <div className="calendar-demo__groups">
+          <section className="calendar-demo__group calendar-demo__group--bounds">
+            <div className="calendar-demo__group-head">
+              <div className="calendar-demo__group-kicker">Date bounds</div>
+              <div className="calendar-demo__group-caption">Window + clamp</div>
+            </div>
+
+            <label
+              className={cls(
+                'calendar-demo__control',
+                !check.fromDate.enabled && 'calendar-demo__control--disabled',
+              )}
+            >
+              <span className="calendar-demo__label" title={fieldMeta.fromDate.detail}>
+                {fieldMeta.fromDate.label}
+              </span>
+              <input
+                className="calendar-demo__input"
+                type="date"
+                value={String(values.fromDate ?? '')}
+                disabled={!check.fromDate.enabled}
+                onChange={(event) => updateStringField('fromDate', event.currentTarget.value)}
+              />
+              {!check.fromDate.enabled && check.fromDate.reason && (
+                <span className="calendar-demo__reason">{check.fromDate.reason}</span>
+              )}
+            </label>
+
+            <label
+              className={cls(
+                'calendar-demo__control',
+                !check.toDate.enabled && 'calendar-demo__control--disabled',
+              )}
+            >
+              <span className="calendar-demo__label" title={fieldMeta.toDate.detail}>
+                {fieldMeta.toDate.label}
+              </span>
+              <input
+                className="calendar-demo__input"
+                type="date"
+                value={String(values.toDate ?? '')}
+                disabled={!check.toDate.enabled}
+                onChange={(event) => updateStringField('toDate', event.currentTarget.value)}
+              />
+              {!check.toDate.enabled && check.toDate.reason && (
+                <span className="calendar-demo__reason">{check.toDate.reason}</span>
+              )}
+            </label>
+
+            <div
+              className={cls(
+                'calendar-demo__control',
+                'calendar-demo__control--inline',
+                !check.fixedBetween.enabled && 'calendar-demo__control--disabled',
+              )}
+            >
+              <div className="calendar-demo__control-copy">
+                <span className="calendar-demo__label" title={fieldMeta.fixedBetween.detail}>
+                  {fieldMeta.fixedBetween.label}
+                </span>
+                {!check.fixedBetween.enabled && check.fixedBetween.reason && (
+                  <span className="calendar-demo__reason">{check.fixedBetween.reason}</span>
+                )}
+              </div>
+
+              <label className="calendar-demo__switch">
+                <input
+                  type="checkbox"
+                  checked={Boolean(values.fixedBetween)}
+                  disabled={!check.fixedBetween.enabled}
+                  onChange={(event) => updateField('fixedBetween', event.currentTarget.checked)}
+                />
+                <span className="calendar-demo__switch-track" />
+              </label>
+            </div>
+          </section>
+
+          <section className="calendar-demo__group calendar-demo__group--dates">
+            <div className="calendar-demo__group-head">
+              <div className="calendar-demo__group-kicker">Explicit dates</div>
+              <div className="calendar-demo__group-caption">Authoritative picks</div>
+            </div>
+
+            <div
+              className={cls(
+                'calendar-demo__control',
+                !check.dates.enabled && 'calendar-demo__control--disabled',
+              )}
+            >
+              <span className="calendar-demo__label" title={fieldMeta.dates.detail}>
+                {fieldMeta.dates.label}
+              </span>
+              <div className="calendar-demo__input-row">
+                <input
+                  className="calendar-demo__input"
+                  type="date"
+                  value={dateDraft}
+                  disabled={!check.dates.enabled}
+                  onChange={(event) => setDateDraft(event.currentTarget.value)}
+                />
+                <button
+                  type="button"
+                  className="calendar-demo__action"
+                  disabled={!check.dates.enabled || !dateDraft}
+                  onClick={() => addStringListValue('dates', dateDraft, () => setDateDraft(''))}
+                >
+                  Add
+                </button>
+              </div>
+              <div className="calendar-demo__chip-row">
+                {explicitDates.map((date) => (
+                  <button
+                    key={date}
+                    type="button"
+                    className="calendar-demo__chip calendar-demo__chip--remove"
+                    disabled={!check.dates.enabled}
+                    onClick={() => removeStringListValue('dates', date)}
+                  >
+                    <span>{date}</span>
+                    <span className="calendar-demo__chip-x">x</span>
+                  </button>
+                ))}
+                {explicitDates.length === 0 && (
+                  <span className="calendar-demo__empty">No explicit dates.</span>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="calendar-demo__group calendar-demo__group--patterns">
+            <div className="calendar-demo__group-head">
+              <div className="calendar-demo__group-kicker">Patterns</div>
+              <div className="calendar-demo__group-caption">Weekdays, months, month-days</div>
+            </div>
+
+            <div
+              className={cls(
+                'calendar-demo__control',
+                !check.everyWeekday.enabled && 'calendar-demo__control--disabled',
+              )}
+            >
+              <span className="calendar-demo__label" title={fieldMeta.everyWeekday.detail}>
+                {fieldMeta.everyWeekday.label}
+              </span>
+              <div className="calendar-demo__toggle-grid calendar-demo__toggle-grid--weekdays">
+                {weekdays.map((weekday) => (
+                  <button
+                    key={weekday.label}
+                    type="button"
+                    aria-pressed={everyWeekdayValues.includes(weekday.value)}
+                    className={cls(
+                      'calendar-demo__toggle',
+                      everyWeekdayValues.includes(weekday.value) && 'calendar-demo__toggle--active',
+                    )}
+                    disabled={!check.everyWeekday.enabled}
+                    onClick={() => toggleNumberList('everyWeekday', weekday.value)}
+                  >
+                    {weekday.label}
+                  </button>
                 ))}
               </div>
-            ) : (
-              <div className="calendar-demo__fouls-empty">
-                No stale values on the basepaths. Change modes or strategy branches to surface reset calls.
-              </div>
-            )}
-          </div>
-
-          {fouls.length > 0 && (
-            <button
-              type="button"
-              className="calendar-demo__reset-button"
-              onClick={applyResets}
-            >
-              Apply resets
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="calendar-demo__layout">
-        <section className="calendar-demo__panel calendar-demo__panel--builder">
-          <div className="calendar-demo__panel-header">
-            <div>
-              <div className="calendar-demo__eyebrow">Capstone demo</div>
-              <h2 className="calendar-demo__title">Recurrence Builder</h2>
+              {!check.everyWeekday.enabled && check.everyWeekday.reason && (
+                <span className="calendar-demo__reason">{check.everyWeekday.reason}</span>
+              )}
             </div>
-            <span className="calendar-demo__panel-accent">14 fields / 7 rules</span>
-          </div>
 
-          <div className="calendar-demo__panel-body">
-            <div className="calendar-demo__sections">
-              <fieldset className="calendar-demo__section">
-                <legend className="calendar-demo__section-title">Date Bounds</legend>
-                <p className="calendar-demo__section-copy">
-                  Establish the window, then decide whether the recurrence should stay fixed inside it.
-                </p>
-
-                <div className="calendar-demo__grid calendar-demo__grid--two">
-                  <div
+            <div
+              className={cls(
+                'calendar-demo__control',
+                !check.everyMonth.enabled && 'calendar-demo__control--disabled',
+              )}
+            >
+              <span className="calendar-demo__label" title={fieldMeta.everyMonth.detail}>
+                {fieldMeta.everyMonth.label}
+              </span>
+              <div className="calendar-demo__toggle-grid calendar-demo__toggle-grid--months">
+                {months.map((month) => (
+                  <button
+                    key={month.label}
+                    type="button"
+                    aria-pressed={everyMonthValues.includes(month.value)}
                     className={cls(
-                      'calendar-demo__field',
-                      !availability.fromDate.enabled && 'calendar-demo__field--disabled',
+                      'calendar-demo__toggle',
+                      everyMonthValues.includes(month.value) && 'calendar-demo__toggle--active',
                     )}
+                    disabled={!check.everyMonth.enabled}
+                    onClick={() => toggleNumberList('everyMonth', month.value)}
                   >
-                    <label className="calendar-demo__label" htmlFor="calendar-demo-fromDate">
-                      {fieldMeta.fromDate.label}
-                    </label>
-                    <input
-                      id="calendar-demo-fromDate"
-                      className="calendar-demo__input"
-                      type="date"
-                      value={String(values.fromDate ?? '')}
-                      disabled={!availability.fromDate.enabled}
-                      onChange={(event) => updateStringField('fromDate', event.currentTarget.value)}
-                    />
-                    <div className="calendar-demo__detail">{fieldMeta.fromDate.detail}</div>
-                  </div>
+                    {month.label}
+                  </button>
+                ))}
+              </div>
+              {!check.everyMonth.enabled && check.everyMonth.reason && (
+                <span className="calendar-demo__reason">{check.everyMonth.reason}</span>
+              )}
+            </div>
 
-                  <div
+            <div
+              className={cls(
+                'calendar-demo__control',
+                !check.everyDate.enabled && 'calendar-demo__control--disabled',
+              )}
+            >
+              <span className="calendar-demo__label" title={fieldMeta.everyDate.detail}>
+                {fieldMeta.everyDate.label}
+              </span>
+              <div className="calendar-demo__toggle-grid calendar-demo__toggle-grid--days">
+                {quickDates.map((date) => (
+                  <button
+                    key={date}
+                    type="button"
+                    aria-pressed={everyDateValues.includes(date)}
                     className={cls(
-                      'calendar-demo__field',
-                      !availability.toDate.enabled && 'calendar-demo__field--disabled',
+                      'calendar-demo__toggle',
+                      everyDateValues.includes(date) && 'calendar-demo__toggle--active',
                     )}
+                    disabled={!check.everyDate.enabled}
+                    onClick={() => toggleNumberList('everyDate', date)}
                   >
-                    <label className="calendar-demo__label" htmlFor="calendar-demo-toDate">
-                      {fieldMeta.toDate.label}
-                    </label>
-                    <input
-                      id="calendar-demo-toDate"
-                      className="calendar-demo__input"
-                      type="date"
-                      value={String(values.toDate ?? '')}
-                      disabled={!availability.toDate.enabled}
-                      onChange={(event) => updateStringField('toDate', event.currentTarget.value)}
-                    />
-                    <div className="calendar-demo__detail">{fieldMeta.toDate.detail}</div>
-                  </div>
-                </div>
-
-                <div
-                  className={cls(
-                    'calendar-demo__field',
-                    'calendar-demo__field--toggle',
-                    !availability.fixedBetween.enabled && 'calendar-demo__field--disabled',
-                  )}
+                    {date}
+                  </button>
+                ))}
+              </div>
+              <div className="calendar-demo__input-row">
+                <input
+                  className="calendar-demo__input"
+                  type="number"
+                  min="1"
+                  max="31"
+                  inputMode="numeric"
+                  placeholder="Custom"
+                  value={everyDateDraft}
+                  disabled={!check.everyDate.enabled}
+                  onChange={(event) => setEveryDateDraft(event.currentTarget.value)}
+                />
+                <button
+                  type="button"
+                  className="calendar-demo__action"
+                  disabled={!check.everyDate.enabled || !everyDateDraft}
+                  onClick={() =>
+                    addNumberListValue('everyDate', everyDateDraft, () => setEveryDateDraft(''))
+                  }
                 >
-                  <div>
-                    <div className="calendar-demo__label">{fieldMeta.fixedBetween.label}</div>
-                    <div className="calendar-demo__detail">{fieldMeta.fixedBetween.detail}</div>
-                    {!availability.fixedBetween.enabled && availability.fixedBetween.reason && (
-                      <div className="calendar-demo__reason">{availability.fixedBetween.reason}</div>
-                    )}
-                  </div>
+                  Add
+                </button>
+              </div>
+              <div className="calendar-demo__chip-row">
+                {everyDateValues.map((date) => (
+                  <button
+                    key={date}
+                    type="button"
+                    className="calendar-demo__chip calendar-demo__chip--remove"
+                    disabled={!check.everyDate.enabled}
+                    onClick={() => removeNumberListValue('everyDate', date)}
+                  >
+                    <span>{date}</span>
+                    <span className="calendar-demo__chip-x">x</span>
+                  </button>
+                ))}
+                {everyDateValues.length === 0 && (
+                  <span className="calendar-demo__empty">No day picks.</span>
+                )}
+              </div>
+              {!check.everyDate.enabled && check.everyDate.reason && (
+                <span className="calendar-demo__reason">{check.everyDate.reason}</span>
+              )}
+            </div>
+          </section>
 
-                  <label className="calendar-demo__switch">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(values.fixedBetween)}
-                      disabled={!availability.fixedBetween.enabled}
-                      onChange={(event) => updateField('fixedBetween', event.currentTarget.checked)}
-                    />
-                    <span className="calendar-demo__switch-track" />
-                  </label>
-                </div>
-              </fieldset>
+          <section className="calendar-demo__group calendar-demo__group--exceptions">
+            <div className="calendar-demo__group-head">
+              <div className="calendar-demo__group-kicker">Exclusions</div>
+              <div className="calendar-demo__group-caption">Carve-outs from patterns</div>
+            </div>
 
-              <fieldset className="calendar-demo__section">
-                <legend className="calendar-demo__section-title">Explicit Dates</legend>
-                <p className="calendar-demo__section-copy">
-                  Add individual dates to override weekday, monthly, and sub-day pattern controls.
-                </p>
-
-                <div
-                  className={cls(
-                    'calendar-demo__field',
-                    !availability.dates.enabled && 'calendar-demo__field--disabled',
-                  )}
+            <div
+              className={cls(
+                'calendar-demo__control',
+                !check.exceptDates.enabled && 'calendar-demo__control--disabled',
+              )}
+            >
+              <span className="calendar-demo__label" title={fieldMeta.exceptDates.detail}>
+                {fieldMeta.exceptDates.label}
+              </span>
+              <div className="calendar-demo__input-row">
+                <input
+                  className="calendar-demo__input"
+                  type="date"
+                  value={exceptDateDraft}
+                  disabled={!check.exceptDates.enabled}
+                  onChange={(event) => setExceptDateDraft(event.currentTarget.value)}
+                />
+                <button
+                  type="button"
+                  className="calendar-demo__action"
+                  disabled={!check.exceptDates.enabled || !exceptDateDraft}
+                  onClick={() =>
+                    addStringListValue('exceptDates', exceptDateDraft, () => setExceptDateDraft(''))
+                  }
                 >
-                  <label className="calendar-demo__label" htmlFor="calendar-demo-dates">
-                    {fieldMeta.dates.label}
-                  </label>
-                  <div className="calendar-demo__input-row">
-                    <input
-                      id="calendar-demo-dates"
-                      className="calendar-demo__input"
-                      type="date"
-                      value={dateDraft}
-                      disabled={!availability.dates.enabled}
-                      onChange={(event) => setDateDraft(event.currentTarget.value)}
-                    />
+                  Add
+                </button>
+              </div>
+              <div className="calendar-demo__chip-row">
+                {exceptDateValues.map((date) => (
+                  <button
+                    key={date}
+                    type="button"
+                    className="calendar-demo__chip calendar-demo__chip--remove"
+                    disabled={!check.exceptDates.enabled}
+                    onClick={() => removeStringListValue('exceptDates', date)}
+                  >
+                    <span>{date}</span>
+                    <span className="calendar-demo__chip-x">x</span>
+                  </button>
+                ))}
+                {exceptDateValues.length === 0 && (
+                  <span className="calendar-demo__empty">No excluded dates.</span>
+                )}
+              </div>
+              {!check.exceptDates.enabled && check.exceptDates.reason && (
+                <span className="calendar-demo__reason">{check.exceptDates.reason}</span>
+              )}
+            </div>
+
+            <div
+              className={cls(
+                'calendar-demo__control',
+                !check.exceptBetween.enabled && 'calendar-demo__control--disabled',
+              )}
+            >
+              <span className="calendar-demo__label" title={fieldMeta.exceptBetween.detail}>
+                {fieldMeta.exceptBetween.label}
+              </span>
+              <div className="calendar-demo__split-inputs">
+                <input
+                  className="calendar-demo__input"
+                  type="date"
+                  value={exceptBetween.start ?? ''}
+                  disabled={!check.exceptBetween.enabled}
+                  onChange={(event) => updateExceptBetween('start', event.currentTarget.value)}
+                />
+                <input
+                  className="calendar-demo__input"
+                  type="date"
+                  value={exceptBetween.end ?? ''}
+                  disabled={!check.exceptBetween.enabled}
+                  onChange={(event) => updateExceptBetween('end', event.currentTarget.value)}
+                />
+              </div>
+              {!check.exceptBetween.enabled && check.exceptBetween.reason && (
+                <span className="calendar-demo__reason">{check.exceptBetween.reason}</span>
+              )}
+            </div>
+          </section>
+
+          <section className="calendar-demo__group calendar-demo__group--subday">
+            <div className="calendar-demo__group-head">
+              <div className="calendar-demo__group-kicker">Sub-day</div>
+              <div className="calendar-demo__group-caption">Choose one strategy branch</div>
+            </div>
+
+            <div className="calendar-demo__branch-grid">
+              <div
+                className={cls(
+                  'calendar-demo__control',
+                  !check.everyHour.enabled && 'calendar-demo__control--disabled',
+                )}
+              >
+                <span className="calendar-demo__label" title={fieldMeta.everyHour.detail}>
+                  {fieldMeta.everyHour.label}
+                </span>
+                <div className="calendar-demo__toggle-grid calendar-demo__toggle-grid--hours">
+                  {hourOptions.map((hour) => (
                     <button
+                      key={hour}
                       type="button"
-                      className="calendar-demo__action"
-                      disabled={!availability.dates.enabled}
-                      onClick={() => addStringListValue('dates', dateDraft, () => setDateDraft(''))}
+                      aria-pressed={everyHourValues.includes(hour)}
+                      title={formatHour(hour)}
+                      className={cls(
+                        'calendar-demo__toggle',
+                        everyHourValues.includes(hour) && 'calendar-demo__toggle--active',
+                      )}
+                      disabled={!check.everyHour.enabled}
+                      onClick={() => toggleNumberList('everyHour', hour)}
                     >
-                      Add
+                      {formatHourChip(hour)}
                     </button>
-                  </div>
-                  <div className="calendar-demo__detail">{fieldMeta.dates.detail}</div>
-                  <div className="calendar-demo__chips">
-                    {toStringList(values.dates).map((date) => (
-                      <button
-                        key={date}
-                        type="button"
-                        className="calendar-demo__chip"
-                        disabled={!availability.dates.enabled}
-                        onClick={() => removeListValue('dates', date)}
-                      >
-                        {date}
-                      </button>
-                    ))}
-                    {toStringList(values.dates).length === 0 && (
-                      <span className="calendar-demo__empty">No explicit dates yet.</span>
-                    )}
-                  </div>
+                  ))}
                 </div>
-              </fieldset>
+                {!check.everyHour.enabled && check.everyHour.reason && (
+                  <span className="calendar-demo__reason">{check.everyHour.reason}</span>
+                )}
+              </div>
 
-              <fieldset className="calendar-demo__section">
-                <legend className="calendar-demo__section-title">Patterns</legend>
-                <p className="calendar-demo__section-copy">
-                  Build the recurring cadence with weekday toggles, month-day picks, and month selectors.
-                </p>
-
-                <div
-                  className={cls(
-                    'calendar-demo__field',
-                    !availability.everyWeekday.enabled && 'calendar-demo__field--disabled',
-                  )}
-                >
-                  <div className="calendar-demo__label">{fieldMeta.everyWeekday.label}</div>
-                  <div className="calendar-demo__detail">{fieldMeta.everyWeekday.detail}</div>
-                  <div className="calendar-demo__toggle-grid calendar-demo__toggle-grid--weekdays">
-                    {weekdays.map((weekday) => (
-                      <button
-                        key={weekday.label}
-                        type="button"
-                        aria-pressed={toNumberList(values.everyWeekday).includes(weekday.value)}
-                        className={cls(
-                          'calendar-demo__toggle',
-                          toNumberList(values.everyWeekday).includes(weekday.value) &&
-                            'calendar-demo__toggle--active',
-                        )}
-                        disabled={!availability.everyWeekday.enabled}
-                        onClick={() => toggleNumberList('everyWeekday', weekday.value)}
-                      >
-                        {weekday.label}
-                      </button>
-                    ))}
-                  </div>
-                  {!availability.everyWeekday.enabled && availability.everyWeekday.reason && (
-                    <div className="calendar-demo__reason">{availability.everyWeekday.reason}</div>
-                  )}
-                </div>
-
-                <div className="calendar-demo__grid calendar-demo__grid--two">
-                  <div
+              <div className="calendar-demo__control">
+                <span className="calendar-demo__label">Interval</span>
+                <div className="calendar-demo__interval-fields">
+                  <label
                     className={cls(
-                      'calendar-demo__field',
-                      !availability.everyDate.enabled && 'calendar-demo__field--disabled',
+                      'calendar-demo__control',
+                      'calendar-demo__control--nested',
+                      !check.startTime.enabled && 'calendar-demo__control--disabled',
                     )}
                   >
-                    <div className="calendar-demo__label">{fieldMeta.everyDate.label}</div>
-                    <div className="calendar-demo__detail">{fieldMeta.everyDate.detail}</div>
-                    <div className="calendar-demo__toggle-grid">
-                      {quickDates.map((date) => (
-                        <button
-                          key={date}
-                          type="button"
-                          aria-pressed={toNumberList(values.everyDate).includes(date)}
-                          className={cls(
-                            'calendar-demo__toggle',
-                            toNumberList(values.everyDate).includes(date) &&
-                              'calendar-demo__toggle--active',
-                          )}
-                          disabled={!availability.everyDate.enabled}
-                          onClick={() => toggleNumberList('everyDate', date)}
-                        >
-                          {date}
-                        </button>
-                      ))}
-                    </div>
+                    <span className="calendar-demo__label" title={fieldMeta.startTime.detail}>
+                      {fieldMeta.startTime.label}
+                    </span>
+                    <input
+                      className="calendar-demo__input"
+                      type="time"
+                      value={String(values.startTime ?? '')}
+                      disabled={!check.startTime.enabled}
+                      onChange={(event) => updateStringField('startTime', event.currentTarget.value)}
+                    />
+                    {!check.startTime.enabled && check.startTime.reason && (
+                      <span className="calendar-demo__reason">{check.startTime.reason}</span>
+                    )}
+                  </label>
+
+                  <label
+                    className={cls(
+                      'calendar-demo__control',
+                      'calendar-demo__control--nested',
+                      !check.endTime.enabled && 'calendar-demo__control--disabled',
+                    )}
+                  >
+                    <span className="calendar-demo__label" title={fieldMeta.endTime.detail}>
+                      {fieldMeta.endTime.label}
+                    </span>
+                    <input
+                      className="calendar-demo__input"
+                      type="time"
+                      value={String(values.endTime ?? '')}
+                      disabled={!check.endTime.enabled}
+                      onChange={(event) => updateStringField('endTime', event.currentTarget.value)}
+                    />
+                    {!check.endTime.enabled && check.endTime.reason && (
+                      <span className="calendar-demo__reason">{check.endTime.reason}</span>
+                    )}
+                  </label>
+
+                  <label
+                    className={cls(
+                      'calendar-demo__control',
+                      'calendar-demo__control--nested',
+                      !check.repeatEvery.enabled && 'calendar-demo__control--disabled',
+                    )}
+                  >
+                    <span className="calendar-demo__label" title={fieldMeta.repeatEvery.detail}>
+                      {fieldMeta.repeatEvery.label}
+                    </span>
                     <div className="calendar-demo__input-row">
                       <input
                         className="calendar-demo__input"
                         type="number"
                         min="1"
-                        max="31"
                         inputMode="numeric"
-                        value={everyDateDraft}
-                        disabled={!availability.everyDate.enabled}
-                        onChange={(event) => setEveryDateDraft(event.currentTarget.value)}
+                        value={String(values.repeatEvery ?? '')}
+                        disabled={!check.repeatEvery.enabled}
+                        onChange={(event) => updateNumberField('repeatEvery', event.currentTarget.value)}
                       />
-                      <button
-                        type="button"
-                        className="calendar-demo__action"
-                        disabled={!availability.everyDate.enabled}
-                        onClick={() =>
-                          addNumberListValue('everyDate', everyDateDraft, () => setEveryDateDraft(''))
-                        }
-                      >
-                        Add day
-                      </button>
+                      <span className="calendar-demo__suffix">min</span>
                     </div>
-                    <div className="calendar-demo__chips">
-                      {toNumberList(values.everyDate).map((date) => (
-                        <button
-                          key={date}
-                          type="button"
-                          className="calendar-demo__chip"
-                          disabled={!availability.everyDate.enabled}
-                          onClick={() => removeListValue('everyDate', date)}
-                        >
-                          day {date}
-                        </button>
-                      ))}
-                      {toNumberList(values.everyDate).length === 0 && (
-                        <span className="calendar-demo__empty">No month days selected.</span>
-                      )}
-                    </div>
-                    {!availability.everyDate.enabled && availability.everyDate.reason && (
-                      <div className="calendar-demo__reason">{availability.everyDate.reason}</div>
+                    {!check.repeatEvery.enabled && check.repeatEvery.reason && (
+                      <span className="calendar-demo__reason">{check.repeatEvery.reason}</span>
                     )}
-                  </div>
-
-                  <div
-                    className={cls(
-                      'calendar-demo__field',
-                      !availability.everyMonth.enabled && 'calendar-demo__field--disabled',
-                    )}
-                  >
-                    <div className="calendar-demo__label">{fieldMeta.everyMonth.label}</div>
-                    <div className="calendar-demo__detail">{fieldMeta.everyMonth.detail}</div>
-                    <div className="calendar-demo__toggle-grid calendar-demo__toggle-grid--months">
-                      {months.map((month) => (
-                        <button
-                          key={month.label}
-                          type="button"
-                          aria-pressed={toNumberList(values.everyMonth).includes(month.value)}
-                          className={cls(
-                            'calendar-demo__toggle',
-                            toNumberList(values.everyMonth).includes(month.value) &&
-                              'calendar-demo__toggle--active',
-                          )}
-                          disabled={!availability.everyMonth.enabled}
-                          onClick={() => toggleNumberList('everyMonth', month.value)}
-                        >
-                          {month.label}
-                        </button>
-                      ))}
-                    </div>
-                    {!availability.everyMonth.enabled && availability.everyMonth.reason && (
-                      <div className="calendar-demo__reason">{availability.everyMonth.reason}</div>
-                    )}
-                  </div>
+                  </label>
                 </div>
-              </fieldset>
+              </div>
+            </div>
+          </section>
 
-              <fieldset className="calendar-demo__section">
-                <legend className="calendar-demo__section-title">Exceptions</legend>
-                <p className="calendar-demo__section-copy">
-                  Exception fields only come alive when a recurrence pattern exists somewhere upstream.
-                </p>
+          <section className="calendar-demo__group calendar-demo__group--duration">
+            <div className="calendar-demo__group-head">
+              <div className="calendar-demo__group-kicker">Duration</div>
+              <div className="calendar-demo__group-caption">Shared event length</div>
+            </div>
 
-                <div className="calendar-demo__grid calendar-demo__grid--two">
-                  <div
-                    className={cls(
-                      'calendar-demo__field',
-                      !availability.exceptDates.enabled && 'calendar-demo__field--disabled',
-                    )}
-                  >
-                    <label className="calendar-demo__label" htmlFor="calendar-demo-exceptDates">
-                      {fieldMeta.exceptDates.label}
-                    </label>
-                    <div className="calendar-demo__input-row">
-                      <input
-                        id="calendar-demo-exceptDates"
-                        className="calendar-demo__input"
-                        type="date"
-                        value={exceptDateDraft}
-                        disabled={!availability.exceptDates.enabled}
-                        onChange={(event) => setExceptDateDraft(event.currentTarget.value)}
-                      />
-                      <button
-                        type="button"
-                        className="calendar-demo__action"
-                        disabled={!availability.exceptDates.enabled}
-                        onClick={() =>
-                          addStringListValue('exceptDates', exceptDateDraft, () => setExceptDateDraft(''))
-                        }
-                      >
-                        Add
-                      </button>
-                    </div>
-                    <div className="calendar-demo__detail">{fieldMeta.exceptDates.detail}</div>
-                    <div className="calendar-demo__chips">
-                      {toStringList(values.exceptDates).map((date) => (
-                        <button
-                          key={date}
-                          type="button"
-                          className="calendar-demo__chip"
-                          disabled={!availability.exceptDates.enabled}
-                          onClick={() => removeListValue('exceptDates', date)}
-                        >
-                          {date}
-                        </button>
-                      ))}
-                      {toStringList(values.exceptDates).length === 0 && (
-                        <span className="calendar-demo__empty">No excluded dates.</span>
-                      )}
-                    </div>
-                    {!availability.exceptDates.enabled && availability.exceptDates.reason && (
-                      <div className="calendar-demo__reason">{availability.exceptDates.reason}</div>
-                    )}
-                  </div>
+            <label
+              className={cls(
+                'calendar-demo__control',
+                !check.duration.enabled && 'calendar-demo__control--disabled',
+              )}
+            >
+              <span className="calendar-demo__label" title={fieldMeta.duration.detail}>
+                {fieldMeta.duration.label}
+              </span>
+              <div className="calendar-demo__input-row">
+                <input
+                  className="calendar-demo__input"
+                  type="number"
+                  min="1"
+                  inputMode="numeric"
+                  value={String(values.duration ?? '')}
+                  disabled={!check.duration.enabled}
+                  onChange={(event) => updateNumberField('duration', event.currentTarget.value)}
+                />
+                <span className="calendar-demo__suffix">min</span>
+              </div>
+              {!check.duration.enabled && check.duration.reason && (
+                <span className="calendar-demo__reason">{check.duration.reason}</span>
+              )}
+            </label>
+          </section>
+        </div>
+      </section>
 
-                  <div
-                    className={cls(
-                      'calendar-demo__field',
-                      !availability.exceptBetween.enabled && 'calendar-demo__field--disabled',
-                    )}
-                  >
-                    <div className="calendar-demo__label">{fieldMeta.exceptBetween.label}</div>
-                    <div className="calendar-demo__detail">{fieldMeta.exceptBetween.detail}</div>
-                    <div className="calendar-demo__grid calendar-demo__grid--two">
-                      <input
-                        className="calendar-demo__input"
-                        type="date"
-                        value={exceptBetween.start ?? ''}
-                        disabled={!availability.exceptBetween.enabled}
-                        onChange={(event) => updateExceptBetween('start', event.currentTarget.value)}
-                      />
-                      <input
-                        className="calendar-demo__input"
-                        type="date"
-                        value={exceptBetween.end ?? ''}
-                        disabled={!availability.exceptBetween.enabled}
-                        onChange={(event) => updateExceptBetween('end', event.currentTarget.value)}
-                      />
-                    </div>
-                    {!availability.exceptBetween.enabled && availability.exceptBetween.reason && (
-                      <div className="calendar-demo__reason">{availability.exceptBetween.reason}</div>
-                    )}
-                  </div>
+      <div className="calendar-demo__lower">
+        <section className="calendar-demo__panel">
+          <div className="calendar-demo__panel-header">
+            <div>
+              <div className="calendar-demo__eyebrow">neo-reckoning preview</div>
+              <h3 className="calendar-demo__panel-title">{previewMonth.label}</h3>
+            </div>
+
+            <div className="calendar-demo__nav">
+              <button
+                type="button"
+                className="calendar-demo__nav-button"
+                aria-label="Previous month"
+                onClick={prev}
+              >
+                Prev
+              </button>
+              <button
+                type="button"
+                className="calendar-demo__nav-button"
+                aria-label="Next month"
+                onClick={next}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+
+          <div className="calendar-demo__panel-body">
+            {!hasPreviewCriteria && (
+              <p className="calendar-demo__note">
+                Pick explicit dates or a day-level pattern to light up the month grid.
+              </p>
+            )}
+
+            <div className="calendar-demo__weekday-row">
+              {weekdayHeaders.map((weekday) => (
+                <div key={weekday} className="calendar-demo__weekday">
+                  {weekday}
                 </div>
-              </fieldset>
+              ))}
+            </div>
 
-              <fieldset className="calendar-demo__section">
-                <legend className="calendar-demo__section-title">Sub-Day Strategy</legend>
-                <p className="calendar-demo__section-copy">
-                  The `oneOf()` rule forces a call: choose specific hours, or choose an interval branch.
-                </p>
+            <div className="calendar-demo__month-grid">
+              {previewMonth.weeks.map((week) =>
+                week.days.map((day) => {
+                  const isActive = activeDates.has(day.date)
+                  const isExcluded = hasExceptions && activeBaseDates.has(day.date) && !isActive
+                  const isOutOfBounds = isOutsideBounds(day.date, values.fromDate, values.toDate)
 
-                <div className="calendar-demo__grid calendar-demo__grid--two">
-                  <div
-                    className={cls(
-                      'calendar-demo__field',
-                      !availability.everyHour.enabled && 'calendar-demo__field--disabled',
-                    )}
-                  >
-                    <div className="calendar-demo__label">{fieldMeta.everyHour.label}</div>
-                    <div className="calendar-demo__detail">{fieldMeta.everyHour.detail}</div>
-                    <div className="calendar-demo__input-row">
-                      <select
-                        className="calendar-demo__input calendar-demo__input--select"
-                        value={hourDraft}
-                        disabled={!availability.everyHour.enabled}
-                        onChange={(event) => setHourDraft(event.currentTarget.value)}
-                      >
-                        {hourOptions.map((hour) => (
-                          <option key={hour} value={hour}>
-                            {formatHour(hour)}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        type="button"
-                        className="calendar-demo__action"
-                        disabled={!availability.everyHour.enabled}
-                        onClick={() => addNumberListValue('everyHour', hourDraft, () => setHourDraft('9'))}
-                      >
-                        Add hour
-                      </button>
-                    </div>
-                    <div className="calendar-demo__chips">
-                      {toNumberList(values.everyHour).map((hour) => (
-                        <button
-                          key={hour}
-                          type="button"
-                          className="calendar-demo__chip"
-                          disabled={!availability.everyHour.enabled}
-                          onClick={() => removeListValue('everyHour', hour)}
-                        >
-                          {formatHour(hour)}
-                        </button>
-                      ))}
-                      {toNumberList(values.everyHour).length === 0 && (
-                        <span className="calendar-demo__empty">No specific hours picked.</span>
-                      )}
-                    </div>
-                    {!availability.everyHour.enabled && availability.everyHour.reason && (
-                      <div className="calendar-demo__reason">{availability.everyHour.reason}</div>
-                    )}
-                  </div>
-
-                  <div className="calendar-demo__stack">
+                  return (
                     <div
+                      key={day.date}
                       className={cls(
-                        'calendar-demo__field',
-                        !availability.startTime.enabled && 'calendar-demo__field--disabled',
+                        'calendar-demo__day',
+                        isActive && 'calendar-demo__day--active',
+                        isExcluded && 'calendar-demo__day--excluded',
+                        isOutOfBounds && 'calendar-demo__day--outside-window',
+                        !day.isCurrentMonth && 'calendar-demo__day--adjacent',
+                        day.isToday && 'calendar-demo__day--today',
                       )}
                     >
-                      <label className="calendar-demo__label" htmlFor="calendar-demo-startTime">
-                        {fieldMeta.startTime.label}
-                      </label>
-                      <input
-                        id="calendar-demo-startTime"
-                        className="calendar-demo__input"
-                        type="time"
-                        value={String(values.startTime ?? '')}
-                        disabled={!availability.startTime.enabled}
-                        onChange={(event) => updateStringField('startTime', event.currentTarget.value)}
-                      />
-                      <div className="calendar-demo__detail">{fieldMeta.startTime.detail}</div>
-                      {!availability.startTime.enabled && availability.startTime.reason && (
-                        <div className="calendar-demo__reason">{availability.startTime.reason}</div>
-                      )}
+                      <span className="calendar-demo__day-number">{day.dayOfMonth}</span>
+                      <span className="calendar-demo__day-markers">
+                        {isActive && <span className="calendar-demo__day-marker calendar-demo__day-marker--active" />}
+                        {isExcluded && <span className="calendar-demo__day-marker calendar-demo__day-marker--excluded" />}
+                        {isOutOfBounds && <span className="calendar-demo__day-marker calendar-demo__day-marker--bounds" />}
+                      </span>
                     </div>
+                  )
+                }),
+              )}
+            </div>
 
-                    <div className="calendar-demo__grid calendar-demo__grid--two">
-                      <div
-                        className={cls(
-                          'calendar-demo__field',
-                          !availability.endTime.enabled && 'calendar-demo__field--disabled',
-                        )}
-                      >
-                        <label className="calendar-demo__label" htmlFor="calendar-demo-endTime">
-                          {fieldMeta.endTime.label}
-                        </label>
-                        <input
-                          id="calendar-demo-endTime"
-                          className="calendar-demo__input"
-                          type="time"
-                          value={String(values.endTime ?? '')}
-                          disabled={!availability.endTime.enabled}
-                          onChange={(event) => updateStringField('endTime', event.currentTarget.value)}
-                        />
-                        <div className="calendar-demo__detail">{fieldMeta.endTime.detail}</div>
-                        {!availability.endTime.enabled && availability.endTime.reason && (
-                          <div className="calendar-demo__reason">{availability.endTime.reason}</div>
-                        )}
-                      </div>
-
-                      <div
-                        className={cls(
-                          'calendar-demo__field',
-                          !availability.repeatEvery.enabled && 'calendar-demo__field--disabled',
-                        )}
-                      >
-                        <label className="calendar-demo__label" htmlFor="calendar-demo-repeatEvery">
-                          {fieldMeta.repeatEvery.label}
-                        </label>
-                        <input
-                          id="calendar-demo-repeatEvery"
-                          className="calendar-demo__input"
-                          type="number"
-                          min="5"
-                          step="5"
-                          inputMode="numeric"
-                          placeholder="30"
-                          value={String(values.repeatEvery ?? '')}
-                          disabled={!availability.repeatEvery.enabled}
-                          onChange={(event) => updateNumberField('repeatEvery', event.currentTarget.value)}
-                        />
-                        <div className="calendar-demo__detail">{fieldMeta.repeatEvery.detail}</div>
-                        {!availability.repeatEvery.enabled && availability.repeatEvery.reason && (
-                          <div className="calendar-demo__reason">{availability.repeatEvery.reason}</div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </fieldset>
-
-              <fieldset className="calendar-demo__section">
-                <legend className="calendar-demo__section-title">Duration</legend>
-                <p className="calendar-demo__section-copy">
-                  Shared event length stays independent from the recurrence mode, so it is always available.
-                </p>
-
-                <div
-                  className={cls(
-                    'calendar-demo__field',
-                    !availability.duration.enabled && 'calendar-demo__field--disabled',
-                  )}
-                >
-                  <label className="calendar-demo__label" htmlFor="calendar-demo-duration">
-                    {fieldMeta.duration.label}
-                  </label>
-                  <div className="calendar-demo__input-row">
-                    <input
-                      id="calendar-demo-duration"
-                      className="calendar-demo__input"
-                      type="number"
-                      min="15"
-                      step="15"
-                      inputMode="numeric"
-                      placeholder="60"
-                      value={String(values.duration ?? '')}
-                      disabled={!availability.duration.enabled}
-                      onChange={(event) => updateNumberField('duration', event.currentTarget.value)}
-                    />
-                    <span className="calendar-demo__suffix">minutes</span>
-                  </div>
-                  <div className="calendar-demo__detail">{fieldMeta.duration.detail}</div>
-                </div>
-              </fieldset>
+            <div className="calendar-demo__legend">
+              <div className="calendar-demo__legend-item">
+                <span className="calendar-demo__legend-swatch calendar-demo__legend-swatch--active" />
+                <span>active day</span>
+              </div>
+              <div className="calendar-demo__legend-item">
+                <span className="calendar-demo__legend-swatch calendar-demo__legend-swatch--excluded" />
+                <span>excluded</span>
+              </div>
+              <div className="calendar-demo__legend-item">
+                <span className="calendar-demo__legend-swatch calendar-demo__legend-swatch--bounds" />
+                <span>outside bounds</span>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="calendar-demo__panel calendar-demo__panel--availability">
+        <section className="calendar-demo__panel">
           <div className="calendar-demo__panel-header">
             <div>
-              <div className="calendar-demo__eyebrow">Live state</div>
-              <h2 className="calendar-demo__title">Availability Table</h2>
+              <div className="calendar-demo__eyebrow">Availability</div>
+              <h3 className="calendar-demo__panel-title">Live field status</h3>
             </div>
-            <span className="calendar-demo__panel-accent">useUmpire()</span>
+            <span className="calendar-demo__accent">check()</span>
           </div>
 
           <div className="calendar-demo__panel-body calendar-demo__panel-body--table">
@@ -1015,40 +1184,36 @@ export default function CalendarDemo() {
                 <thead>
                   <tr>
                     <th>Field</th>
-                    <th>Value</th>
-                    <th>Enabled</th>
-                    <th>Required</th>
+                    <th>Status</th>
                     <th>Reason</th>
                   </tr>
                 </thead>
                 <tbody>
                   {fieldOrder.map((field) => {
-                    const fieldAvailability = availability[field]
+                    const availability = check[field]
 
                     return (
                       <tr key={field}>
-                        <td className="calendar-demo__table-field">{field}</td>
-                        <td className="calendar-demo__table-value">
-                          {renderValueSummary(field, values[field])}
+                        <td className="calendar-demo__table-field" title={fieldMeta[field].detail}>
+                          {fieldMeta[field].label}
                         </td>
                         <td>
-                          <span className="calendar-demo__status">
-                            <span
-                              className={cls(
-                                'calendar-demo__status-dot',
-                                fieldAvailability.enabled
-                                  ? 'calendar-demo__status-dot--enabled'
-                                  : 'calendar-demo__status-dot--disabled',
-                              )}
-                            />
-                            {fieldAvailability.enabled ? 'yes' : 'no'}
+                          <span
+                            className={cls(
+                              'calendar-demo__status',
+                              availability.enabled
+                                ? 'calendar-demo__status--enabled'
+                                : 'calendar-demo__status--disabled',
+                            )}
+                          >
+                            <span className="calendar-demo__status-dot" />
+                            <span className="calendar-demo__status-text">
+                              {availability.enabled ? 'enabled' : 'disabled'}
+                            </span>
                           </span>
                         </td>
-                        <td className="calendar-demo__table-required">
-                          {fieldAvailability.required ? '✓' : '—'}
-                        </td>
                         <td className="calendar-demo__table-reason">
-                          {fieldAvailability.reason ?? '—'}
+                          {availability.reason ?? 'available'}
                         </td>
                       </tr>
                     )
