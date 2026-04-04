@@ -1,0 +1,128 @@
+---
+title: PC Builder Wizard
+description: Five steps. One CPU change. Three cascading fouls.
+---
+
+import PcBuilderDemo from '../../../components/PcBuilderDemo.tsx'
+
+<PcBuilderDemo client:load />
+
+A wizard-style PC configurator where the interesting part is not the filtering. The interesting part is what happens after the user has already made a coherent build, then jumps back to Step 1 and changes the platform underneath it.
+
+## The Cascade
+
+1. Pick an Intel CPU, then choose a matching motherboard and RAM kit.
+2. Add a case so the graph has something downstream of the motherboard.
+3. Go back to Platform and switch from Intel to AMD.
+4. The motherboard is now stale, so `play()` calls a foul there first.
+5. RAM and Case fall with it because they depend on an active motherboard, not just a non-empty string in state.
+
+That last part is the point of the demo. The user only touched one field. Umpire still finds the downstream stale state and turns it into reset recommendations.
+
+## Two Umpires
+
+The form umpire owns actual build availability:
+
+```ts
+import { enabledWhen, requires, umpire } from '@umpire/core'
+
+type PcConditions = {
+  motherboardCompatible: boolean
+  ramCompatible: boolean
+  caseCompatible: boolean
+}
+
+const pcUmp = umpire<typeof pcFields, PcConditions>({
+  fields: {
+    cpu:         { required: true, isEmpty: (value) => !value },
+    motherboard: { required: true, isEmpty: (value) => !value },
+    ram:         { required: true, isEmpty: (value) => !value },
+    gpu:         { isEmpty: (value) => !value },
+    storage:     { isEmpty: (value) => !value },
+    caseSize:    { required: true, isEmpty: (value) => !value },
+  },
+  rules: [
+    requires('motherboard', 'cpu', {
+      reason: 'Pick a CPU first',
+    }),
+    enabledWhen('motherboard', (values, conditions) =>
+      !values.motherboard || conditions.motherboardCompatible, {
+      reason: 'Selected motherboard no longer matches the CPU socket',
+    }),
+
+    requires('ram', 'motherboard', {
+      reason: 'Memory depends on an active motherboard selection',
+    }),
+    enabledWhen('ram', (values, conditions) =>
+      !values.ram || conditions.ramCompatible, {
+      reason: 'Selected memory no longer matches the motherboard RAM type',
+    }),
+
+    requires('caseSize', 'motherboard', {
+      reason: 'Pick a valid motherboard first to determine form factor',
+    }),
+    enabledWhen('caseSize', (values, conditions) =>
+      !values.caseSize || conditions.caseCompatible, {
+      reason: 'Selected case no longer fits the motherboard form factor',
+    }),
+  ],
+})
+```
+
+The second umpire is just a coach. It does not control the form. It decides when to surface teaching callouts:
+
+```ts
+type CoachConditions = {
+  cpu?: string
+  ram?: string
+  hasTransitiveFoul: boolean
+  hasAppliedResets: boolean
+}
+
+const coachUmp = umpire({
+  fields: {
+    promptSwitchCpu:   {},
+    explainTransitive: {},
+    celebrateComplete: {},
+  },
+  rules: [
+    enabledWhen('promptSwitchCpu', (_values, conditions) =>
+      Boolean(conditions.ram) && conditions.cpu?.startsWith('intel') === true, {
+      reason: 'Complete steps 1-3 with Intel first',
+    }),
+    enabledWhen('explainTransitive', (_values, conditions) =>
+      conditions.hasTransitiveFoul, {
+      reason: 'Trigger the transitive cascade first',
+    }),
+    enabledWhen('celebrateComplete', (_values, conditions) =>
+      conditions.hasTransitiveFoul && conditions.hasAppliedResets, {
+      reason: 'Apply the suggested resets first',
+    }),
+  ],
+})
+```
+
+The coach state is deliberately awkward in places. It needs live form values, sticky historical flags, and foul-derived milestones. That is the design-discovery question for whether a future `@umpire/coach` helper would be worth it.
+
+## The Compatibility Layer
+
+The lookup tables still live in the UI:
+
+- Motherboards are filtered by the selected CPU socket.
+- RAM kits are filtered by the selected motherboard RAM type.
+- Cases are filtered by the selected motherboard form factor.
+
+That filtering logic is not what Umpire is responsible for. The component distills it down into three booleans:
+
+- `motherboardCompatible`
+- `ramCompatible`
+- `caseCompatible`
+
+Those booleans are the bridge between “the app knows what options are legal” and “`play()` can foul a stale current selection.” Without that bridge, a value can stay in state forever without ever becoming unavailable.
+
+## What Umpire Doesn't Do
+
+- It does not own the component’s product catalog. CPU, motherboard, RAM, and case data are plain app lookups.
+- It does not compute filtered option lists. That is ordinary UI logic.
+- It does not calculate the PSU recommendation. That label is derived directly from CPU tier plus GPU tier in render.
+- It does not clear fields automatically. The demo keeps stale values in state until `play()` recommends a reset and the user applies it.
