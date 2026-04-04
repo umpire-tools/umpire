@@ -72,7 +72,6 @@ export default defineConfig({
         { label: 'Getting Started', items: [
           { label: 'Introduction', slug: '' },
           { label: 'Quick Start', slug: 'learn' },
-          { label: 'Droid-First Development', slug: 'droid-first' },
         ] },
         {
           label: 'Concepts',
@@ -81,6 +80,7 @@ export default defineConfig({
             { label: 'Satisfaction', slug: 'concepts/satisfaction' },
             { label: 'Evaluation Order', slug: 'concepts/evaluation' },
             { label: 'Composing Validation', slug: 'concepts/validation' },
+            { label: 'Droid-First Development', slug: 'droid-first' },
           ],
         },
         {
@@ -107,16 +107,17 @@ export default defineConfig({
             { label: 'Signals', slug: 'adapters/signals' },
             { label: 'React', slug: 'adapters/react' },
             { label: 'Zustand', slug: 'adapters/zustand' },
-            { label: 'Zod', slug: 'examples/signup' },
+            { label: 'Zod', slug: 'adapters/zod' },
           ],
         },
         {
           label: 'Examples',
           items: [
             { label: 'Minesweeper', slug: 'examples/minesweeper' },
-            { label: 'Login + Captcha', slug: 'examples/captcha' },
             { label: 'Calendar Recurrence', slug: 'examples/calendar' },
             { label: 'Freight Quote', slug: 'examples/freight-quote' },
+            { label: 'Login + Captcha', slug: 'examples/captcha' },
+            { label: 'Signup Form + Zod', slug: 'examples/signup' },
           ],
         },
       ],
