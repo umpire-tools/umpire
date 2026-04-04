@@ -91,7 +91,7 @@
 
 .calendar-demo__groups {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
   padding: 1rem;
 }
@@ -108,28 +108,9 @@
     rgba(255, 255, 255, 0.018);
 }
 
-.calendar-demo__group--bounds {
-  grid-column: span 3;
-}
-
-.calendar-demo__group--dates {
-  grid-column: span 4;
-}
-
-.calendar-demo__group--patterns {
-  grid-column: span 5;
-}
-
-.calendar-demo__group--exceptions {
-  grid-column: span 4;
-}
-
+.calendar-demo__group--patterns,
 .calendar-demo__group--subday {
-  grid-column: span 5;
-}
-
-.calendar-demo__group--duration {
-  grid-column: span 3;
+  grid-column: 1 / -1;
 }
 
 .calendar-demo__group-head {
@@ -354,7 +335,7 @@
 }
 
 .calendar-demo__toggle-grid--hours {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .calendar-demo__toggle {
@@ -691,23 +672,6 @@
   font-size: 0.66rem;
 }
 
-@media (max-width: 82rem) {
-  .calendar-demo__group--bounds,
-  .calendar-demo__group--duration {
-    grid-column: span 4;
-  }
-
-  .calendar-demo__group--dates,
-  .calendar-demo__group--exceptions {
-    grid-column: span 8;
-  }
-
-  .calendar-demo__group--patterns,
-  .calendar-demo__group--subday {
-    grid-column: span 12;
-  }
-}
-
 @media (max-width: 70rem) {
   .calendar-demo__lower,
   .calendar-demo__branch-grid {
@@ -718,16 +682,6 @@
 @media (max-width: 56rem) {
   .calendar-demo__groups {
     grid-template-columns: 1fr;
-  }
-
-  .calendar-demo__group,
-  .calendar-demo__group--bounds,
-  .calendar-demo__group--dates,
-  .calendar-demo__group--patterns,
-  .calendar-demo__group--exceptions,
-  .calendar-demo__group--subday,
-  .calendar-demo__group--duration {
-    grid-column: span 1;
   }
 
   .calendar-demo__group-head,
@@ -754,7 +708,7 @@
 
 @media (max-width: 40rem) {
   .calendar-demo__toggle-grid--hours {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .calendar-demo__day {

@@ -926,6 +926,39 @@ export default function CalendarDemo() {
             </div>
           </section>
 
+          <section className="calendar-demo__group calendar-demo__group--duration">
+            <div className="calendar-demo__group-head">
+              <div className="calendar-demo__group-kicker">Duration</div>
+              <div className="calendar-demo__group-caption">Shared event length</div>
+            </div>
+
+            <label
+              className={cls(
+                'calendar-demo__control',
+                !check.duration.enabled && 'calendar-demo__control--disabled',
+              )}
+            >
+              <span className="calendar-demo__label" title={fieldMeta.duration.detail}>
+                {fieldMeta.duration.label}
+              </span>
+              <div className="calendar-demo__input-row">
+                <input
+                  className="calendar-demo__input"
+                  type="number"
+                  min="1"
+                  inputMode="numeric"
+                  value={String(values.duration ?? '')}
+                  disabled={!check.duration.enabled}
+                  onChange={(event) => updateNumberField('duration', event.currentTarget.value)}
+                />
+                <span className="calendar-demo__suffix">min</span>
+              </div>
+              {!check.duration.enabled && check.duration.reason && (
+                <span className="calendar-demo__reason">{check.duration.reason}</span>
+              )}
+            </label>
+          </section>
+
           <section className="calendar-demo__group calendar-demo__group--subday">
             <div className="calendar-demo__group-head">
               <div className="calendar-demo__group-kicker">Sub-day</div>
@@ -1041,39 +1074,6 @@ export default function CalendarDemo() {
                 </div>
               </div>
             </div>
-          </section>
-
-          <section className="calendar-demo__group calendar-demo__group--duration">
-            <div className="calendar-demo__group-head">
-              <div className="calendar-demo__group-kicker">Duration</div>
-              <div className="calendar-demo__group-caption">Shared event length</div>
-            </div>
-
-            <label
-              className={cls(
-                'calendar-demo__control',
-                !check.duration.enabled && 'calendar-demo__control--disabled',
-              )}
-            >
-              <span className="calendar-demo__label" title={fieldMeta.duration.detail}>
-                {fieldMeta.duration.label}
-              </span>
-              <div className="calendar-demo__input-row">
-                <input
-                  className="calendar-demo__input"
-                  type="number"
-                  min="1"
-                  inputMode="numeric"
-                  value={String(values.duration ?? '')}
-                  disabled={!check.duration.enabled}
-                  onChange={(event) => updateNumberField('duration', event.currentTarget.value)}
-                />
-                <span className="calendar-demo__suffix">min</span>
-              </div>
-              {!check.duration.enabled && check.duration.reason && (
-                <span className="calendar-demo__reason">{check.duration.reason}</span>
-              )}
-            </label>
           </section>
         </div>
       </section>
