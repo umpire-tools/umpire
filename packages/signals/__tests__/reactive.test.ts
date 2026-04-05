@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals'
 import { umpire, enabledWhen, requires, disables } from '@umpire/core'
+import type { FieldDef } from '@umpire/core'
 import type { SignalProtocol } from '../src/protocol.js'
 import { reactiveUmp } from '../src/reactive.js'
 
@@ -169,6 +170,7 @@ describe('reactiveUmp', () => {
 
     const email = reactive.field('email')
     expect(email.enabled).toBe(true)
+    expect(email.fair).toBe(true)
     expect(email.required).toBe(true)
     expect(email.reason).toBeNull()
     expect(email.reasons).toEqual([])
@@ -244,6 +246,26 @@ describe('reactiveUmp', () => {
     expect(values.password).toBe('hunter2')
   })
 
+  test('update(partial) falls back to direct updates when batch is unavailable', () => {
+    const adapter = createMockAdapter()
+    const noBatchAdapter: SignalProtocol = {
+      signal: adapter.signal.bind(adapter),
+      computed: adapter.computed.bind(adapter),
+      effect: adapter.effect?.bind(adapter),
+    }
+
+    const ump = createTestUmpire()
+    const reactive = reactiveUmp(ump, noBatchAdapter)
+
+    reactive.update({
+      email: 'fallback@test.com',
+      password: 'hunter2',
+    })
+
+    expect(reactive.values.email).toBe('fallback@test.com')
+    expect(reactive.values.password).toBe('hunter2')
+  })
+
   test('values returns current field values', () => {
     const adapter = createMockAdapter()
     const ump = createTestUmpire()
@@ -284,6 +306,53 @@ describe('reactiveUmp', () => {
 
     // Mock computed re-evaluates on get()
     expect(reactive.field('companyName').enabled).toBe(true)
+  })
+
+  test('predicates can enumerate and inspect value and condition proxies', () => {
+    type Conditions = { plan: string }
+
+    const adapter = createMockAdapter()
+    const ump = umpire<Record<'source' | 'target', FieldDef>, Conditions>({
+      fields: {
+        source: {},
+        target: {},
+      },
+      rules: [
+        enabledWhen('target', (values, conditions) => {
+          const valueDescriptor = Object.getOwnPropertyDescriptor(
+            values as object,
+            'source',
+          )
+          const conditionDescriptor = Object.getOwnPropertyDescriptor(
+            conditions as object,
+            'plan',
+          )
+
+          return (
+            'source' in values &&
+            'plan' in conditions &&
+            !Reflect.has(values as object, Symbol.iterator) &&
+            !Reflect.has(conditions as object, Symbol.iterator) &&
+            Object.keys(values).includes('source') &&
+            Object.keys(conditions).includes('plan') &&
+            valueDescriptor?.enumerable === true &&
+            conditionDescriptor?.enumerable === true &&
+            Object.getOwnPropertyDescriptor(values as object, Symbol.iterator) ===
+              undefined &&
+            Object.getOwnPropertyDescriptor(
+              conditions as object,
+              Symbol.iterator,
+            ) === undefined
+          )
+        }),
+      ],
+    })
+
+    const reactive = reactiveUmp(ump, adapter, {
+      conditions: { plan: { get: () => 'business' } },
+    })
+
+    expect(reactive.field('target').enabled).toBe(true)
   })
 
   test('external signals are used when provided', () => {
@@ -361,6 +430,7 @@ describe('reactiveUmp without effect', () => {
     const ump = createTestUmpire()
     const reactive = reactiveUmp(ump, noEffectAdapter)
 
+    expect(() => reactive.foul('email')).toThrow('foul() is unavailable')
     expect(() => reactive.fouls).toThrow('fouls is unavailable')
 
     warn.mockRestore()
@@ -429,6 +499,7 @@ describe('reactiveUmp with disables rules', () => {
 
     const fields = fouls.map((p) => p.field).sort()
     expect(fields).toEqual(['endTime', 'startTime'])
+    expect(reactive.foul('startTime')?.field).toBe('startTime')
   })
 
   test('fouls converges to empty after consumer applies resets', () => {

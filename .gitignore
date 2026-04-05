@@ -10,3 +10,4 @@ dist/
 .turbo/
 .astro/
 docs/.yarn/
+coverage/

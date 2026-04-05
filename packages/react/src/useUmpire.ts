@@ -7,6 +7,7 @@ import type {
   Snapshot,
   Umpire,
 } from '@umpire/core'
+import { formatUmpireDebugValue } from './debugValue.js'
 
 export function useUmpire<
   F extends Record<string, FieldDef>,
@@ -37,15 +38,7 @@ export function useUmpire<
   // Update prev ref after computing check and fouls
   prevRef.current = { values, conditions }
 
-  useDebugValue({ check, fouls }, ({ check, fouls }) => ({
-    enabled: Object.entries(check)
-      .filter(([, v]) => v.enabled)
-      .map(([k]) => k),
-    disabled: Object.entries(check)
-      .filter(([, v]) => !v.enabled)
-      .map(([k]) => k),
-    fouls: fouls.map((f) => f.field),
-  }))
+  useDebugValue({ check, fouls }, formatUmpireDebugValue)
 
   return { check, fouls }
 }
