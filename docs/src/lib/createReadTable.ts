@@ -95,6 +95,14 @@ export type ReadTable<
   trace<K extends keyof Reads & string, C extends Record<string, unknown> = Record<string, unknown>>(
     key: K,
   ): RuleTraceAttachment<Input, C>
+  trace<
+    K extends keyof Reads & string,
+    Values extends Record<string, unknown>,
+    C extends Record<string, unknown> = Record<string, unknown>,
+  >(
+    key: K,
+    selectInput: (values: Values, conditions: C, prev?: Values) => Input,
+  ): RuleTraceAttachment<Values, C>
 } & {
   [K in keyof Reads]: (input: Input) => Reads[K]
 }
@@ -125,6 +133,28 @@ type EnabledWhenReadOptions<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 > = Parameters<typeof enabledWhen<F, C>>[2]
+
+type FairWhenReadConfig<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+  Input extends Record<string, unknown>,
+> = FairWhenReadOptions<F, C> & {
+  selectInput: ReadRuleInputSelector<F, C, Input>
+}
+
+type EnabledWhenReadConfig<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+  Input extends Record<string, unknown>,
+> = EnabledWhenReadOptions<F, C> & {
+  selectInput: ReadRuleInputSelector<F, C, Input>
+}
+
+type ReadRuleInputSelector<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+  Input extends Record<string, unknown>,
+> = (values: FieldValues<F>, conditions: C, prev?: FieldValues<F>) => Input
 
 function getReadBridgeStore<
   Input extends Record<string, unknown>,
@@ -225,8 +255,34 @@ export function fairWhenRead<
   key: K,
   table: ReadTable<FieldValues<F>, Reads>,
   options?: FairWhenReadOptions<F, C>,
+): Rule<F, C>
+
+export function fairWhenRead<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+  Input extends Record<string, unknown> = Record<string, unknown>,
+  Reads extends Record<string, unknown> = Record<string, unknown>,
+  K extends PredicateReadKey<Reads> = PredicateReadKey<Reads>,
+>(
+  field: FairWhenReadField<F, C>,
+  key: K,
+  table: ReadTable<Input, Reads>,
+  options: FairWhenReadConfig<F, C, Input>,
+): Rule<F, C>
+export function fairWhenRead<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+  Input extends Record<string, unknown> = Record<string, unknown>,
+  Reads extends Record<string, unknown> = Record<string, unknown>,
+  K extends PredicateReadKey<Reads> = PredicateReadKey<Reads>,
+>(
+  field: FairWhenReadField<F, C>,
+  key: K,
+  table: ReadTable<Input, Reads>,
+  options?: FairWhenReadOptions<F, C> | FairWhenReadConfig<F, C, Input>,
 ): Rule<F, C> {
   const fieldName = getReadRuleFieldName(field)
+  const selectInput = options && 'selectInput' in options ? options.selectInput : undefined
 
   registerReadBridge(table, {
     type: 'fairWhen',
@@ -234,11 +290,19 @@ export function fairWhenRead<
     field: fieldName,
   })
 
-  const trace = table.trace<K, C>(key)
+  const trace = (
+    selectInput
+      ? table.trace<K, FieldValues<F>, C>(key, selectInput)
+      : table.trace<K, C>(key)
+  ) as RuleTraceAttachment<FieldValues<F>, C>
   const mergedTrace = mergeReadTrace(trace, options?.trace)
 
-  const predicate = ((value: unknown, values: FieldValues<F>, conditions: C) =>
-    table.from(key)(value, values, conditions)) as Parameters<typeof fairWhen<F, C, unknown>>[1]
+  const predicate = ((_value: unknown, values: FieldValues<F>, conditions: C) =>
+    table[key](
+      selectInput
+        ? selectInput(values, conditions)
+        : values as unknown as Input,
+    )) as Parameters<typeof fairWhen<F, C, unknown>>[1]
 
   return fairWhen(field, predicate, {
     ...options,
@@ -256,8 +320,34 @@ export function enabledWhenRead<
   key: K,
   table: ReadTable<FieldValues<F>, Reads>,
   options?: EnabledWhenReadOptions<F, C>,
+): Rule<F, C>
+
+export function enabledWhenRead<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+  Input extends Record<string, unknown> = Record<string, unknown>,
+  Reads extends Record<string, unknown> = Record<string, unknown>,
+  K extends PredicateReadKey<Reads> = PredicateReadKey<Reads>,
+>(
+  field: EnabledWhenReadField<F, C>,
+  key: K,
+  table: ReadTable<Input, Reads>,
+  options: EnabledWhenReadConfig<F, C, Input>,
+): Rule<F, C>
+export function enabledWhenRead<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+  Input extends Record<string, unknown> = Record<string, unknown>,
+  Reads extends Record<string, unknown> = Record<string, unknown>,
+  K extends PredicateReadKey<Reads> = PredicateReadKey<Reads>,
+>(
+  field: EnabledWhenReadField<F, C>,
+  key: K,
+  table: ReadTable<Input, Reads>,
+  options?: EnabledWhenReadOptions<F, C> | EnabledWhenReadConfig<F, C, Input>,
 ): Rule<F, C> {
   const fieldName = getReadRuleFieldName(field)
+  const selectInput = options && 'selectInput' in options ? options.selectInput : undefined
 
   registerReadBridge(table, {
     type: 'enabledWhen',
@@ -265,11 +355,17 @@ export function enabledWhenRead<
     field: fieldName,
   })
 
-  const trace = table.trace<K, C>(key)
+  const trace = (
+    selectInput
+      ? table.trace<K, FieldValues<F>, C>(key, selectInput)
+      : table.trace<K, C>(key)
+  ) as RuleTraceAttachment<FieldValues<F>, C>
   const mergedTrace = mergeReadTrace(trace, options?.trace)
 
   const predicate = ((values: FieldValues<F>, _conditions: C) =>
-    table[key](values)) as Parameters<typeof enabledWhen<F, C>>[1]
+    selectInput
+      ? table[key](selectInput(values, _conditions))
+      : table[key](values as unknown as Input)) as Parameters<typeof enabledWhen<F, C>>[1]
 
   return enabledWhen(field, predicate, {
     ...options,
@@ -415,12 +511,31 @@ export function createReadTable<
   function buildTrace<
     K extends keyof Reads & string,
     C extends Record<string, unknown> = Record<string, unknown>,
-  >(key: K): RuleTraceAttachment<Input, C> {
+  >(key: K): RuleTraceAttachment<Input, C>
+  function buildTrace<
+    K extends keyof Reads & string,
+    Values extends Record<string, unknown>,
+    C extends Record<string, unknown> = Record<string, unknown>,
+  >(
+    key: K,
+    selectInput: (values: Values, conditions: C, prev?: Values) => Input,
+  ): RuleTraceAttachment<Values, C>
+  function buildTrace<
+    K extends keyof Reads & string,
+    Values extends Record<string, unknown>,
+    C extends Record<string, unknown> = Record<string, unknown>,
+  >(
+    key: K,
+    selectInput?: (values: Values, conditions: C, prev?: Values) => Input,
+  ) {
     return {
       kind: 'read',
       id: key,
-      inspect(values: Input) {
-        const inspected = inspectInput(values)
+      inspect(values: Values | Input, conditions?: C, prev?: Values) {
+        const input = selectInput
+          ? selectInput(values as Values, conditions as C, prev)
+          : values as Input
+        const inspected = inspectInput(input)
         const node = inspected.nodes[key]
 
         return {

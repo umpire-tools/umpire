@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { enabledWhen, requires, umpire, type Snapshot } from '@umpire/core'
+import { requires, umpire, type Snapshot } from '@umpire/core'
 import { createCoach } from '../lib/createCoach.ts'
-import { createReadTable, fairWhenRead } from '../lib/createReadTable.ts'
+import { createReadTable, enabledWhenRead, fairWhenRead } from '../lib/createReadTable.ts'
 import { createHintRuntime } from '../lib/createHintRuntime.ts'
 import { useHintRuntime, useResolvedHints } from '../lib/useHintRuntime.ts'
 import '../styles/pc-builder-demo.css'
@@ -136,6 +136,12 @@ type HintConditions = {
   sawAppliedResets: boolean
 }
 
+type HintReads = {
+  canPromptSwitchCpu: boolean
+  canExplainTransitive: boolean
+  canCelebrateComplete: boolean
+}
+
 type HintId = keyof typeof hintFields & string
 
 const hintFields = {
@@ -144,19 +150,25 @@ const hintFields = {
   celebrateComplete: {},
 }
 
+const hintReads = createReadTable<HintConditions, HintReads>({
+  canPromptSwitchCpu: ({ input }) => input.hasRamSelection && input.cpuBrand === 'intel',
+  canExplainTransitive: ({ input }) => input.sawTransitiveCascade,
+  canCelebrateComplete: ({ input }) => input.sawTransitiveCascade && input.sawAppliedResets,
+})
+
 const hintUmp = umpire<typeof hintFields, HintConditions>({
   fields: hintFields,
   rules: [
-    enabledWhen('promptSwitchCpu', (_values, conditions) =>
-      conditions.hasRamSelection && conditions.cpuBrand === 'intel', {
+    enabledWhenRead('promptSwitchCpu', 'canPromptSwitchCpu', hintReads, {
+      selectInput: (_values, conditions) => conditions,
       reason: 'Complete steps 1-3 with Intel first',
     }),
-    enabledWhen('explainTransitive', (_values, conditions) =>
-      conditions.sawTransitiveCascade, {
+    enabledWhenRead('explainTransitive', 'canExplainTransitive', hintReads, {
+      selectInput: (_values, conditions) => conditions,
       reason: 'Trigger the transitive cascade first',
     }),
-    enabledWhen('celebrateComplete', (_values, conditions) =>
-      conditions.sawTransitiveCascade && conditions.sawAppliedResets, {
+    enabledWhenRead('celebrateComplete', 'canCelebrateComplete', hintReads, {
+      selectInput: (_values, conditions) => conditions,
       reason: 'Apply the suggested resets first',
     }),
   ],

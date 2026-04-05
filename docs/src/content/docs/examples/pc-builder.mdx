@@ -73,6 +73,15 @@ type HintConditions = {
   sawAppliedResets: boolean
 }
 
+const hintReads = createReadTable<HintConditions>({
+  canPromptSwitchCpu: ({ input }) =>
+    input.hasRamSelection && input.cpuBrand === 'intel',
+  canExplainTransitive: ({ input }) =>
+    input.sawTransitiveCascade,
+  canCelebrateComplete: ({ input }) =>
+    input.sawTransitiveCascade && input.sawAppliedResets,
+})
+
 const hintUmp = umpire({
   fields: {
     promptSwitchCpu:   {},
@@ -80,16 +89,16 @@ const hintUmp = umpire({
     celebrateComplete: {},
   },
   rules: [
-    enabledWhen('promptSwitchCpu', (_values, conditions) =>
-      conditions.hasRamSelection && conditions.cpuBrand === 'intel', {
+    enabledWhenRead('promptSwitchCpu', 'canPromptSwitchCpu', hintReads, {
+      selectInput: (_values, conditions) => conditions,
       reason: 'Complete steps 1-3 with Intel first',
     }),
-    enabledWhen('explainTransitive', (_values, conditions) =>
-      conditions.sawTransitiveCascade, {
+    enabledWhenRead('explainTransitive', 'canExplainTransitive', hintReads, {
+      selectInput: (_values, conditions) => conditions,
       reason: 'Trigger the transitive cascade first',
     }),
-    enabledWhen('celebrateComplete', (_values, conditions) =>
-      conditions.sawTransitiveCascade && conditions.sawAppliedResets, {
+    enabledWhenRead('celebrateComplete', 'canCelebrateComplete', hintReads, {
+      selectInput: (_values, conditions) => conditions,
       reason: 'Apply the suggested resets first',
     }),
   ],
