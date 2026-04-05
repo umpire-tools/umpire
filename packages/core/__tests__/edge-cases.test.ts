@@ -1,4 +1,4 @@
-import { anyOf, check, enabledWhen, requires } from '../src/rules.js'
+import { anyOf, check, enabledWhen, oneOf, requires } from '../src/rules.js'
 import { umpire } from '../src/umpire.js'
 
 type TestFields = {
@@ -110,6 +110,25 @@ describe('edge cases', () => {
         ],
       }),
     ).toThrow('Unknown field "missing" referenced by enabledWhen rule')
+  })
+
+  test('validates oneOf() branch field references', () => {
+    expect(() =>
+      umpire<TestFields>({
+        fields: {
+          alpha: {},
+          beta: {},
+          gamma: {},
+          delta: {},
+        },
+        rules: [
+          oneOf<TestFields>('strategy', {
+            first: ['alpha'],
+            second: ['missing' as keyof TestFields & string],
+          }),
+        ],
+      }),
+    ).toThrow('Unknown field "missing" in oneOf("strategy") branch "second"')
   })
 
   test('precomputes rule target lookups at construction time', () => {

@@ -162,6 +162,68 @@ describe('graph utilities', () => {
     })
   })
 
+  test('deduplicates duplicate edges and skips self-references', () => {
+    const fields: TestFields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+      delta: {},
+      epsilon: {},
+    }
+    const graph = buildGraph(fields, [
+      requires<TestFields>('beta', 'alpha'),
+      requires<TestFields>('beta', 'alpha'),
+      requires<TestFields>('alpha', 'alpha'),
+      enabledWhen<TestFields>('beta', check('alpha', (value) => value === 'ready')),
+      enabledWhen<TestFields>('beta', check('alpha', (value) => value === 'ready')),
+      enabledWhen<TestFields>('alpha', check('alpha', (value) => value === 'ready')),
+    ])
+
+    expect(graph.edges).toEqual([
+      { from: 'alpha', to: 'beta', type: 'requires', ordering: true },
+      { from: 'alpha', to: 'beta', type: 'enabledWhen', ordering: false },
+    ])
+  })
+
+  test('topologicalSort throws a fallback error for malformed acyclic graphs', () => {
+    expect(() =>
+      topologicalSort(
+        {
+          nodes: ['alpha', 'beta'],
+          edges: [],
+          adjacency: new Map([
+            ['alpha', []],
+            ['beta', []],
+          ]),
+          incomingCounts: new Map([
+            ['alpha', 0],
+            ['beta', 1],
+          ]),
+          deferredEdgeGroups: [],
+        },
+        ['alpha', 'beta'],
+      ),
+    ).toThrow('Unable to produce topological order')
+  })
+
+  test('exportGraph deduplicates repeated raw edges', () => {
+    expect(
+      exportGraph({
+        nodes: ['alpha', 'beta'],
+        edges: [
+          { from: 'alpha', to: 'beta', type: 'requires', ordering: true },
+          { from: 'alpha', to: 'beta', type: 'requires', ordering: false },
+        ],
+        adjacency: new Map(),
+        incomingCounts: new Map(),
+        deferredEdgeGroups: [],
+      }),
+    ).toEqual({
+      nodes: ['alpha', 'beta'],
+      edges: [{ from: 'alpha', to: 'beta', type: 'requires' }],
+    })
+  })
+
   test('reuses precomputed ordering structures without consulting exported edges', () => {
     const fields: TestFields = {
       alpha: {},

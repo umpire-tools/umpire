@@ -1,6 +1,8 @@
+import { jest } from '@jest/globals'
 import {
   anyOf,
   check,
+  createRules,
   disables,
   enabledWhen,
   oneOf,
@@ -260,9 +262,96 @@ describe('oneOf', () => {
       reason: 'conflicts with second strategy',
     })
   })
+
+  test('throws when static activeBranch names an unknown branch', () => {
+    expect(() =>
+      oneOf<TestFields, TestConditions>(
+        'strategy',
+        {
+          first: ['alpha'],
+          second: ['beta'],
+        },
+        { activeBranch: 'missing' },
+      ),
+    ).toThrow('Unknown active branch "missing" for oneOf("strategy")')
+  })
+
+  test('throws when dynamic activeBranch returns an unknown branch', () => {
+    const rule = oneOf<TestFields, TestConditions>(
+      'strategy',
+      {
+        first: ['alpha'],
+        second: ['beta'],
+      },
+      { activeBranch: () => 'missing' as never },
+    )
+
+    expect(() => rule.evaluate({}, { allow: true })).toThrow(
+      'Unknown active branch "missing" for oneOf("strategy")',
+    )
+  })
+
+  test('warns and falls back when prev introduces multiple newly satisfied branches', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+    try {
+      const rule = oneOf<TestFields, TestConditions>('strategy', {
+        first: ['alpha'],
+        second: ['beta'],
+        third: ['gamma'],
+      })
+
+      const result = rule.evaluate(
+        { alpha: 'new alpha', beta: 'new beta', gamma: 'existing gamma' },
+        { allow: true },
+        { gamma: 'existing gamma' },
+      )
+
+      expect(result.get('alpha')).toEqual({ enabled: true, reason: null })
+      expect(result.get('beta')).toEqual({
+        enabled: false,
+        reason: 'conflicts with first strategy',
+      })
+      expect(result.get('gamma')).toEqual({
+        enabled: false,
+        reason: 'conflicts with first strategy',
+      })
+      expect(warn).toHaveBeenCalledTimes(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  test('does not warn in production when ambiguity falls back to the first branch', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const previousEnv = process.env.NODE_ENV
+    process.env.NODE_ENV = 'production'
+
+    try {
+      const rule = oneOf<TestFields, TestConditions>('strategy', {
+        first: ['alpha'],
+        second: ['beta'],
+      })
+
+      expect(rule.evaluate({ alpha: 'set', beta: 'set' }, { allow: true }).get('beta')).toEqual({
+        enabled: false,
+        reason: 'conflicts with first strategy',
+      })
+      expect(warn).not.toHaveBeenCalled()
+    } finally {
+      process.env.NODE_ENV = previousEnv
+      warn.mockRestore()
+    }
+  })
 })
 
 describe('anyOf', () => {
+  test('throws when no rules are provided', () => {
+    expect(() => anyOf<TestFields, TestConditions>()).toThrow(
+      'anyOf() requires at least one rule',
+    )
+  })
+
   test('validates that all inner rules target the same fields', () => {
     expect(() =>
       anyOf<TestFields, TestConditions>(
@@ -366,5 +455,28 @@ describe('check', () => {
     const predicate = check<TestFields, TestConditions>('alpha', () => true)
 
     expect(predicate._checkField).toBe('alpha')
+  })
+
+  test('returns false for unsupported validators', () => {
+    const predicate = check<TestFields, TestConditions>('alpha', {} as never)
+
+    expect(predicate({ alpha: 'ok' }, { allow: true })).toBe(false)
+  })
+})
+
+describe('createRules', () => {
+  test('returns the typed rule factory helpers', () => {
+    const factories = createRules<TestFields, TestConditions>()
+
+    expect(Object.keys(factories).sort()).toEqual([
+      'anyOf',
+      'check',
+      'disables',
+      'enabledWhen',
+      'fairWhen',
+      'oneOf',
+      'requires',
+    ])
+    expect(factories.enabledWhen('alpha', () => true).type).toBe('enabledWhen')
   })
 })

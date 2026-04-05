@@ -189,6 +189,39 @@ describe('fairWhen', () => {
 })
 
 describe('field()', () => {
+  test('supports attached enabledWhen rules and default values on builders', () => {
+    const ump = umpire<{
+      toggle: { default?: boolean }
+      details: { default?: string }
+    }>({
+      fields: {
+        toggle: field<boolean>().default(false),
+        details: field<string>()
+          .default('auto')
+          .enabledWhen((values) => values.toggle === true, {
+            reason: 'Turn the toggle on first',
+          }),
+      },
+      rules: [],
+    })
+
+    expect(ump.init()).toEqual({
+      toggle: false,
+      details: 'auto',
+    })
+    expect(ump.init({ details: 'manual', missing: 'ignored' } as never)).toEqual({
+      toggle: false,
+      details: 'manual',
+    })
+    expect(ump.check({ toggle: false, details: 'manual' }).details).toEqual({
+      enabled: false,
+      fair: true,
+      required: false,
+      reason: 'Turn the toggle on first',
+      reasons: ['Turn the toggle on first'],
+    })
+  })
+
   test('lets named builders target top-level rules', () => {
     const cpu = field<string>('cpu').required().isEmpty((value) => !value)
     const motherboard = field<string>('motherboard').required().isEmpty((value) => !value)
@@ -229,5 +262,11 @@ describe('field()', () => {
         rules: [],
       }),
     ).toThrow('Named field builder "motherboard" does not match field key "board"')
+  })
+
+  test('throws when an unnamed builder is passed directly to a top-level rule', () => {
+    expect(() =>
+      requires(field<string>(), 'cpu'),
+    ).toThrow('Named field builder required when passing a field() value to a rule')
   })
 })

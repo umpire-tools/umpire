@@ -374,4 +374,24 @@ describe('challenge', () => {
       }),
     ])
   })
+
+  test('throws when challenge() targets an unknown field', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [],
+    })
+
+    expect(() => ump.challenge('missing' as never, {})).toThrow(
+      'Unknown field "missing"',
+    )
+  })
 })
