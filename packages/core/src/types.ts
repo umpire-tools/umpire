@@ -104,6 +104,66 @@ export type ChallengeTrace = {
   } | null
 }
 
+export type UmpireGraphEdge = {
+  from: string
+  to: string
+  type: string
+}
+
+export type UmpireGraph = {
+  nodes: string[]
+  edges: UmpireGraphEdge[]
+}
+
+export type ScorecardField<F extends Record<string, FieldDef>> = {
+  field: keyof F & string
+  value: unknown
+  present: boolean
+  satisfied: boolean
+  enabled: boolean
+  fair: boolean
+  required: boolean
+  reason: string | null
+  reasons: string[]
+  changed: boolean
+  cascaded: boolean
+  foul: Foul<F> | null
+  incoming: Array<{ field: string; type: string }>
+  outgoing: Array<{ field: string; type: string }>
+  trace?: ChallengeTrace
+}
+
+export type ScorecardTransition<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+> = {
+  before: Snapshot<F, C> | null
+  changedFields: Array<keyof F & string>
+  fouls: Foul<F>[]
+  foulsByField: Partial<Record<keyof F & string, Foul<F>>>
+  fouledFields: Array<keyof F & string>
+  directlyFouledFields: Array<keyof F & string>
+  cascadingFields: Array<keyof F & string>
+}
+
+export type ScorecardOptions<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+> = {
+  before?: Snapshot<F, C>
+  includeChallenge?: boolean
+}
+
+export type ScorecardResult<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+> = {
+  check: AvailabilityMap<F>
+  graph: UmpireGraph
+  fields: Record<keyof F & string, ScorecardField<F>>
+  transition: ScorecardTransition<F, C>
+}
+
 export type RuleEvaluation = {
   enabled: boolean
   fair?: boolean
@@ -134,11 +194,15 @@ export interface Umpire<
   check(values: InputValues<F>, conditions?: C, prev?: InputValues<F>): AvailabilityMap<F>
   play(before: Snapshot<F, C>, after: Snapshot<F, C>): Foul<F>[]
   init(overrides?: InputValues<F>): FieldValues<F>
+  scorecard(
+    snapshot: Snapshot<F, C>,
+    options?: ScorecardOptions<F, C>,
+  ): ScorecardResult<F, C>
   challenge(
     field: keyof F & string,
     values: InputValues<F>,
     conditions?: C,
     prev?: InputValues<F>,
   ): ChallengeTrace
-  graph(): { nodes: string[]; edges: Array<{ from: string; to: string; type: string }> }
+  graph(): UmpireGraph
 }

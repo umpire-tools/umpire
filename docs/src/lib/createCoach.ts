@@ -1,6 +1,5 @@
-import type { FieldDef, Snapshot, Umpire } from '@umpire/core'
+import { scorecard, type FieldDef, type ScorecardResult, type Snapshot, type Umpire } from '@umpire/core'
 import type { ReadTable, ReadTableInspection } from './createReadTable.ts'
-import { scorecard, type ScorecardResult } from './scorecard.ts'
 
 export type CoachInspection<
   F extends Record<string, FieldDef>,
@@ -9,7 +8,7 @@ export type CoachInspection<
   Reads extends Record<string, unknown>,
 > = {
   reads: ReadTableInspection<ReadInput, Reads>
-  scorecard: ScorecardResult<F, C, Reads>
+  scorecard: ScorecardResult<F, C>
 }
 
 export type Coach<
@@ -33,7 +32,6 @@ export function createCoach<
   ReadInput extends Record<string, unknown>,
   Reads extends Record<string, unknown>,
 >(config: {
-  fields?: Partial<Record<keyof F & string, FieldDef>>
   getReadInput: (snapshot: Snapshot<F, C>) => ReadInput
   reads: ReadTable<ReadInput, Reads>
   ump: Umpire<F, C>
@@ -48,8 +46,6 @@ export function createCoach<
         reads: readTable,
         scorecard: scorecard(config.ump, snapshot, {
           before,
-          reads: readTable.values,
-          fields: config.fields,
           includeChallenge,
         }),
       }

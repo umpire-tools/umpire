@@ -459,7 +459,6 @@ const pcUmp = umpire<typeof pcFields, PcConditions>({
 
 const pcCoach = createCoach({
   ump: pcUmp,
-  fields: pcFields,
   reads: pcBuildReads,
   getReadInput: (snapshot: PcSnapshot) => snapshot.values,
 })

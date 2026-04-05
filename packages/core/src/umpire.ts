@@ -6,6 +6,7 @@ import {
   isFieldBuilder,
 } from './field.js'
 import type { FieldInput, NormalizeFields } from './field.js'
+import { foulMap } from './foul-map.js'
 import { buildGraph, detectCycles, exportGraph, topologicalSort } from './graph.js'
 import {
   enabledWhen,
@@ -31,11 +32,61 @@ import type {
   Rule,
   RuleEvaluation,
   RuleTraceAttachment,
+  ScorecardOptions,
+  ScorecardResult,
   Umpire,
+  UmpireGraph,
 } from './types.js'
 
 function createEmptyConditions<C extends Record<string, unknown>>(conditions: C | undefined): C {
   return (conditions ?? ({} as C)) as C
+}
+
+function getChangedFields<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  fieldNames: Array<keyof F & string>,
+  before: { values: FieldValues<F> } | undefined,
+  after: { values: FieldValues<F> },
+) {
+  if (!before) {
+    return []
+  }
+
+  return fieldNames.filter((field) => !Object.is(before.values[field], after.values[field]))
+}
+
+function isPresent(value: unknown) {
+  return value !== null && value !== undefined
+}
+
+function buildFieldEdgeLookup<F extends Record<string, FieldDef>>(
+  graph: UmpireGraph,
+  fieldNames: Array<keyof F & string>,
+) {
+  const incomingByField = Object.fromEntries(
+    fieldNames.map((field) => [
+      field,
+      graph.edges
+        .filter((edge) => edge.to === field)
+        .map((edge) => ({ field: edge.from, type: edge.type })),
+    ]),
+  ) as Record<keyof F & string, Array<{ field: string; type: string }>>
+
+  const outgoingByField = Object.fromEntries(
+    fieldNames.map((field) => [
+      field,
+      graph.edges
+        .filter((edge) => edge.from === field)
+        .map((edge) => ({ field: edge.to, type: edge.type })),
+    ]),
+  ) as Record<keyof F & string, Array<{ field: string; type: string }>>
+
+  return {
+    incomingByField,
+    outgoingByField,
+  }
 }
 
 function getRuleTraceAttachments<
@@ -541,166 +592,287 @@ export function umpire<
   detectCycles(graph)
   const topoOrder = topologicalSort(graph, fieldNames)
   const rulesByTarget = indexRulesByTarget(rules)
+  const exportedGraph = exportGraph(graph)
+  const { incomingByField, outgoingByField } = buildFieldEdgeLookup(exportedGraph, fieldNames)
 
-  return {
-    check(values, conditions, prev) {
-      return evaluate(
-        fields,
-        rules,
-        topoOrder,
-        values as FieldValues<NormalizeFields<FInput>>,
-        createEmptyConditions(conditions),
-        prev as FieldValues<NormalizeFields<FInput>> | undefined,
-        rulesByTarget,
-      )
-    },
+  function exportCompiledGraph(): UmpireGraph {
+    return {
+      nodes: [...exportedGraph.nodes],
+      edges: exportedGraph.edges.map((edge) => ({ ...edge })),
+    }
+  }
 
-    play(before, after) {
-      const beforeAvailability = evaluate(
-        fields,
-        rules,
-        topoOrder,
-        before.values as FieldValues<NormalizeFields<FInput>>,
-        createEmptyConditions(before.conditions),
-        undefined,
-        rulesByTarget,
-      )
-      const afterAvailability = evaluate(
-        fields,
-        rules,
-        topoOrder,
-        after.values as FieldValues<NormalizeFields<FInput>>,
-        createEmptyConditions(after.conditions),
-        before.values as FieldValues<NormalizeFields<FInput>>,
-        rulesByTarget,
-      )
-      const recommendations: Foul<NormalizeFields<FInput>>[] = []
+  function checkAvailability(
+    values: FieldValues<NormalizeFields<FInput>>,
+    conditions: C | undefined,
+    prev: FieldValues<NormalizeFields<FInput>> | undefined,
+  ) {
+    return evaluate(
+      fields,
+      rules,
+      topoOrder,
+      values,
+      createEmptyConditions(conditions),
+      prev,
+      rulesByTarget,
+    )
+  }
 
-      for (const field of fieldNames) {
-        const disabledTransition =
-          beforeAvailability[field].enabled && !afterAvailability[field].enabled
-        const foulTransition =
-          beforeAvailability[field].fair && afterAvailability[field].fair === false
+  function recommendFouls(
+    before: { values: FieldValues<NormalizeFields<FInput>>; conditions?: C },
+    after: { values: FieldValues<NormalizeFields<FInput>>; conditions?: C },
+  ) {
+    const beforeAvailability = checkAvailability(
+      before.values,
+      before.conditions,
+      undefined,
+    )
+    const afterAvailability = checkAvailability(
+      after.values,
+      after.conditions,
+      before.values,
+    )
+    const recommendations: Foul<NormalizeFields<FInput>>[] = []
 
-        if (!disabledTransition && !foulTransition) {
-          continue
-        }
+    for (const field of fieldNames) {
+      const disabledTransition =
+        beforeAvailability[field].enabled && !afterAvailability[field].enabled
+      const foulTransition =
+        beforeAvailability[field].fair && afterAvailability[field].fair === false
 
-        const currentValue = after.values[field]
-        const suggestedValue = fields[field].default
-
-        if (!isSatisfied(currentValue, fields[field])) {
-          continue
-        }
-
-        if (Object.is(currentValue, suggestedValue)) {
-          continue
-        }
-
-        recommendations.push({
-          field,
-          reason: afterAvailability[field].reason ?? (disabledTransition ? 'field disabled' : 'field fouled'),
-          suggestedValue,
-        })
+      if (!disabledTransition && !foulTransition) {
+        continue
       }
 
-      return recommendations
-    },
+      const currentValue = after.values[field]
+      const suggestedValue = fields[field].default
 
-    init(overrides) {
-      const values = {} as FieldValues<NormalizeFields<FInput>>
-
-      for (const field of fieldNames) {
-        values[field] = fields[field].default as FieldValues<NormalizeFields<FInput>>[typeof field]
+      if (!isSatisfied(currentValue, fields[field])) {
+        continue
       }
 
-      if (!overrides) {
-        return values
+      if (Object.is(currentValue, suggestedValue)) {
+        continue
       }
 
-      for (const field of fieldNames) {
-        if (field in overrides) {
-          values[field] = overrides[field] as FieldValues<NormalizeFields<FInput>>[typeof field]
-        }
-      }
-
-      return values
-    },
-
-    challenge(field, values, conditions, prev) {
-      if (!(field in fields)) {
-        throw new Error(`[umpire] Unknown field "${field}"`)
-      }
-
-      const resolvedConditions = createEmptyConditions(conditions)
-      const typedValues = values as FieldValues<NormalizeFields<FInput>>
-      const typedPrev = prev as FieldValues<NormalizeFields<FInput>> | undefined
-      const availability = evaluate(
-        fields,
-        rules,
-        topoOrder,
-        typedValues,
-        resolvedConditions,
-        typedPrev,
-        rulesByTarget,
-      )
-      const baseRuleCache = new Map<Rule<NormalizeFields<FInput>, C>, Map<string, RuleEvaluation>>()
-      const directReasons = (rulesByTarget.get(field) ?? [])
-        .map((rule) =>
-          describeRuleForField(
-            rule,
-            field,
-            fields,
-            typedValues,
-            resolvedConditions,
-            typedPrev,
-            availability,
-            baseRuleCache,
-          ),
-        )
-
-      const oneOfRule = (rulesByTarget.get(field) ?? []).find((rule) => {
-        const metadata = getInternalRuleMetadata(rule)
-        return metadata?.kind === 'oneOf'
-      })
-      const oneOfMetadata = oneOfRule ? getInternalRuleMetadata(oneOfRule) : undefined
-      const oneOfResolution =
-        oneOfMetadata?.kind === 'oneOf'
-          ? {
-              group: oneOfMetadata.groupName,
-              ...resolveOneOfState(
-                oneOfMetadata.groupName,
-                oneOfMetadata.branches,
-                typedValues,
-                typedPrev,
-                oneOfMetadata.options?.activeBranch,
-                fields,
-                resolvedConditions,
-              ),
-            }
-          : null
-
-      return {
+      recommendations.push({
         field,
-        enabled: availability[field].enabled,
-        fair: availability[field].fair,
-        directReasons,
-        transitiveDeps: buildTransitiveDeps(
+        reason: afterAvailability[field].reason ?? (disabledTransition ? 'field disabled' : 'field fouled'),
+        suggestedValue,
+      })
+    }
+
+    return recommendations
+  }
+
+  function initValues(overrides?: InputValues<NormalizeFields<FInput>>) {
+    const values = {} as FieldValues<NormalizeFields<FInput>>
+
+    for (const field of fieldNames) {
+      values[field] = fields[field].default as FieldValues<NormalizeFields<FInput>>[typeof field]
+    }
+
+    if (!overrides) {
+      return values
+    }
+
+    for (const field of fieldNames) {
+      if (field in overrides) {
+        values[field] = overrides[field] as FieldValues<NormalizeFields<FInput>>[typeof field]
+      }
+    }
+
+    return values
+  }
+
+  function buildChallenge(
+    field: keyof NormalizeFields<FInput> & string,
+    values: InputValues<NormalizeFields<FInput>>,
+    conditions?: C,
+    prev?: InputValues<NormalizeFields<FInput>>,
+  ) {
+    if (!(field in fields)) {
+      throw new Error(`[umpire] Unknown field "${field}"`)
+    }
+
+    const resolvedConditions = createEmptyConditions(conditions)
+    const typedValues = values as FieldValues<NormalizeFields<FInput>>
+    const typedPrev = prev as FieldValues<NormalizeFields<FInput>> | undefined
+    const availability = checkAvailability(typedValues, resolvedConditions, typedPrev)
+    const baseRuleCache = new Map<Rule<NormalizeFields<FInput>, C>, Map<string, RuleEvaluation>>()
+    const directReasons = (rulesByTarget.get(field) ?? [])
+      .map((rule) =>
+        describeRuleForField(
+          rule,
           field,
           fields,
-          rulesByTarget,
           typedValues,
           resolvedConditions,
           typedPrev,
           availability,
           baseRuleCache,
         ),
-        oneOfResolution,
-      }
+      )
+
+    const oneOfRule = (rulesByTarget.get(field) ?? []).find((rule) => {
+      const metadata = getInternalRuleMetadata(rule)
+      return metadata?.kind === 'oneOf'
+    })
+    const oneOfMetadata = oneOfRule ? getInternalRuleMetadata(oneOfRule) : undefined
+    const oneOfResolution =
+      oneOfMetadata?.kind === 'oneOf'
+        ? {
+            group: oneOfMetadata.groupName,
+            ...resolveOneOfState(
+              oneOfMetadata.groupName,
+              oneOfMetadata.branches,
+              typedValues,
+              typedPrev,
+              oneOfMetadata.options?.activeBranch,
+              fields,
+              resolvedConditions,
+            ),
+          }
+        : null
+
+    return {
+      field,
+      enabled: availability[field].enabled,
+      fair: availability[field].fair,
+      directReasons,
+      transitiveDeps: buildTransitiveDeps(
+        field,
+        fields,
+        rulesByTarget,
+        typedValues,
+        resolvedConditions,
+        typedPrev,
+        availability,
+        baseRuleCache,
+      ),
+      oneOfResolution,
+    }
+  }
+
+  function buildScorecard(
+    snapshot: {
+      values: InputValues<NormalizeFields<FInput>>
+      conditions?: C
+    },
+    options: ScorecardOptions<NormalizeFields<FInput>, C> = {},
+  ): ScorecardResult<NormalizeFields<FInput>, C> {
+    const { before, includeChallenge = false } = options
+    const typedValues = snapshot.values as FieldValues<NormalizeFields<FInput>>
+    const typedPrev = before?.values as FieldValues<NormalizeFields<FInput>> | undefined
+    const check = checkAvailability(typedValues, snapshot.conditions, typedPrev)
+    const changedFields = getChangedFields(
+      fieldNames,
+      before as { values: FieldValues<NormalizeFields<FInput>> } | undefined,
+      { values: typedValues },
+    )
+    const fouls = before
+      ? recommendFouls(
+          {
+            values: before.values as FieldValues<NormalizeFields<FInput>>,
+            conditions: before.conditions,
+          },
+          {
+            values: typedValues,
+            conditions: snapshot.conditions,
+          },
+        )
+      : []
+    const foulsByField = foulMap(fouls)
+    const changedFieldSet = new Set(changedFields)
+    const fouledFields = fouls.map((foul) => foul.field)
+    const directlyFouledFields = fouledFields.filter((field) => changedFieldSet.has(field))
+    const cascadingFields = fouledFields.filter((field) => !changedFieldSet.has(field))
+    const cascadingFieldSet = new Set(cascadingFields)
+
+    const scorecardFields = Object.fromEntries(
+      fieldNames.map((field) => {
+        const availability = check[field]
+        const value = typedValues[field]
+        const present = isPresent(value)
+        const satisfied = isSatisfied(value, fields[field])
+
+        return [
+          field,
+          {
+            field,
+            value,
+            present,
+            satisfied,
+            enabled: availability.enabled,
+            fair: availability.fair,
+            required: availability.required,
+            reason: availability.reason,
+            reasons: availability.reasons,
+            changed: changedFieldSet.has(field),
+            cascaded: cascadingFieldSet.has(field),
+            foul: foulsByField[field] ?? null,
+            incoming: incomingByField[field],
+            outgoing: outgoingByField[field],
+            trace: includeChallenge
+              ? buildChallenge(field, snapshot.values, snapshot.conditions, before?.values)
+              : undefined,
+          },
+        ]
+      }),
+    ) as ScorecardResult<NormalizeFields<FInput>, C>['fields']
+
+    return {
+      check,
+      graph: exportCompiledGraph(),
+      fields: scorecardFields,
+      transition: {
+        before: before ?? null,
+        changedFields,
+        fouls,
+        foulsByField,
+        fouledFields,
+        directlyFouledFields,
+        cascadingFields,
+      },
+    }
+  }
+
+  return {
+    check(values, conditions, prev) {
+      return checkAvailability(
+        values as FieldValues<NormalizeFields<FInput>>,
+        conditions,
+        prev as FieldValues<NormalizeFields<FInput>> | undefined,
+      )
+    },
+
+    play(before, after) {
+      return recommendFouls(
+        {
+          values: before.values as FieldValues<NormalizeFields<FInput>>,
+          conditions: before.conditions,
+        },
+        {
+          values: after.values as FieldValues<NormalizeFields<FInput>>,
+          conditions: after.conditions,
+        },
+      )
+    },
+
+    init(overrides) {
+      return initValues(overrides)
+    },
+
+    scorecard(snapshot, options) {
+      return buildScorecard(snapshot, options)
+    },
+
+    challenge(field, values, conditions, prev) {
+      return buildChallenge(field, values, conditions, prev)
     },
 
     graph() {
-      return exportGraph(graph)
+      return exportCompiledGraph()
     },
   }
 }
