@@ -62,6 +62,7 @@ function SignupForm({
 ```ts
 const { check, fouls } = useUmpire(ump, values, context)
 // check.fieldName.enabled
+// check.fieldName.fair
 // check.fieldName.reason
 // fouls: Foul[]
 ```

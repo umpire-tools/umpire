@@ -77,11 +77,12 @@ const fouls = signupUmp.play(
 | [`@umpire/react`](./packages/react/README.md) | `useUmpire()` hook for React |
 | [`@umpire/signals`](./packages/signals/README.md) | Signal adapter via `SignalProtocol` |
 | [`@umpire/zustand`](./packages/zustand/README.md) | Zustand store adapter with native prev-state tracking |
+| [`@umpire/zod`](./packages/zod/README.md) | Availability-aware Zod schemas — disabled fields produce no errors |
 
 ## Why Umpire?
 
 - Pure logic, zero dependencies.
-- Declarative rules: `requires`, `disables`, `enabledWhen`, `oneOf`.
+- Declarative rules: `requires`, `disables`, `enabledWhen`, `fairWhen`, `oneOf`.
 - Recommendations, not mutations: `play()` suggests resets, you decide when to apply them.
 - Framework adapters for React, signals, and Zustand.
 - Debuggable: `challenge()` traces why any field was ruled out.

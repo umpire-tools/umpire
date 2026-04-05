@@ -41,7 +41,7 @@ const availability = signupUmp.check(
 )
 
 availability.companySize
-// { enabled: false, required: false, reason: 'requires companyName', reasons: ['requires companyName'] }
+// { enabled: false, fair: true, required: false, reason: 'requires companyName', reasons: ['requires companyName'] }
 
 const fouls = signupUmp.play(
   {
@@ -83,12 +83,15 @@ See the docs for full type details and behavior notes: https://sdougbrown.github
 
 ## Rule Types
 
-- `enabledWhen(field, predicate, options?)`
-- `disables(source, targets, options?)`
-- `requires(field, ...dependencies)`
-- `oneOf(groupName, branches, options?)`
-- `anyOf(...rules)`
-- `check(field, validator)` to turn a validator into a reusable predicate
+- `requires(field, ...dependencies)` — field stays disabled until dependencies are satisfied and available
+- `enabledWhen(field, predicate, options?)` — field enabled only when a predicate returns true
+- `fairWhen(field, predicate, options?)` — field's current value is appropriate only when a predicate returns true
+- `disables(source, targets, options?)` — active source disables target fields
+- `oneOf(groupName, branches, options?)` — only one branch of fields is active at a time
+- `anyOf(...rules)` — OR logic: pass if any inner rule passes
+- `check(field, validator)` — bridge validators into rules with preserved field metadata
+
+Use `field<V>('name')` to create a typed field reference. Pass it to `fairWhen` (or any rule) to get a typed `value` parameter instead of `unknown`.
 
 ## Docs
 
