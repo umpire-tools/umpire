@@ -122,6 +122,7 @@ type PcDerivedReads = {
   compatibleMotherboards: readonly Motherboard[]
   compatibleRamKits: readonly RamKit[]
   compatibleCases: readonly CaseOption[]
+  oppositeCpuSuggestion?: Cpu
   psuRecommendation: string
 }
 
@@ -150,7 +151,7 @@ const hintFields = {
 }
 
 const hintReads = createReads<HintInput, HintReads>({
-  canPromptSwitchCpu: ({ input }) => input.hasRamSelection && input.cpuBrand === 'intel',
+  canPromptSwitchCpu: ({ input }) => input.hasRamSelection && !!input.cpuBrand,
   canExplainTransitive: ({ input }) => input.sawTransitiveCascade,
   canCelebrateComplete: ({ input }) => input.sawTransitiveCascade && input.sawAppliedResets,
 })
@@ -160,7 +161,7 @@ const hintUmp = umpire<typeof hintFields, HintInput>({
   rules: [
     enabledWhenRead('promptSwitchCpu', 'canPromptSwitchCpu', hintReads, {
       inputType: ReadInputType.CONDITIONS,
-      reason: 'Complete steps 1-3 with Intel first',
+      reason: 'Complete steps 1–3 and select RAM first',
     }),
     enabledWhenRead('explainTransitive', 'canExplainTransitive', hintReads, {
       inputType: ReadInputType.CONDITIONS,
@@ -424,6 +425,12 @@ const pcBuildReads = createReads<PcBuildInput, PcDerivedReads>({
     return activeMotherboard
       ? caseOptions.filter((size) => fitsFormFactor(size.fits, activeMotherboard.formFactor))
       : []
+  },
+  oppositeCpuSuggestion: ({ read }) => {
+    const cpu = read('selections').cpu
+    if (!cpu) return undefined
+    const oppositeBrand = cpu.brand === 'intel' ? 'amd' : 'intel'
+    return cpus.find((c) => c.brand === oppositeBrand && c.tier === cpu.tier)
   },
   psuRecommendation: ({ read }) => {
     const { cpu, gpu } = read('selections')
@@ -960,19 +967,12 @@ export default function PcBuilderDemo() {
     }
 
     if (step.index === 2 && activeHint === 'promptSwitchCpu') {
+      const opposite = buildReads.oppositeCpuSuggestion
+      const switchTo = opposite ? opposite.label : 'the other platform'
       return (
         <HintCallout
           title="Hint"
-          copy="You have an Intel board and matching RAM. Jump back to Platform and switch to AMD now. Watch Motherboard, Memory, and Case all get called for stale state."
-        />
-      )
-    }
-
-    if (step.index === 4 && activeHint === 'celebrateComplete') {
-      return (
-        <HintCallout
-          title="Hint"
-          copy="That was the whole trick: filtering stayed in the UI, but play() still turned stale downstream state into guided reset recommendations."
+          copy={`You have a ${selectedCpu?.brand === 'intel' ? 'Intel' : 'AMD'} build with matching RAM. Jump back to Platform and try ${switchTo}. Watch Motherboard, Memory, and Case all get called for stale state.`}
         />
       )
     }
@@ -1006,12 +1006,20 @@ export default function PcBuilderDemo() {
         </div>
       )}
 
+      {activeHint === 'celebrateComplete' && (
+        <HintCallout
+          title="Hint"
+          copy="That was the whole trick: filtering stayed in the UI, but play() still turned stale downstream state into guided reset recommendations."
+        />
+      )}
+
       <div className="pc-builder__layout">
         <div className="pc-builder__steps">
           {steps.map((step) => {
             const activeFouls = stepFouls(step)
             const status = getStepStatus(step)
-            const expanded = currentStep === step.index || activeFouls.length > 0
+            const hasActiveHint = renderHintCallout(step) !== null
+            const expanded = currentStep === step.index || activeFouls.length > 0 || hasActiveHint
 
             return (
               <section
@@ -1039,13 +1047,7 @@ export default function PcBuilderDemo() {
                   </div>
 
                   <div className="pc-builder__step-meta">
-                    {activeFouls.length > 0 && (
-                      <span className="pc-builder__foul-badge">
-                        {pluralize('foul', activeFouls.length)}
-                      </span>
-                    )}
-
-                    <span
+                     <span
                       className={cls(
                         'umpire-demo__status',
                         status.tone === 'fouled' && 'umpire-demo__status--fouled',
@@ -1060,12 +1062,13 @@ export default function PcBuilderDemo() {
                 </button>
 
                 {expanded && (
-                  <div className="pc-builder__step-body">
-                    {renderStepBody(step)}
-                  </div>
+                  <>
+                    <div className="pc-builder__step-body">
+                      {renderStepBody(step)}
+                    </div>
+                    {renderHintCallout(step)}
+                  </>
                 )}
-
-                {renderHintCallout(step)}
               </section>
             )
           })}

@@ -124,7 +124,7 @@ export default defineConfig({
           label: 'Examples',
           items: [
             { label: 'Minesweeper', slug: 'examples/minesweeper' },
-            // { label: 'PC Builder', slug: 'examples/pc-builder' },
+            { label: 'PC Builder', slug: 'examples/pc-builder' },
             { label: 'Calendar Recurrence', slug: 'examples/calendar' },
             { label: 'Freight Quote', slug: 'examples/freight-quote' },
             { label: 'Login + Captcha', slug: 'examples/captcha' },
