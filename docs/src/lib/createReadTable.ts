@@ -222,7 +222,7 @@ function mergeReadTrace<T>(
   existing: T | T[] | undefined,
 ) {
   return existing
-    ? [trace, ...(Array.isArray(existing) ? existing : [existing])]
+    ? [...(Array.isArray(existing) ? existing : [existing]), trace]
     : trace
 }
 
@@ -583,11 +583,15 @@ export function createReadTable<
   }
 
   function resolveInput(input: Input): Reads {
-    return inspectInput(input).values
+    const session = createSession(input)
+
+    return Object.fromEntries(
+      keys.map((key) => [key, session.read(key)]),
+    ) as Reads
   }
 
   function resolveRead<K extends keyof Reads>(key: K, input: Input): Reads[K] {
-    return resolveInput(input)[key]
+    return createSession(input).read(key as keyof Reads & string) as Reads[K]
   }
 
   function buildPredicate<K extends PredicateReadKey<Reads>>(
