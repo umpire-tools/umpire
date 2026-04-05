@@ -657,25 +657,25 @@ export default function PcBuilderDemo() {
     Boolean(caseId && !caseSizeFair),
   )
 
-  const inspection = coaching.ump
-  const { check } = inspection
-  const fouls = inspection.transition.fouls
-  const foulsByField = inspection.transition.foulsByField
+  const scorecard = coaching.scorecard
+  const { check } = scorecard
+  const fouls = scorecard.transition.fouls
+  const foulsByField = scorecard.transition.foulsByField
   const hasLiveTransitiveCascade = (
-    inspection.transition.cascadingFields.includes('motherboard') &&
-    inspection.transition.cascadingFields.includes('ram')
+    scorecard.transition.cascadingFields.includes('motherboard') &&
+    scorecard.transition.cascadingFields.includes('ram')
   )
 
   // HINT NOTE: The seam is a tiny bit of remembered history, updated only
   // when a transition happens. Rendering still just reads live facts + memory.
   const hintConditions = useMemo<HintConditions>(() => ({
-    cpuBrand: inspection.fields.cpu.facts?.brand as CpuBrand | undefined,
-    hasRamSelection: inspection.fields.ram.satisfied,
+    cpuBrand: scorecard.fields.cpu.facts?.brand as CpuBrand | undefined,
+    hasRamSelection: scorecard.fields.ram.satisfied,
     sawTransitiveCascade: hints.facts.sawTransitiveCascade || hasLiveTransitiveCascade,
     sawAppliedResets: hints.facts.sawAppliedResets,
   }), [
     hints.facts,
-    inspection,
+    scorecard,
     hasLiveTransitiveCascade,
   ])
 

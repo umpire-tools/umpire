@@ -1,6 +1,6 @@
 import type { FieldDef, Snapshot, Umpire } from '@umpire/core'
 import type { FactTable, FactTableInspection } from './createFactTable.ts'
-import { inspectUmpre, type InspectUmpreResult } from './inspectUmpre.ts'
+import { scorecard, type ScorecardResult } from './scorecard.ts'
 
 type CoachFieldFacts<F extends Record<string, FieldDef>> = Partial<
   Record<keyof F & string, Record<string, unknown> | undefined>
@@ -13,7 +13,7 @@ export type CoachInspection<
   Facts extends Record<string, unknown>,
 > = {
   factTable: FactTableInspection<FactInput, Facts>
-  ump: InspectUmpreResult<F, C, Facts>
+  scorecard: ScorecardResult<F, C, Facts>
 }
 
 export type Coach<
@@ -79,7 +79,7 @@ export function createCoach<
 
       return {
         factTable,
-        ump: inspectUmpre(config.ump, snapshot, {
+        scorecard: scorecard(config.ump, snapshot, {
           before,
           facts: factTable.values,
           fieldFacts,

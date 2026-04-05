@@ -13,7 +13,7 @@ type FieldFacts<F extends Record<string, FieldDef>> = Partial<
 >
 type InspectFieldDefs<F extends Record<string, FieldDef>> = Partial<Record<keyof F & string, FieldDef>>
 
-export type InspectUmpreField<F extends Record<string, FieldDef>> = {
+export type ScorecardField<F extends Record<string, FieldDef>> = {
   field: keyof F & string
   value: unknown
   present: boolean
@@ -32,14 +32,14 @@ export type InspectUmpreField<F extends Record<string, FieldDef>> = {
   facts?: Record<string, unknown>
 }
 
-export type InspectUmpreResult<
+export type ScorecardResult<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
   Facts,
 > = {
   check: AvailabilityMap<F>
   graph: ReturnType<Umpire<F, C>['graph']>
-  fields: Record<keyof F & string, InspectUmpreField<F>>
+  fields: Record<keyof F & string, ScorecardField<F>>
   facts: Facts | undefined
   transition: {
     before: Snapshot<F, C> | null
@@ -71,7 +71,7 @@ function isPresent(value: unknown) {
   return value !== null && value !== undefined
 }
 
-export function inspectUmpre<
+export function scorecard<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
   Facts = undefined,
@@ -85,7 +85,7 @@ export function inspectUmpre<
     fields?: InspectFieldDefs<F>
     includeChallenge?: boolean
   } = {},
-): InspectUmpreResult<F, C, Facts> {
+): ScorecardResult<F, C, Facts> {
   const {
     before,
     facts,
@@ -155,7 +155,7 @@ export function inspectUmpre<
         },
       ]
     }),
-  ) as Record<keyof F & string, InspectUmpreField<F>>
+  ) as Record<keyof F & string, ScorecardField<F>>
 
   return {
     check,
