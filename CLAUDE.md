@@ -68,6 +68,7 @@ yarn typecheck      # tsc --noEmit via turbo
 - ESM test mode requires `NODE_OPTIONS='--experimental-vm-modules'`
 - Tests live in `__tests__/*.test.ts` within each package
 - `yarn test` runs all package test suites from the repo root through `turbo`
+- For a single package test run, prefer `yarn turbo run test --filter=@umpire/<package>` so the root Jest toolchain is available
 - For docs changes, `cd docs && npx astro build` is the practical end-to-end validation pass
 - Strict docs `tsc` has known unrelated noise from React/Preact coexistence; when validating docs edits, prefer a focused filtered `tsc --noEmit` check on the touched files rather than treating whole-program docs `tsc` output as gating
 
