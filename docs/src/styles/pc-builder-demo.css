@@ -385,12 +385,15 @@
 }
 
 .pc-builder__hint {
-  margin: 0 1rem 1rem;
   padding: 0.9rem 1rem;
   border: 1px dashed rgba(107, 254, 156, 0.3);
   background:
     linear-gradient(135deg, rgba(107, 254, 156, 0.08), transparent 68%),
     rgba(255, 255, 255, 0.025);
+}
+
+.pc-builder__step > .pc-builder__hint {
+  margin: 0 1rem 1rem;
 }
 
 .pc-builder__hint-kicker,
