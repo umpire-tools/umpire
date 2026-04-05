@@ -102,6 +102,7 @@ export default defineConfig({
             { label: 'check()', slug: 'api/check' },
             { label: 'play()', slug: 'api/play' },
             { label: 'challenge()', slug: 'api/challenge' },
+            { label: 'scorecard()', slug: 'api/scorecard' },
           ],
         },
         {
