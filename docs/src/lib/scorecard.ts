@@ -8,7 +8,7 @@ import type {
   Umpire,
 } from '@umpire/core'
 
-type FieldFacts<F extends Record<string, FieldDef>> = Partial<
+type FieldReads<F extends Record<string, FieldDef>> = Partial<
   Record<keyof F & string, Record<string, unknown> | undefined>
 >
 type InspectFieldDefs<F extends Record<string, FieldDef>> = Partial<Record<keyof F & string, FieldDef>>
@@ -29,18 +29,18 @@ export type ScorecardField<F extends Record<string, FieldDef>> = {
   incoming: Array<{ field: string; type: string }>
   outgoing: Array<{ field: string; type: string }>
   trace?: ChallengeTrace
-  facts?: Record<string, unknown>
+  reads?: Record<string, unknown>
 }
 
 export type ScorecardResult<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-  Facts,
+  Reads,
 > = {
   check: AvailabilityMap<F>
   graph: ReturnType<Umpire<F, C>['graph']>
   fields: Record<keyof F & string, ScorecardField<F>>
-  facts: Facts | undefined
+  reads: Reads | undefined
   transition: {
     before: Snapshot<F, C> | null
     changedFields: Array<keyof F & string>
@@ -74,22 +74,22 @@ function isPresent(value: unknown) {
 export function scorecard<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-  Facts = undefined,
+  Reads = undefined,
 >(
   ump: Umpire<F, C>,
   snapshot: Snapshot<F, C>,
   options: {
     before?: Snapshot<F, C>
-    facts?: Facts
-    fieldFacts?: FieldFacts<F>
+    reads?: Reads
+    fieldReads?: FieldReads<F>
     fields?: InspectFieldDefs<F>
     includeChallenge?: boolean
   } = {},
-): ScorecardResult<F, C, Facts> {
+): ScorecardResult<F, C, Reads> {
   const {
     before,
-    facts,
-    fieldFacts,
+    reads,
+    fieldReads,
     fields: fieldDefs,
     includeChallenge = false,
   } = options
@@ -151,7 +151,7 @@ export function scorecard<
           trace: includeChallenge
             ? ump.challenge(field, snapshot.values, snapshot.conditions, before?.values)
             : undefined,
-          facts: fieldFacts?.[field],
+          reads: fieldReads?.[field],
         },
       ]
     }),
@@ -161,7 +161,7 @@ export function scorecard<
     check,
     graph,
     fields,
-    facts,
+    reads,
     transition: {
       before: before ?? null,
       changedFields,

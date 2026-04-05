@@ -1,26 +1,26 @@
 import type { FieldDef, Snapshot, Umpire } from '@umpire/core'
-import type { FactTable, FactTableInspection } from './createFactTable.ts'
+import type { ReadTable, ReadTableInspection } from './createReadTable.ts'
 import { scorecard, type ScorecardResult } from './scorecard.ts'
 
-type CoachFieldFacts<F extends Record<string, FieldDef>> = Partial<
+type CoachFieldReads<F extends Record<string, FieldDef>> = Partial<
   Record<keyof F & string, Record<string, unknown> | undefined>
 >
 
 export type CoachInspection<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-  FactInput extends Record<string, unknown>,
-  Facts extends Record<string, unknown>,
+  ReadInput extends Record<string, unknown>,
+  Reads extends Record<string, unknown>,
 > = {
-  factTable: FactTableInspection<FactInput, Facts>
-  scorecard: ScorecardResult<F, C, Facts>
+  reads: ReadTableInspection<ReadInput, Reads>
+  scorecard: ScorecardResult<F, C, Reads>
 }
 
 export type Coach<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-  FactInput extends Record<string, unknown>,
-  Facts extends Record<string, unknown>,
+  ReadInput extends Record<string, unknown>,
+  Reads extends Record<string, unknown>,
 > = {
   inspect(
     snapshot: Snapshot<F, C>,
@@ -28,31 +28,31 @@ export type Coach<
       before?: Snapshot<F, C>
       includeChallenge?: boolean
     },
-  ): CoachInspection<F, C, FactInput, Facts>
+  ): CoachInspection<F, C, ReadInput, Reads>
 }
 
 export function createCoach<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-  FactInput extends Record<string, unknown>,
-  Facts extends Record<string, unknown>,
+  ReadInput extends Record<string, unknown>,
+  Reads extends Record<string, unknown>,
 >(config: {
   describeField?: (field: keyof F & string, context: {
-    factTable: FactTableInspection<FactInput, Facts>
+    readTable: ReadTableInspection<ReadInput, Reads>
     snapshot: Snapshot<F, C>
     before?: Snapshot<F, C>
   }) => Record<string, unknown> | undefined
-  facts: FactTable<FactInput, Facts>
   fields?: Partial<Record<keyof F & string, FieldDef>>
-  getFactInput: (snapshot: Snapshot<F, C>) => FactInput
+  getReadInput: (snapshot: Snapshot<F, C>) => ReadInput
+  reads: ReadTable<ReadInput, Reads>
   ump: Umpire<F, C>
-}): Coach<F, C, FactInput, Facts> {
+}): Coach<F, C, ReadInput, Reads> {
   const fieldNames = config.ump.graph().nodes as Array<keyof F & string>
 
-  function buildFieldFacts(
+  function buildFieldReads(
     snapshot: Snapshot<F, C>,
     before: Snapshot<F, C> | undefined,
-    factTable: FactTableInspection<FactInput, Facts>,
+    readTable: ReadTableInspection<ReadInput, Reads>,
   ) {
     if (!config.describeField) {
       return undefined
@@ -62,27 +62,27 @@ export function createCoach<
       fieldNames.map((field) => [
         field,
         config.describeField?.(field, {
-          factTable,
+          readTable,
           snapshot,
           before,
         }),
       ]),
-    ) as CoachFieldFacts<F>
+    ) as CoachFieldReads<F>
   }
 
   return {
     inspect(snapshot, options = {}) {
       const { before, includeChallenge = false } = options
-      const factInput = config.getFactInput(snapshot)
-      const factTable = config.facts.inspect(factInput)
-      const fieldFacts = buildFieldFacts(snapshot, before, factTable)
+      const readInput = config.getReadInput(snapshot)
+      const readTable = config.reads.inspect(readInput)
+      const fieldReads = buildFieldReads(snapshot, before, readTable)
 
       return {
-        factTable,
+        reads: readTable,
         scorecard: scorecard(config.ump, snapshot, {
           before,
-          facts: factTable.values,
-          fieldFacts,
+          reads: readTable.values,
+          fieldReads,
           fields: config.fields,
           includeChallenge,
         }),

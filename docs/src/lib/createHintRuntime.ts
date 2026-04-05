@@ -1,4 +1,4 @@
-export type HintFacts<K extends string> = Record<K, boolean>
+export type HintMarkers<K extends string> = Record<K, boolean>
 
 export type HintState<K extends string> = Record<
   K,
@@ -9,10 +9,10 @@ export type HintState<K extends string> = Record<
 >
 
 export type HintRuntimeState<
-  FactId extends string,
+  MarkerId extends string,
   HintId extends string,
 > = {
-  facts: HintFacts<FactId>
+  markers: HintMarkers<MarkerId>
   hints: HintState<HintId>
 }
 
@@ -35,24 +35,24 @@ export type HintResolution<HintId extends string> = {
 }
 
 export type HintRuntime<
-  FactId extends string,
+  MarkerId extends string,
   HintId extends string,
 > = {
   dismissHint(
-    current: HintRuntimeState<FactId, HintId>,
+    current: HintRuntimeState<MarkerId, HintId>,
     hintId: HintId,
-  ): HintRuntimeState<FactId, HintId>
-  init(): HintRuntimeState<FactId, HintId>
+  ): HintRuntimeState<MarkerId, HintId>
+  init(): HintRuntimeState<MarkerId, HintId>
   markHintShown(
-    current: HintRuntimeState<FactId, HintId>,
+    current: HintRuntimeState<MarkerId, HintId>,
     hintId: HintId,
-  ): HintRuntimeState<FactId, HintId>
-  rememberFacts(
-    current: HintRuntimeState<FactId, HintId>,
-    next: Partial<Record<FactId, boolean>>,
-  ): HintRuntimeState<FactId, HintId>
+  ): HintRuntimeState<MarkerId, HintId>
+  rememberMarkers(
+    current: HintRuntimeState<MarkerId, HintId>,
+    next: Partial<Record<MarkerId, boolean>>,
+  ): HintRuntimeState<MarkerId, HintId>
   resolveHints(
-    current: HintRuntimeState<FactId, HintId>,
+    current: HintRuntimeState<MarkerId, HintId>,
     eligibility: Partial<Record<HintId, boolean>>,
   ): HintResolution<HintId>
 }
@@ -65,26 +65,26 @@ function orderedRecord<K extends string, V>(
 }
 
 export function createHintRuntime<
-  FactId extends string,
+  MarkerId extends string,
   HintId extends string,
 >(config: {
-  facts: readonly FactId[]
+  markers: readonly MarkerId[]
   hints: readonly HintConfig<HintId>[]
-}): HintRuntime<FactId, HintId> {
-  const factIds = [...config.facts]
+}): HintRuntime<MarkerId, HintId> {
+  const markerIds = [...config.markers]
   const hintIds = config.hints.map((hint) => hint.id)
   const hintConfig = Object.fromEntries(
     config.hints.map((hint) => [hint.id, hint]),
   ) as Record<HintId, HintConfig<HintId>>
 
-  const factSeed = orderedRecord(factIds, () => false)
+  const markerSeed = orderedRecord(markerIds, () => false)
   const hintSeed = orderedRecord(hintIds, () => ({
     dismissed: false,
     shown: false,
   }))
 
   function isHintEnabled(
-    state: HintRuntimeState<FactId, HintId>,
+    state: HintRuntimeState<MarkerId, HintId>,
     eligibility: Partial<Record<HintId, boolean>>,
     hintId: HintId,
   ) {
@@ -92,14 +92,14 @@ export function createHintRuntime<
   }
 
   function shouldReappear(
-    state: HintRuntimeState<FactId, HintId>,
+    state: HintRuntimeState<MarkerId, HintId>,
     hintId: HintId,
   ) {
     return Boolean(hintConfig[hintId].repeat) || !state.hints[hintId].shown
   }
 
   function findNextHint(
-    state: HintRuntimeState<FactId, HintId>,
+    state: HintRuntimeState<MarkerId, HintId>,
     eligibility: Partial<Record<HintId, boolean>>,
   ): HintId | null {
     const eligibleHints = hintIds.filter((hintId) =>
@@ -113,18 +113,18 @@ export function createHintRuntime<
   return {
     init() {
       return {
-        facts: { ...factSeed },
+        markers: { ...markerSeed },
         hints: { ...hintSeed },
       }
     },
 
-    rememberFacts(current, next) {
+    rememberMarkers(current, next) {
       let changed = false
-      const facts = { ...current.facts }
+      const markers = { ...current.markers }
 
-      for (const factId of factIds) {
-        if (Boolean(next[factId]) && facts[factId] !== true) {
-          facts[factId] = true
+      for (const markerId of markerIds) {
+        if (Boolean(next[markerId]) && markers[markerId] !== true) {
+          markers[markerId] = true
           changed = true
         }
       }
@@ -132,7 +132,7 @@ export function createHintRuntime<
       return changed
         ? {
             ...current,
-            facts,
+            markers,
           }
         : current
     },

@@ -96,15 +96,15 @@ const hintUmp = umpire({
 })
 ```
 
-The actual coach layer is now separate from those visible hints. It composes the umpire plus named domain facts:
+The actual coach layer is now separate from those visible hints. It composes the umpire plus named domain reads:
 
 ```ts
 const pcCoach = createCoach({
   ump: pcUmp,
-  facts: pcBuildFacts,
-  getFactInput: (snapshot) => snapshot.values,
+  reads: pcBuildReads,
+  getReadInput: (snapshot) => snapshot.values,
   describeField(field, context) {
-    return describePcField(field, context.factTable.values)
+    return describePcField(field, context.readTable.values)
   },
 })
 
@@ -112,7 +112,7 @@ const coaching = pcCoach.inspect({ values }, {
   before: lastTransition?.before,
 })
 
-const buildFacts = coaching.factTable.values
+const buildReads = coaching.reads.values
 const scorecard = coaching.scorecard
 ```
 
@@ -120,17 +120,17 @@ The remaining awkward part is really hint state: remembering milestone booleans 
 
 The demo now splits that into:
 
-- `createCoach(...)` for the domain-aware layer that consumes umpire plus facts
-- `createFactTable(...)` for named domain facts shared by rules, inspection, and UI
+- `createCoach(...)` for the domain-aware layer that consumes umpire plus reads
+- `createReadTable(...)` for named domain reads shared by rules, scorecard, and UI
 - `scorecard(...)` inside the coach layer for live field and transition facts
-- `createHintRuntime(...)` for latched facts plus prompt sequencing
+- `createHintRuntime(...)` for latched markers plus prompt sequencing
 - `useHintRuntime(...)` as a thin React adapter over that runtime
 
 The runtime stays non-React:
 
 ```ts
 const hintRuntime = createHintRuntime({
-  facts: [
+  markers: [
     'sawTransitiveCascade',
     'sawAppliedResets',
   ] as const,
@@ -148,10 +148,10 @@ And React just holds the runtime state:
 const hints = useHintRuntime(hintRuntime)
 
 const hintConditions = {
-  cpuBrand: scorecard.fields.cpu.facts?.brand,
+  cpuBrand: scorecard.fields.cpu.reads?.brand,
   hasRamSelection: scorecard.fields.ram.satisfied,
-  sawTransitiveCascade: hints.facts.sawTransitiveCascade || hasLiveTransitiveCascade,
-  sawAppliedResets: hints.facts.sawAppliedResets,
+  sawTransitiveCascade: hints.markers.sawTransitiveCascade || hasLiveTransitiveCascade,
+  sawAppliedResets: hints.markers.sawAppliedResets,
 }
 
 const hintState = useResolvedHints(
@@ -165,12 +165,12 @@ const hintState = useResolvedHints(
 )
 
 // inside a transition handler
-hints.rememberFacts({
+hints.rememberMarkers({
   sawTransitiveCascade: hasTransitiveCascade(nextFouls),
 })
 ```
 
-That feels like a better extraction seam than the earlier history-flags helper. The reusable part is not rendering. It is “compose umpire state with domain facts, then let hints consume that richer scorecard.” React can wrap the hint runtime with a hook, but hint selection itself stays derived instead of syncing through an effect.
+That feels like a better extraction seam than the earlier history-flags helper. The reusable part is not rendering. It is “compose umpire state with domain reads, then let hints consume that richer scorecard.” React can wrap the hint runtime with a hook, but hint selection itself stays derived instead of syncing through an effect.
 
 ## The Compatibility Layer
 
@@ -180,7 +180,7 @@ The lookup tables still live in the UI:
 - RAM kits are filtered by the selected motherboard RAM type.
 - Cases are filtered by the selected motherboard form factor.
 
-That filtering logic is still not what Umpire is responsible for. The component keeps the product catalog in userland, but it now declares named build facts once and reuses them from `fairWhen()`, the scorecard, and render. Umpire owns the rule result and the cascade. The app still owns the catalog.
+That filtering logic is still not what Umpire is responsible for. The component keeps the product catalog in userland, but it now declares named build reads once and reuses them from `fairWhen()`, the scorecard, and render. Umpire owns the rule result and the cascade. The app still owns the catalog.
 
 ## What Umpire Doesn't Do
 

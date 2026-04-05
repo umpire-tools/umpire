@@ -2,15 +2,15 @@ import { useEffectEvent, useMemo, useState } from 'react'
 import type { HintRuntime, HintRuntimeState } from './createHintRuntime.ts'
 
 export function useHintRuntime<
-  FactId extends string,
+  MarkerId extends string,
   HintId extends string,
 >(
-  runtime: HintRuntime<FactId, HintId>,
+  runtime: HintRuntime<MarkerId, HintId>,
 ) {
-  const [state, setState] = useState<HintRuntimeState<FactId, HintId>>(() => runtime.init())
+  const [state, setState] = useState<HintRuntimeState<MarkerId, HintId>>(() => runtime.init())
 
-  const rememberFacts = useEffectEvent((next: Partial<Record<FactId, boolean>>) => {
-    setState((current) => runtime.rememberFacts(current, next))
+  const rememberMarkers = useEffectEvent((next: Partial<Record<MarkerId, boolean>>) => {
+    setState((current) => runtime.rememberMarkers(current, next))
   })
 
   const markHintShown = useEffectEvent((hintId: HintId) => {
@@ -23,20 +23,20 @@ export function useHintRuntime<
 
   return {
     dismissHint,
-    facts: state.facts,
     hints: state.hints,
+    markers: state.markers,
     markHintShown,
-    rememberFacts,
+    rememberMarkers,
     state,
   }
 }
 
 export function useResolvedHints<
-  FactId extends string,
+  MarkerId extends string,
   HintId extends string,
 >(
-  runtime: HintRuntime<FactId, HintId>,
-  state: HintRuntimeState<FactId, HintId>,
+  runtime: HintRuntime<MarkerId, HintId>,
+  state: HintRuntimeState<MarkerId, HintId>,
   eligibility: Partial<Record<HintId, boolean>>,
 ) {
   return useMemo(

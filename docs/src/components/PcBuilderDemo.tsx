@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { enabledWhen, fairWhen, requires, umpire, type Snapshot } from '@umpire/core'
 import { createCoach } from '../lib/createCoach.ts'
-import { createFactTable } from '../lib/createFactTable.ts'
+import { createReadTable } from '../lib/createReadTable.ts'
 import { createHintRuntime } from '../lib/createHintRuntime.ts'
 import { useHintRuntime, useResolvedHints } from '../lib/useHintRuntime.ts'
 import '../styles/pc-builder-demo.css'
@@ -114,7 +114,7 @@ type PcSelections = {
   storage?: StorageOption
   caseSize?: CaseOption
 }
-type PcDerivedFacts = {
+type PcDerivedReads = {
   ids: Record<PcField, string>
   selections: PcSelections
   motherboardFair: boolean
@@ -135,21 +135,21 @@ const pcUmp = umpire<typeof pcFields, PcConditions>({
     requires('motherboard', 'cpu', {
       reason: 'Pick a CPU first',
     }),
-    fairWhen('motherboard', (_value, values) => pcBuildFacts.motherboardFair(values), {
+    fairWhen('motherboard', (_value, values) => pcBuildReads.motherboardFair(values), {
       reason: 'Selected motherboard no longer matches the CPU socket',
     }),
 
     requires('ram', 'motherboard', {
       reason: 'Memory depends on an active motherboard selection',
     }),
-    fairWhen('ram', (_value, values) => pcBuildFacts.ramFair(values), {
+    fairWhen('ram', (_value, values) => pcBuildReads.ramFair(values), {
       reason: 'Selected memory no longer matches the motherboard RAM type',
     }),
 
     requires('caseSize', 'motherboard', {
       reason: 'Pick a valid motherboard first to determine form factor',
     }),
-    fairWhen('caseSize', (_value, values) => pcBuildFacts.caseSizeFair(values), {
+    fairWhen('caseSize', (_value, values) => pcBuildReads.caseSizeFair(values), {
       reason: 'Selected case no longer fits the motherboard form factor',
     }),
   ],
@@ -189,7 +189,7 @@ const hintUmp = umpire<typeof hintFields, HintConditions>({
 })
 
 const hintRuntime = createHintRuntime({
-  facts: [
+  markers: [
     'sawTransitiveCascade',
     'sawAppliedResets',
   ] as const,
@@ -330,7 +330,7 @@ function hasTransitiveCascade(fouls: Array<{ field: string }>) {
   return foulFields.has('motherboard') && foulFields.has('ram')
 }
 
-const pcBuildFacts = createFactTable<PcBuildInput, PcDerivedFacts>({
+const pcBuildReads = createReadTable<PcBuildInput, PcDerivedReads>({
   ids: ({ input }) => ({
     cpu: asString(input.cpu),
     motherboard: asString(input.motherboard),
@@ -339,8 +339,8 @@ const pcBuildFacts = createFactTable<PcBuildInput, PcDerivedFacts>({
     storage: asString(input.storage),
     caseSize: asString(input.caseSize),
   }),
-  selections: ({ select }) => {
-    const ids = select('ids')
+  selections: ({ read }) => {
+    const ids = read('ids')
 
     return {
       cpu: cpuById[ids.cpu],
@@ -351,14 +351,14 @@ const pcBuildFacts = createFactTable<PcBuildInput, PcDerivedFacts>({
       caseSize: caseById[ids.caseSize],
     }
   },
-  motherboardFair: ({ select }) => {
-    const { motherboard } = select('ids')
+  motherboardFair: ({ read }) => {
+    const { motherboard } = read('ids')
 
     if (!motherboard) {
       return true
     }
 
-    const { cpu, motherboard: selectedMotherboard } = select('selections')
+    const { cpu, motherboard: selectedMotherboard } = read('selections')
 
     return Boolean(
       cpu &&
@@ -366,20 +366,20 @@ const pcBuildFacts = createFactTable<PcBuildInput, PcDerivedFacts>({
       selectedMotherboard.socket === cpu.socket,
     )
   },
-  activeMotherboard: ({ select }) => (
-    select('motherboardFair')
-      ? select('selections').motherboard
+  activeMotherboard: ({ read }) => (
+    read('motherboardFair')
+      ? read('selections').motherboard
       : undefined
   ),
-  ramFair: ({ select }) => {
-    const { ram } = select('ids')
+  ramFair: ({ read }) => {
+    const { ram } = read('ids')
 
     if (!ram) {
       return true
     }
 
-    const activeMotherboard = select('activeMotherboard')
-    const { ram: selectedRam } = select('selections')
+    const activeMotherboard = read('activeMotherboard')
+    const { ram: selectedRam } = read('selections')
 
     return Boolean(
       activeMotherboard &&
@@ -387,15 +387,15 @@ const pcBuildFacts = createFactTable<PcBuildInput, PcDerivedFacts>({
       selectedRam.type === activeMotherboard.ramType,
     )
   },
-  caseSizeFair: ({ select }) => {
-    const { caseSize } = select('ids')
+  caseSizeFair: ({ read }) => {
+    const { caseSize } = read('ids')
 
     if (!caseSize) {
       return true
     }
 
-    const activeMotherboard = select('activeMotherboard')
-    const { caseSize: selectedCase } = select('selections')
+    const activeMotherboard = read('activeMotherboard')
+    const { caseSize: selectedCase } = read('selections')
 
     return Boolean(
       activeMotherboard &&
@@ -403,80 +403,80 @@ const pcBuildFacts = createFactTable<PcBuildInput, PcDerivedFacts>({
       fitsFormFactor(selectedCase.fits, activeMotherboard.formFactor),
     )
   },
-  compatibleMotherboards: ({ select }) => {
-    const { cpu } = select('selections')
+  compatibleMotherboards: ({ read }) => {
+    const { cpu } = read('selections')
 
     return cpu
       ? motherboards.filter((board) => board.socket === cpu.socket)
       : []
   },
-  compatibleRamKits: ({ select }) => {
-    const activeMotherboard = select('activeMotherboard')
+  compatibleRamKits: ({ read }) => {
+    const activeMotherboard = read('activeMotherboard')
 
     return activeMotherboard
       ? ramKits.filter((kit) => kit.type === activeMotherboard.ramType)
       : []
   },
-  compatibleCases: ({ select }) => {
-    const activeMotherboard = select('activeMotherboard')
+  compatibleCases: ({ read }) => {
+    const activeMotherboard = read('activeMotherboard')
 
     return activeMotherboard
       ? caseOptions.filter((size) => fitsFormFactor(size.fits, activeMotherboard.formFactor))
       : []
   },
-  psuRecommendation: ({ select }) => {
-    const { cpu, gpu } = select('selections')
+  psuRecommendation: ({ read }) => {
+    const { cpu, gpu } = read('selections')
     return getPsuRecommendation(cpu?.tier, gpu?.tier)
   },
 })
 
-function describePcField(field: PcField, facts: PcDerivedFacts) {
-  if (field === 'cpu' && facts.selections.cpu) {
+function describePcField(field: PcField, reads: PcDerivedReads) {
+  if (field === 'cpu' && reads.selections.cpu) {
     return {
-      brand: facts.selections.cpu.brand,
-      socket: facts.selections.cpu.socket,
-      tier: facts.selections.cpu.tier,
+      brand: reads.selections.cpu.brand,
+      socket: reads.selections.cpu.socket,
+      tier: reads.selections.cpu.tier,
     }
   }
 
   if (field === 'motherboard') {
     return {
-      compatible: facts.motherboardFair,
-      choiceCount: facts.compatibleMotherboards.length,
-      selectedSocket: facts.selections.motherboard?.socket,
-      selectedFormFactor: facts.selections.motherboard?.formFactor,
-      selectedRamType: facts.selections.motherboard?.ramType,
-      expectedSocket: facts.selections.cpu?.socket,
+      compatible: reads.motherboardFair,
+      choiceCount: reads.compatibleMotherboards.length,
+      selectedSocket: reads.selections.motherboard?.socket,
+      selectedFormFactor: reads.selections.motherboard?.formFactor,
+      selectedRamType: reads.selections.motherboard?.ramType,
+      expectedSocket: reads.selections.cpu?.socket,
     }
   }
 
   if (field === 'ram') {
     return {
-      compatible: facts.ramFair,
-      choiceCount: facts.compatibleRamKits.length,
-      selectedType: facts.selections.ram?.type,
-      expectedType: facts.activeMotherboard?.ramType,
+      compatible: reads.ramFair,
+      choiceCount: reads.compatibleRamKits.length,
+      selectedType: reads.selections.ram?.type,
+      expectedType: reads.activeMotherboard?.ramType,
     }
   }
 
   if (field === 'caseSize') {
     return {
-      compatible: facts.caseSizeFair,
-      choiceCount: facts.compatibleCases.length,
-      selectedFits: facts.selections.caseSize?.fits,
-      expectedFormFactor: facts.activeMotherboard?.formFactor,
+      compatible: reads.caseSizeFair,
+      choiceCount: reads.compatibleCases.length,
+      selectedFits: reads.selections.caseSize?.fits,
+      expectedFormFactor: reads.activeMotherboard?.formFactor,
     }
   }
 
-  if (field === 'gpu' && facts.selections.gpu) {
+  if (field === 'gpu' && reads.selections.gpu) {
     return {
-      tier: facts.selections.gpu.tier,
+      tier: reads.selections.gpu.tier,
     }
   }
 
-  if (field === 'storage' && facts.selections.storage) {
+  if (field === 'storage' && reads.selections.storage) {
     return {
-      label: facts.selections.storage.label,
+      label: reads.selections.storage.label,
     }
   }
 
@@ -486,10 +486,10 @@ function describePcField(field: PcField, facts: PcDerivedFacts) {
 const pcCoach = createCoach({
   ump: pcUmp,
   fields: pcFields,
-  facts: pcBuildFacts,
-  getFactInput: (snapshot: PcSnapshot) => snapshot.values,
+  reads: pcBuildReads,
+  getReadInput: (snapshot: PcSnapshot) => snapshot.values,
   describeField(field, context) {
-    return describePcField(field, context.factTable.values)
+    return describePcField(field, context.readTable.values)
   },
 })
 
@@ -599,7 +599,7 @@ export default function PcBuilderDemo() {
     values,
     lastTransition,
   ])
-  const buildFacts = coaching.factTable.values
+  const buildReads = coaching.reads.values
   const {
     ids: {
       cpu: cpuId,
@@ -625,7 +625,7 @@ export default function PcBuilderDemo() {
     compatibleRamKits,
     compatibleCases,
     psuRecommendation,
-  } = buildFacts
+  } = buildReads
 
   const motherboardChoices = buildChoices(
     compatibleMotherboards.map((board) => ({
@@ -667,14 +667,14 @@ export default function PcBuilderDemo() {
   )
 
   // HINT NOTE: The seam is a tiny bit of remembered history, updated only
-  // when a transition happens. Rendering still just reads live facts + memory.
+  // when a transition happens. Rendering still just reads live reads + memory.
   const hintConditions = useMemo<HintConditions>(() => ({
-    cpuBrand: scorecard.fields.cpu.facts?.brand as CpuBrand | undefined,
+    cpuBrand: scorecard.fields.cpu.reads?.brand as CpuBrand | undefined,
     hasRamSelection: scorecard.fields.ram.satisfied,
-    sawTransitiveCascade: hints.facts.sawTransitiveCascade || hasLiveTransitiveCascade,
-    sawAppliedResets: hints.facts.sawAppliedResets,
+    sawTransitiveCascade: hints.markers.sawTransitiveCascade || hasLiveTransitiveCascade,
+    sawAppliedResets: hints.markers.sawAppliedResets,
   }), [
-    hints.facts,
+    hints.markers,
     scorecard,
     hasLiveTransitiveCascade,
   ])
@@ -713,7 +713,7 @@ export default function PcBuilderDemo() {
       before: { values },
     })
     setValues(nextValues)
-    hints.rememberFacts({
+    hints.rememberMarkers({
       sawTransitiveCascade: hasTransitiveCascade(nextFouls),
     })
   }
@@ -739,7 +739,7 @@ export default function PcBuilderDemo() {
       before: { values },
     })
     setValues(nextValues)
-    hints.rememberFacts({
+    hints.rememberMarkers({
       sawTransitiveCascade: hasLiveTransitiveCascade,
       sawAppliedResets: true,
     })
