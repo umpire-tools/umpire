@@ -130,7 +130,7 @@ fairWhenRead('motherboard', 'motherboardFair', pcBuildReads, {
 })
 ```
 
-The remaining awkward part is really hint state: remembering milestone booleans like “the transitive cascade has happened at least once,” plus tracking which hint is currently active and whether it has already been shown.
+The only stateful part left is marker memory: remembering milestone booleans like “the transitive cascade has happened at least once.” The active hint itself can stay purely derived.
 
 The demo now splits that into:
 
@@ -138,54 +138,38 @@ The demo now splits that into:
 - `createReadTable(...)` for named domain reads shared by rules, scorecard, and UI
 - `fairWhenRead(...)` / `enabledWhenRead(...)` as the read-backed adapters from read table to rule
 - `scorecard(...)` inside the coach layer for live field and transition facts
-- `createHintRuntime(...)` for latched markers plus prompt sequencing
-- `useHintRuntime(...)` as a thin React adapter over that runtime
+- local marker memory for milestone history
+- a derived `activeHint` chosen from the hint umpire result
 
-The runtime stays non-React:
+The remaining marker state is tiny:
 
 ```ts
-const hintRuntime = createHintRuntime({
-  markers: [
-    'sawTransitiveCascade',
-    'sawAppliedResets',
-  ] as const,
-  hints: [
-    { id: 'promptSwitchCpu' },
-    { id: 'explainTransitive' },
-    { id: 'celebrateComplete' },
-  ] as const,
+const [hintMarkers, setHintMarkers] = useState({
+  sawTransitiveCascade: false,
+  sawAppliedResets: false,
 })
 ```
 
-And React just holds the runtime state while the hint input is powered by coach output:
+And the active hint stays derived while the hint input is powered by coach output:
 
 ```ts
-const hints = useHintRuntime(hintRuntime)
-
 const hintInput = {
   cpuBrand: buildReads.selections.cpu?.brand,
   hasRamSelection: scorecard.fields.ram.satisfied,
-  sawTransitiveCascade: hints.markers.sawTransitiveCascade || hasLiveTransitiveCascade,
-  sawAppliedResets: hints.markers.sawAppliedResets,
+  sawTransitiveCascade: hintMarkers.sawTransitiveCascade || hasLiveTransitiveCascade,
+  sawAppliedResets: hintMarkers.sawAppliedResets,
 }
 
-const hintState = useResolvedHints(
-  hintRuntime,
-  hints.state,
-  {
-    promptSwitchCpu: hintCheck.promptSwitchCpu.enabled,
-    explainTransitive: hintCheck.explainTransitive.enabled,
-    celebrateComplete: hintCheck.celebrateComplete.enabled,
-  },
-)
+const hintCheck = hintUmp.check(hintUmp.init(), hintInput)
+const activeHint = resolveActiveHint(hintCheck)
 
 // inside a transition handler
-hints.rememberMarkers({
+setHintMarkers((current) => rememberHintMarkers(current, {
   sawTransitiveCascade: hasTransitiveCascade(nextFouls),
-})
+}))
 ```
 
-That feels like a better extraction seam than the earlier history-flags helper. The reusable part is not rendering. It is “compose umpire state with domain reads, then let hints consume that richer scorecard.” React can wrap the hint runtime with a hook, but hint selection itself stays derived instead of syncing through an effect.
+That feels like a better extraction seam than the earlier runtime-heavy version. The reusable part is not rendering. It is “compose umpire state with domain reads, then let hints consume that richer scorecard.” Marker memory stays local and tiny, while hint selection itself remains derived instead of syncing through an effect.
 
 ## The Compatibility Layer
 

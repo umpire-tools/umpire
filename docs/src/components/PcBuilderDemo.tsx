@@ -2,8 +2,6 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { requires, umpire, type Snapshot } from '@umpire/core'
 import { createCoach } from '../lib/createCoach.ts'
 import { createReadTable, enabledWhenRead, fairWhenRead, ReadInputType } from '../lib/createReadTable.ts'
-import { createHintRuntime } from '../lib/createHintRuntime.ts'
-import { useHintRuntime, useResolvedHints } from '../lib/useHintRuntime.ts'
 import '../styles/pc-builder-demo.css'
 
 type Socket = 'LGA1700' | 'AM5'
@@ -143,6 +141,7 @@ type HintReads = {
 }
 
 type HintId = keyof typeof hintFields & string
+type HintMarkers = Pick<HintInput, 'sawAppliedResets' | 'sawTransitiveCascade'>
 
 const hintFields = {
   promptSwitchCpu:   {},
@@ -172,18 +171,6 @@ const hintUmp = umpire<typeof hintFields, HintInput>({
       reason: 'Apply the suggested resets first',
     }),
   ],
-})
-
-const hintRuntime = createHintRuntime({
-  markers: [
-    'sawTransitiveCascade',
-    'sawAppliedResets',
-  ] as const,
-  hints: [
-    { id: 'promptSwitchCpu' },
-    { id: 'explainTransitive' },
-    { id: 'celebrateComplete' },
-  ] as const,
 })
 
 type PcValues = ReturnType<typeof pcUmp.init>
@@ -244,6 +231,12 @@ const fieldMeta: Record<PcField, { label: string }> = {
   storage:     { label: 'Storage' },
   caseSize:    { label: 'Case' },
 }
+
+const hintPriority = [
+  'promptSwitchCpu',
+  'explainTransitive',
+  'celebrateComplete',
+] as const satisfies readonly HintId[]
 
 function indexById<T extends { id: string }>(items: readonly T[]) {
   return Object.fromEntries(items.map((item) => [item.id, item])) as Partial<Record<string, T>>
@@ -314,6 +307,28 @@ function getPsuRecommendation(cpuTier?: CpuTier, gpuTier?: GpuTier) {
 function hasTransitiveCascade(fouls: Array<{ field: string }>) {
   const foulFields = new Set(fouls.map((foul) => foul.field))
   return foulFields.has('motherboard') && foulFields.has('ram')
+}
+
+function rememberHintMarkers(
+  current: HintMarkers,
+  next: Partial<HintMarkers>,
+) {
+  let changed = false
+  const markers = { ...current }
+
+  for (const markerId of Object.keys(current) as Array<keyof HintMarkers>) {
+    if (Boolean(next[markerId]) && markers[markerId] !== true) {
+      markers[markerId] = true
+      changed = true
+    }
+  }
+
+  return changed ? markers : current
+}
+
+function resolveActiveHint(check: HintCheck): HintId | null {
+  const eligibleHints = hintPriority.filter((hintId) => check[hintId].enabled)
+  return eligibleHints.at(-1) ?? null
 }
 
 const pcBuildReads = createReadTable<PcBuildInput, PcDerivedReads>({
@@ -544,7 +559,10 @@ function HintCallout({
 
 export default function PcBuilderDemo() {
   const [values, setValues] = useState<PcValues>(() => pcUmp.init())
-  const hints = useHintRuntime(hintRuntime)
+  const [hintMarkers, setHintMarkers] = useState<HintMarkers>({
+    sawAppliedResets: false,
+    sawTransitiveCascade: false,
+  })
   const [currentStep, setCurrentStep] = useState(0)
   const [lastTransition, setLastTransition] = useState<{ before: PcSnapshot } | null>(null)
   const coaching = useMemo(() => pcCoach.inspect({
@@ -624,8 +642,8 @@ export default function PcBuilderDemo() {
 
   const cpuBrand = selectedCpu?.brand
   const hasRamSelection = scorecard.fields.ram.satisfied
-  const sawTransitiveCascade = hints.markers.sawTransitiveCascade || hasLiveTransitiveCascade
-  const sawAppliedResets = hints.markers.sawAppliedResets
+  const sawTransitiveCascade = hintMarkers.sawTransitiveCascade || hasLiveTransitiveCascade
+  const sawAppliedResets = hintMarkers.sawAppliedResets
   const hintInput: HintInput = {
     cpuBrand,
     hasRamSelection,
@@ -637,16 +655,7 @@ export default function PcBuilderDemo() {
     () => hintUmp.check(hintUmp.init(), hintInput),
     [cpuBrand, hasRamSelection, sawTransitiveCascade, sawAppliedResets],
   )
-
-  const hintPrompts = useResolvedHints(
-    hintRuntime,
-    hints.state,
-    {
-      celebrateComplete: hintCheck.celebrateComplete.enabled,
-      explainTransitive: hintCheck.explainTransitive.enabled,
-      promptSwitchCpu: hintCheck.promptSwitchCpu.enabled,
-    } satisfies Partial<Record<HintId, boolean>>,
-  )
+  const activeHint = resolveActiveHint(hintCheck)
 
   function updateField<K extends PcField>(field: K, nextValue: PcValues[K]) {
     if (Object.is(values[field], nextValue)) {
@@ -667,9 +676,9 @@ export default function PcBuilderDemo() {
       before: { values },
     })
     setValues(nextValues)
-    hints.rememberMarkers({
+    setHintMarkers((current) => rememberHintMarkers(current, {
       sawTransitiveCascade: hasTransitiveCascade(nextFouls),
-    })
+    }))
   }
 
   function updateSelectField(field: PcField, nextValue: string) {
@@ -693,10 +702,10 @@ export default function PcBuilderDemo() {
       before: { values },
     })
     setValues(nextValues)
-    hints.rememberMarkers({
+    setHintMarkers((current) => rememberHintMarkers(current, {
       sawTransitiveCascade: hasLiveTransitiveCascade,
       sawAppliedResets: true,
-    })
+    }))
     setCurrentStep(getStepIndexForField(resetTargets[0].field as PcField))
   }
 
@@ -942,7 +951,7 @@ export default function PcBuilderDemo() {
   // HINT NOTE: The hint rules only decide visibility. Step placement, ordering,
   // and copy still live in the component, which is workable but manual.
   function renderHintCallout(step: StepDefinition) {
-    if (step.index === 1 && hintPrompts.hints.explainTransitive.active) {
+    if (step.index === 1 && activeHint === 'explainTransitive') {
       return (
         <HintCallout
           title="Hint"
@@ -951,7 +960,7 @@ export default function PcBuilderDemo() {
       )
     }
 
-    if (step.index === 2 && hintPrompts.hints.promptSwitchCpu.active) {
+    if (step.index === 2 && activeHint === 'promptSwitchCpu') {
       return (
         <HintCallout
           title="Hint"
@@ -960,7 +969,7 @@ export default function PcBuilderDemo() {
       )
     }
 
-    if (step.index === 4 && hintPrompts.hints.celebrateComplete.active) {
+    if (step.index === 4 && activeHint === 'celebrateComplete') {
       return (
         <HintCallout
           title="Hint"
