@@ -43,8 +43,11 @@ jobs:
     outputs:
       any_changed: ${{ steps.versions.outputs.any_changed }}
       core_changed: ${{ steps.versions.outputs.core_changed }}
+      store_changed: ${{ steps.versions.outputs.store_changed }}
       signals_changed: ${{ steps.versions.outputs.signals_changed }}
       react_changed: ${{ steps.versions.outputs.react_changed }}
+      redux_changed: ${{ steps.versions.outputs.redux_changed }}
+      tanstack_store_changed: ${{ steps.versions.outputs.tanstack_store_changed }}
       zustand_changed: ${{ steps.versions.outputs.zustand_changed }}
       zod_changed: ${{ steps.versions.outputs.zod_changed }}
     steps:
@@ -68,7 +71,7 @@ jobs:
 
           const before = process.env.BEFORE_SHA;
           const isZeroSha = !before || /^0+$/.test(before);
-          const packages = ['core', 'signals', 'react', 'zustand', 'zod'];
+          const packages = ['core', 'store', 'signals', 'react', 'redux', 'tanstack-store', 'zustand', 'zod'];
 
           const readCurrentVersion = (pkg) => {
             const packageJson = path.join('packages', pkg, 'package.json');
@@ -144,6 +147,16 @@ jobs:
           yarn pack -o package.tgz
           npm publish package.tgz --provenance --access public --tag "$TAG"
 
+      - name: Publish @umpire/store
+        if: needs.detect-version-changes.outputs.store_changed == 'true'
+        working-directory: packages/store
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="latest"
+          if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
+          yarn pack -o package.tgz
+          npm publish package.tgz --provenance --access public --tag "$TAG"
+
       - name: Publish @umpire/signals
         if: needs.detect-version-changes.outputs.signals_changed == 'true'
         working-directory: packages/signals
@@ -157,6 +170,26 @@ jobs:
       - name: Publish @umpire/react
         if: needs.detect-version-changes.outputs.react_changed == 'true'
         working-directory: packages/react
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="latest"
+          if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
+          yarn pack -o package.tgz
+          npm publish package.tgz --provenance --access public --tag "$TAG"
+
+      - name: Publish @umpire/redux
+        if: needs.detect-version-changes.outputs.redux_changed == 'true'
+        working-directory: packages/redux
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="latest"
+          if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
+          yarn pack -o package.tgz
+          npm publish package.tgz --provenance --access public --tag "$TAG"
+
+      - name: Publish @umpire/tanstack-store
+        if: needs.detect-version-changes.outputs.tanstack_store_changed == 'true'
+        working-directory: packages/tanstack-store
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
