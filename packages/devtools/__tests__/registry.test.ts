@@ -1,9 +1,11 @@
 import { jest } from '@jest/globals'
 import { enabledWhen, umpire } from '@umpire/core'
+import type { ReadTableInspection } from '@umpire/reads'
 import {
   getRegistryVersion,
   register,
   resetRegistry,
+  setFoulLogDepth,
   snapshot,
   subscribe,
   unregister,
@@ -24,6 +26,8 @@ const demoUmp = umpire({
 describe('registry', () => {
   afterEach(() => {
     resetRegistry()
+    process.env.NODE_ENV = 'test'
+    delete process.env.UMPIRE_INTERNAL
   })
 
   it('stores entries and notifies subscribers for each register', () => {
@@ -97,5 +101,202 @@ describe('registry', () => {
 
     expect(getRegistryVersion()).toBe(0)
     expect(snapshot().size).toBe(0)
+  })
+
+  it('stores precomputed read inspections from register options', () => {
+    const inspection: ReadTableInspection<Record<string, unknown>, Record<string, unknown>> = {
+      bridges: [],
+      graph: {
+        edges: [],
+        nodes: ['status'],
+      },
+      nodes: {
+        status: {
+          dependsOnFields: ['gate'],
+          dependsOnReads: [],
+          id: 'status',
+          value: 'ready',
+        },
+      },
+      values: {
+        status: 'ready',
+      },
+    }
+
+    register(
+      'demo',
+      demoUmp,
+      {
+        gate: 'open',
+        target: 'kept',
+      },
+      undefined,
+      { reads: inspection },
+    )
+
+    expect(snapshot().get('demo')?.reads).toEqual(inspection)
+  })
+
+  it('uses readInput overrides when resolving read tables', () => {
+    const inspect = jest.fn((input: Record<string, unknown>) => ({
+      bridges: [],
+      graph: {
+        edges: [],
+        nodes: ['status'],
+      },
+      nodes: {
+        status: {
+          dependsOnFields: ['externalGate'],
+          dependsOnReads: [],
+          id: 'status',
+          value: String(input.externalGate),
+        },
+      },
+      values: {
+        status: String(input.externalGate),
+      },
+    }))
+
+    register(
+      'demo',
+      demoUmp,
+      {
+        gate: 'open',
+        target: 'kept',
+      },
+      undefined,
+      {
+        reads: { inspect } as never,
+        readInput: { externalGate: 'override' },
+      },
+    )
+
+    expect(inspect).toHaveBeenCalledWith({ externalGate: 'override' })
+    expect(snapshot().get('demo')?.reads?.values).toEqual({ status: 'override' })
+  })
+
+  it('uses form values as the default read table input', () => {
+    const inspect = jest.fn((input: Record<string, unknown>) => ({
+      bridges: [],
+      graph: {
+        edges: [],
+        nodes: ['status'],
+      },
+      nodes: {
+        status: {
+          dependsOnFields: ['gate'],
+          dependsOnReads: [],
+          id: 'status',
+          value: String(input.gate),
+        },
+      },
+      values: {
+        status: String(input.gate),
+      },
+    }))
+
+    register(
+      'demo',
+      demoUmp,
+      {
+        gate: 'open',
+        target: 'kept',
+      },
+      undefined,
+      {
+        reads: { inspect } as never,
+      },
+    )
+
+    expect(inspect).toHaveBeenCalledWith({
+      gate: 'open',
+      target: 'kept',
+    })
+    expect(snapshot().get('demo')?.reads?.values).toEqual({ status: 'open' })
+  })
+
+  it('ignores invalid reads options that are neither inspections nor read tables', () => {
+    register(
+      'demo',
+      demoUmp,
+      {
+        gate: 'open',
+        target: 'kept',
+      },
+      undefined,
+      {
+        reads: { value: 'not a read table' } as never,
+      },
+    )
+
+    expect(snapshot().get('demo')?.reads).toBeNull()
+  })
+
+  it('does not register in production without the internal override', () => {
+    const listener = jest.fn()
+    subscribe(listener)
+    process.env.NODE_ENV = 'production'
+    delete process.env.UMPIRE_INTERNAL
+
+    register('demo', demoUmp, {
+      gate: 'open',
+      target: 'kept',
+    })
+
+    expect(snapshot().size).toBe(0)
+    expect(getRegistryVersion()).toBe(0)
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('allows production registration when the internal override is enabled', () => {
+    process.env.NODE_ENV = 'production'
+    process.env.UMPIRE_INTERNAL = 'true'
+
+    register('demo', demoUmp, {
+      gate: 'open',
+      target: 'kept',
+    })
+
+    expect(snapshot().get('demo')?.snapshot.values.gate).toBe('open')
+    expect(getRegistryVersion()).toBe(1)
+  })
+
+  it('does nothing when unregistering an unknown id', () => {
+    const listener = jest.fn()
+    subscribe(listener)
+
+    unregister('missing')
+
+    expect(getRegistryVersion()).toBe(0)
+    expect(listener).not.toHaveBeenCalled()
+  })
+
+  it('trims foul history using the configured depth', () => {
+    setFoulLogDepth(1.9)
+
+    register('demo', demoUmp, {
+      gate: 'open',
+      target: 'kept',
+    })
+    register('demo', demoUmp, {
+      gate: '',
+      target: 'kept',
+    })
+    register('demo', demoUmp, {
+      gate: 'open',
+      target: 'kept',
+    })
+    register('demo', demoUmp, {
+      gate: '',
+      target: 'kept',
+    })
+
+    expect(snapshot().get('demo')?.foulLog).toEqual([
+      expect.objectContaining({
+        field: 'target',
+        reason: 'gate required',
+        renderIndex: 4,
+      }),
+    ])
   })
 })
