@@ -75,3 +75,27 @@ export function useUmpireWithDevtools<
 
   return { check, fouls }
 }
+
+// Auto-assigns a stable numeric id per component instance.
+// Drop-in replacement for useUmpire from @umpire/react — identical call signature.
+// Use useUmpireWithDevtools instead if you need a named instance in the panel.
+let nextId = 0
+
+export function useUmpire<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+  ReadInput extends Record<string, unknown> = InputValues<F>,
+  Reads extends Record<string, unknown> = Record<string, unknown>,
+>(
+  ump: Umpire<F, C>,
+  values: InputValues<F>,
+  conditions?: C,
+  options?: RegisterOptions<ReadInput, Reads>,
+) {
+  const idRef = useRef<string | null>(null)
+  if (idRef.current === null) {
+    idRef.current = `ump-${nextId++}`
+  }
+
+  return useUmpireWithDevtools(idRef.current, ump, values, conditions, options)
+}

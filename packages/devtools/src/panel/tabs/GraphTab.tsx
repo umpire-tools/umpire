@@ -1,4 +1,4 @@
-import { layoutGraph } from '../graph.js'
+import { layoutGraph, NODE_FONT_SIZE } from '../graph.js'
 import { pillStyle, scrollPaneStyle, theme } from '../theme.js'
 import type { AnyScorecard } from '../../types.js'
 
@@ -109,10 +109,10 @@ export function GraphTab({ onSelectField, scorecard, selectedField }: Props) {
                   dominantBaseline="central"
                   fill={theme.fg}
                   fontFamily="JetBrains Mono, monospace"
-                  fontSize="8"
+                  fontSize={NODE_FONT_SIZE}
                   textAnchor="start"
                   x={node.x + 6}
-                  y={node.y + (node.height / 2) + 4}
+                  y={node.y + (node.height / 2) + (NODE_FONT_SIZE / 2)}
                 >
                   {node.field}
                 </text>

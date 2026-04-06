@@ -96,6 +96,10 @@ function buildFoulLog(
 }
 
 export const register: RegisterFn = (id, ump, values, conditions, options) => {
+  if (process.env.NODE_ENV === 'production' && process.env.UMPIRE_INTERNAL !== 'true') {
+    return
+  }
+
   const existing = registry.get(id)
   const previous = (existing?.snapshot as {
     conditions?: typeof conditions
