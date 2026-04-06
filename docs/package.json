@@ -21,6 +21,7 @@
     "@umpire/react": "portal:../packages/react",
     "@umpire/reads": "portal:../packages/reads",
     "@umpire/signals": "portal:../packages/signals",
+    "@umpire/store": "portal:../packages/store",
     "@umpire/zod": "portal:../packages/zod",
     "@umpire/zustand": "portal:../packages/zustand",
     "astro": "^5.18.1",
@@ -34,6 +35,7 @@
     "@umpire/core": "portal:../packages/core",
     "@umpire/reads": "portal:../packages/reads",
     "@umpire/devtools": "portal:../packages/devtools",
+    "@umpire/store": "portal:../packages/store",
     "vite": "^6.4.1"
   },
   "devDependencies": {

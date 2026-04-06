@@ -151,7 +151,9 @@ The adapter packages layer reactivity on top:
 
 - `@umpire/react` — a `useUmpire` hook that memoizes `check()` and tracks `prev` via `useRef`
 - `@umpire/signals` — signal-backed availability with fine-grained proxy tracking
-- `@umpire/zustand` — subscribes to a store slice, fouls come free from Zustand's `(next, prev)`
+- `@umpire/store` — strict store adapter foundation for `getState()` + `subscribe((next, prev) => ...)`
+- `@umpire/zustand` — zero-shim entry point over `@umpire/store`
+- `@umpire/redux` and `@umpire/tanstack-store` — thin shims that normalize their subscription APIs into the same contract
 
 ## Five Principles
 

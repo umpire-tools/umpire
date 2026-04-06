@@ -1,4 +1,9 @@
 /** @type {import('jest').Config} */
+const workspaceModuleNameMapper = {
+  '^@umpire/([^/]+)$': '<rootDir>/../$1/src/index.ts',
+  '^(\\.{1,2}/.*)\\.js$': '$1',
+}
+
 export default {
   watchman: false,
   coverageDirectory: 'coverage',
@@ -9,9 +14,7 @@ export default {
       rootDir: 'packages/core',
       watchman: false,
       extensionsToTreatAsEsm: ['.ts'],
-      moduleNameMapper: {
-        '^(\\.{1,2}/.*)\\.js$': '$1',
-      },
+      moduleNameMapper: workspaceModuleNameMapper,
       transform: {
         '^.+\\.ts$': [
           'ts-jest',
@@ -30,9 +33,26 @@ export default {
       rootDir: 'packages/signals',
       watchman: false,
       extensionsToTreatAsEsm: ['.ts'],
-      moduleNameMapper: {
-        '^(\\.{1,2}/.*)\\.js$': '$1',
+      moduleNameMapper: workspaceModuleNameMapper,
+      transform: {
+        '^.+\\.ts$': [
+          'ts-jest',
+          {
+            useESM: true,
+            tsconfig: '<rootDir>/tsconfig.json',
+          },
+        ],
       },
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/__tests__/**/*.test.ts'],
+      collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
+    },
+    {
+      displayName: 'store',
+      rootDir: 'packages/store',
+      watchman: false,
+      extensionsToTreatAsEsm: ['.ts'],
+      moduleNameMapper: workspaceModuleNameMapper,
       transform: {
         '^.+\\.ts$': [
           'ts-jest',
@@ -51,9 +71,7 @@ export default {
       rootDir: 'packages/react',
       watchman: false,
       extensionsToTreatAsEsm: ['.ts', '.tsx'],
-      moduleNameMapper: {
-        '^(\\.{1,2}/.*)\\.js$': '$1',
-      },
+      moduleNameMapper: workspaceModuleNameMapper,
       transform: {
         '^.+\\.tsx?$': [
           'ts-jest',
@@ -68,13 +86,49 @@ export default {
       collectCoverageFrom: ['src/**/*.ts', 'src/**/*.tsx', '!src/**/*.d.ts'],
     },
     {
+      displayName: 'redux',
+      rootDir: 'packages/redux',
+      watchman: false,
+      extensionsToTreatAsEsm: ['.ts'],
+      moduleNameMapper: workspaceModuleNameMapper,
+      transform: {
+        '^.+\\.ts$': [
+          'ts-jest',
+          {
+            useESM: true,
+            tsconfig: '<rootDir>/tsconfig.json',
+          },
+        ],
+      },
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/__tests__/**/*.test.ts'],
+      collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
+    },
+    {
+      displayName: 'tanstack-store',
+      rootDir: 'packages/tanstack-store',
+      watchman: false,
+      extensionsToTreatAsEsm: ['.ts'],
+      moduleNameMapper: workspaceModuleNameMapper,
+      transform: {
+        '^.+\\.ts$': [
+          'ts-jest',
+          {
+            useESM: true,
+            tsconfig: '<rootDir>/tsconfig.json',
+          },
+        ],
+      },
+      testEnvironment: 'node',
+      testMatch: ['<rootDir>/__tests__/**/*.test.ts'],
+      collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
+    },
+    {
       displayName: 'zustand',
       rootDir: 'packages/zustand',
       watchman: false,
       extensionsToTreatAsEsm: ['.ts'],
-      moduleNameMapper: {
-        '^(\\.{1,2}/.*)\\.js$': '$1',
-      },
+      moduleNameMapper: workspaceModuleNameMapper,
       transform: {
         '^.+\\.ts$': [
           'ts-jest',
@@ -93,9 +147,7 @@ export default {
       rootDir: 'packages/zod',
       watchman: false,
       extensionsToTreatAsEsm: ['.ts'],
-      moduleNameMapper: {
-        '^(\\.{1,2}/.*)\\.js$': '$1',
-      },
+      moduleNameMapper: workspaceModuleNameMapper,
       transform: {
         '^.+\\.ts$': [
           'ts-jest',
@@ -114,9 +166,7 @@ export default {
       rootDir: 'packages/reads',
       watchman: false,
       extensionsToTreatAsEsm: ['.ts'],
-      moduleNameMapper: {
-        '^(\\.{1,2}/.*)\\.js$': '$1',
-      },
+      moduleNameMapper: workspaceModuleNameMapper,
       transform: {
         '^.+\\.ts$': [
           'ts-jest',
@@ -135,9 +185,7 @@ export default {
       rootDir: 'packages/devtools',
       watchman: false,
       extensionsToTreatAsEsm: ['.ts', '.tsx'],
-      moduleNameMapper: {
-        '^(\\.{1,2}/.*)\\.js$': '$1',
-      },
+      moduleNameMapper: workspaceModuleNameMapper,
       transform: {
         '^.+\\.tsx?$': [
           'ts-jest',

@@ -1,0 +1,189 @@
+.account-settings-demo {
+  --umpire-demo-layout-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
+  --umpire-demo-root-accent-primary: rgba(107, 254, 156, 0.16);
+  --umpire-demo-root-accent-secondary: rgba(120, 184, 255, 0.1);
+}
+
+.account-settings-demo__layout {
+  align-items: start;
+}
+
+.account-settings-demo__panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.account-settings-demo__intro {
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(107, 254, 156, 0.12);
+  border-radius: 0.95rem;
+  background: rgba(107, 254, 156, 0.05);
+  color: rgba(245, 247, 244, 0.8);
+}
+
+.account-settings-demo__section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.account-settings-demo__section {
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 1rem;
+  background:
+    linear-gradient(180deg, rgba(107, 254, 156, 0.035), transparent 42%),
+    rgba(255, 255, 255, 0.025);
+}
+
+.account-settings-demo__section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.9rem;
+}
+
+.account-settings-demo__section-kicker,
+.account-settings-demo__summary-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(245, 247, 244, 0.46);
+}
+
+.account-settings-demo__section-title {
+  margin: 0.2rem 0 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.account-settings-demo__section-code,
+.account-settings-demo__summary-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  color: #6bfe9c;
+}
+
+.account-settings-demo__field-grid {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.account-settings-demo__field-grid .umpire-demo__label:not(:first-child) {
+  margin-top: 0.45rem;
+}
+
+.account-settings-demo__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  margin-top: 0.35rem;
+  margin-bottom: 0.45rem;
+}
+
+.account-settings-demo__chip {
+  padding: 0.2rem 0.48rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(245, 247, 244, 0.72);
+}
+
+.account-settings-demo__chip--enabled {
+  color: #6bfe9c;
+  border-color: rgba(107, 254, 156, 0.26);
+  background: rgba(107, 254, 156, 0.08);
+}
+
+.account-settings-demo__chip--disabled {
+  color: #ffb8b5;
+  border-color: rgba(255, 113, 108, 0.2);
+  background: rgba(255, 113, 108, 0.08);
+}
+
+.account-settings-demo__chip--required {
+  color: #fed023;
+  border-color: rgba(254, 208, 35, 0.22);
+  background: rgba(254, 208, 35, 0.08);
+}
+
+.account-settings-demo__reason {
+  font-size: 0.82rem;
+  color: rgba(245, 247, 244, 0.58);
+}
+
+.account-settings-demo__section-note {
+  margin: 0.8rem 0 0;
+  color: rgba(245, 247, 244, 0.6);
+  font-size: 0.9rem;
+}
+
+.account-settings-demo__section-note code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.account-settings-demo__summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.account-settings-demo__summary-card {
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.account-settings-demo__rules {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.account-settings-demo__rule {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.028);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.account-settings-demo__rule strong {
+  min-width: 3.8rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6bfe9c;
+}
+
+.account-settings-demo__rule span {
+  color: rgba(245, 247, 244, 0.7);
+}
+
+@media (max-width: 900px) {
+  .account-settings-demo {
+    --umpire-demo-layout-columns: minmax(0, 1fr);
+  }
+
+  .account-settings-demo__summary-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .account-settings-demo__rule {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

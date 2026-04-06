@@ -1,0 +1,70 @@
+---
+title: '@umpire/redux'
+description: Redux adapter that normalizes subscribe() into the @umpire/store contract.
+---
+
+`@umpire/redux` is a thin shim over `@umpire/store`. Redux subscriptions do not provide previous state, so the adapter snapshots `prevState` internally before delegating to the shared `fromStore()` implementation.
+
+## Install
+
+```bash
+yarn add @umpire/core @umpire/redux redux
+```
+
+## `fromReduxStore()`
+
+```ts
+function fromReduxStore<
+  S,
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
+  ump: Umpire<F, C>,
+  store: {
+    getState(): S
+    subscribe(listener: () => void): () => void
+  },
+  options: FromStoreOptions<S, F, C>,
+): UmpireStore<F>
+```
+
+## Example
+
+```ts
+import { legacy_createStore } from 'redux'
+import { enabledWhen, umpire } from '@umpire/core'
+import { fromReduxStore } from '@umpire/redux'
+
+const ump = umpire({
+  fields: {
+    password: {},
+    confirmPassword: { default: '' },
+  },
+  rules: [
+    enabledWhen('confirmPassword', (values) => {
+      return (values.password as string)?.length > 0
+    }),
+  ],
+})
+
+const store = legacy_createStore((state = { password: '', confirmPassword: '' }, action) => {
+  if (action.type === 'patch') {
+    return { ...state, ...action.payload }
+  }
+
+  return state
+})
+
+const umpStore = fromReduxStore(ump, store, {
+  select: (state) => ({
+    password: state.password,
+    confirmPassword: state.confirmPassword,
+  }),
+})
+```
+
+## Notes
+
+- `select()` still solves split state. Pull from as many reducer slices as you need.
+- The returned `UmpireStore` surface is the same as `@umpire/store`.
+- If your store already provides `(next, prev)`, use `@umpire/store` or `@umpire/zustand` directly instead.

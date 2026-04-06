@@ -1,7 +1,7 @@
 {
-  "name": "@umpire/zustand",
+  "name": "@umpire/tanstack-store",
   "version": "0.1.0-alpha.8",
-  "description": "Zustand entry point for @umpire/store",
+  "description": "TanStack Store adapter for @umpire/core built on @umpire/store",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
@@ -22,17 +22,21 @@
     ".claude"
   ],
   "dependencies": {
+    "@umpire/core": "workspace:^",
     "@umpire/store": "workspace:^"
   },
   "peerDependencies": {
-    "zustand": "^4.0.0 || ^5.0.0"
+    "@tanstack/store": "^0.9.3"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sdougbrown/umpire.git",
-    "directory": "packages/zustand"
+    "directory": "packages/tanstack-store"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "devDependencies": {
+    "@tanstack/store": "^0.9.3"
   }
 }

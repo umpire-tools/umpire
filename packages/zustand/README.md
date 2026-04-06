@@ -1,13 +1,13 @@
 # @umpire/zustand
 
-Zustand adapter for Umpire. Subscribe once to a store slice, derive availability, and get reset recommendations from Zustand's native `(next, prev)` subscription flow.
+Zustand entry point for Umpire's generic store adapter. Zustand satisfies the `@umpire/store` contract natively, so this package re-exports `fromStore()` with a named ecosystem entry point.
 
 [Docs](https://sdougbrown.github.io/umpire/)
 
 ## Install
 
 ```bash
-npm install @umpire/zustand @umpire/core
+npm install @umpire/zustand @umpire/core zustand
 ```
 
 Peer dependencies: `zustand >= 4`
@@ -51,7 +51,7 @@ const availability = fromStore(signupUmp, store, {
     confirmPassword: state.confirmPassword,
     inviteCode: state.inviteCode,
   }),
-  context: (state) => ({
+  conditions: (state) => ({
     requireInvite: state.requireInvite,
   }),
 })
@@ -78,7 +78,7 @@ availability.destroy()
 
 ## Why Zustand Fits
 
-Zustand subscriptions provide both `next` and `prev` state, so `fromStore()` can compute fouls without extra bookkeeping. Availability and reset recommendations stay derived from store transitions rather than side effects.
+Zustand subscriptions provide both `next` and `prev` state, so `fromStore()` can compute fouls without extra bookkeeping. The implementation now lives in `@umpire/store`; this package keeps the Zustand-specific import path intact for existing users.
 
 ## Docs
 

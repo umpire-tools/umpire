@@ -1,5 +1,5 @@
 import { createStore } from 'zustand/vanilla'
-import { umpire, enabledWhen, requires } from '@umpire/core'
+import { enabledWhen, requires, umpire } from '@umpire/core'
 import { fromStore } from '../src/fromStore.js'
 
 const fields = {
@@ -38,9 +38,7 @@ describe('fromStore', () => {
 
     expect(us.field('username').enabled).toBe(true)
     expect(us.field('password').enabled).toBe(true)
-    // confirmPassword disabled because password is empty
     expect(us.field('confirmPassword').enabled).toBe(false)
-    // inviteCode disabled because username is not satisfied
     expect(us.field('inviteCode').enabled).toBe(false)
 
     us.destroy()
@@ -55,7 +53,6 @@ describe('fromStore', () => {
 
     expect(us.field('confirmPassword').enabled).toBe(false)
 
-    // Set password to enable confirmPassword
     store.setState({ password: 'secret' })
 
     expect(us.field('confirmPassword').enabled).toBe(true)
@@ -74,16 +71,13 @@ describe('fromStore', () => {
       select: (state) => state as Record<string, unknown>,
     })
 
-    // Initially no fouls
     expect(us.fouls).toHaveLength(0)
 
-    // confirmPassword was enabled and had a value — now clear password to disable it
     store.setState({ password: '' })
 
     expect(us.field('confirmPassword').enabled).toBe(false)
-    // confirmPassword had 'secret' and is now disabled — should recommend reset
     expect(us.fouls.length).toBeGreaterThanOrEqual(1)
-    expect(us.fouls.some((p) => p.field === 'confirmPassword')).toBe(true)
+    expect(us.fouls.some((foul) => foul.field === 'confirmPassword')).toBe(true)
 
     us.destroy()
   })
@@ -163,10 +157,8 @@ describe('fromStore', () => {
     })
 
     us.destroy()
-
     store.setState({ password: 'secret' })
 
-    // No calls after destroy
     expect(calls).toHaveLength(0)
   })
 
@@ -184,7 +176,6 @@ describe('fromStore', () => {
     expect(availability).toHaveProperty('confirmPassword')
     expect(availability).toHaveProperty('inviteCode')
 
-    // Each field has the expected shape
     for (const field of ['username', 'password', 'confirmPassword', 'inviteCode'] as const) {
       expect(availability[field]).toHaveProperty('enabled')
       expect(availability[field]).toHaveProperty('required')

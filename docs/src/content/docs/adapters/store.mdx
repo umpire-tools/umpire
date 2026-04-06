@@ -1,0 +1,81 @@
+---
+title: '@umpire/store'
+description: The generic store foundation for Umpire adapters and shims.
+---
+
+`@umpire/store` is the generic foundation for store-backed adapters. It expects a strict store contract:
+
+- `getState()` returns the full store snapshot
+- `subscribe((next, prev) => unsubscribe)` provides both current and previous state
+
+That strictness is intentional. It keeps transition-aware foul detection in one place and lets thin ecosystem packages normalize into the same contract.
+
+## Install
+
+```bash
+yarn add @umpire/core @umpire/store
+```
+
+## `fromStore()`
+
+```ts
+function fromStore<
+  S,
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
+  ump: Umpire<F, C>,
+  store: {
+    getState(): S
+    subscribe(listener: (state: S, prevState: S) => void): () => void
+  },
+  options: {
+    select: (state: S) => InputValues<F>
+    conditions?: (state: S) => C
+  },
+): UmpireStore<F>
+```
+
+## Return Surface
+
+```ts
+interface UmpireStore<F extends Record<string, FieldDef>> {
+  field(name: keyof F & string): FieldAvailability
+  get fouls(): Foul<F>[]
+  getAvailability(): AvailabilityMap<F>
+  subscribe(listener: (availability: AvailabilityMap<F>) => void): () => void
+  destroy(): void
+}
+```
+
+## `select()` Is The Split-State Answer
+
+If your app keeps related values in separate slices, `select()` is where you pull them back together for Umpire:
+
+```ts
+const umpStore = fromStore(accountUmp, store, {
+  select: (state) => ({
+    email: state.profile.email,
+    displayName: state.profile.displayName,
+    teamSize: state.team.size,
+    teamDomain: state.team.domain,
+  }),
+  conditions: (state) => ({
+    plan: state.billing.plan,
+  }),
+})
+```
+
+The store stays the source of truth. Umpire only sees the aggregated values object you hand it.
+
+See the [Split-State Account Settings example](/umpire/examples/split-state/) for a worked walkthrough.
+
+## Shim Packages
+
+- `@umpire/zustand` is a zero-shim re-export because Zustand already satisfies `(next, prev)`.
+- `@umpire/redux` tracks previous state internally and delegates here.
+- `@umpire/tanstack-store` snapshots previous `.state` and delegates here.
+
+## Signal-Based Stores
+
+Signal-first libraries like Jotai, Valtio, MobX, and Preact signals are not covered by this package. They do not expose the same `getState()/subscribe()` surface, so they belong in a different bridge layer alongside `@umpire/signals`.

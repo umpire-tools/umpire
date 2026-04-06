@@ -1,2 +1,6 @@
-export { fromStore } from './fromStore.js'
-export type { UmpireStore } from './fromStore.js'
+export { fromStore } from '@umpire/store'
+export type {
+  FromStoreOptions,
+  StoreApi,
+  UmpireStore,
+} from '@umpire/store'

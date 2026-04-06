@@ -1,11 +1,13 @@
 ---
 title: '@umpire/zustand'
-description: Subscribe Umpire directly to a Zustand store using native next and previous state updates.
+description: Zustand's zero-shim entry point for the generic @umpire/store adapter.
 ---
 
 import ZustandAdapterDemo from '../../../components/ZustandAdapterDemo.tsx'
 
-`@umpire/zustand` connects an umpire to a store slice. It works with vanilla Zustand stores and in any environment — no React required. The demo below is a print-dialog simulator built with pure DOM helpers, a vanilla Zustand store, and `fromStore()`.
+`@umpire/zustand` keeps the ecosystem-specific import path for Zustand users, but the underlying implementation now lives in [`@umpire/store`](/umpire/adapters/store/). Zustand already satisfies the strict `(next, prev)` contract, so this package is a zero-shim re-export.
+
+The demo below is still a print-dialog simulator built with pure DOM helpers, a vanilla Zustand store, and `fromStore()`.
 
 <div class="zustand-demo umpire-demo">
   <ZustandAdapterDemo client:load />
@@ -57,6 +59,8 @@ Zustand's `subscribe()` already passes both `next` and `prev` state. That gives 
 - previous and next snapshots for `play()`
 
 No extra effect system is needed.
+
+If you want the generic contract, docs for shim packages, or the split-state `select()` pattern, start with [`@umpire/store`](/umpire/adapters/store/).
 
 ## Example
 

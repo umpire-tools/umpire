@@ -6,5 +6,5 @@
     "composite": true
   },
   "include": ["src"],
-  "references": [{ "path": "../store" }]
+  "references": [{ "path": "../core" }, { "path": "../store" }]
 }

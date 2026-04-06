@@ -2,17 +2,21 @@ import type {
   AvailabilityMap,
   FieldAvailability,
   FieldDef,
-  InputValues,
   Foul,
+  InputValues,
   Umpire,
 } from '@umpire/core'
 
-type StoreApi<S> = {
+export type StoreApi<S> = {
   getState(): S
   subscribe(listener: (state: S, prevState: S) => void): () => void
 }
 
-type FromStoreOptions<S, F extends Record<string, FieldDef>, C extends Record<string, unknown>> = {
+export type FromStoreOptions<
+  S,
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+> = {
   select: (state: S) => InputValues<F>
   conditions?: (state: S) => C
 }
@@ -35,32 +39,30 @@ export function fromStore<
   options: FromStoreOptions<S, F, C>,
 ): UmpireStore<F> {
   const { select, conditions } = options
+  const readConditions = (state: S): C => (
+    conditions ? conditions(state) : (undefined as unknown as C)
+  )
 
   const initialState = store.getState()
   const initialValues = select(initialState)
-  const initialCond = conditions ? conditions(initialState) : (undefined as unknown as C)
+  const initialConditions = readConditions(initialState)
 
-  let currentAvailability = ump.check(initialValues, initialCond)
+  let currentAvailability = ump.check(initialValues, initialConditions)
   let currentFouls: Foul<F>[] = []
-  let prevValues = initialValues
-  let prevCond = initialCond
 
   const listeners = new Set<(availability: AvailabilityMap<F>) => void>()
 
   const unsubscribe = store.subscribe((state, prevState) => {
     const nextValues = select(state)
-    const nextCond = conditions ? conditions(state) : (undefined as unknown as C)
-    const prev = select(prevState)
-    const prevConditions = conditions ? conditions(prevState) : (undefined as unknown as C)
+    const nextConditions = readConditions(state)
+    const prevValues = select(prevState)
+    const prevConditions = readConditions(prevState)
 
-    currentAvailability = ump.check(nextValues, nextCond, prev)
+    currentAvailability = ump.check(nextValues, nextConditions, prevValues)
     currentFouls = ump.play(
-      { values: prev, conditions: prevConditions },
-      { values: nextValues, conditions: nextCond },
+      { values: prevValues, conditions: prevConditions },
+      { values: nextValues, conditions: nextConditions },
     )
-
-    prevValues = nextValues
-    prevCond = nextCond
 
     for (const listener of listeners) {
       listener(currentAvailability)

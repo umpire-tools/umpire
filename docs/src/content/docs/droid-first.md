@@ -54,13 +54,16 @@ Without droid-first rules, an AI assistant writing Umpire integration code will 
 
 These are the exact mistakes that are easy to make and hard to debug. The per-package rules prevent all four — the assistant knows the correct pattern before it starts writing.
 
-## All four packages, all covered
+## Store and adapter packages, covered
 
 | Package | Rule file | Key guidance |
 | --- | --- | --- |
 | `@umpire/core` | `.claude/rules/umpire-core.md` | Satisfaction semantics, rule evaluation order, `check()` vs `play()` vs `challenge()` |
+| `@umpire/store` | `.claude/rules/umpire-store.md` | Strict `fromStore()` contract, `select()` as the aggregation point, no loose subscribe signatures |
 | `@umpire/react` | `.claude/rules/umpire-react.md` | `useUmpire` hook, no `useEffect`, snapshot tracking is internal |
+| `@umpire/redux` | `.claude/rules/umpire-redux.md` | `fromReduxStore()`, internal `prevState` tracking, same `UmpireStore` surface |
 | `@umpire/signals` | `.claude/rules/umpire-signals.md` | `reactiveUmp()`, no spread on proxy, `effect()` required for fouls |
+| `@umpire/tanstack-store` | `.claude/rules/umpire-tanstack-store.md` | `fromTanStackStore()`, previous `.state` snapshots, same `select()` pattern |
 | `@umpire/zustand` | `.claude/rules/umpire-zustand.md` | `fromStore()`, native `subscribe(next, prev)`, no manual prev tracking |
 
 ## For contributors

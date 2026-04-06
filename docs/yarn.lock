@@ -1904,6 +1904,14 @@ __metadata:
   languageName: node
   linkType: soft
 
+"@umpire/store@portal:../packages/store::locator=umpire-docs%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@umpire/store@portal:../packages/store::locator=umpire-docs%40workspace%3A."
+  dependencies:
+    "@umpire/core": "workspace:^"
+  languageName: node
+  linkType: soft
+
 "@umpire/zod@portal:../packages/zod::locator=umpire-docs%40workspace%3A.":
   version: 0.0.0-use.local
   resolution: "@umpire/zod@portal:../packages/zod::locator=umpire-docs%40workspace%3A."
@@ -1918,7 +1926,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@umpire/zustand@portal:../packages/zustand::locator=umpire-docs%40workspace%3A."
   dependencies:
-    "@umpire/core": "workspace:^"
+    "@umpire/store": "workspace:^"
   peerDependencies:
     zustand: ^4.0.0 || ^5.0.0
   languageName: node
@@ -5793,6 +5801,7 @@ __metadata:
     "@umpire/react": "portal:../packages/react"
     "@umpire/reads": "portal:../packages/reads"
     "@umpire/signals": "portal:../packages/signals"
+    "@umpire/store": "portal:../packages/store"
     "@umpire/zod": "portal:../packages/zod"
     "@umpire/zustand": "portal:../packages/zustand"
     astro: "npm:^5.18.1"

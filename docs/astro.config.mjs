@@ -46,6 +46,7 @@ export default defineConfig({
         './src/styles/learn-demo.css',
         './src/styles/signup-demo.css',
         './src/styles/react-demo.css',
+        './src/styles/account-settings-demo.css',
         './src/styles/zustand-demo.css',
         './src/styles/printer-demo.css',
         './src/styles/freight-demo.css',
@@ -121,6 +122,9 @@ export default defineConfig({
         {
           label: 'Adapters',
           items: [
+            { label: 'Store', slug: 'adapters/store' },
+            { label: 'Redux', slug: 'adapters/redux' },
+            { label: 'TanStack Store', slug: 'adapters/tanstack-store' },
             { label: 'Signals', slug: 'adapters/signals' },
             { label: 'React', slug: 'adapters/react' },
             { label: 'Zustand', slug: 'adapters/zustand' },
@@ -135,6 +139,7 @@ export default defineConfig({
             { label: 'Calendar Recurrence', slug: 'examples/calendar' },
             { label: 'Freight Quote', slug: 'examples/freight-quote' },
             { label: 'Login + Captcha', slug: 'examples/captcha' },
+            { label: 'Split-State Settings', slug: 'examples/split-state' },
             { label: 'Signup Form + Zod', slug: 'examples/signup' },
           ],
         },

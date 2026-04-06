@@ -1,0 +1,57 @@
+---
+title: Split-State Account Settings
+description: One store, three isolated sections, one select() pass for Umpire.
+---
+
+import AccountSettingsDemo from '../../../components/AccountSettingsDemo.tsx'
+
+This example is about ownership boundaries, not fancy form plumbing.
+
+Three sections own different parts of the same account settings store:
+
+- `ProfileSection` owns `email` and `displayName`
+- `PlanSection` owns `plan`
+- `TeamSection` owns `teamSize` and `teamDomain`
+
+Umpire still evaluates cross-cutting rules once, globally:
+
+- `teamSize` only enables when `plan === 'team'`
+- `teamDomain` requires `teamSize > 0`
+- `email` stays required the whole time
+
+<div class="umpire-demo">
+  <AccountSettingsDemo client:load />
+</div>
+
+## The Pattern
+
+`select()` is the whole trick:
+
+```ts
+const umpStore = fromStore(accountUmp, store, {
+  select: (state) => ({
+    email: state.profile.email,
+    displayName: state.profile.displayName,
+    teamSize: state.team.size,
+    teamDomain: state.team.domain,
+  }),
+  conditions: (state) => ({
+    plan: state.billing.plan,
+  }),
+})
+```
+
+Each section keeps owning its own slice. Umpire never needs to know that the values came from different components.
+
+## What To Notice
+
+1. One `fromStore()` call sets up the whole app-wide availability layer.
+2. `requires()` still propagates transitively, so disabling `teamSize` also knocks out `teamDomain`.
+3. Any component can read `umpStore.field('teamSize')` without mounting its own `useUmpire()` instance.
+4. When the plan flips back to personal, fouls recommend clearing stale team values instead of mutating state automatically.
+
+## Which Package To Use
+
+- Use `@umpire/store` if your store already provides `(next, prev)`.
+- Use `@umpire/zustand` if you want the named Zustand entry point.
+- Use `@umpire/redux` or `@umpire/tanstack-store` when those libraries need the thin normalization layer.
