@@ -1,42 +1,50 @@
 ---
 title: Minesweeper
-description: A playable minefield — 64 fields, 192 rules, zero forms.
+description: A playable minefield with read-backed gates, derived board facts, and zero forms.
 ---
 
-import DevtoolsPanel from '../../../components/DevtoolsPanel.tsx'
-import MinesweeperDemo from '../../../components/MinesweeperDemo.tsx'
+import DevtoolsPanel from "../../../components/DevtoolsPanel.tsx";
+import MinesweeperDemo from "../../../components/MinesweeperDemo.tsx";
 
-Not a form. Not a signup flow. This is a minefield — 64 cells modeled as Umpire fields, game state as conditions, and reasons as machine-readable enums the UI switches on. Same engine, different domain.
+Not a form. Not a signup flow. This is a minefield — 64 cells modeled as Umpire fields, game state as conditions, and a generated reads table for mine topology, numbers, and reveal previews. Same engine, different domain.
 
-<DevtoolsPanel defaultTab="matrix" client:only="react" />
+Full debug mode enabled so you can cheat. But you wouldn't do that, would you?
+
+<DevtoolsPanel defaultTab="reads" client:only="react" />
 <MinesweeperDemo client:load />
 
 ## What this demonstrates
 
 Umpire's field-availability model isn't tied to forms. Any state that fits a plain object with interdependent options can be modeled as fields + rules. Minesweeper maps naturally:
 
-| Minesweeper concept | Umpire concept |
-|---|---|
-| Cell on the board | Field |
-| Hidden / revealed / flagged | Field value |
-| "Can I click this?" | Availability (`enabled`) |
-| "Why can't I click this?" | Reason (`GAME_OVER`, `ALREADY_REVEALED`, `FLAGGED`) |
-| Game status, flag mode | Conditions |
-| Cascade reveal changes values | `check()` re-evaluates after new values |
-| Flagged cell gets revealed by cascade | `play()` calls foul on the stale flag |
+| Minesweeper concept                            | Umpire concept                                      |
+| ---------------------------------------------- | --------------------------------------------------- |
+| Cell on the board                              | Field                                               |
+| Hidden / revealed / flagged                    | Field value                                         |
+| "Can I click this?"                            | Availability (`enabled`)                            |
+| "Why can't I click this?"                      | Reason (`GAME_OVER`, `ALREADY_REVEALED`, `FLAGGED`) |
+| Game status, flag mode                         | Conditions                                          |
+| Mine layout, adjacency numbers, reveal preview | `reads`                                             |
+| Cascade reveal changes values                  | `check()` re-evaluates after new values             |
+| Flagged cell gets revealed by cascade          | `play()` calls foul on the stale flag               |
 
 ### Reason as enum
 
-The `reason` field doesn't have to be prose. Here it's a machine-readable constant the UI switches on — no string parsing, no regex, no guessing:
+The `reason` field doesn't have to be prose. Here, named reads feed three machine-readable gate reasons into Umpire:
 
 ```ts
-enabledWhen(key, (_, c) => c.gameStatus === 'playing', {
-  reason: 'GAME_OVER',
-})
+const selectInput = (values, conditions) =>
+  buildMinesweeperReadInput(board, values, conditions);
 
-enabledWhen(key, (values) => values[key] !== 'revealed', {
-  reason: 'ALREADY_REVEALED',
-})
+enabledWhenRead(key, "gameActive", minesweeperReads, {
+  reason: "GAME_OVER",
+  selectInput,
+});
+
+enabledWhenRead(key, `notRevealed:${key}`, minesweeperReads, {
+  reason: "ALREADY_REVEALED",
+  selectInput,
+});
 ```
 
 The rendering layer reads `reasons` (plural) and decides what to show:
@@ -53,67 +61,76 @@ Multiple reasons can stack. A revealed cell during game over has both `ALREADY_R
 
 ## The Umpire model
 
-Three rules per cell. That's it.
+Three read-backed rules per cell. The field model stays tiny; the board derivations live in reads.
 
 ```ts title="Fields — one per cell, generated from the board"
 const fields = Object.fromEntries(
-  cellKeys.map(key => [key, { default: undefined }])
-)
+  cellKeys.map((key) => [key, { default: undefined }]),
+);
 // 64 fields for an 8×8 board
 ```
 
 ```ts title="Conditions — game state lives outside the field graph"
 type GameConditions = {
-  gameStatus: 'idle' | 'playing' | 'won' | 'lost'
-  flagMode: boolean
-}
+  gameStatus: "idle" | "playing" | "won" | "lost";
+  flagMode: boolean;
+};
 ```
 
-```ts title="Rules — three gates per cell, 192 rules total"
-const rules = cellKeys.flatMap(key => [
-  // Gate 1: game must be in play
-  enabledWhen(key, (_, c) => c.gameStatus === 'playing', {
-    reason: 'GAME_OVER',
+```ts title="Rules — three read-backed gates per cell, 192 rules total"
+const rules = cellKeys.flatMap((key) => [
+  enabledWhenRead(key, "gameActive", minesweeperReads, {
+    reason: "GAME_OVER",
+    selectInput,
   }),
 
-  // Gate 2: cell not already revealed
-  enabledWhen(key, (values) => values[key] !== 'revealed', {
-    reason: 'ALREADY_REVEALED',
+  enabledWhenRead(key, `notRevealed:${key}`, minesweeperReads, {
+    reason: "ALREADY_REVEALED",
+    selectInput,
   }),
 
-  // Gate 3: flag interaction
-  enabledWhen(key, (values, c) => {
-    if (c.flagMode) return true       // flag mode: can unflag
-    return values[key] !== 'flagged'  // reveal mode: blocked by flag
-  }, {
-    reason: 'FLAGGED',
+  enabledWhenRead(key, `notFlagBlocked:${key}`, minesweeperReads, {
+    reason: "FLAGGED",
+    selectInput,
   }),
-])
+]);
 ```
 
 ```ts title="That's the whole integration"
-const ump = umpire({ fields, rules })
+const ump = umpire({ fields, rules });
 
-// In the component:
-const { check: availability } = useUmpire(ump, values, conditions)
+const readInspection = minesweeperReads.inspect(
+  buildMinesweeperReadInput(activeBoard, values, conditions, { probeKey }),
+);
+
+const { check: availability } = useUmpireWithDevtools(
+  "minesweeper",
+  ump,
+  values,
+  conditions,
+  { reads: readInspection },
+);
 // availability.c_3_4 → { enabled: false, reasons: ['ALREADY_REVEALED'] }
 ```
 
-192 rules. Zero orchestration code. Umpire evaluates them in topological order on every `check()` call — for a full 8×8 board, that takes about **1ms**.
+192 rules. Zero orchestration code. On the 8×8 demo board, Umpire still only evaluates that small rule layer on each `check()` call. The extra `reads` work in this docs demo is separate and intentionally adds more computation for inspection.
 
 ## What Umpire does and doesn't do here
 
 Umpire answers: **"What can the player interact with right now, and why not?"**
 
-It does *not* run the game. Mine placement, adjacency computation, and the cascade flood-fill are all pure functions in a separate game engine. When the player clicks a cell:
+Reads answers: **"What does the board derive from the current values and mine layout?"**
+
+It does _not_ run the game. Mine placement, adjacency computation, and the cascade flood-fill are all pure functions in a separate game engine. When the player clicks a cell:
 
 1. Game engine reveals cells (cascade if zero-adjacent)
 2. Game engine checks win/loss
-3. New values + conditions flow into `ump.check()`
-4. Umpire returns updated availability for all 64 cells
-5. UI renders
+3. Reads derive board facts like numbers, display state, and preview cascades
+4. New values + conditions flow into `ump.check()`
+5. Umpire returns updated availability for all 64 cells
+6. UI renders
 
-This separation is intentional. Umpire owns the constraint graph, not the domain logic. The game engine is ~80 lines of pure functions. Umpire replaces the part that would otherwise be a tangle of `if` statements deciding what's clickable.
+This separation is intentional. The game engine owns transitions, reads owns derived board facts, and Umpire owns the availability graph. The result is still a small game engine, but the clickable rules and the inspectable board math now share one declarative layer.
 
 ## Things to try
 
@@ -126,7 +143,3 @@ This separation is intentional. Umpire owns the constraint graph, not the domain
 ## Scale
 
 The [test suite](https://github.com/sdougbrown/umpire/blob/main/packages/core/__tests__/minesweeper.test.ts) includes a 30×16 expert board — **480 fields, 1,440 rules**. Construction takes 2ms. `check()` takes 1ms. Umpire's topological evaluation is O(n) per field, so it scales linearly with board size.
-
-{/* ## Debug mode
-
-Toggle debug mode to inspect any cell with `challenge()`. Click a cell to see exactly which rules passed, which failed, and why — the same trace you'd use to debug a form field that won't enable. */}

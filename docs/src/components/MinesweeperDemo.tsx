@@ -1,65 +1,71 @@
-import { useState } from 'react'
+import { useMemo, useState } from "react";
 // useUmpireWithDevtools powers the named instance in the optional panel on this page.
 // Swap back to: import { useUmpire } from '@umpire/react'  (remove leading id arg)
-import { useUmpireWithDevtools } from '@umpire/devtools/react'
+import { useUmpireWithDevtools } from "@umpire/devtools/react";
 import {
   buildBoard,
+  buildMinesweeperReadInput,
+  canInteractReadKey,
   cascadeReveal,
   cellKey,
   checkWin,
   createBoard,
+  createMinesweeperReads,
   createMinesweeperUmpire,
+  displayReadKey,
+  adjacentMinesReadKey,
   type Board,
+  type CellKey,
   type CellMeta,
   type GameConditions,
   type Values,
-} from '../lib/minesweeper-engine.js'
+} from "../lib/minesweeper-engine.js";
 
-const BOARD_WIDTH = 8
-const BOARD_HEIGHT = 8
-const MINE_COUNT = 10
+const BOARD_WIDTH = 8;
+const BOARD_HEIGHT = 8;
+const MINE_COUNT = 10;
 
-const EMPTY_BOARD = createBoard(BOARD_WIDTH, BOARD_HEIGHT)
-const CELL_ORDER = Object.values(EMPTY_BOARD)
-const MINESWEEPER_UMP = createMinesweeperUmpire(EMPTY_BOARD)
+const EMPTY_BOARD = createBoard(BOARD_WIDTH, BOARD_HEIGHT);
+const CELL_ORDER = Object.values(EMPTY_BOARD);
+const MINESWEEPER_READS = createMinesweeperReads(BOARD_WIDTH, BOARD_HEIGHT);
 
-const STATUS_FACE: Record<GameConditions['gameStatus'], string> = {
-  idle: '•_•',
-  playing: '•‿•',
-  lost: '•︵•',
-  won: '◝(ᵔᗜᵔ)◜',
-}
+const STATUS_FACE: Record<GameConditions["gameStatus"], string> = {
+  idle: "•_•",
+  playing: "•‿•",
+  lost: "•︵•",
+  won: "◝(ᵔᗜᵔ)◜",
+};
 
-const STATUS_LABEL: Record<GameConditions['gameStatus'], string> = {
-  idle: 'Ready',
-  playing: 'Playing',
-  lost: 'Lost',
-  won: 'Won',
-}
+const STATUS_LABEL: Record<GameConditions["gameStatus"], string> = {
+  idle: "Ready",
+  playing: "Playing",
+  lost: "Lost",
+  won: "Won",
+};
 
 type CellInspector = {
-  key: string
-  x: number
-  y: number
-}
+  key: CellKey;
+  x: number;
+  y: number;
+};
 
 function cls(...parts: Array<string | false | null | undefined>) {
-  return parts.filter(Boolean).join(' ')
+  return parts.filter(Boolean).join(" ");
 }
 
 function prettyJson(value: unknown) {
-  return JSON.stringify(value, null, 2)
+  return JSON.stringify(value, null, 2);
 }
 
 function createPrng(seed: number) {
-  let state = seed >>> 0
+  let state = seed >>> 0;
 
   return function nextRandom() {
-    state = (state + 0x6d2b79f5) | 0
-    let t = Math.imul(state ^ (state >>> 15), 1 | state)
-    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t)
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 function pickMinePositions(
@@ -69,138 +75,191 @@ function pickMinePositions(
   safeCell: [number, number],
   seed: number,
 ): Array<[number, number]> {
-  const positions: Array<[number, number]> = []
+  const positions: Array<[number, number]> = [];
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       if (x === safeCell[0] && y === safeCell[1]) {
-        continue
+        continue;
       }
 
-      positions.push([x, y])
+      positions.push([x, y]);
     }
   }
 
-  const nextRandom = createPrng(seed)
+  const nextRandom = createPrng(seed);
 
   for (let index = positions.length - 1; index > 0; index--) {
-    const swapIndex = Math.floor(nextRandom() * (index + 1))
-    const current = positions[index]
-    positions[index] = positions[swapIndex]
-    positions[swapIndex] = current
+    const swapIndex = Math.floor(nextRandom() * (index + 1));
+    const current = positions[index];
+    positions[index] = positions[swapIndex];
+    positions[swapIndex] = current;
   }
 
-  return positions.slice(0, mineCount)
+  return positions.slice(0, mineCount);
 }
 
 function revealAllMines(board: Board, values: Values): Values {
-  const next: Values = { ...values }
+  const next: Values = { ...values };
 
   for (const [key, cell] of Object.entries(board)) {
     if (cell.isMine) {
-      next[key] = 'revealed'
+      next[key] = "revealed";
     }
   }
 
-  return next
+  return next;
 }
 
 function describeCellValue(value: Values[string]) {
-  if (value === 'revealed') {
-    return 'revealed'
+  if (value === "revealed") {
+    return "revealed";
   }
 
-  if (value === 'flagged') {
-    return 'flagged'
+  if (value === "flagged") {
+    return "flagged";
   }
 
-  return 'hidden'
+  return "hidden";
 }
 
 function numberClass(adjacentMines: number) {
   if (adjacentMines < 1 || adjacentMines > 8) {
-    return null
+    return null;
   }
 
-  return `minesweeper-demo__number--${adjacentMines}`
+  return `minesweeper-demo__number--${adjacentMines}`;
 }
 
-export default function MinesweeperDemo({ compact = false }: { compact?: boolean }) {
-  const [board, setBoard] = useState<Board | null>(null)
-  const [seed, setSeed] = useState(() => Date.now())
-  const [values, setValues] = useState<Values>({})
+export default function MinesweeperDemo({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
+  const [board, setBoard] = useState<Board | null>(null);
+  const [seed, setSeed] = useState(() => Date.now());
+  const [values, setValues] = useState<Values>({});
   const [conditions, setConditions] = useState<GameConditions>({
-    gameStatus: 'playing',
+    gameStatus: "playing",
     flagMode: false,
-  })
+  });
   const [inspectedCell, setInspectedCell] = useState<CellInspector>({
     key: cellKey(0, 0),
     x: 0,
     y: 0,
-  })
+  });
 
-  const { check: availability } = useUmpireWithDevtools('minesweeper', MINESWEEPER_UMP, values, conditions)
-  const activeBoard = board ?? EMPTY_BOARD
+  const activeBoard = board ?? EMPTY_BOARD;
+  const activeUmp = useMemo(
+    () => createMinesweeperUmpire(activeBoard, MINESWEEPER_READS),
+    [activeBoard],
+  );
+  const readInput = useMemo(
+    () =>
+      buildMinesweeperReadInput(activeBoard, values, conditions, {
+        probeKey: inspectedCell.key,
+        seeded: board !== null,
+      }),
+    [activeBoard, board, conditions, inspectedCell.key, values],
+  );
+  const readInspection = useMemo(
+    () => MINESWEEPER_READS.inspect(readInput),
+    [readInput],
+  );
+  const boardReads = readInspection.values;
+  const { check: availability } = useUmpireWithDevtools(
+    "minesweeper",
+    activeUmp,
+    values,
+    conditions,
+    {
+      reads: readInspection,
+    },
+  );
   const flaggedCount = CELL_ORDER.reduce((count, cell) => {
-    return count + (values[cellKey(cell.x, cell.y)] === 'flagged' ? 1 : 0)
-  }, 0)
-  const inspectedAvailability = availability[inspectedCell.key]
-  const inspectedMeta = activeBoard[inspectedCell.key]
+    return count + (values[cellKey(cell.x, cell.y)] === "flagged" ? 1 : 0);
+  }, 0);
+  const inspectedAvailability = availability[inspectedCell.key];
+  const inspectedAdjacent = boardReads[adjacentMinesReadKey(inspectedCell.key)];
+  const inspectedCanInteract =
+    boardReads[canInteractReadKey(inspectedCell.key)];
+  const inspectedDisplay = boardReads[displayReadKey(inspectedCell.key)];
+  const inspectedPreview =
+    board === null
+      ? "unseeded"
+      : !inspectedCanInteract
+        ? "blocked"
+        : boardReads.probeWouldExplode
+          ? "mine hit"
+          : boardReads.probeCascade.length > 1
+            ? `${boardReads.probeCascade.length} cells`
+            : boardReads.probeCascade.length === 1
+              ? "single reveal"
+              : "blocked";
   const inspectedJson = prettyJson({
-    [inspectedCell.key]: inspectedAvailability,
-  })
+    [inspectedCell.key]: {
+      availability: inspectedAvailability,
+      reads: {
+        adjacentMines: inspectedAdjacent,
+        canInteract: inspectedCanInteract,
+        display: inspectedDisplay,
+        probeCascade: boardReads.probeCascade,
+        probeWouldExplode: boardReads.probeWouldExplode,
+      },
+    },
+  });
 
   function inspect(cell: CellMeta) {
     setInspectedCell({
       key: cellKey(cell.x, cell.y),
       x: cell.x,
       y: cell.y,
-    })
+    });
   }
 
   function resetGame() {
-    setBoard(null)
-    setSeed(Date.now())
-    setValues({})
-    setConditions({ gameStatus: 'playing', flagMode: false })
+    setBoard(null);
+    setSeed(Date.now());
+    setValues({});
+    setConditions({ gameStatus: "playing", flagMode: false });
     setInspectedCell({
       key: cellKey(0, 0),
       x: 0,
       y: 0,
-    })
+    });
   }
 
   function toggleFlag(cell: CellMeta) {
-    inspect(cell)
+    inspect(cell);
 
-    if (conditions.gameStatus !== 'playing') {
-      return
+    if (conditions.gameStatus !== "playing") {
+      return;
     }
 
-    const key = cellKey(cell.x, cell.y)
+    const key = cellKey(cell.x, cell.y);
 
-    if (values[key] === 'revealed') {
-      return
+    if (values[key] === "revealed") {
+      return;
     }
 
     setValues((current) => ({
       ...current,
-      [key]: current[key] === 'flagged' ? undefined : 'flagged',
-    }))
+      [key]: current[key] === "flagged" ? undefined : "flagged",
+    }));
   }
 
   function revealCell(cell: CellMeta) {
-    inspect(cell)
+    inspect(cell);
 
-    if (conditions.gameStatus !== 'playing') {
-      return
+    if (conditions.gameStatus !== "playing") {
+      return;
     }
 
-    const key = cellKey(cell.x, cell.y)
-    const cellAvailability = availability[key]
+    const key = cellKey(cell.x, cell.y);
+    const cellAvailability = availability[key];
 
     if (!cellAvailability.enabled) {
-      return
+      return;
     }
 
     const nextBoard =
@@ -208,96 +267,93 @@ export default function MinesweeperDemo({ compact = false }: { compact?: boolean
       buildBoard(
         BOARD_WIDTH,
         BOARD_HEIGHT,
-        pickMinePositions(BOARD_WIDTH, BOARD_HEIGHT, MINE_COUNT, [cell.x, cell.y], seed),
-      )
+        pickMinePositions(
+          BOARD_WIDTH,
+          BOARD_HEIGHT,
+          MINE_COUNT,
+          [cell.x, cell.y],
+          seed,
+        ),
+      );
 
-    let nextValues: Values
-    let nextStatus: GameConditions['gameStatus'] = 'playing'
+    let nextValues: Values;
+    let nextStatus: GameConditions["gameStatus"] = "playing";
 
     if (nextBoard[key].isMine) {
-      nextStatus = 'lost'
-      nextValues = revealAllMines(nextBoard, { ...values, [key]: 'revealed' })
+      nextStatus = "lost";
+      nextValues = revealAllMines(nextBoard, { ...values, [key]: "revealed" });
     } else {
-      nextValues = cascadeReveal(nextBoard, values, cell.x, cell.y)
+      nextValues = cascadeReveal(nextBoard, values, cell.x, cell.y);
 
       if (checkWin(nextBoard, nextValues)) {
-        nextStatus = 'won'
-        nextValues = revealAllMines(nextBoard, nextValues)
+        nextStatus = "won";
+        nextValues = revealAllMines(nextBoard, nextValues);
       }
     }
 
-    setBoard(nextBoard)
-    setValues(nextValues)
+    setBoard(nextBoard);
+    setValues(nextValues);
     setConditions((current) => ({
       ...current,
       gameStatus: nextStatus,
-    }))
+    }));
   }
 
   function handleCellClick(cell: CellMeta) {
     if (conditions.flagMode) {
-      toggleFlag(cell)
-      return
+      toggleFlag(cell);
+      return;
     }
 
-    revealCell(cell)
+    revealCell(cell);
   }
 
   return (
     <div
       className={cls(
-        'minesweeper-demo',
-        'umpire-demo',
-        compact && 'minesweeper-demo--compact',
+        "minesweeper-demo",
+        "umpire-demo",
+        compact && "minesweeper-demo--compact",
       )}
     >
-      <div className={cls('minesweeper-demo__layout')}>
-        <section className={cls('umpire-demo__panel', 'minesweeper-demo__panel', 'minesweeper-demo__panel--board')}>
+      <div className={cls("minesweeper-demo__layout")}>
+        <section
+          className={cls(
+            "umpire-demo__panel",
+            "minesweeper-demo__panel",
+            "minesweeper-demo__panel--board",
+          )}
+        >
           <div className="umpire-demo__panel-header">
             <div>
               <div className="umpire-demo__eyebrow">Playable example</div>
               <h2 className="umpire-demo__title">Minesweeper</h2>
             </div>
-            <span className="umpire-demo__panel-accent">64 fields / 192 rules</span>
+            <span className="umpire-demo__panel-accent">
+              64 fields / 192 read-backed rules
+            </span>
           </div>
 
           <div className="umpire-demo__panel-body minesweeper-demo__panel-body">
-            <div className="minesweeper-demo__status-bar">
-              <div className="minesweeper-demo__status-card">
-                <span className="minesweeper-demo__face" aria-hidden="true">
-                  {STATUS_FACE[conditions.gameStatus]}
-                </span>
-                <div className="minesweeper-demo__status-copy">
-                  <span className="minesweeper-demo__status-label">{STATUS_LABEL[conditions.gameStatus]}</span>
-                  <span className="minesweeper-demo__status-subtitle">
-                    {board ? `seed ${seed}` : 'mines arm on first dig'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="minesweeper-demo__counter-card">
-                <span className="minesweeper-demo__counter-label">Mines Left</span>
-                <span
-                  className={cls(
-                    'minesweeper-demo__counter-value',
-                    MINE_COUNT - flaggedCount < 0 && 'minesweeper-demo__counter-value--negative',
-                  )}
-                >
-                  {MINE_COUNT - flaggedCount}
-                </span>
-              </div>
-            </div>
-
             <div className="minesweeper-demo__controls">
-              <div className="minesweeper-demo__mode-toggle" aria-label="Interaction mode">
+              <div
+                className="minesweeper-demo__mode-toggle"
+                aria-label="Interaction mode"
+              >
                 <button
                   type="button"
                   aria-pressed={!conditions.flagMode}
                   className={cls(
-                    'minesweeper-demo__mode-button',
-                    !conditions.flagMode && 'minesweeper-demo__mode-button--active',
+                    "minesweeper-demo__mode-button",
+                    !conditions.flagMode &&
+                      "minesweeper-demo__mode-button--active",
                   )}
-                  onClick={() => setConditions((current) => ({ ...current, flagMode: false }))}
+                  onClick={() =>
+                    setConditions((current) => ({
+                      ...current,
+                      flagMode: false,
+                    }))
+                  }
                 >
                   Dig
                 </button>
@@ -305,13 +361,40 @@ export default function MinesweeperDemo({ compact = false }: { compact?: boolean
                   type="button"
                   aria-pressed={conditions.flagMode}
                   className={cls(
-                    'minesweeper-demo__mode-button',
-                    conditions.flagMode && 'minesweeper-demo__mode-button--active',
+                    "minesweeper-demo__mode-button",
+                    conditions.flagMode &&
+                      "minesweeper-demo__mode-button--active",
                   )}
-                  onClick={() => setConditions((current) => ({ ...current, flagMode: true }))}
+                  onClick={() =>
+                    setConditions((current) => ({ ...current, flagMode: true }))
+                  }
                 >
                   Flag
                 </button>
+              </div>
+
+              <div className="minesweeper-demo__status">
+                <span className="minesweeper-demo__status-label">
+                  {STATUS_LABEL[conditions.gameStatus]}
+                </span>
+                <span className="minesweeper-demo__face" aria-hidden="true">
+                  {STATUS_FACE[conditions.gameStatus]}
+                </span>
+              </div>
+
+              <div className="minesweeper-demo__counter">
+                <span className="minesweeper-demo__counter-label">
+                  Mines
+                </span>
+                <span
+                  className={cls(
+                    "minesweeper-demo__counter-value",
+                    MINE_COUNT - flaggedCount < 0 &&
+                    "minesweeper-demo__counter-value--negative",
+                  )}
+                >
+                  {MINE_COUNT - flaggedCount}
+                </span>
               </div>
 
               <button
@@ -327,16 +410,20 @@ export default function MinesweeperDemo({ compact = false }: { compact?: boolean
               <div className="minesweeper-demo-board__shell">
                 <div
                   className="minesweeper-demo__grid"
-                  style={{ gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(44px, 1fr))` }}
+                  style={{
+                    gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(44px, 1fr))`,
+                  }}
                 >
                   {CELL_ORDER.map((cell) => {
-                    const key = cellKey(cell.x, cell.y)
-                    const cellAvailability = availability[key]
-                    const value = values[key]
-                    const currentCell = activeBoard[key]
-                    const isRevealed = value === 'revealed'
-                    const isMine = isRevealed && currentCell.isMine
-                    const adjacentMines = currentCell.adjacentMines
+                    const key = cellKey(cell.x, cell.y);
+                    const cellAvailability = availability[key];
+                    const value = values[key];
+                    const display = boardReads[displayReadKey(key)];
+                    const isRevealed =
+                      display.kind === "mine" ||
+                      display.kind === "empty" ||
+                      display.kind === "number";
+                    const isMine = display.kind === "mine";
 
                     return (
                       <button
@@ -345,85 +432,116 @@ export default function MinesweeperDemo({ compact = false }: { compact?: boolean
                         aria-disabled={!cellAvailability.enabled}
                         aria-label={`Cell ${cell.x + 1}, ${cell.y + 1}: ${describeCellValue(value)}`}
                         className={cls(
-                          'minesweeper-demo__cell',
-                          !isRevealed && 'minesweeper-demo__cell--hidden',
-                          isRevealed && 'minesweeper-demo__cell--revealed',
-                          value === 'flagged' && 'minesweeper-demo__cell--flagged',
-                          isMine && 'minesweeper-demo__cell--mine',
-                          !cellAvailability.enabled && 'minesweeper-demo__cell--disabled',
+                          "minesweeper-demo__cell",
+                          !isRevealed && "minesweeper-demo__cell--hidden",
+                          isRevealed && "minesweeper-demo__cell--revealed",
+                          value === "flagged" &&
+                            "minesweeper-demo__cell--flagged",
+                          isMine && "minesweeper-demo__cell--mine",
+                          !cellAvailability.enabled &&
+                            "minesweeper-demo__cell--disabled",
                         )}
                         onClick={() => handleCellClick(cell)}
                         onContextMenu={(event) => {
-                          event.preventDefault()
+                          event.preventDefault();
                           // Touch devices use the explicit mode toggle instead of long-press hacks.
-                          toggleFlag(cell)
+                          toggleFlag(cell);
                         }}
                         onMouseEnter={() => inspect(cell)}
                         onFocus={() => inspect(cell)}
                       >
-                        {value === 'flagged' && <span className="minesweeper-demo__flag">⚑</span>}
-                        {isMine && <span className="minesweeper-demo__mine">✺</span>}
-                        {isRevealed && !isMine && adjacentMines > 0 && (
+                        {display.kind === "flagged" && (
+                          <span className="minesweeper-demo__flag">⚑</span>
+                        )}
+                        {isMine && (
+                          <span className="minesweeper-demo__mine">✺</span>
+                        )}
+                        {display.kind === "number" && (
                           <span
                             className={cls(
-                              'minesweeper-demo__number',
-                              numberClass(adjacentMines),
+                              "minesweeper-demo__number",
+                              numberClass(display.count),
                             )}
                           >
-                            {adjacentMines}
+                            {display.count}
                           </span>
                         )}
                       </button>
-                    )
+                    );
                   })}
                 </div>
               </div>
-        {!compact && (
-          <section className={cls('minesweeper-demo-board__panel', 'minesweeper-demo__panel', 'minesweeper-demo__panel--inspector')}>
-            <div className="minesweeper-demo__inspector-body">
-              <div className="minesweeper-demo__inspector-meta">
-                <div className="minesweeper-demo__inspector-row">
-                  <span className="minesweeper-demo__inspector-label">Coords</span>
-                  <span className="minesweeper-demo__inspector-value">
-                    ({inspectedCell.x}, {inspectedCell.y})
-                  </span>
-                </div>
-                <div className="minesweeper-demo__inspector-row">
-                  <span className="minesweeper-demo__inspector-label">Value</span>
-                  <span className="minesweeper-demo__inspector-value">
-                    {describeCellValue(values[inspectedCell.key])}
-                  </span>
-                </div>
-                <div className="minesweeper-demo__inspector-row">
-                  <span className="minesweeper-demo__inspector-label">Board</span>
-                  <span className="minesweeper-demo__inspector-value">
-                    {board
-                      ? inspectedMeta.isMine
-                        ? 'mine'
-                        : inspectedMeta.adjacentMines === 0
-                          ? 'clear'
-                          : `${inspectedMeta.adjacentMines} adjacent`
-                      : 'unseeded'}
-                  </span>
-                </div>
-              </div>
+              {!compact && (
+                <section
+                  className={cls(
+                    "minesweeper-demo-board__panel",
+                    "minesweeper-demo__panel",
+                    "minesweeper-demo__panel--inspector",
+                  )}
+                >
+                  <div className="minesweeper-demo__inspector-body">
+                    <div className="minesweeper-demo__inspector-meta">
+                      <div className="minesweeper-demo__inspector-row">
+                        <span className="minesweeper-demo__inspector-label">
+                          Coords
+                        </span>
+                        <span className="minesweeper-demo__inspector-value">
+                          ({inspectedCell.x}, {inspectedCell.y})
+                        </span>
+                      </div>
+                      <div className="minesweeper-demo__inspector-row">
+                        <span className="minesweeper-demo__inspector-label">
+                          Value
+                        </span>
+                        <span className="minesweeper-demo__inspector-value">
+                          {describeCellValue(values[inspectedCell.key])}
+                        </span>
+                      </div>
+                      <div className="minesweeper-demo__inspector-row">
+                        <span className="minesweeper-demo__inspector-label">
+                          Board
+                        </span>
+                        <span className="minesweeper-demo__inspector-value">
+                          {board
+                            ? boardReads.probeWouldExplode
+                              ? "mine"
+                              : inspectedAdjacent === null ||
+                                  inspectedAdjacent === 0
+                                ? "clear"
+                                : `${inspectedAdjacent} adjacent`
+                            : "unseeded"}
+                        </span>
+                      </div>
+                      <div className="minesweeper-demo__inspector-row">
+                        <span className="minesweeper-demo__inspector-label">
+                          Preview
+                        </span>
+                        <span className="minesweeper-demo__inspector-value">
+                          {inspectedPreview}
+                        </span>
+                      </div>
+                    </div>
 
-              <section className="umpire-demo__json-shell">
-                <div className="umpire-demo__json-header">
-                  <span className="umpire-demo__json-title">availability</span>
-                  <span className="umpire-demo__json-meta">useUmpire()</span>
-                </div>
-                <pre className="umpire-demo__code-block">
-                  <code>{inspectedJson}</code>
-                </pre>
-              </section>
-            </div>
-          </section>
-        )}
-      </section>
+                    <section className="umpire-demo__json-shell">
+                      <div className="umpire-demo__json-header">
+                        <span className="umpire-demo__json-title">
+                          availability + reads
+                        </span>
+                        <span className="umpire-demo__json-meta">
+                          useUmpire() + createReads()
+                        </span>
+                      </div>
+                      <pre className="umpire-demo__code-block">
+                        <code>{inspectedJson}</code>
+                      </pre>
+                    </section>
+                  </div>
+                </section>
+              )}
+            </section>
           </div>
         </section>
       </div>
     </div>
-  )
+  );
 }
