@@ -1,4 +1,4 @@
-import { umpire } from '@umpire/core'
+import { field, umpire } from '@umpire/core'
 import {
   ReadInputType,
   createReads,
@@ -95,6 +95,36 @@ describe('@umpire/reads', () => {
       expect(reads.motherboardFair(input)).toBe(reads.resolve(input).motherboardFair)
       expect(predicate(undefined, input)).toBe(reads.resolve(input).motherboardFair)
     })
+
+    test('fromRead supports selecting the input from arbitrary arguments', () => {
+      const reads = createFixtureReads()
+      const predicate = fromRead(
+        reads,
+        'motherboardFair',
+        (motherboard: string | undefined, cpu: string | undefined) => ({
+          cpu,
+          motherboard,
+        }),
+      )
+
+      expect(predicate('am5', 'am5')).toBe(true)
+      expect(predicate('lga1700', 'am5')).toBe(false)
+    })
+
+    test('table.from supports both default and selected input predicates', () => {
+      const reads = createFixtureReads()
+      const predicate = reads.from('motherboardFair')
+      const selectedPredicate = reads.from(
+        'motherboardFair',
+        (motherboard: string | undefined, cpu: string | undefined) => ({
+          cpu,
+          motherboard,
+        }),
+      )
+
+      expect(predicate(undefined, { cpu: 'am5', motherboard: 'am5' })).toBe(true)
+      expect(selectedPredicate('lga1700', 'am5')).toBe(false)
+    })
   })
 
   describe('caching within a session', () => {
@@ -151,6 +181,37 @@ describe('@umpire/reads', () => {
         'selections',
       ])
       expect(inspected.nodes.activeMotherboard.dependsOnReads).not.toContain('ids')
+    })
+  })
+
+  describe('trace helpers', () => {
+    test('trace.inspect supports custom input selection and reports direct dependencies', () => {
+      const reads = createFixtureReads()
+      const trace = reads.trace(
+        'motherboardFair',
+        (
+          values: { motherboard?: string },
+          conditions: { cpu?: string },
+          prev?: { motherboard?: string },
+        ) => ({
+          cpu: conditions.cpu,
+          motherboard: values.motherboard ?? prev?.motherboard,
+        }),
+      )
+
+      expect(
+        trace.inspect(
+          { motherboard: undefined },
+          { cpu: 'am5' },
+          { motherboard: 'am5' },
+        ),
+      ).toEqual({
+        value: true,
+        dependencies: [
+          { kind: 'field', id: 'cpu' },
+          { kind: 'read', id: 'selections' },
+        ],
+      })
     })
   })
 
@@ -294,6 +355,28 @@ describe('@umpire/reads', () => {
         },
       ])
     })
+
+    test('accepts named field builders for read-backed rules', () => {
+      const reads = createFixtureReads()
+
+      fairWhenRead(field<string>('motherboard'), 'motherboardFair', reads)
+
+      expect(reads.inspect({ cpu: 'am5', motherboard: 'am5' }).bridges).toEqual([
+        {
+          type: 'fairWhen',
+          read: 'motherboardFair',
+          field: 'motherboard',
+        },
+      ])
+    })
+
+    test('throws when an unnamed field builder is used with a read-backed rule', () => {
+      const reads = createFixtureReads()
+
+      expect(() =>
+        fairWhenRead(field<string>(), 'motherboardFair', reads),
+      ).toThrow('[reads] Named field required when using a read-backed rule')
+    })
   })
 
   describe('fairWhenRead / enabledWhenRead rule behavior', () => {
@@ -419,6 +502,142 @@ describe('@umpire/reads', () => {
         required: false,
         reason: 'Pick a supported platform first',
         reasons: ['Pick a supported platform first'],
+      })
+    })
+
+    test('fairWhenRead supports inputType CONDITIONS with a named field builder', () => {
+      const reads = createReads<
+        { cpu?: string; motherboard?: string },
+        { motherboardFair: boolean }
+      >({
+        motherboardFair: ({ input }) => (
+          !input.motherboard || input.cpu === input.motherboard
+        ),
+      })
+      const ump = umpire<
+        {
+          motherboard: {}
+        },
+        { cpu?: string; motherboard?: string }
+      >({
+        fields: {
+          motherboard: {},
+        },
+        rules: [
+          fairWhenRead(field<string>('motherboard'), 'motherboardFair', reads, {
+            inputType: ReadInputType.CONDITIONS,
+            reason: 'Selected motherboard no longer matches the CPU socket',
+          }),
+        ],
+      })
+
+      expect(
+        ump.check(
+          { motherboard: 'am5' },
+          { cpu: 'am5', motherboard: 'am5' },
+        ).motherboard,
+      ).toEqual({
+        enabled: true,
+        fair: true,
+        required: false,
+        reason: null,
+        reasons: [],
+      })
+      expect(
+        ump.check(
+          { motherboard: 'lga1700' },
+          { cpu: 'am5', motherboard: 'lga1700' },
+        ).motherboard,
+      ).toEqual({
+        enabled: true,
+        fair: false,
+        required: false,
+        reason: 'Selected motherboard no longer matches the CPU socket',
+        reasons: ['Selected motherboard no longer matches the CPU socket'],
+      })
+    })
+
+    test('fairWhenRead supports custom input selection', () => {
+      const reads = createFixtureReads()
+      const ump = umpire<
+        {
+          motherboard: {
+            isEmpty: (value: unknown) => boolean
+          }
+        },
+        { cpu?: string }
+      >({
+        fields: {
+          motherboard: {
+            isEmpty: (value: unknown) => value == null || value === '',
+          },
+        },
+        rules: [
+          fairWhenRead('motherboard', 'motherboardFair', reads, {
+            selectInput: (values, conditions) => ({
+              cpu: conditions.cpu,
+              motherboard: values.motherboard as string | undefined,
+            }),
+            reason: 'Selected motherboard no longer matches the CPU socket',
+          }),
+        ],
+      })
+
+      expect(ump.check({ motherboard: 'am5' }, { cpu: 'am5' }).motherboard).toEqual({
+        enabled: true,
+        fair: true,
+        required: false,
+        reason: null,
+        reasons: [],
+      })
+      expect(ump.check({ motherboard: 'lga1700' }, { cpu: 'am5' }).motherboard).toEqual({
+        enabled: true,
+        fair: false,
+        required: false,
+        reason: 'Selected motherboard no longer matches the CPU socket',
+        reasons: ['Selected motherboard no longer matches the CPU socket'],
+      })
+    })
+
+    test('enabledWhenRead supports custom input selection', () => {
+      const reads = createReads<
+        { cpu?: string },
+        { canSelectMotherboard: boolean }
+      >({
+        canSelectMotherboard: ({ input }) => Boolean(input.cpu),
+      })
+      const ump = umpire<
+        {
+          motherboard: {}
+        },
+        { selectedCpu?: string }
+      >({
+        fields: {
+          motherboard: {},
+        },
+        rules: [
+          enabledWhenRead('motherboard', 'canSelectMotherboard', reads, {
+            selectInput: (_values, conditions) => ({
+              cpu: conditions.selectedCpu,
+            }),
+            reason: 'Pick a CPU first',
+          }),
+        ],
+      })
+
+      expect(ump.check({}, { selectedCpu: 'am5' }).motherboard).toEqual({
+        enabled: true,
+        fair: true,
+        required: false,
+        reason: null,
+        reasons: [],
+      })
+      expect(ump.check({}, {}).motherboard).toEqual({
+        enabled: false,
+        fair: true,
+        required: false,
+        reason: 'Pick a CPU first',
+        reasons: ['Pick a CPU first'],
       })
     })
   })
