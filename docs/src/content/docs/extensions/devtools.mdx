@@ -1,0 +1,80 @@
+---
+title: DevTools
+description: Mount an in-app Umpire inspector for scorecards, challenge traces, foul logs, and graph debugging.
+---
+
+`@umpire/devtools` is the in-app inspection surface for Umpire. It mounts a Shadow DOM panel, subscribes to explicit registrations, and lets you inspect the same `scorecard()` and `challenge()` data you would otherwise have to print or assert by hand.
+
+The visual language is intentionally tool-like: tabbed panes, tables, logs, and inspectors. It should feel distinct from your product UI, not like another styled feature surface.
+
+## Quick Start
+
+```ts
+if (import.meta.env.DEV) {
+  const { mount } = await import('@umpire/devtools')
+  mount()
+}
+```
+
+```ts
+import { register } from '@umpire/devtools'
+
+register('checkout', ump, values, conditions)
+```
+
+The panel shows:
+
+- A field matrix built from `scorecard()`
+- Per-field challenge traces from `challenge()`
+- A rolling foul log for disabled-with-value transitions
+- A graph view of the structural dependency DAG
+- An optional reads view when you register a reads table
+
+## React Helper
+
+```ts
+import { useUmpireWithDevtools } from '@umpire/devtools/react'
+
+const { check, fouls } = useUmpireWithDevtools('checkout', ump, values, conditions)
+```
+
+The hook preserves the `useUmpire()` return shape and adds registration side effects on your behalf.
+
+## Reads Support
+
+If you already use `@umpire/reads`, pass the table alongside the current input:
+
+```ts
+register('checkout', ump, values, conditions, {
+  reads: readTable,
+  readInput: values,
+})
+```
+
+When the reads tab is available, the panel shows dependency edges, bridge wiring, and current computed values.
+
+:::caution[Keep your production bundle clean]
+Static imports still include the devtools package in production, even though `mount()` is gated off by default.
+
+Prefer a dynamic import behind a dev-only branch:
+
+```ts
+if (import.meta.env.DEV) {
+  const { mount } = await import('@umpire/devtools')
+  mount()
+}
+```
+:::
+
+## Mount Options
+
+```ts
+mount({
+  position: 'bottom-right',
+  offset: { x: 16, y: 16 },
+  foulLogDepth: 50,
+  defaultTab: 'matrix',
+})
+```
+
+`mount()` is a no-op in production unless `process.env.UMPIRE_INTERNAL === 'true'`, which is the deliberate escape hatch for docs/examples builds.

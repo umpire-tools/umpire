@@ -130,5 +130,30 @@ export default {
       testMatch: ['<rootDir>/__tests__/**/*.test.ts'],
       collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts'],
     },
+    {
+      displayName: 'devtools',
+      rootDir: 'packages/devtools',
+      watchman: false,
+      extensionsToTreatAsEsm: ['.ts', '.tsx'],
+      moduleNameMapper: {
+        '^(\\.{1,2}/.*)\\.js$': '$1',
+      },
+      transform: {
+        '^.+\\.tsx?$': [
+          'ts-jest',
+          {
+            useESM: true,
+            tsconfig: '<rootDir>/tsconfig.json',
+          },
+        ],
+      },
+      testEnvironment: 'jsdom',
+      testMatch: ['<rootDir>/__tests__/**/*.test.ts', '<rootDir>/__tests__/**/*.test.tsx'],
+      collectCoverageFrom: [
+        'src/**/*.ts',
+        '!src/panel/**',
+        '!src/**/*.d.ts',
+      ],
+    },
   ],
 };

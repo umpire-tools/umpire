@@ -7,6 +7,9 @@ export default defineConfig({
   site: 'https://sdougbrown.github.io',
   base: '/umpire',
   vite: {
+    define: {
+      'process.env.UMPIRE_INTERNAL': JSON.stringify('true'),
+    },
     server: {
       watch: {
         // Force polling — native FSEvents may not be propagating changes
@@ -108,6 +111,7 @@ export default defineConfig({
         {
           label: 'Extensions',
           items: [
+            { label: 'DevTools', slug: 'extensions/devtools' },
             { label: 'Reads', slug: 'extensions/reads' },
           ],
         },

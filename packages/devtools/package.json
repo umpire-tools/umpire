@@ -1,0 +1,60 @@
+{
+  "name": "@umpire/devtools",
+  "version": "0.1.0-alpha.7",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./slim": {
+      "types": "./dist/slim.d.ts",
+      "import": "./dist/slim.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    }
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    ".claude"
+  ],
+  "dependencies": {
+    "@umpire/core": "workspace:^",
+    "@umpire/reads": "workspace:^"
+  },
+  "peerDependencies": {
+    "preact": ">=10"
+  },
+  "peerDependenciesMeta": {
+    "preact": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdougbrown/umpire.git",
+    "directory": "packages/devtools"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@testing-library/preact": "^3.2.4",
+    "@types/react": "^19.2.14",
+    "preact": "^10.27.2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "tsup": "^8.5.0"
+  }
+}
