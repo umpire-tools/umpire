@@ -77,17 +77,24 @@ const fouls = signupUmp.play(
 | --- | --- |
 | [`@umpire/core`](./packages/core/README.md) | Pure logic engine with zero runtime dependencies |
 | [`@umpire/react`](./packages/react/README.md) | `useUmpire()` hook for React |
-| [`@umpire/signals`](./packages/signals/README.md) | Signal adapter via `SignalProtocol` |
-| [`@umpire/zustand`](./packages/zustand/README.md) | Zustand store adapter with native prev-state tracking |
+| [`@umpire/signals`](./packages/signals/README.md) | Signal adapter via `SignalProtocol` (Jotai, Preact, Alien Signals, TC39) |
+| [`@umpire/store`](./packages/store/README.md) | Generic store adapter — bring your own `getState()` + `subscribe(next, prev)` |
+| [`@umpire/zustand`](./packages/zustand/README.md) | Zustand adapter (satisfies the store contract natively) |
+| [`@umpire/redux`](./packages/redux/README.md) | Redux / Redux Toolkit adapter |
+| [`@umpire/tanstack-store`](./packages/tanstack-store/README.md) | TanStack Store adapter |
+| [`@umpire/pinia`](./packages/pinia/README.md) | Pinia adapter (Vue 3) |
+| [`@umpire/vuex`](./packages/vuex/README.md) | Vuex 4 adapter (Vue 3) |
 | [`@umpire/zod`](./packages/zod/README.md) | Availability-aware Zod schemas — disabled fields produce no errors |
+| [`@umpire/reads`](./packages/reads/README.md) | Derived read tables and read-backed rule bridges |
+| [`@umpire/devtools`](./packages/devtools/README.md) | In-app inspector panel — scorecard, traces, foul log, graph view |
 
 ## Why Umpire?
 
 - Pure logic, zero dependencies.
 - Declarative rules: `requires`, `disables`, `enabledWhen`, `fairWhen`, `oneOf`.
 - Recommendations, not mutations: `play()` suggests resets, you decide when to apply them.
-- Framework adapters for React, signals, and Zustand.
-- Debuggable: `challenge()` traces why any field was ruled out.
+- Adapters for React, Zustand, Redux, TanStack Store, Pinia, Vuex, and signals.
+- Debuggable: `challenge()` traces why any field was ruled out, `@umpire/devtools` surfaces it visually.
 
 ## Install
 
