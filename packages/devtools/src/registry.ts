@@ -20,6 +20,7 @@ const registry = new Map<string, RegistryEntry>()
 const listeners = new Set<() => void>()
 
 let foulLogDepth = 50
+let registryVersion = 0
 
 function notify() {
   for (const listener of listeners) {
@@ -125,6 +126,7 @@ export const register: RegisterFn = (id, ump, values, conditions, options) => {
   nextEntry.foulLog = buildFoulLog(existing?.foulLog ?? [], nextEntry, renderIndex)
 
   registry.set(id, nextEntry)
+  registryVersion += 1
   notify()
 }
 
@@ -133,6 +135,7 @@ export function unregister(id: string) {
     return
   }
 
+  registryVersion += 1
   notify()
 }
 
@@ -148,6 +151,10 @@ export function snapshot() {
   return new Map(registry)
 }
 
+export function getRegistryVersion() {
+  return registryVersion
+}
+
 export function setFoulLogDepth(depth: number) {
   foulLogDepth = Math.max(1, Math.floor(depth))
 }
@@ -156,4 +163,5 @@ export function resetRegistry() {
   registry.clear()
   listeners.clear()
   foulLogDepth = 50
+  registryVersion = 0
 }

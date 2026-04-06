@@ -1,6 +1,13 @@
 import { jest } from '@jest/globals'
 import { enabledWhen, umpire } from '@umpire/core'
-import { register, resetRegistry, snapshot, subscribe, unregister } from '../src/registry.js'
+import {
+  getRegistryVersion,
+  register,
+  resetRegistry,
+  snapshot,
+  subscribe,
+  unregister,
+} from '../src/registry.js'
 
 const demoUmp = umpire({
   fields: {
@@ -23,6 +30,8 @@ describe('registry', () => {
     const listener = jest.fn()
     const unsubscribe = subscribe(listener)
 
+    expect(getRegistryVersion()).toBe(0)
+
     register('demo', demoUmp, {
       gate: 'open',
       target: 'kept',
@@ -31,6 +40,7 @@ describe('registry', () => {
     let current = snapshot().get('demo')
 
     expect(listener).toHaveBeenCalledTimes(1)
+    expect(getRegistryVersion()).toBe(1)
     expect(current?.snapshot.values.target).toBe('kept')
     expect(current?.previous).toBeNull()
     expect(current?.foulLog).toEqual([])
@@ -43,6 +53,7 @@ describe('registry', () => {
     current = snapshot().get('demo')
 
     expect(listener).toHaveBeenCalledTimes(2)
+    expect(getRegistryVersion()).toBe(2)
     expect(current?.previous?.values.gate).toBe('open')
     expect(current?.scorecard.transition.fouledFields).toEqual(['target'])
     expect(current?.foulLog).toHaveLength(1)
@@ -69,7 +80,22 @@ describe('registry', () => {
     listener.mockClear()
     unregister('demo')
 
+    expect(getRegistryVersion()).toBe(2)
     expect(snapshot().size).toBe(0)
     expect(listener).toHaveBeenCalledTimes(1)
+  })
+
+  it('resets the registry version counter', () => {
+    register('demo', demoUmp, {
+      gate: 'open',
+      target: 'kept',
+    })
+
+    expect(getRegistryVersion()).toBe(1)
+
+    resetRegistry()
+
+    expect(getRegistryVersion()).toBe(0)
+    expect(snapshot().size).toBe(0)
   })
 })

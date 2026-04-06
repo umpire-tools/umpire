@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'preact/hooks'
+import { useLayoutEffect, useMemo, useState } from 'preact/hooks'
 import { snapshot, subscribe } from '../registry.js'
 import type {
   AnyScorecard,
@@ -20,11 +20,13 @@ type Props = {
 function useRegistryEntries() {
   const [entries, setEntries] = useState(() => snapshot())
 
-  useEffect(() => {
-    // Re-sync on mount: registry may have changed between initial render and
-    // this effect firing (e.g. React Strict Mode cleanup, or island hydration order).
-    setEntries(snapshot())
-    return subscribe(() => setEntries(snapshot()))
+  useLayoutEffect(() => {
+    const syncEntries = () => {
+      setEntries(snapshot())
+    }
+
+    syncEntries()
+    return subscribe(syncEntries)
   }, [])
 
   return entries
@@ -79,35 +81,24 @@ export function Panel({ options }: Props) {
   const entries = useRegistryEntries()
   const entryList = useMemo(() => [...entries.values()], [entries])
   const [open, setOpen] = useState(false)
-  const [activeId, setActiveId] = useState<string | null>(entryList[0]?.id ?? null)
-  const [selectedField, setSelectedField] = useState<string | null>(null)
-  const [tab, setTab] = useState<DevtoolsTab>(options.defaultTab)
+  const [preferredActiveId, setPreferredActiveId] = useState<string | null>(null)
+  const [selectedFieldState, setSelectedFieldState] = useState<{
+    entryId: string
+    field: string
+  } | null>(null)
+  const [preferredTab, setPreferredTab] = useState<DevtoolsTab>(options.defaultTab)
 
-  useEffect(() => {
-    if (entryList.length === 0) {
-      setActiveId(null)
-      setSelectedField(null)
-      return
-    }
-
-    if (!activeId || !entries.has(activeId)) {
-      setActiveId(entryList[0].id)
-    }
-  }, [activeId, entries, entryList])
-
+  const activeId = preferredActiveId && entries.has(preferredActiveId)
+    ? preferredActiveId
+    : entryList[0]?.id ?? null
   const activeEntry = activeId ? entries.get(activeId) ?? null : null
   const activeTabs = resolveTabs(activeEntry)
   const activeScorecard = activeEntry?.scorecard ?? null
-
-  useEffect(() => {
-    if (!activeTabs.includes(tab)) {
-      setTab('matrix')
-    }
-  }, [activeTabs, tab])
-
-  useEffect(() => {
-    setSelectedField(null)
-  }, [activeId])
+  const tab = activeTabs.includes(preferredTab) ? preferredTab : 'matrix'
+  const selectedField = selectedFieldState?.entryId === activeId &&
+      selectedFieldState.field in (activeScorecard?.fields ?? {})
+    ? selectedFieldState.field
+    : null
 
   const challenge = useMemo(() => {
     if (!activeEntry || !selectedField) {
@@ -221,7 +212,10 @@ export function Panel({ options }: Props) {
             </label>
             <select
               id="umpire-devtools-instance"
-              onChange={(event) => setActiveId(event.currentTarget.value)}
+              onChange={(event) => {
+                setPreferredActiveId(event.currentTarget.value || null)
+                setSelectedFieldState(null)
+              }}
               style={{
                 appearance: 'none',
                 background: theme.surface,
@@ -257,8 +251,8 @@ export function Panel({ options }: Props) {
               <button
                 key={entryTab}
                 onClick={() => {
-                  setSelectedField(null)
-                  setTab(entryTab)
+                  setSelectedFieldState(null)
+                  setPreferredTab(entryTab)
                 }}
                 style={tabStyle(tab === entryTab && !selectedField)}
                 type="button"
@@ -274,13 +268,22 @@ export function Panel({ options }: Props) {
             ) : challenge && selectedField ? (
               <ChallengeDrawer
                 field={selectedField}
-                onBack={() => setSelectedField(null)}
+                onBack={() => setSelectedFieldState(null)}
                 trace={challenge}
               />
             ) : (
               <PanelBody
                 entry={activeEntry}
-                onSelectField={setSelectedField}
+                onSelectField={(field) => {
+                  if (!activeId) {
+                    return
+                  }
+
+                  setSelectedFieldState({
+                    entryId: activeId,
+                    field,
+                  })
+                }}
                 scorecard={activeScorecard}
                 selectedField={selectedField}
                 tab={tab}
