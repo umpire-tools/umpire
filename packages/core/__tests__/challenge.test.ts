@@ -1,4 +1,4 @@
-import { anyOf, check, disables, enabledWhen, fairWhen, oneOf, requires } from '../src/rules.js'
+import { anyOf, check, defineRule, disables, enabledWhen, fairWhen, oneOf, requires } from '../src/rules.js'
 import { umpire } from '../src/umpire.js'
 
 type TestFields = {
@@ -371,6 +371,50 @@ describe('challenge', () => {
             ],
           },
         ],
+      }),
+    ])
+  })
+
+  test('reports pass/fail for fair custom rules using the fair constraint', () => {
+    const ump = umpire<{
+      cpu: {}
+      motherboard: {}
+    }>({
+      fields: {
+        cpu: {},
+        motherboard: {},
+      },
+      rules: [
+        defineRule({
+          type: 'socketFair',
+          targets: ['motherboard'],
+          sources: ['cpu'],
+          constraint: 'fair',
+          evaluate(values) {
+            const matches = values.cpu === values.motherboard
+
+            return new Map([
+              ['motherboard', {
+                enabled: true,
+                fair: matches,
+                reason: matches ? null : 'Selected motherboard no longer matches the CPU socket',
+              }],
+            ])
+          },
+        }),
+      ],
+    })
+
+    const challenge = ump.challenge('motherboard', {
+      cpu: 'amd-r7',
+      motherboard: 'intel-z790',
+    })
+
+    expect(challenge.directReasons).toEqual([
+      expect.objectContaining({
+        rule: 'socketFair',
+        passed: false,
+        reason: 'Selected motherboard no longer matches the CPU socket',
       }),
     ])
   })

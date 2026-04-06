@@ -1,6 +1,6 @@
 import { evaluate, evaluateRuleForField } from '../src/evaluator.js'
 import { buildGraph, topologicalSort } from '../src/graph.js'
-import { anyOf, enabledWhen, requires } from '../src/rules.js'
+import { anyOf, defineRule, enabledWhen, requires } from '../src/rules.js'
 import type { AvailabilityMap, Rule } from '../src/types.js'
 
 type TestFields = {
@@ -170,6 +170,52 @@ describe('evaluate', () => {
       required: false,
       reason: 'allow must be true',
       reasons: ['allow must be true'],
+    })
+  })
+
+  test('treats fair custom rules as fairness checks instead of gate rules', () => {
+    const fields: TestFields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+      delta: {},
+    }
+    const rules = [
+      defineRule<TestFields, TestConditions>({
+        type: 'socketFair',
+        targets: ['beta'],
+        sources: ['alpha'],
+        constraint: 'fair',
+        evaluate(values) {
+          const matches = values.alpha === values.beta
+
+          return new Map([
+            ['beta', {
+              enabled: true,
+              fair: matches,
+              reason: matches ? null : 'socket mismatch',
+            }],
+          ])
+        },
+      }),
+    ]
+    const topoOrder = createOrder(fields, rules)
+
+    expect(evaluate(fields, rules, topoOrder, { alpha: 'am5', beta: 'am5' }, {} as TestConditions).beta).toEqual({
+      enabled: true,
+      fair: true,
+      required: false,
+      reason: null,
+      reasons: [],
+    })
+    expect(
+      evaluate(fields, rules, topoOrder, { alpha: 'am5', beta: 'lga1700' }, {} as TestConditions).beta,
+    ).toEqual({
+      enabled: true,
+      fair: false,
+      required: false,
+      reason: 'socket mismatch',
+      reasons: ['socket mismatch'],
     })
   })
 

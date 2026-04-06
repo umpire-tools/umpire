@@ -1,4 +1,4 @@
-import { check, disables, enabledWhen, oneOf, requires } from '../src/rules.js'
+import { check, defineRule, disables, enabledWhen, oneOf, requires } from '../src/rules.js'
 import { buildGraph, detectCycles, exportGraph, topologicalSort } from '../src/graph.js'
 
 type TestFields = {
@@ -125,6 +125,47 @@ describe('graph utilities', () => {
       nodes: ['alpha', 'beta', 'gamma', 'delta', 'epsilon'],
       edges: [
         { from: 'alpha', to: 'beta', type: 'enabledWhen' },
+        { from: 'beta', to: 'alpha', type: 'requires' },
+      ],
+    })
+
+    expect(() => detectCycles(graph)).not.toThrow()
+
+    const order = topologicalSort(graph, Object.keys(fields))
+    expect(order.indexOf('beta')).toBeLessThan(order.indexOf('alpha'))
+  })
+
+  test('treats fair custom rule sources as informational edges', () => {
+    const fields: TestFields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+      delta: {},
+      epsilon: {},
+    }
+    const graph = buildGraph(fields, [
+      defineRule<TestFields>({
+        type: 'socketFair',
+        targets: ['beta'],
+        sources: ['alpha'],
+        constraint: 'fair',
+        evaluate(values) {
+          return new Map([
+            ['beta', {
+              enabled: true,
+              fair: values.alpha === values.beta,
+              reason: values.alpha === values.beta ? null : 'socket mismatch',
+            }],
+          ])
+        },
+      }),
+      requires<TestFields>('alpha', 'beta'),
+    ])
+
+    expect(exportGraph(graph)).toEqual({
+      nodes: ['alpha', 'beta', 'gamma', 'delta', 'epsilon'],
+      edges: [
+        { from: 'alpha', to: 'beta', type: 'socketFair' },
         { from: 'beta', to: 'alpha', type: 'requires' },
       ],
     })

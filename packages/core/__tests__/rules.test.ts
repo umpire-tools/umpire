@@ -3,6 +3,7 @@ import {
   anyOf,
   check,
   createRules,
+  defineRule,
   disables,
   enabledWhen,
   oneOf,
@@ -425,6 +426,82 @@ describe('anyOf', () => {
   })
 })
 
+describe('defineRule', () => {
+  test('creates an enabled custom rule by default', () => {
+    const rule = defineRule<TestFields, TestConditions>({
+      type: 'customEnabled',
+      targets: ['alpha', 'alpha'],
+      sources: ['beta', 'beta'],
+      evaluate: () => new Map([
+        ['alpha', {
+          enabled: false,
+          reason: 'custom blocked',
+        }],
+      ]),
+    })
+
+    expect(rule.type).toBe('customEnabled')
+    expect(rule.targets).toEqual(['alpha'])
+    expect(rule.sources).toEqual(['beta'])
+    expect(rule.evaluate({}, { allow: true }).get('alpha')).toEqual({
+      enabled: false,
+      reason: 'custom blocked',
+    })
+  })
+
+  test('lets anyOf combine fair custom rules when constraint is fair', () => {
+    const socketRule = defineRule<TestFields, TestConditions>({
+      type: 'socketFair',
+      targets: ['alpha'],
+      sources: ['beta'],
+      constraint: 'fair',
+      evaluate(values) {
+        const matches = values.alpha === values.beta
+
+        return new Map([
+          ['alpha', {
+            enabled: true,
+            fair: matches,
+            reason: matches ? null : 'socket mismatch',
+          }],
+        ])
+      },
+    })
+    const allowDeltaRule = defineRule<TestFields, TestConditions>({
+      type: 'deltaFair',
+      targets: ['alpha'],
+      sources: ['delta'],
+      constraint: 'fair',
+      evaluate(values) {
+        const allowed = values.delta === 'override'
+
+        return new Map([
+          ['alpha', {
+            enabled: true,
+            fair: allowed,
+            reason: allowed ? null : 'delta override missing',
+          }],
+        ])
+      },
+    })
+    const rule = anyOf(socketRule, allowDeltaRule)
+
+    expect(rule.evaluate({ alpha: 'am5', beta: 'am5' }, { allow: false }).get('alpha')).toEqual({
+      enabled: true,
+      fair: true,
+      reason: null,
+    })
+    expect(
+      rule.evaluate({ alpha: 'am5', beta: 'lga1700', delta: 'missing' }, { allow: false }).get('alpha'),
+    ).toEqual({
+      enabled: true,
+      fair: false,
+      reason: 'socket mismatch',
+      reasons: ['socket mismatch', 'delta override missing'],
+    })
+  })
+})
+
 describe('check', () => {
   test('supports function validators', () => {
     const predicate = check<TestFields, TestConditions>('alpha', (value) => value === 'ok')
@@ -471,6 +548,7 @@ describe('createRules', () => {
     expect(Object.keys(factories).sort()).toEqual([
       'anyOf',
       'check',
+      'defineRule',
       'disables',
       'enabledWhen',
       'fairWhen',

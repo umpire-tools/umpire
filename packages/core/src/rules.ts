@@ -10,6 +10,19 @@ import type {
 
 type RuleResult = RuleEvaluation
 
+/**
+ * Controls which evaluation phase a custom rule participates in.
+ *
+ * - `'enabled'` is the default and behaves like an availability rule:
+ *   it can disable a field.
+ * - `'fair'` behaves like `fairWhen()`:
+ *   it can mark a field unfair without disabling it.
+ *
+ * For graphing purposes, `'enabled'` sources are treated as ordering edges,
+ * while `'fair'` sources are treated as informational edges.
+ */
+export type RuleConstraint = 'enabled' | 'fair'
+
 type Predicate<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -118,17 +131,58 @@ export type InternalRuleMetadata<
       rules: Rule<F, C>[]
       constraint: 'enabled' | 'fair'
     }
+  | {
+      kind: 'custom'
+      constraint: RuleConstraint
+    }
 
 type InternalRuleMetadataWithOptions<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-> = Exclude<InternalRuleMetadata<F, C>, { kind: 'anyOf' }>
+> = Exclude<InternalRuleMetadata<F, C>, { kind: 'anyOf' } | { kind: 'custom' }>
 
 type InternalRuleCarrier<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 > = Rule<F, C> & {
   _umpire?: InternalRuleMetadata<F, C>
+}
+
+export type DefineRuleConfig<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+> = {
+  /**
+   * Label surfaced in introspection output such as `challenge()`.
+   *
+   * This is a user-defined rule type label, not a custom internal rule kind.
+   */
+  type: string
+  /**
+   * Fields evaluated by this rule.
+   *
+   * The evaluator expects the returned result map to include an entry for each
+   * target. Omitted targets are treated as passing by default, so omissions
+   * should be intentional.
+   */
+  targets: Array<keyof F & string>
+  /**
+   * Known source fields used for graph edges and related introspection.
+   *
+   * For `'enabled'` rules these are treated as ordering dependencies.
+   * For `'fair'` rules these are treated as informational dependencies.
+   */
+  sources?: Array<keyof F & string>
+  /**
+   * Which phase this rule participates in.
+   *
+   * Defaults to `'enabled'`.
+   */
+  constraint?: RuleConstraint
+  /**
+   * Low-level evaluation function returning per-target results.
+   */
+  evaluate: Rule<F, C>['evaluate']
 }
 
 export type OneOfResolution = {
@@ -280,6 +334,13 @@ export function getGraphSourceInfo<
     }
   }
 
+  if (metadata?.kind === 'custom' && metadata.constraint === 'fair') {
+    return {
+      ordering: [],
+      informational: [...rule.sources],
+    }
+  }
+
   return {
     ordering: [...rule.sources],
     informational: [],
@@ -340,10 +401,10 @@ function uniqueFields<F extends Record<string, FieldDef>>(
   return [...new Set(fields)]
 }
 
-function getRuleConstraint<
+export function getRuleConstraint<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
->(rule: Rule<F, C>): 'enabled' | 'fair' {
+>(rule: Rule<F, C>): RuleConstraint {
   const metadata = getInternalRuleMetadata(rule)
 
   if (metadata?.kind === 'fairWhen') {
@@ -354,7 +415,80 @@ function getRuleConstraint<
     return metadata.constraint
   }
 
+  if (metadata?.kind === 'custom') {
+    return metadata.constraint
+  }
+
   return 'enabled'
+}
+
+export function isFairRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(rule: Rule<F, C>): boolean {
+  return getRuleConstraint(rule) === 'fair'
+}
+
+export function isGateRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(rule: Rule<F, C>): boolean {
+  return !isFairRule(rule)
+}
+
+/**
+ * Advanced escape hatch for defining custom low-level rules.
+ *
+ * Prefer the built-in factories (`enabledWhen`, `fairWhen`, `disables`,
+ * `requires`, `oneOf`, and `anyOf`) unless you truly need custom evaluation
+ * behavior. `defineRule()` is intended for power users who need to plug a rule
+ * directly into Umpire's evaluation pipeline while still participating in
+ * graphing, `anyOf()`, and `challenge()`.
+ *
+ * `defineRule()` supports custom rule `type` labels and `constraint`
+ * classification, but it does not expose a public API for defining new
+ * internal rule kinds.
+ *
+ * @example
+ * ```ts
+ * const socketFair = defineRule({
+ *   type: 'socketFair',
+ *   targets: ['motherboard'],
+ *   sources: ['cpu'],
+ *   constraint: 'fair',
+ *   evaluate(values) {
+ *     const matches = values.cpu === values.motherboard
+ *
+ *     return new Map([
+ *       ['motherboard', {
+ *         enabled: true,
+ *         fair: matches,
+ *         reason: matches ? null : 'Selected motherboard no longer matches the CPU socket',
+ *       }],
+ *     ])
+ *   },
+ * })
+ * ```
+ */
+export function defineRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
+  config: DefineRuleConfig<F, C>,
+): Rule<F, C> {
+  const rule: InternalRuleCarrier<F, C> = {
+    type: config.type,
+    targets: uniqueFields([...config.targets]),
+    sources: uniqueFields([...(config.sources ?? [])]),
+    evaluate: config.evaluate,
+  }
+
+  rule._umpire = {
+    kind: 'custom',
+    constraint: config.constraint ?? 'enabled',
+  }
+
+  return rule
 }
 
 function branchHasSatisfiedField<F extends Record<string, FieldDef>>(
@@ -901,6 +1035,7 @@ export function createRules<
   C extends Record<string, unknown> = Record<string, unknown>,
 >() {
   return {
+    defineRule: defineRule as typeof defineRule<F, C>,
     enabledWhen: enabledWhen as typeof enabledWhen<F, C>,
     fairWhen: fairWhen as typeof fairWhen<F, C>,
     disables: disables as typeof disables<F, C>,

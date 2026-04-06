@@ -14,6 +14,7 @@ import {
   getGraphSourceInfo,
   getInternalRuleMetadata,
   getInternalRuleOptions,
+  isFairRule,
   type InternalRuleMetadata,
   getSourceField,
   requires,
@@ -148,6 +149,16 @@ function withRuleTrace<
   )
 
   return trace ? { ...entry, trace } : entry
+}
+
+function didRulePass<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  rule: Rule<F, C>,
+  evaluation: RuleEvaluation,
+): boolean {
+  return isFairRule(rule) ? evaluation.fair !== false : evaluation.enabled
 }
 
 function normalizeConfig<
@@ -355,7 +366,7 @@ function describeRuleForField<
 
     return {
       rule: 'anyOf',
-      passed: metadata.constraint === 'fair' ? evaluation.fair !== false : evaluation.enabled,
+      passed: didRulePass(rule, evaluation),
       reason: evaluation.reason,
       inner,
     }
@@ -363,7 +374,7 @@ function describeRuleForField<
 
   return withRuleTrace({
     rule: rule.type,
-    passed: evaluation.enabled,
+    passed: didRulePass(rule, evaluation),
     reason: evaluation.reason,
   }, metadata, values, conditions, prev)
 }

@@ -1,5 +1,5 @@
 import { isSatisfied } from './satisfaction.js'
-import { getInternalRuleMetadata, resolveReason } from './rules.js'
+import { getInternalRuleMetadata, isFairRule, isGateRule, resolveReason } from './rules.js'
 import type { AvailabilityMap, FieldDef, FieldValues, Rule, RuleEvaluation } from './types.js'
 
 function getFailureReasons(result: RuleEvaluation): string[] {
@@ -12,6 +12,30 @@ function getFailureReasons(result: RuleEvaluation): string[] {
   }
 
   return []
+}
+
+function partitionRulesByPhase<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(rules: Rule<F, C>[]) {
+  const gateRules: Rule<F, C>[] = []
+  const fairRules: Rule<F, C>[] = []
+
+  for (const rule of rules) {
+    if (isFairRule(rule)) {
+      fairRules.push(rule)
+      continue
+    }
+
+    if (isGateRule(rule)) {
+      gateRules.push(rule)
+    }
+  }
+
+  return {
+    gateRules,
+    fairRules,
+  }
 }
 
 export function indexRulesByTarget<
@@ -164,14 +188,7 @@ export function evaluate<
 
   for (const field of topoOrder) {
     const fieldRules = resolvedRulesByTarget.get(field) ?? []
-    const gateRules = fieldRules.filter((rule) => {
-      const metadata = getInternalRuleMetadata(rule)
-      return !(metadata?.kind === 'fairWhen' || (metadata?.kind === 'anyOf' && metadata.constraint === 'fair'))
-    })
-    const fairRules = fieldRules.filter((rule) => {
-      const metadata = getInternalRuleMetadata(rule)
-      return metadata?.kind === 'fairWhen' || (metadata?.kind === 'anyOf' && metadata.constraint === 'fair')
-    })
+    const { gateRules, fairRules } = partitionRulesByPhase(fieldRules)
     const reasons: string[] = []
     let enabled = true
     let fair = true
