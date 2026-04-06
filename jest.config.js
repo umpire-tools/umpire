@@ -222,6 +222,7 @@ export default {
       displayName: 'devtools',
       rootDir: 'packages/devtools',
       watchman: false,
+      coveragePathIgnorePatterns: ['/node_modules/', '/dist/'],
       extensionsToTreatAsEsm: ['.ts', '.tsx'],
       moduleNameMapper: workspaceModuleNameMapper,
       transform: {
