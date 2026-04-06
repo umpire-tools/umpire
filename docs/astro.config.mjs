@@ -140,7 +140,6 @@ export default defineConfig({
             { label: 'Calendar Recurrence', slug: 'examples/calendar' },
             { label: 'Freight Quote', slug: 'examples/freight-quote' },
             { label: 'Login + Captcha', slug: 'examples/captcha' },
-            { label: 'Split-State Settings', slug: 'examples/split-state' },
             { label: 'Signup Form + Zod', slug: 'examples/signup' },
           ],
         },
