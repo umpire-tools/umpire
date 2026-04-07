@@ -40,7 +40,7 @@ function fromStore<
 
 ```ts
 interface UmpireStore<F extends Record<string, FieldDef>> {
-  field(name: keyof F & string): FieldAvailability
+  field(name: keyof F & string): FieldStatus
   get fouls(): Foul<F>[]
   getAvailability(): AvailabilityMap<F>
   subscribe(listener: (availability: AvailabilityMap<F>) => void): () => void

@@ -1,7 +1,7 @@
 import type {
   AvailabilityMap,
-  FieldAvailability,
   FieldDef,
+  FieldStatus,
   Foul,
   InputValues,
   Umpire,
@@ -22,7 +22,7 @@ export type FromStoreOptions<
 }
 
 export interface UmpireStore<F extends Record<string, FieldDef>> {
-  field(name: keyof F & string): FieldAvailability
+  field(name: keyof F & string): FieldStatus
   get fouls(): Foul<F>[]
   getAvailability(): AvailabilityMap<F>
   subscribe(listener: (availability: AvailabilityMap<F>) => void): () => void
@@ -70,7 +70,7 @@ export function fromStore<
   })
 
   return {
-    field(name: keyof F & string): FieldAvailability {
+    field(name: keyof F & string): FieldStatus {
       return currentAvailability[name]
     },
 

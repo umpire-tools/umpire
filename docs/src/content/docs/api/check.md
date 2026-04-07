@@ -24,7 +24,7 @@ ump.check(
 ## Return Shape
 
 ```ts
-type FieldAvailability = {
+type FieldStatus = {
   enabled: boolean
   fair: boolean
   required: boolean
@@ -33,7 +33,7 @@ type FieldAvailability = {
 }
 
 type AvailabilityMap<F extends Record<string, FieldDef>> = {
-  [K in keyof F]: FieldAvailability
+  [K in keyof F]: FieldStatus
 }
 ```
 

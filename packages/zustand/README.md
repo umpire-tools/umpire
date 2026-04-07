@@ -70,7 +70,7 @@ availability.destroy()
 
 ## API
 
-- `field(name)` returns the current `FieldAvailability` for one field.
+- `field(name)` returns the current `FieldStatus` for one field.
 - `fouls` returns the latest `Foul[]`.
 - `getAvailability()` returns the full `AvailabilityMap`.
 - `subscribe(listener)` notifies when availability is recomputed.

@@ -1,6 +1,7 @@
 export type {
   FieldDef,
   FieldValue,
+  FieldStatus,
   FieldAvailability,
   AvailabilityMap,
   ScorecardField,

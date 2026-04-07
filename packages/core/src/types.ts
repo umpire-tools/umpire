@@ -4,7 +4,7 @@ export interface FieldDef<V = unknown> {
   isEmpty?(value: V | null | undefined): boolean
 }
 
-export type FieldAvailability = {
+export type FieldStatus = {
   enabled: boolean
   fair: boolean
   required: boolean
@@ -12,8 +12,10 @@ export type FieldAvailability = {
   reasons: string[]
 }
 
+export type FieldAvailability = FieldStatus
+
 export type AvailabilityMap<F extends Record<string, FieldDef>> = {
-  [K in keyof F]: FieldAvailability
+  [K in keyof F]: FieldStatus
 }
 
 export type FieldValue<T extends FieldDef> = T extends FieldDef<infer V> ? V : unknown

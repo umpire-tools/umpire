@@ -9,7 +9,7 @@ import {
   requires,
   umpire,
 } from '@umpire/core'
-import type { FieldAvailability, InputValues } from '@umpire/core'
+import type { FieldStatus, InputValues } from '@umpire/core'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const phonePattern = /^\d{10,}$/
@@ -50,7 +50,7 @@ function FieldCard({
   reason,
 }: {
   label: string
-  availability: FieldAvailability
+  availability: FieldStatus
   children: ComponentChildren
   reason?: string | null
 }) {

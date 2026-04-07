@@ -1,8 +1,8 @@
 import type {
   AvailabilityMap,
-  FieldAvailability,
   FieldDef,
   InputValues,
+  FieldStatus,
   Foul,
   Umpire,
 } from '@umpire/core'
@@ -13,11 +13,7 @@ import type { SignalProtocol } from './protocol.js'
 // ---------------------------------------------------------------------------
 
 export type ReactiveField = {
-  readonly enabled: boolean
-  readonly fair: boolean
-  readonly required: boolean
-  readonly reason: string | null
-  readonly reasons: string[]
+  readonly [K in keyof FieldStatus]: FieldStatus[K]
 }
 
 export interface ReactiveUmpire<F extends Record<string, FieldDef>> {
