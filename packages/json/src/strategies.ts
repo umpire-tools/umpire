@@ -30,3 +30,14 @@ export function hydrateIsEmptyStrategy(
 
   return IS_EMPTY_STRATEGIES[strategy]
 }
+
+export function getJsonIsEmptyStrategy(
+  strategy: FieldDef['isEmpty'] | undefined,
+): JsonIsEmptyStrategy | undefined {
+  if (!strategy) {
+    return undefined
+  }
+
+  return (Object.entries(IS_EMPTY_STRATEGIES).find(([, candidate]) => candidate === strategy)?.[0] ??
+    undefined) as JsonIsEmptyStrategy | undefined
+}

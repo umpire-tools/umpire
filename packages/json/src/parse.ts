@@ -14,12 +14,16 @@ import {
 import { createNamedCheckFromRule, defaultCheckReason } from './check-ops.js'
 import { compileExpr } from './expr.js'
 import { attachJsonDef } from './json-def.js'
-import type { JsonCheckRule, JsonRule, UmpireJsonSchema } from './schema.js'
+import type { ExcludedRule, JsonCheckRule, JsonConditionDef, JsonRule, UmpireJsonSchema } from './schema.js'
 import { hydrateIsEmptyStrategy } from './strategies.js'
 import { validateSchema } from './validate.js'
 
 type ParsedFields = Record<string, FieldDef>
 type ParsedRules<C extends Record<string, unknown>> = Rule<ParsedFields, C>[]
+type ParsedSchemaMeta = {
+  conditions?: Record<string, JsonConditionDef>
+  excluded?: ExcludedRule[]
+}
 
 type NamedFairPredicate<C extends Record<string, unknown>> = ((
   value: unknown,
@@ -136,8 +140,16 @@ export function fromJson<C extends Record<string, unknown> = Record<string, unkn
 } {
   validateSchema(schema)
 
+  const meta: ParsedSchemaMeta = {
+    conditions: schema.conditions,
+    excluded: schema.excluded,
+  }
+
+  const fields = attachJsonDef(parseFieldDefs(schema.fields), meta)
+  const rules = attachJsonDef(schema.rules.map((rule) => parseRule<C>(rule, schema)), meta)
+
   return {
-    fields: parseFieldDefs(schema.fields),
-    rules: schema.rules.map((rule) => parseRule<C>(rule, schema)),
+    fields,
+    rules,
   }
 }

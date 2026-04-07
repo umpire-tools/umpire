@@ -122,6 +122,54 @@ function paramsFromCheckRule(rule: JsonCheckRule): Params | undefined {
   }
 }
 
+function paramsFromNamedCheckMetadata(metadata: NamedCheckMetadata): Params | undefined {
+  return metadata.params
+}
+
+export function createCheckRuleFromMetadata(
+  field: string,
+  metadata: NamedCheckMetadata,
+  reason?: string,
+): JsonCheckRule | undefined {
+  const resolvedReason = reason && reason !== defaultCheckReason(metadata) ? reason : undefined
+  const params = paramsFromNamedCheckMetadata(metadata)
+
+  switch (metadata.__check) {
+    case 'email':
+    case 'url':
+    case 'integer':
+      return resolvedReason
+        ? { type: 'check', field, op: metadata.__check, reason: resolvedReason }
+        : { type: 'check', field, op: metadata.__check }
+    case 'matches':
+      if (typeof params?.pattern !== 'string') {
+        return undefined
+      }
+      return resolvedReason
+        ? { type: 'check', field, op: 'matches', pattern: params.pattern, reason: resolvedReason }
+        : { type: 'check', field, op: 'matches', pattern: params.pattern }
+    case 'minLength':
+    case 'maxLength':
+    case 'min':
+    case 'max':
+      if (typeof params?.value !== 'number') {
+        return undefined
+      }
+      return resolvedReason
+        ? { type: 'check', field, op: metadata.__check, value: params.value, reason: resolvedReason }
+        : { type: 'check', field, op: metadata.__check, value: params.value }
+    case 'range':
+      if (typeof params?.min !== 'number' || typeof params?.max !== 'number') {
+        return undefined
+      }
+      return resolvedReason
+        ? { type: 'check', field, op: 'range', min: params.min, max: params.max, reason: resolvedReason }
+        : { type: 'check', field, op: 'range', min: params.min, max: params.max }
+    default:
+      return undefined
+  }
+}
+
 export function createNamedCheckFromRule(rule: JsonCheckRule): NamedCheck<any> {
   switch (rule.op) {
     case 'email':

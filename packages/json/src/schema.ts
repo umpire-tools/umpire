@@ -68,6 +68,7 @@ export interface ExcludedRule {
   type: string
   field?: string
   description: string
+  signature?: string
 }
 
 export interface UmpireJsonSchema {
