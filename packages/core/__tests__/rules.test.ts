@@ -6,6 +6,8 @@ import {
   defineRule,
   disables,
   enabledWhen,
+  getNamedCheckMetadata,
+  isNamedCheck,
   oneOf,
   requires,
 } from '../src/rules.js'
@@ -503,11 +505,51 @@ describe('defineRule', () => {
 })
 
 describe('check', () => {
+  test('detects named check validators', () => {
+    expect(
+      isNamedCheck({
+        __check: 'email',
+        validate: (value: unknown) => value === 'ok',
+      }),
+    ).toBe(true)
+    expect(isNamedCheck({ validate: () => true })).toBe(false)
+  })
+
+  test.each([
+    ['null', null],
+    ['string primitive', 'email'],
+    ['function validator', () => true],
+    ['non-string __check', { __check: 123, validate: () => true }],
+    ['missing validate', { __check: 'email' }],
+    ['non-function validate', { __check: 'email', validate: true }],
+  ])('rejects invalid named check shape: %s', (_label, validator) => {
+    expect(isNamedCheck(validator)).toBe(false)
+  })
+
   test('supports function validators', () => {
     const predicate = check<TestFields, TestConditions>('alpha', (value) => value === 'ok')
 
     expect(predicate({ alpha: 'ok' }, { allow: true })).toBe(true)
     expect(predicate({ alpha: 'nope' }, { allow: true })).toBe(false)
+  })
+
+  test('supports named check validators and preserves copied metadata', () => {
+    const validator = {
+      __check: 'minLength',
+      params: { value: 3 },
+      validate: (value: string) => value.length >= 3,
+    }
+    const predicate = check<TestFields, TestConditions>('alpha', validator)
+
+    validator.__check = 'maxLength'
+    validator.params.value = 10
+
+    expect(predicate({ alpha: 'abc' }, { allow: true })).toBe(true)
+    expect(predicate({ alpha: 'ab' }, { allow: true })).toBe(false)
+    expect(getNamedCheckMetadata(predicate)).toEqual({
+      __check: 'minLength',
+      params: { value: 3 },
+    })
   })
 
   test('supports zod-like safeParse validators', () => {

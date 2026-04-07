@@ -4,6 +4,17 @@ export interface FieldDef<V = unknown> {
   isEmpty?(value: V | null | undefined): boolean
 }
 
+export type JsonPrimitive = string | number | boolean | null
+
+export interface NamedCheckMetadata {
+  readonly __check: string
+  readonly params?: Readonly<Record<string, JsonPrimitive>>
+}
+
+export interface NamedCheck<T = unknown> extends NamedCheckMetadata {
+  readonly validate: (value: NonNullable<T>) => boolean
+}
+
 export type FieldStatus = {
   enabled: boolean
   fair: boolean

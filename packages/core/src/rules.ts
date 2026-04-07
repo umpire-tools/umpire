@@ -3,6 +3,8 @@ import { isSatisfied } from './satisfaction.js'
 import type {
   FieldDef,
   FieldValues,
+  NamedCheck,
+  NamedCheckMetadata,
   Rule,
   RuleEvaluation,
   RuleTraceAttachment,
@@ -28,6 +30,7 @@ type Predicate<
   C extends Record<string, unknown>,
 > = ((values: FieldValues<F>, conditions: C) => boolean) & {
   _checkField?: keyof F & string
+  _namedCheck?: NamedCheckMetadata
 }
 
 type ReasonOption<
@@ -76,7 +79,11 @@ type OneOfOptions<
 type FunctionValidator<V> = (value: V) => boolean
 type SafeParseValidator<V> = { safeParse: (value: V) => { success: boolean } }
 type StringTestValidator = { test: (value: string) => boolean }
-type Validator<V> = FunctionValidator<V> | SafeParseValidator<V> | StringTestValidator
+type Validator<V> =
+  | FunctionValidator<V>
+  | NamedCheck<V>
+  | SafeParseValidator<V>
+  | StringTestValidator
 
 export type InternalPredicate<
   F extends Record<string, FieldDef>,
@@ -146,6 +153,10 @@ type InternalRuleCarrier<
   C extends Record<string, unknown>,
 > = Rule<F, C> & {
   _umpire?: InternalRuleMetadata<F, C>
+}
+
+type NamedCheckMetadataCarrier = {
+  _namedCheck?: NamedCheckMetadata
 }
 
 export type DefineRuleConfig<
@@ -280,6 +291,54 @@ export function getInternalRuleMetadata<
   C extends Record<string, unknown>,
 >(rule: Rule<F, C>): InternalRuleMetadata<F, C> | undefined {
   return (rule as InternalRuleCarrier<F, C>)._umpire
+}
+
+function cloneNamedCheckMetadata(metadata: NamedCheckMetadata): NamedCheckMetadata {
+  const params = metadata.params ? Object.freeze({ ...metadata.params }) : undefined
+
+  if (!params) {
+    return Object.freeze({ __check: metadata.__check })
+  }
+
+  return Object.freeze({
+    __check: metadata.__check,
+    params,
+  })
+}
+
+export function isNamedCheck<T = unknown>(validator: unknown): validator is NamedCheck<T> {
+  if (typeof validator !== 'object' || validator === null) {
+    return false
+  }
+
+  return (
+    '__check' in validator &&
+    typeof (validator as { __check?: unknown }).__check === 'string' &&
+    'validate' in validator &&
+    typeof (validator as { validate?: unknown }).validate === 'function'
+  )
+}
+
+function isNamedCheckMetadataCarrier(value: unknown): value is NamedCheckMetadataCarrier {
+  return (typeof value === 'function' || typeof value === 'object') && value !== null
+}
+
+function hasNamedCheckMetadata(
+  value: unknown,
+): value is NamedCheckMetadataCarrier & { _namedCheck: NamedCheckMetadata } {
+  return isNamedCheckMetadataCarrier(value) && value._namedCheck !== undefined
+}
+
+export function getNamedCheckMetadata(value: unknown): NamedCheckMetadata | undefined {
+  if (isNamedCheck(value)) {
+    return cloneNamedCheckMetadata(value)
+  }
+
+  if (!hasNamedCheckMetadata(value)) {
+    return undefined
+  }
+
+  return cloneNamedCheckMetadata(value._namedCheck)
 }
 
 export function getInternalRuleOptions<
@@ -993,6 +1052,9 @@ export function check<
   validator: Validator<NonNullable<V>>,
 ): Predicate<F, C> {
   const target = getFieldNameOrThrow(field)
+  const namedCheckMetadata = isNamedCheck(validator)
+    ? cloneNamedCheckMetadata(validator)
+    : undefined
 
   const predicate = ((values: FieldValues<F>) => {
     const value = values[target]
@@ -1003,6 +1065,10 @@ export function check<
 
     if (typeof validator === 'function') {
       return validator(value as NonNullable<V>)
+    }
+
+    if (isNamedCheck(validator)) {
+      return validator.validate(value as NonNullable<V>)
     }
 
     if ('safeParse' in validator) {
@@ -1017,6 +1083,10 @@ export function check<
   }) as Predicate<F, C>
 
   predicate._checkField = target
+
+  if (namedCheckMetadata) {
+    predicate._namedCheck = namedCheckMetadata
+  }
 
   return predicate
 }
