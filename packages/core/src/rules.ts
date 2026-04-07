@@ -25,6 +25,75 @@ type RuleResult = RuleEvaluation
  */
 export type RuleConstraint = 'enabled' | 'fair'
 
+export type PredicateInspection<Field extends string = string> = {
+  field?: Field
+  namedCheck?: NamedCheckMetadata
+}
+
+export type RuleOperandInspection<Field extends string = string> =
+  | {
+      kind: 'field'
+      field: Field
+    }
+  | {
+      kind: 'predicate'
+      predicate?: PredicateInspection<Field>
+    }
+
+export type RuleInspection<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+> =
+  | {
+      kind: 'enabledWhen'
+      target: keyof F & string
+      predicate?: PredicateInspection<keyof F & string>
+      reason?: string
+      hasDynamicReason: boolean
+    }
+  | {
+      kind: 'disables'
+      source: RuleOperandInspection<keyof F & string>
+      targets: Array<keyof F & string>
+      reason?: string
+      hasDynamicReason: boolean
+    }
+  | {
+      kind: 'fairWhen'
+      target: keyof F & string
+      predicate?: PredicateInspection<keyof F & string>
+      reason?: string
+      hasDynamicReason: boolean
+    }
+  | {
+      kind: 'requires'
+      target: keyof F & string
+      dependencies: Array<RuleOperandInspection<keyof F & string>>
+      reason?: string
+      hasDynamicReason: boolean
+    }
+  | {
+      kind: 'oneOf'
+      groupName: string
+      branches: Record<string, Array<keyof F & string>>
+      activeBranch?: string
+      hasDynamicActiveBranch: boolean
+      reason?: string
+      hasDynamicReason: boolean
+    }
+  | {
+      kind: 'anyOf'
+      constraint: RuleConstraint
+      rules: Array<RuleInspection<F, C>>
+    }
+  | {
+      kind: 'custom'
+      type: string
+      constraint: RuleConstraint
+      targets: Array<keyof F & string>
+      sources: Array<keyof F & string>
+    }
+
 type Predicate<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -339,6 +408,169 @@ export function getNamedCheckMetadata(value: unknown): NamedCheckMetadata | unde
   }
 
   return cloneNamedCheckMetadata(value._namedCheck)
+}
+
+function getPredicateField(value: unknown): string | undefined {
+  if ((typeof value !== 'function' && typeof value !== 'object') || value === null) {
+    return undefined
+  }
+
+  if (!('_checkField' in value)) {
+    return undefined
+  }
+
+  const field = (value as { _checkField?: unknown })._checkField
+  return typeof field === 'string' ? field : undefined
+}
+
+export function inspectPredicate<Field extends string = string>(
+  value: unknown,
+): PredicateInspection<Field> | undefined {
+  const field = getPredicateField(value) as Field | undefined
+  const namedCheck = getNamedCheckMetadata(value)
+
+  if (field === undefined && namedCheck === undefined) {
+    return undefined
+  }
+
+  if (field !== undefined && namedCheck !== undefined) {
+    return { field, namedCheck }
+  }
+
+  if (field !== undefined) {
+    return { field }
+  }
+
+  return { namedCheck }
+}
+
+function inspectReasonOption<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  options: RuleOptions<F, C> | OneOfOptions<F, C> | undefined,
+): { reason?: string; hasDynamicReason: boolean } {
+  const reason = options?.reason
+
+  if (typeof reason === 'function') {
+    return { hasDynamicReason: true }
+  }
+
+  if (typeof reason === 'string') {
+    return { reason, hasDynamicReason: false }
+  }
+
+  return { hasDynamicReason: false }
+}
+
+function inspectOperand<Field extends string = string>(value: unknown): RuleOperandInspection<Field> {
+  if (typeof value === 'string') {
+    return {
+      kind: 'field',
+      field: value as Field,
+    }
+  }
+
+  return {
+    kind: 'predicate',
+    predicate: inspectPredicate<Field>(value),
+  }
+}
+
+function cloneBranches<F extends Record<string, FieldDef>>(
+  branches: OneOfBranches<F>,
+): Record<string, Array<keyof F & string>> {
+  return Object.fromEntries(
+    Object.entries(branches).map(([branch, fields]) => [branch, [...fields]]),
+  ) as Record<string, Array<keyof F & string>>
+}
+
+export function inspectRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(rule: Rule<F, C>): RuleInspection<F, C> | undefined {
+  const metadata = getInternalRuleMetadata(rule)
+
+  if (!metadata) {
+    return undefined
+  }
+
+  if (metadata.kind === 'enabledWhen') {
+    return {
+      kind: 'enabledWhen',
+      target: rule.targets[0],
+      predicate: inspectPredicate<keyof F & string>(metadata.predicate),
+      ...inspectReasonOption(metadata.options),
+    }
+  }
+
+  if (metadata.kind === 'disables') {
+    return {
+      kind: 'disables',
+      source: inspectOperand<keyof F & string>(metadata.source),
+      targets: [...rule.targets],
+      ...inspectReasonOption(metadata.options),
+    }
+  }
+
+  if (metadata.kind === 'fairWhen') {
+    return {
+      kind: 'fairWhen',
+      target: rule.targets[0],
+      predicate: inspectPredicate<keyof F & string>(metadata.predicate),
+      ...inspectReasonOption(metadata.options),
+    }
+  }
+
+  if (metadata.kind === 'requires') {
+    return {
+      kind: 'requires',
+      target: rule.targets[0],
+      dependencies: metadata.dependencies.map((dependency) =>
+        inspectOperand<keyof F & string>(dependency)),
+      ...inspectReasonOption(metadata.options),
+    }
+  }
+
+  if (metadata.kind === 'oneOf') {
+    return {
+      kind: 'oneOf',
+      groupName: metadata.groupName,
+      branches: cloneBranches(metadata.branches),
+      activeBranch:
+        typeof metadata.options?.activeBranch === 'string'
+          ? metadata.options.activeBranch
+          : undefined,
+      hasDynamicActiveBranch: typeof metadata.options?.activeBranch === 'function',
+      ...inspectReasonOption(metadata.options),
+    }
+  }
+
+  if (metadata.kind === 'anyOf') {
+    const inspectedRules = metadata.rules.map((innerRule) => inspectRule(innerRule))
+
+    if (inspectedRules.some((entry) => entry === undefined)) {
+      return undefined
+    }
+
+    return {
+      kind: 'anyOf',
+      constraint: metadata.constraint,
+      rules: inspectedRules as Array<RuleInspection<F, C>>,
+    }
+  }
+
+  if (metadata.kind === 'custom') {
+    return {
+      kind: 'custom',
+      type: rule.type,
+      constraint: metadata.constraint,
+      targets: [...rule.targets],
+      sources: [...rule.sources],
+    }
+  }
+
+  return undefined
 }
 
 export function getInternalRuleOptions<

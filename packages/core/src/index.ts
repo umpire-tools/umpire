@@ -28,7 +28,13 @@ export type {
   NamedCheckMetadata,
 } from './types.js'
 export type { FieldBuilder, FieldInput, FieldRef, NormalizeField, NormalizeFields } from './field.js'
-export type { DefineRuleConfig, RuleConstraint } from './rules.js'
+export type {
+  DefineRuleConfig,
+  PredicateInspection,
+  RuleConstraint,
+  RuleInspection,
+  RuleOperandInspection,
+} from './rules.js'
 export { field } from './field.js'
 export { foulMap } from './foul-map.js'
 export { isSatisfied } from './satisfaction.js'
@@ -43,6 +49,8 @@ export {
   check,
   createRules,
   getNamedCheckMetadata,
+  inspectPredicate,
+  inspectRule,
   isNamedCheck,
 } from './rules.js'
 export { scorecard } from './scorecard.js'

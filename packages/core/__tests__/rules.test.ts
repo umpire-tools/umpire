@@ -7,6 +7,8 @@ import {
   disables,
   enabledWhen,
   getNamedCheckMetadata,
+  inspectPredicate,
+  inspectRule,
   isNamedCheck,
   oneOf,
   requires,
@@ -576,10 +578,132 @@ describe('check', () => {
     expect(predicate._checkField).toBe('alpha')
   })
 
+  test('inspectPredicate returns copied field and named check metadata', () => {
+    const namedPredicate = check<TestFields, TestConditions>('alpha', {
+      __check: 'minLength',
+      params: { value: 3 },
+      validate: (value: string) => value.length >= 3,
+    })
+    const plainPredicate = check<TestFields, TestConditions>('beta', (value) => value === 'ok')
+
+    expect(inspectPredicate(namedPredicate)).toEqual({
+      field: 'alpha',
+      namedCheck: {
+        __check: 'minLength',
+        params: { value: 3 },
+      },
+    })
+    expect(inspectPredicate(plainPredicate)).toEqual({
+      field: 'beta',
+    })
+    expect(inspectPredicate((_values: unknown) => true)).toBeUndefined()
+  })
+
   test('returns false for unsupported validators', () => {
     const predicate = check<TestFields, TestConditions>('alpha', {} as never)
 
     expect(predicate({ alpha: 'ok' }, { allow: true })).toBe(false)
+  })
+})
+
+describe('inspectRule', () => {
+  test('describes built-in rule factories without exposing private metadata', () => {
+    const namedPredicate = check<TestFields, TestConditions>('beta', {
+      __check: 'email',
+      validate: (value: string) => value.includes('@'),
+    })
+    const enabledRule = enabledWhen<TestFields, TestConditions>('alpha', namedPredicate, {
+      reason: 'need a valid email',
+    })
+    const fairRule = requires<TestFields, TestConditions>(
+      'gamma',
+      'beta',
+      check('delta', (value) => value === 'ok'),
+      { reason: (_values, conditions) => (conditions.allow ? 'allowed' : 'blocked') },
+    )
+    const choiceRule = oneOf<TestFields, TestConditions>(
+      'mode',
+      {
+        first: ['alpha'],
+        second: ['beta'],
+      },
+      {
+        activeBranch: (values) => (values.delta === 'pick-second' ? 'second' : 'first'),
+      },
+    )
+
+    expect(inspectRule(enabledRule)).toEqual({
+      kind: 'enabledWhen',
+      target: 'alpha',
+      predicate: {
+        field: 'beta',
+        namedCheck: { __check: 'email' },
+      },
+      reason: 'need a valid email',
+      hasDynamicReason: false,
+    })
+    expect(inspectRule(fairRule)).toEqual({
+      kind: 'requires',
+      target: 'gamma',
+      dependencies: [
+        { kind: 'field', field: 'beta' },
+        {
+          kind: 'predicate',
+          predicate: { field: 'delta' },
+        },
+      ],
+      hasDynamicReason: true,
+    })
+    expect(inspectRule(choiceRule)).toEqual({
+      kind: 'oneOf',
+      groupName: 'mode',
+      branches: {
+        first: ['alpha'],
+        second: ['beta'],
+      },
+      hasDynamicActiveBranch: true,
+      hasDynamicReason: false,
+    })
+  })
+
+  test('describes anyOf and custom rules', () => {
+    const customRule = defineRule<TestFields, TestConditions>({
+      type: 'customEnabled',
+      targets: ['alpha'],
+      sources: ['beta'],
+      evaluate: () => new Map([
+        ['alpha', { enabled: true, reason: null }],
+      ]),
+    })
+    const rule = anyOf<TestFields, TestConditions>(
+      enabledWhen('alpha', () => false, { reason: 'nope' }),
+      enabledWhen('alpha', () => true),
+    )
+
+    expect(inspectRule(customRule)).toEqual({
+      kind: 'custom',
+      type: 'customEnabled',
+      constraint: 'enabled',
+      targets: ['alpha'],
+      sources: ['beta'],
+    })
+    expect(inspectRule(rule)).toEqual({
+      kind: 'anyOf',
+      constraint: 'enabled',
+      rules: [
+        {
+          kind: 'enabledWhen',
+          target: 'alpha',
+          reason: 'nope',
+          hasDynamicReason: false,
+        },
+        {
+          kind: 'enabledWhen',
+          target: 'alpha',
+          hasDynamicReason: false,
+        },
+      ],
+    })
   })
 })
 
