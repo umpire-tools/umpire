@@ -1,0 +1,90 @@
+# @umpire/json
+
+Portable schema parsing and serialization for [@umpire/core](https://www.npmjs.com/package/@umpire/core), plus named `checks.*()` helpers that round-trip cleanly through JSON.
+
+[Docs](https://sdougbrown.github.io/umpire/adapters/json/) · [Quick Start](https://sdougbrown.github.io/umpire/learn/)
+
+## Install
+
+```bash
+npm install @umpire/core @umpire/json
+```
+
+## Usage
+
+```ts
+import { check, enabledWhen, umpire } from '@umpire/core'
+import { checks, fromJson, toJson } from '@umpire/json'
+
+const schema = {
+  version: 1,
+  fields: {
+    email: { isEmpty: 'string' },
+    submit: {},
+  },
+  rules: [
+    { type: 'check', field: 'email', op: 'email' },
+  ],
+}
+
+const { fields, rules } = fromJson(schema)
+
+const mergedRules = [
+  ...rules,
+  enabledWhen('submit', check('email', checks.email()), {
+    reason: 'Enter a valid email address',
+  }),
+]
+
+const ump = umpire({
+  fields,
+  rules: mergedRules,
+})
+
+const json = toJson({
+  fields,
+  rules: mergedRules,
+})
+```
+
+## API
+
+### `fromJson(schema)`
+
+Parses a portable Umpire JSON schema into `{ fields, rules }` values you can pass into `umpire()` or compose with hand-written rules.
+
+### `toJson({ fields, rules, conditions })`
+
+Serializes a TypeScript config back into the portable JSON contract.
+
+- Rules hydrated from JSON round-trip exactly
+- Hand-written rules serialize when they map cleanly to the contract
+- Unsupported pieces go into `excluded` instead of disappearing
+
+### `checks.*()`
+
+Named validators for use with `check(field, validator)`:
+
+- `checks.email()`
+- `checks.url()`
+- `checks.matches(pattern)`
+- `checks.minLength(n)`
+- `checks.maxLength(n)`
+- `checks.min(n)`
+- `checks.max(n)`
+- `checks.range(min, max)`
+- `checks.integer()`
+
+Use these when you want a rule to survive the JSON boundary. Plain functions, regexes, and library schemas still work with `check()`, but they stay TypeScript-specific.
+
+## `excluded`
+
+`excluded` is the escape hatch for rules or field semantics that cannot be serialized safely. It is informational only. Its job is to tell the next runtime, "there was more logic here, and you'll need to recreate it natively."
+
+When present, `excluded.key` gives an exclusion a stable identity so later serializations can replace or remove it once that slot becomes portable.
+
+## Docs
+
+- [@umpire/json docs](https://sdougbrown.github.io/umpire/adapters/json/)
+- [Composing with Validation](https://sdougbrown.github.io/umpire/concepts/validation/)
+- [check() helper](https://sdougbrown.github.io/umpire/api/rules/check/)

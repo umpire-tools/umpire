@@ -132,6 +132,7 @@ export default defineConfig({
             { label: 'React', slug: 'adapters/react' },
             { label: 'Zustand', slug: 'adapters/zustand' },
             { label: 'Zod', slug: 'adapters/zod' },
+            { label: 'JSON', slug: 'adapters/json' },
           ],
         },
         {

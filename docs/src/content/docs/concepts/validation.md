@@ -25,6 +25,7 @@ The handoff point is `check()`. It wraps a validator into something Umpire can u
 Supported validator shapes:
 
 ```ts
+
 // Plain function
 check('weight', (v) => typeof v === 'number' && v > 0)
 
@@ -36,6 +37,12 @@ check('email', z.string().email())
 
 // Yup schema (anything with .test — isValidSync)
 check('zipCode', yup.string().matches(/^\d{5}$/))
+
+// or there are some built-in!
+import { checks } from '@umpire/json'
+
+// Named check — portable through @umpire/json
+check('email', checks.email())
 ```
 
 The key insight: `check()` preserves the field name internally. The dependency graph knows this predicate reads from `email`, so `challenge()` can explain why `submit` is disabled and trace it back to the email field.
@@ -123,4 +130,5 @@ These are all form-framework concerns. Umpire's job ends at "is this field avail
 
 - [Satisfaction semantics](/concepts/satisfaction/) — how Umpire defines "present"
 - [`check()` in the rules API](/api/rules/#checkfield-validator) — full signature and validator shapes
+- [`@umpire/json`](/umpire/adapters/json/) — portable schemas, named checks, and `excluded`
 - [Availability vs validation](/concepts/availability/#availability-is-structural) — the core distinction
