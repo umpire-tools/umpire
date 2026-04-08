@@ -1,0 +1,60 @@
+---
+title: 'Signals — Preact'
+description: Using @umpire/signals with @preact/signals-core.
+---
+
+## Install
+
+```bash
+yarn add @umpire/core @umpire/signals @preact/signals @preact/signals-core
+```
+
+`@preact/signals-core` is the framework-agnostic primitive. `@preact/signals` adds Preact component integration on top (auto-subscription during render).
+
+## Usage
+
+```ts
+import { preactAdapter } from '@umpire/signals/preact'
+import { reactiveUmp } from '@umpire/signals'
+
+const reactive = reactiveUmp(myUmp, preactAdapter)
+```
+
+## In a Preact component
+
+Preact components auto-subscribe to signal reads during render — no hooks needed.
+
+```tsx
+import { signal } from '@preact/signals'
+import { preactAdapter } from '@umpire/signals/preact'
+import { reactiveUmp } from '@umpire/signals'
+
+const reactive = reactiveUmp(myUmp, preactAdapter)
+
+function FieldControl({ name }) {
+  const availability = reactive.field(name)
+
+  return (
+    <input
+      value={reactive.values[name]}
+      disabled={!availability.enabled}
+      onInput={(e) => reactive.set(name, e.currentTarget.value)}
+    />
+  )
+}
+```
+
+When `availability.enabled` changes, only this component re-renders.
+
+## Fouls
+
+`@preact/signals-core` provides `effect()` — fouls tracking is fully supported.
+
+```ts
+const foul = reactive.foul('planId')
+// foul.reason, foul.suggestedValue, or undefined
+```
+
+## Cleanup
+
+Call `reactive.dispose()` when the instance is no longer needed to stop the internal foul-tracking effect.

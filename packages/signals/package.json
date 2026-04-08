@@ -21,6 +21,14 @@
       "types": "./dist/adapters/tc39.d.ts",
       "import": "./dist/adapters/tc39.js"
     },
+    "./vue": {
+      "types": "./dist/adapters/vue.d.ts",
+      "import": "./dist/adapters/vue.js"
+    },
+    "./solid": {
+      "types": "./dist/adapters/solid.d.ts",
+      "import": "./dist/adapters/solid.js"
+    },
     "./protocol": {
       "types": "./dist/protocol.d.ts",
       "import": "./dist/protocol.js"
@@ -41,7 +49,9 @@
   "peerDependencies": {
     "@preact/signals-core": "^1.0.0",
     "alien-signals": "^3.0.0",
-    "signal-polyfill": "^0.2.0"
+    "signal-polyfill": "^0.2.0",
+    "vue": "^3.0.0",
+    "solid-js": "^1.0.0"
   },
   "peerDependenciesMeta": {
     "@preact/signals-core": {
@@ -51,6 +61,12 @@
       "optional": true
     },
     "signal-polyfill": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    },
+    "solid-js": {
       "optional": true
     }
   },

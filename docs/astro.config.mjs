@@ -118,24 +118,40 @@ export default defineConfig({
           items: [
             { label: 'DevTools', slug: 'extensions/devtools' },
             { label: 'Reads', slug: 'extensions/reads' },
+            { label: 'JSON', collapsed: true, items: [
+              { label: 'Overview', slug: 'adapters/json' },
+              { label: 'DSL & Builders', slug: 'adapters/json/dsl' },
+            ] },
           ],
         },
         {
           label: 'Adapters',
           items: [
-            { label: 'Store', slug: 'adapters/store' },
-            { label: 'Redux', slug: 'adapters/redux' },
-            { label: 'Pinia', slug: 'adapters/pinia' },
-            { label: 'TanStack Store', slug: 'adapters/tanstack-store' },
-            { label: 'Vuex', slug: 'adapters/vuex' },
-            { label: 'Signals', slug: 'adapters/signals' },
-            { label: 'React', slug: 'adapters/react' },
-            { label: 'Zustand', slug: 'adapters/zustand' },
-            { label: 'Zod', slug: 'adapters/zod' },
-            { label: 'JSON', collapsed: true, items: [
-              { label: 'Overview', slug: 'adapters/json' },
-              { label: 'DSL & Builders', slug: 'adapters/json/dsl' },
+            { label: 'UI', collapsed: false, items: [
+              { label: 'React', slug: 'adapters/react' },
+              { label: 'Signals', collapsed: true, items: [
+                { label: 'Overview', slug: 'adapters/signals' },
+                { label: 'Preact', slug: 'adapters/signals/preact' },
+                { label: 'Vue', slug: 'adapters/signals/vue' },
+                { label: 'Solid', slug: 'adapters/signals/solid' },
+                { label: 'alien-signals', slug: 'adapters/signals/alien' },
+                { label: 'TC39', slug: 'adapters/signals/tc39' },
+              ] },
             ] },
+            { label: 'State', collapsed: false, items: [
+              { label: 'Store', slug: 'adapters/store' },
+              { label: 'Zustand', slug: 'adapters/zustand' },
+              { label: 'Pinia', slug: 'adapters/pinia' },
+              { label: 'Redux', slug: 'adapters/redux' },
+              { label: 'TanStack Store', slug: 'adapters/tanstack-store' },
+              { label: 'Vuex', slug: 'adapters/vuex' },
+            ] },
+          ],
+        },
+        {
+          label: 'Integrations',
+          items: [
+            { label: 'Zod', slug: 'adapters/zod' },
           ],
         },
         {

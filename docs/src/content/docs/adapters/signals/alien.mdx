@@ -1,0 +1,49 @@
+---
+title: 'Signals — alien-signals'
+description: Using @umpire/signals with alien-signals.
+---
+
+## Install
+
+```bash
+yarn add @umpire/core @umpire/signals alien-signals
+```
+
+## Usage
+
+```ts
+import { alienAdapter } from '@umpire/signals/alien'
+import { reactiveUmp } from '@umpire/signals'
+
+const reactive = reactiveUmp(myUmp, alienAdapter)
+```
+
+## Example
+
+```ts
+import { alienAdapter } from '@umpire/signals/alien'
+import { reactiveUmp } from '@umpire/signals'
+import { effect } from 'alien-signals'
+
+const reactive = reactiveUmp(myUmp, alienAdapter)
+
+// Read availability reactively
+effect(() => {
+  console.log('email enabled:', reactive.field('email').enabled)
+})
+
+reactive.set('accountType', 'business')
+// → effect re-runs if email availability changed
+```
+
+## Fouls
+
+`alien-signals` provides `effect()` — fouls tracking is fully supported.
+
+```ts
+const foul = reactive.foul('planId')
+```
+
+## Cleanup
+
+Call `reactive.dispose()` to stop the internal foul-tracking effect.

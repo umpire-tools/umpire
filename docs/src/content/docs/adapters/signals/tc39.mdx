@@ -1,0 +1,41 @@
+---
+title: 'Signals — TC39'
+description: Using @umpire/signals with the TC39 Signal proposal polyfill.
+---
+
+## Install
+
+```bash
+yarn add @umpire/core @umpire/signals signal-polyfill
+```
+
+## Usage
+
+```ts
+import { tc39Adapter } from '@umpire/signals/tc39'
+import { reactiveUmp } from '@umpire/signals'
+
+const reactive = reactiveUmp(myUmp, tc39Adapter)
+```
+
+## Example
+
+```ts
+import { tc39Adapter } from '@umpire/signals/tc39'
+import { reactiveUmp } from '@umpire/signals'
+
+const reactive = reactiveUmp(myUmp, tc39Adapter)
+
+reactive.set('accountType', 'business')
+console.log(reactive.field('companyName').enabled) // true
+```
+
+## Fouls
+
+The TC39 proposal does not include `effect()`. Fouls tracking is **not available** with this adapter — reading `reactive.fouls` or calling `reactive.foul()` will throw.
+
+Field availability works normally.
+
+## When to use this
+
+The TC39 adapter is useful for environments targeting the eventual native signal API, or for server-side availability checks where fouls tracking isn't needed. For full functionality including fouls, use the [Preact](/umpire/adapters/signals/preact/) or [alien-signals](/umpire/adapters/signals/alien/) adapter instead.

@@ -1,0 +1,67 @@
+---
+title: 'Signals — Vue'
+description: Using @umpire/signals with Vue 3 reactivity.
+---
+
+## Install
+
+```bash
+yarn add @umpire/core @umpire/signals vue
+```
+
+## Usage
+
+```ts
+import { vueAdapter } from '@umpire/signals/vue'
+import { reactiveUmp } from '@umpire/signals'
+
+const reactive = reactiveUmp(myUmp, vueAdapter)
+```
+
+## In a Vue component
+
+```vue
+<script setup>
+import { vueAdapter } from '@umpire/signals/vue'
+import { reactiveUmp } from '@umpire/signals'
+
+const reactive = reactiveUmp(myUmp, vueAdapter)
+</script>
+
+<template>
+  <input
+    :value="reactive.values.email"
+    :disabled="!reactive.field('email').enabled"
+    @input="reactive.set('email', $event.target.value)"
+  />
+</template>
+```
+
+Vue's template compiler auto-tracks reactive reads — `reactive.field('email').enabled` subscribes to the underlying `ref` automatically.
+
+## Batching
+
+Vue automatically batches reactive updates within the same microtask tick. No explicit `batch()` call is needed — `reactive.update()` works correctly without it.
+
+## Flush mode
+
+The internal snapshot effect uses `{ flush: 'sync' }` rather than Vue's default async flush. This is required for fouls tracking to work correctly — the snapshot must advance synchronously when a field changes, before `reactive.fouls` is read. This is an implementation detail; it has no visible effect on how you use the adapter.
+
+## Fouls
+
+`vueAdapter` uses `watchEffect()` for the internal snapshot effect — fouls tracking is fully supported.
+
+```ts
+const foul = reactive.foul('planId')
+// foul.reason, foul.suggestedValue, or undefined
+```
+
+## Cleanup
+
+Call `reactive.dispose()` when the instance is no longer needed. In a component, hook this to `onUnmounted`:
+
+```ts
+import { onUnmounted } from 'vue'
+
+onUnmounted(() => reactive.dispose())
+```

@@ -3,7 +3,7 @@ title: '@umpire/signals'
 description: Signal-backed availability with fine-grained tracking through a minimal protocol.
 ---
 
-import SignalsFineGrainedDemo from '../../../components/SignalsFineGrainedDemo.tsx'
+import SignalsFineGrainedDemo from '../../../../components/SignalsFineGrainedDemo.tsx'
 
 `@umpire/signals` adapts the pure core to any signal library that matches the `SignalProtocol` interface. The demo below uses [Preact signals](https://preactjs.com/guide/v10/signals/) — components read signal-backed values directly during render and Preact auto-subscribes to changes. No hooks, no effects, no manual bridging.
 
@@ -52,10 +52,10 @@ If you'd collapse all signals into one blob and re-render everything anyway, jus
 ## Install
 
 ```bash
-yarn add @umpire/core @umpire/signals @preact/signals @preact/signals-core
+yarn add @umpire/core @umpire/signals
 ```
 
-`@preact/signals-core` is the framework-agnostic signal primitive. `@preact/signals` adds Preact integration on top. Any library that implements the `SignalProtocol` interface works — Preact signals is just one option.
+Then add the peer dependency for your signal library. See the adapter pages for specifics.
 
 ## `SignalProtocol`
 
@@ -137,8 +137,6 @@ const reactive = reactiveUmp(recurrenceUmp, adapter, {
 })
 ```
 
-That avoids duplicating state.
-
 ## Conditions Signals
 
 Conditions can also be reactive.
@@ -160,8 +158,6 @@ Changing `captchaTokenSignal` recomputes availability just like changing a field
 The adapter uses an effect to advance an internal "before" snapshot whenever field or conditions signals change, then computes `ump.play(before, after)` from that transition.
 
 ### Per-field access
-
-Use `reactive.foul(name)` to get the foul for a specific field, or `undefined` if none exists. This mirrors `reactive.field(name)` for availability:
 
 ```ts
 // Per-field — use in FieldControl components
@@ -202,40 +198,14 @@ JSON.stringify(values)
 
 Those patterns cause all field signals to be read.
 
-## Adapter Examples
+## Adapters
 
-### Preact
+Pre-wired adapters are available as sub-path exports:
 
-```ts
-import { batch, computed, effect, signal } from '@preact/signals'
-
-const preactAdapter: SignalProtocol = {
-  signal(initial) {
-    const s = signal(initial)
-    return { get: () => s.value, set: (value) => { s.value = value } }
-  },
-  computed(fn) {
-    const c = computed(fn)
-    return { get: () => c.value }
-  },
-  effect,
-  batch,
-}
-```
-
-### TC39 Signal Proposal
-
-```ts
-import { Signal } from 'signal-polyfill'
-
-const tc39Adapter: SignalProtocol = {
-  signal(initial) {
-    return new Signal.State(initial)
-  },
-  computed(fn) {
-    return new Signal.Computed(fn)
-  },
-}
-```
-
-The TC39-shaped adapter works for field availability, but not for `fouls`, because it has no `effect()`.
+| Import | Library |
+|---|---|
+| `@umpire/signals/preact` | `@preact/signals-core` |
+| `@umpire/signals/alien` | `alien-signals` |
+| `@umpire/signals/vue` | `vue` |
+| `@umpire/signals/solid` | `solid-js` |
+| `@umpire/signals/tc39` | `signal-polyfill` (TC39 proposal) |

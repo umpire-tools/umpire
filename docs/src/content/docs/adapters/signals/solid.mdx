@@ -1,0 +1,75 @@
+---
+title: 'Signals — Solid'
+description: Using @umpire/signals with SolidJS.
+---
+
+## Install
+
+```bash
+yarn add @umpire/core @umpire/signals solid-js
+```
+
+## Usage
+
+```ts
+import { solidAdapter } from '@umpire/signals/solid'
+import { reactiveUmp } from '@umpire/signals'
+
+const reactive = reactiveUmp(myUmp, solidAdapter)
+```
+
+## In a Solid component
+
+```tsx
+import { solidAdapter } from '@umpire/signals/solid'
+import { reactiveUmp } from '@umpire/signals'
+
+const reactive = reactiveUmp(myUmp, solidAdapter)
+
+function FieldControl(props) {
+  const availability = reactive.field(props.name)
+
+  return (
+    <input
+      value={reactive.values[props.name]}
+      disabled={!availability.enabled}
+      onInput={(e) => reactive.set(props.name, e.currentTarget.value)}
+    />
+  )
+}
+```
+
+Solid tracks reactive reads during render automatically — no explicit subscriptions needed.
+
+## Reactive root
+
+`reactiveUmp()` creates internal effects for fouls tracking. When called inside a Solid component, these effects are automatically scoped to the component's lifetime.
+
+When called **outside** a component (e.g. in a shared store or service), the adapter wraps effects in `createRoot` internally, giving you a dispose function for manual cleanup:
+
+```ts
+// Outside a component — dispose manually
+const reactive = reactiveUmp(myUmp, solidAdapter)
+
+// Later:
+reactive.dispose()
+```
+
+## Fouls
+
+`solid-js` provides `createEffect()` — fouls tracking is fully supported.
+
+```ts
+const foul = reactive.foul('planId')
+// foul.reason, foul.suggestedValue, or undefined
+```
+
+## Cleanup
+
+Call `reactive.dispose()` when done. Inside a component, hook this to `onCleanup`:
+
+```ts
+import { onCleanup } from 'solid-js'
+
+onCleanup(() => reactive.dispose())
+```
