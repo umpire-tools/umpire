@@ -3,31 +3,32 @@ title: Droid-First Development
 description: Umpire ships instructions for AI assistants, not just documentation for humans.
 ---
 
-Most libraries document their API for humans and hope for the best when an AI assistant writes the integration code. Umpire takes a different approach: every package ships machine-readable rules that teach your AI assistant the correct patterns before it writes a single line.
+Most libraries document their API for humans and hope for the best when an AI assistant writes the integration code. Umpire takes a different approach: every package ships a tiny agent-facing instruction file that teaches the correct integration patterns before a single line gets written.
 
 We call this **droid-first** development. The docs are for you. The rules are for your copilot.
 
 ## What ships with `yarn add`
 
-Each `@umpire/*` package includes a `.claude/rules/` directory. When you install Umpire, these files land in `node_modules` where Claude Code picks them up automatically.
+Each published `@umpire/*` package includes:
 
-Here's what `@umpire/core` teaches your assistant:
+- `AGENTS.md` as the canonical, cross-tool instruction file
+- `.claude/rules/umpire-*.md` as a Claude-oriented compatibility file that points at the same content
+
+That keeps the hints discoverable without making them long. The goal is "small and useful," not "more docs, but for robots."
+
+Here is the kind of guidance `@umpire/core` ships:
 
 ```
 - Create an umpire with umpire({ fields, rules }).
-- Do not drive availability with useEffect; derive it
-  from ump.check(values, conditions?) during render.
-- Use play(before, after) for transition-time reset
-  recommendations, not on every render.
+- Satisfaction is presence-based by default; use isEmpty
+  only when your domain needs a stricter empty check.
 - requires checks both value satisfaction and availability.
 - disables and oneOf check source values only, not
   source availability.
-- Use fairWhen for relational value appropriateness —
-  when a field's current value may no longer fit given
-  upstream changes. Do not use enabledWhen with a
-  conditions boolean to fake this check.
-- field<V>('name') gives fairWhen predicates a typed
-  value parameter instead of unknown.
+- Rules on the same target are ANDed; use anyOf(...)
+  for OR logic.
+- Use play(before, after) only for transition-time reset
+  suggestions, not on every render.
 ```
 
 And `@umpire/react`:
@@ -35,13 +36,13 @@ And `@umpire/react`:
 ```
 - Use useUmpire(ump, values, conditions?) to derive
   availability inside React components.
-- Do not use useEffect to react to availability changes;
-  availability is derived each render.
-- fouls come from ump.play() comparing the current render
-  snapshot to the previous one.
+- check is derived each render; do not mirror it into
+  React state or recompute it in useEffect.
+- fouls are transition-time recommendations from the
+  previous snapshot; the hook tracks that internally.
 ```
 
-No prompt engineering required. Your assistant reads these rules the moment it touches your codebase.
+No prompt engineering required. Agents that look for `AGENTS.md` get the canonical file. Claude-oriented tooling still finds the compatibility rule file.
 
 ## What this means in practice
 
@@ -52,30 +53,35 @@ Without droid-first rules, an AI assistant writing Umpire integration code will 
 3. Store availability in a `useState` instead of deriving it
 4. Spread the reactive proxy and defeat fine-grained signal tracking
 
-These are the exact mistakes that are easy to make and hard to debug. The per-package rules prevent all four — the assistant knows the correct pattern before it starts writing.
+These are the exact mistakes that are easy to make and hard to debug. The package-level agent hints prevent all four without wasting a big chunk of the consumer's context window.
 
-## Store and adapter packages, covered
+## Package coverage
 
-| Package | Rule file | Key guidance |
+| Package | Canonical file | Key guidance |
 | --- | --- | --- |
-| `@umpire/core` | `.claude/rules/umpire-core.md` | Satisfaction semantics, rule evaluation order, `check()` vs `play()` vs `challenge()` |
-| `@umpire/store` | `.claude/rules/umpire-store.md` | Strict `fromStore()` contract, `select()` as the aggregation point, no loose subscribe signatures |
-| `@umpire/react` | `.claude/rules/umpire-react.md` | `useUmpire` hook, no `useEffect`, snapshot tracking is internal |
-| `@umpire/redux` | `.claude/rules/umpire-redux.md` | `fromReduxStore()`, internal `prevState` tracking, same `UmpireStore` surface |
-| `@umpire/pinia` | `.claude/rules/umpire-pinia.md` | `fromPiniaStore()`, shallow `$state` snapshots, same `select()` pattern |
-| `@umpire/signals` | `.claude/rules/umpire-signals.md` | `reactiveUmp()`, no spread on proxy, `effect()` required for fouls |
-| `@umpire/tanstack-store` | `.claude/rules/umpire-tanstack-store.md` | `fromTanStackStore()`, previous `.state` snapshots, same `select()` pattern |
-| `@umpire/vuex` | `.claude/rules/umpire-vuex.md` | `fromVuexStore()`, previous state snapshots, same `select()` pattern |
-| `@umpire/zustand` | `.claude/rules/umpire-zustand.md` | `fromStore()`, native `subscribe(next, prev)`, no manual prev tracking |
+| `@umpire/core` | `AGENTS.md` | Satisfaction semantics, `requires` vs `disables`, `check()` vs `play()` vs `challenge()` |
+| `@umpire/react` | `AGENTS.md` | `useUmpire()`, derived render-time availability, internal previous-snapshot tracking |
+| `@umpire/signals` | `AGENTS.md` | `reactiveUmp()`, fine-grained reads, `effect()` requirement for fouls |
+| `@umpire/store` | `AGENTS.md` | Strict `fromStore()` contract, `select()` as the aggregation point |
+| `@umpire/zustand` | `AGENTS.md` | Native `fromStore()` fit, no manual previous-state bookkeeping |
+| `@umpire/redux` | `AGENTS.md` | `fromReduxStore()`, internal previous-state tracking |
+| `@umpire/pinia` | `AGENTS.md` | `fromPiniaStore()`, `$state` snapshotting before delegation |
+| `@umpire/tanstack-store` | `AGENTS.md` | `fromTanStackStore()`, previous `.state` snapshotting |
+| `@umpire/vuex` | `AGENTS.md` | `fromVuexStore()`, state snapshotting before delegation |
+| `@umpire/zod` | `AGENTS.md` | Active-schema composition and error filtering for enabled fields only |
+| `@umpire/json` | `AGENTS.md` | Portable rule round-tripping, named checks, `excluded` preservation |
+| `@umpire/reads` | `AGENTS.md` | Memoized reads, read-backed rule bridges, direct-dependency inspection |
+| `@umpire/testing` | `AGENTS.md` | Structural invariant probing with `monkeyTest()` |
+| `@umpire/devtools` | `AGENTS.md` | Dev-only panel mounting, registration, reads inspection |
 
 ## For contributors
 
-The repo's `CLAUDE.md` is the canonical instruction source. It's symlinked to `AGENTS.md` and `.cursor/rules/umpire.md` so that Claude Code, Codex, and Cursor all receive identical guidance from a single file.
+The repo's `AGENTS.md` is the canonical instruction source. `CLAUDE.md` and `.cursor/rules/umpire.md` should stay symlinked to it so Claude Code, Codex, and Cursor all receive identical guidance from a single file.
 
 ```
-CLAUDE.md              ← canonical source
-AGENTS.md              → symlink to CLAUDE.md
-.cursor/rules/umpire.md → symlink to CLAUDE.md
+AGENTS.md               ← canonical source
+CLAUDE.md               → symlink to AGENTS.md
+.cursor/rules/umpire.md → symlink to AGENTS.md
 ```
 
 One source of truth. Three agents. No drift.
@@ -84,7 +90,7 @@ One source of truth. Three agents. No drift.
 
 AI assistants are going to write integration code against your library whether you guide them or not. The question is whether they'll write it correctly.
 
-Shipping `.claude/rules/` files is cheap — a few hundred bytes of plain text per package. The payoff is that every developer using Claude Code, Cursor, or Codex with your library gets correct patterns by default, without reading the docs first, without trial and error, without a Stack Overflow detour.
+Shipping a tiny `AGENTS.md` file per package is cheap. The payoff is that developers using Claude Code, Cursor, Codex, or anything else that respects `AGENTS.md` get correct patterns by default, without reading the docs first, without trial and error, and without burning context on a wall of prose.
 
 The docs are still here for the humans. But the droids get first-class support too.
 

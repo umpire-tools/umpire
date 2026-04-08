@@ -100,6 +100,8 @@ const form = reactiveUmp(signupUmp, alienAdapter, {
 - `@umpire/signals/alien`
 - `@umpire/signals/preact`
 - `@umpire/signals/tc39`
+- `@umpire/signals/vue`
+- `@umpire/signals/solid`
 - `@umpire/signals/protocol`
 
 ## Fouls and `effect()`

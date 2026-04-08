@@ -27,6 +27,7 @@
   },
   "files": [
     "dist",
+    "AGENTS.md",
     ".claude"
   ],
   "dependencies": {

@@ -86,6 +86,7 @@ const fouls = signupUmp.play(
 | [`@umpire/vuex`](./packages/vuex/README.md) | Vuex 4 adapter (Vue 3) |
 | [`@umpire/zod`](./packages/zod/README.md) | Availability-aware Zod schemas — disabled fields produce no errors |
 | [`@umpire/reads`](./packages/reads/README.md) | Derived read tables and read-backed rule bridges |
+| [`@umpire/testing`](./packages/testing/README.md) | Invariant probes for rule configurations |
 | [`@umpire/devtools`](./packages/devtools/README.md) | In-app inspector panel — scorecard, traces, foul log, graph view |
 
 ## Why Umpire?
@@ -108,7 +109,7 @@ Full docs, concepts, and examples live at https://sdougbrown.github.io/umpire/
 
 ## Droid-Friendly
 
-Per-package `.claude/rules/` directories ship in the published npm packages, so AI assistants can pick up package-specific usage patterns automatically. For repo contributors, `CLAUDE.md`, `AGENTS.md`, and `.cursor/rules/` are kept in sync for local tooling.
+Each published package ships a tight `AGENTS.md` file for cross-agent discoverability, with `.claude/rules/*` included as a Claude-specific compatibility surface. In this repo, `AGENTS.md` is canonical and `CLAUDE.md` plus `.cursor/rules/` are compatibility symlinks.
 
 ## Status
 
