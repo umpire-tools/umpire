@@ -1636,12 +1636,18 @@ __metadata:
     "@preact/signals-core": ^1.0.0
     alien-signals: ^3.0.0
     signal-polyfill: ^0.2.0
+    solid-js: ^1.0.0
+    vue: ^3.0.0
   peerDependenciesMeta:
     "@preact/signals-core":
       optional: true
     alien-signals:
       optional: true
     signal-polyfill:
+      optional: true
+    solid-js:
+      optional: true
+    vue:
       optional: true
   languageName: unknown
   linkType: soft
@@ -1664,6 +1670,14 @@ __metadata:
     "@umpire/store": "workspace:^"
   peerDependencies:
     "@tanstack/store": ^0.9.3
+  languageName: unknown
+  linkType: soft
+
+"@umpire/testing@workspace:packages/testing":
+  version: 0.0.0-use.local
+  resolution: "@umpire/testing@workspace:packages/testing"
+  peerDependencies:
+    "@umpire/core": ^0.1.0-alpha.9
   languageName: unknown
   linkType: soft
 
