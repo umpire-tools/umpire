@@ -46,8 +46,41 @@ type FieldDef = {
 3. Builds the structural dependency graph.
 4. Detects cycles in ordering edges.
 5. Computes the topological field order used by `check()` and `play()`.
+6. Detects structurally contradictory rules that would make a field permanently unreachable.
 
-If a cycle exists, creation throws immediately rather than leaving the issue for runtime evaluation.
+If any of these checks fail, creation throws immediately rather than leaving the issue for runtime evaluation.
+
+### Structural contradiction detection
+
+Two patterns are caught at construction time:
+
+**`disables` + `requires` on the same pair:**
+
+```ts
+// throws: "delta" can never be enabled — it requires "beta" but is disabled whenever "beta" is satisfied
+umpire({
+  fields: { beta: {}, delta: {} },
+  rules: [
+    disables('beta', ['delta']),
+    requires('delta', 'beta'),
+  ],
+})
+```
+
+**Cross-branch `requires` inside a static `oneOf`:**
+
+```ts
+// throws: "alpha" can never be enabled — it requires "beta", but oneOf("strategy") places them in different branches
+umpire({
+  fields: { alpha: {}, beta: {} },
+  rules: [
+    oneOf('strategy', { first: ['alpha'], second: ['beta'] }),
+    requires('alpha', check('beta', (v) => v === 'ready')),
+  ],
+})
+```
+
+If `oneOf` uses a dynamic `activeBranch` function, cross-branch `requires` is allowed — the contradiction can't be proven statically.
 
 ## Return Type
 

@@ -118,6 +118,7 @@ export default defineConfig({
           items: [
             { label: 'DevTools', slug: 'extensions/devtools' },
             { label: 'Reads', slug: 'extensions/reads' },
+            { label: 'Testing', slug: 'extensions/testing' },
             { label: 'JSON', collapsed: true, items: [
               { label: 'Overview', slug: 'adapters/json' },
               { label: 'DSL & Builders', slug: 'adapters/json/dsl' },
