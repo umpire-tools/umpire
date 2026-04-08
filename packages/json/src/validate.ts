@@ -1,4 +1,4 @@
-import type { UmpireJsonSchema, JsonRule, JsonFieldDef } from './schema.js'
+import type { ExcludedRule, UmpireJsonSchema, JsonRule, JsonFieldDef } from './schema.js'
 import { assertValidCheckRule } from './check-ops.js'
 import { compileExpr } from './expr.js'
 import { isJsonIsEmptyStrategy } from './strategies.js'
@@ -17,6 +17,28 @@ function validateFieldDef(field: string, definition: JsonFieldDef) {
     !isJsonIsEmptyStrategy(definition.isEmpty)
   ) {
     throw new Error(`[umpire/json] Unknown isEmpty strategy "${String(definition.isEmpty)}"`)
+  }
+}
+
+function validateExcludedRule(rule: ExcludedRule) {
+  if (typeof rule.type !== 'string' || rule.type.length === 0) {
+    throw new Error('[umpire/json] Excluded rules must include a non-empty string type')
+  }
+
+  if (rule.field !== undefined && typeof rule.field !== 'string') {
+    throw new Error('[umpire/json] Excluded rule field must be a string when provided')
+  }
+
+  if (typeof rule.description !== 'string' || rule.description.length === 0) {
+    throw new Error('[umpire/json] Excluded rules must include a non-empty string description')
+  }
+
+  if (rule.key !== undefined && typeof rule.key !== 'string') {
+    throw new Error('[umpire/json] Excluded rule key must be a string when provided')
+  }
+
+  if (rule.signature !== undefined && typeof rule.signature !== 'string') {
+    throw new Error('[umpire/json] Excluded rule signature must be a string when provided')
   }
 }
 
@@ -95,5 +117,9 @@ export function validateSchema(schema: UmpireJsonSchema): void {
 
   for (const rule of schema.rules ?? []) {
     validateRule(rule, fieldNames, schema.conditions)
+  }
+
+  for (const rule of schema.excluded ?? []) {
+    validateExcludedRule(rule)
   }
 }

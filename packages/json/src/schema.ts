@@ -68,6 +68,7 @@ export interface ExcludedRule {
   type: string
   field?: string
   description: string
+  key?: string
   signature?: string
 }
 

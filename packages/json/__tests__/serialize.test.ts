@@ -48,6 +48,7 @@ describe('toJson', () => {
           type: 'custom',
           field: 'planId',
           description: 'Carry forward prior unsupported rule metadata',
+          key: 'rule:custom:planId',
         },
       ],
     }
@@ -135,17 +136,154 @@ describe('toJson', () => {
           type: 'field:isEmpty',
           field: 'extra',
           description: 'Field isEmpty uses a custom function and cannot be serialized',
+          key: 'field:extra:isEmpty',
           signature: '(value) => boolean',
         },
         {
           type: 'field:default',
           field: 'profile',
           description: 'Field default is not a JSON primitive and cannot be serialized',
+          key: 'field:profile:default',
         },
         {
           type: 'enabledWhen',
           field: 'submit',
           description: 'enabledWhen() predicates are only serializable when hydrated from JSON',
+          key: 'rule:enabledWhen:submit',
+        },
+      ],
+    })
+  })
+
+  test('drops carried exclusions when the current config now serializes that slot', () => {
+    const parsed = fromJson({
+      version: 1,
+      fields: {
+        email: {},
+        username: {},
+      },
+      rules: [],
+      excluded: [
+        {
+          type: 'field:isEmpty',
+          field: 'email',
+          description: 'Prior runtime could not serialize email emptiness',
+          key: 'field:email:isEmpty',
+        },
+        {
+          type: 'oneOf',
+          description: 'Prior runtime could not serialize access mode branching',
+          key: 'rule:oneOf:accessMode',
+        },
+      ],
+    })
+
+    expect(toJson({
+      fields: {
+        ...parsed.fields,
+        email: { isEmpty: isEmptyString },
+      },
+      rules: [
+        oneOf('accessMode', {
+          account: ['email'],
+          handle: ['username'],
+        }),
+      ],
+    })).toEqual({
+      version: 1,
+      fields: {
+        email: { isEmpty: 'string' },
+        username: {},
+      },
+      rules: [
+        {
+          type: 'oneOf',
+          group: 'accessMode',
+          branches: {
+            account: ['email'],
+            handle: ['username'],
+          },
+        },
+      ],
+    })
+  })
+
+  test('replaces carried exclusions with current generated exclusions that share a key', () => {
+    const parsed = fromJson({
+      version: 1,
+      fields: {
+        extra: {},
+      },
+      rules: [],
+      excluded: [
+        {
+          type: 'field:isEmpty',
+          field: 'extra',
+          description: 'Legacy exclusion text',
+          key: 'field:extra:isEmpty',
+        },
+      ],
+    })
+
+    expect(toJson({
+      fields: {
+        ...parsed.fields,
+        extra: { isEmpty: (value: unknown) => value == null || value === '' },
+      },
+      rules: parsed.rules,
+    })).toEqual({
+      version: 1,
+      fields: {
+        extra: {},
+      },
+      rules: [],
+      excluded: [
+        {
+          type: 'field:isEmpty',
+          field: 'extra',
+          description: 'Field isEmpty uses a custom function and cannot be serialized',
+          key: 'field:extra:isEmpty',
+          signature: '(value) => boolean',
+        },
+      ],
+    })
+  })
+
+  test('dedupes carried exclusions that share the same key', () => {
+    const parsed = fromJson({
+      version: 1,
+      fields: {
+        extra: {},
+      },
+      rules: [],
+      excluded: [
+        {
+          type: 'field:isEmpty',
+          field: 'extra',
+          description: 'Older exclusion text',
+          key: 'field:extra:isEmpty',
+        },
+        {
+          type: 'field:isEmpty',
+          field: 'extra',
+          description: 'Newer exclusion text',
+          key: 'field:extra:isEmpty',
+        },
+      ],
+    })
+
+    expect(toJson(parsed)).toEqual({
+      version: 1,
+      fields: {
+        extra: {},
+      },
+      rules: [],
+      excluded: [
+        {
+          type: 'field:isEmpty',
+          field: 'extra',
+          description: 'Newer exclusion text',
+          key: 'field:extra:isEmpty',
         },
       ],
     })
