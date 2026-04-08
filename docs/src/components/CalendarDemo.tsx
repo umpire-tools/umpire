@@ -61,6 +61,12 @@ const calendarUmp = umpire({
     enabledWhen('fixedBetween',
       ({ fromDate, toDate }) => !!fromDate && !!toDate),
 
+    // Weekday selection and date selection are mutually exclusive strategies
+    oneOf('dayPattern', {
+      byWeekday: ['everyWeekday'],
+      byDate: ['everyDate'],
+    }),
+
     // Exclusions only meaningful when patterns exist
     enabledWhen('exceptDates',
       (v) => !!(v.everyWeekday || v.everyDate || v.everyMonth)),
@@ -182,8 +188,29 @@ const months = [
 
 const weekdayHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const
 const quickDates = [1, 15, 31] as const
-const hourOptions = Array.from({ length: 24 }, (_, hour) => hour)
-const defaultFocusDate = '2026-04-01'
+function getSecondWednesday(): string {
+  const now = new Date()
+  const d = new Date(now.getFullYear(), now.getMonth(), 1)
+  while (d.getDay() !== 3) d.setDate(d.getDate() + 1)
+  d.setDate(d.getDate() + 7)
+  return d.toISOString().slice(0, 10)
+}
+
+const secondWednesdayOfMonth = getSecondWednesday()
+
+function getDefaultMonths(): number[] {
+  const now = new Date()
+  const current = now.getMonth() + 1
+  const previous = current === 1 ? 12 : current - 1
+  return [previous, current].sort((a, b) => a - b)
+}
+
+const defaultMonths = getDefaultMonths()
+
+const defaultFocusDate = (() => {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+})()
 
 function cls(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(' ')
@@ -204,16 +231,6 @@ function toExceptBetween(value: unknown): ExceptBetweenValue {
 
   const { start, end } = value as ExceptBetweenValue
   return { start, end }
-}
-
-function formatHour(hour: number) {
-  const period = hour >= 12 ? 'PM' : 'AM'
-  const normalized = hour % 12 || 12
-  return `${normalized}:00 ${period}`
-}
-
-function formatHourChip(hour: number) {
-  return `${String(hour).padStart(2, '0')}:00`
 }
 
 function collectActiveDates(month: Month | undefined) {
@@ -289,11 +306,11 @@ function buildPreviewRange(
   }
 
   if (availability.fromDate.enabled && values.fromDate) {
-    range.fromDate = values.fromDate
+    range.fromDate = values.fromDate as string
   }
 
   if (availability.toDate.enabled && values.toDate) {
-    range.toDate = values.toDate
+    range.toDate = values.toDate as string
   }
 
   if (availability.fixedBetween.enabled && values.fixedBetween) {
@@ -322,10 +339,15 @@ function buildPreviewRange(
 }
 
 export default function CalendarDemo() {
-  const [values, setValues] = useState<CalendarValues>(() => calendarUmp.init())
+  const [values, setValues] = useState<CalendarValues>(() => ({
+    ...calendarUmp.init(),
+    everyWeekday: [1, 3, 5],
+    everyMonth: defaultMonths,
+    exceptDates: [secondWednesdayOfMonth],
+  }))
   const [focusDate, setFocusDate] = useState(defaultFocusDate)
   const [dateDraft, setDateDraft] = useState(defaultFocusDate)
-  const [exceptDateDraft, setExceptDateDraft] = useState('2026-04-12')
+  const [exceptDateDraft, setExceptDateDraft] = useState('')
   const [everyDateDraft, setEveryDateDraft] = useState('')
 
   const { check, fouls } = useUmpire('calendar', calendarUmp, values)
@@ -483,7 +505,7 @@ export default function CalendarDemo() {
       for (const foul of fouls) {
         const suggestedValue = foul.suggestedValue as CalendarValues[typeof foul.field]
         if (!Object.is(next[foul.field], suggestedValue)) {
-          next[foul.field] = suggestedValue
+          ;(next as Record<string, unknown>)[foul.field] = suggestedValue
           changed = true
         }
       }
@@ -497,7 +519,6 @@ export default function CalendarDemo() {
   const everyDateValues = toNumberList(values.everyDate)
   const everyMonthValues = toNumberList(values.everyMonth)
   const exceptDateValues = toStringList(values.exceptDates)
-  const everyHourValues = toNumberList(values.everyHour)
   const exceptBetween = toExceptBetween(values.exceptBetween)
   const hasPreviewCriteria = (
     explicitDates.length > 0 ||
@@ -538,6 +559,69 @@ export default function CalendarDemo() {
 
   return (
     <div className="calendar-demo umpire-demo">
+      <section className="calendar-demo__panel calendar-demo__panel--preview">
+        <div className="calendar-demo__panel-header">
+          <div>
+            <div className="calendar-demo__eyebrow">neo-reckoning preview</div>
+            <h3 className="calendar-demo__panel-title">{previewMonth.label}</h3>
+          </div>
+          <div className="calendar-demo__nav">
+            <button type="button" className="calendar-demo__nav-button" aria-label="Previous month" onClick={prev}>Prev</button>
+            <button type="button" className="calendar-demo__nav-button" aria-label="Next month" onClick={next}>Next</button>
+          </div>
+        </div>
+        <div className="calendar-demo__panel-body">
+          <div className="calendar-demo__weekday-row">
+            {weekdayHeaders.map((weekday) => (
+              <div key={weekday} className="calendar-demo__weekday">{weekday}</div>
+            ))}
+          </div>
+          <div className="calendar-demo__month-grid">
+            {previewMonth.weeks.map((week) =>
+              week.days.map((day) => {
+                const isActive = activeDates.has(day.date)
+                const isExcluded = hasExceptions && activeBaseDates.has(day.date) && !isActive
+                const isOutOfBounds = isOutsideBounds(day.date, values.fromDate as string | undefined, values.toDate as string | undefined)
+                return (
+                  <div
+                    key={day.date}
+                    className={cls(
+                      'calendar-demo__day',
+                      isActive && 'calendar-demo__day--active',
+                      isExcluded && 'calendar-demo__day--excluded',
+                      isOutOfBounds && 'calendar-demo__day--outside-window',
+                      !day.isCurrentMonth && 'calendar-demo__day--adjacent',
+                      day.isToday && 'calendar-demo__day--today',
+                    )}
+                  >
+                    <span className="calendar-demo__day-number">{day.dayOfMonth}</span>
+                    <span className="calendar-demo__day-markers">
+                      {isActive && <span className="calendar-demo__day-marker calendar-demo__day-marker--active" />}
+                      {isExcluded && <span className="calendar-demo__day-marker calendar-demo__day-marker--excluded" />}
+                      {isOutOfBounds && <span className="calendar-demo__day-marker calendar-demo__day-marker--bounds" />}
+                    </span>
+                  </div>
+                )
+              }),
+            )}
+          </div>
+          <div className="calendar-demo__legend">
+            <div className="calendar-demo__legend-item">
+              <span className="calendar-demo__legend-swatch calendar-demo__legend-swatch--active" />
+              <span>active day</span>
+            </div>
+            <div className="calendar-demo__legend-item">
+              <span className="calendar-demo__legend-swatch calendar-demo__legend-swatch--excluded" />
+              <span>excluded</span>
+            </div>
+            <div className="calendar-demo__legend-item">
+              <span className="calendar-demo__legend-swatch calendar-demo__legend-swatch--bounds" />
+              <span>outside bounds</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {fouls.length > 0 && (
         <div className="umpire-demo__fouls">
           <div className="umpire-demo__fouls-copy">
@@ -655,6 +739,12 @@ export default function CalendarDemo() {
               <div className="calendar-demo__group-caption">Authoritative picks</div>
             </div>
 
+            {hasPreviewCriteria && explicitDates.length === 0 && (
+              <p className="calendar-demo__hint">
+                Adding a date here activates the <code>disables()</code> rule — all pattern fields go dark and <code>play()</code> will recommend clearing any active values.
+              </p>
+            )}
+
             <div
               className={cls(
                 'calendar-demo__control',
@@ -706,6 +796,12 @@ export default function CalendarDemo() {
               <div className="calendar-demo__group-kicker">Patterns</div>
               <div className="calendar-demo__group-caption">Weekdays, months, month-days</div>
             </div>
+
+            {!check.everyWeekday.enabled && check.everyWeekday.reason && (
+              <p className="calendar-demo__hint">
+                <code>oneOf</code> active — day-of-month strategy is locked in. Weekday is unavailable until day selections are cleared.
+              </p>
+            )}
 
             <div
               className={cls(
@@ -768,6 +864,12 @@ export default function CalendarDemo() {
                 <span className="calendar-demo__reason">{check.everyMonth.reason}</span>
               )}
             </div>
+
+            {!check.everyDate.enabled && check.everyDate.reason && (
+              <p className="calendar-demo__hint">
+                <code>oneOf</code> active — weekday strategy is locked in. Day-of-month is unavailable until weekdays are cleared.
+              </p>
+            )}
 
             <div
               className={cls(
@@ -927,305 +1029,8 @@ export default function CalendarDemo() {
               )}
             </div>
           </section>
-
-          <section className="calendar-demo__group calendar-demo__group--duration">
-            <div className="calendar-demo__group-head">
-              <div className="calendar-demo__group-kicker">Duration</div>
-              <div className="calendar-demo__group-caption">Shared event length</div>
-            </div>
-
-            <label
-              className={cls(
-                'calendar-demo__control',
-                !check.duration.enabled && 'calendar-demo__control--disabled',
-              )}
-            >
-              <span className="calendar-demo__label" title={fieldMeta.duration.detail}>
-                {fieldMeta.duration.label}
-              </span>
-              <div className="calendar-demo__input-row">
-                <input
-                  className="calendar-demo__input"
-                  type="number"
-                  min="1"
-                  inputMode="numeric"
-                  value={String(values.duration ?? '')}
-                  disabled={!check.duration.enabled}
-                  onChange={(event) => updateNumberField('duration', event.currentTarget.value)}
-                />
-                <span className="calendar-demo__suffix">min</span>
-              </div>
-              {!check.duration.enabled && check.duration.reason && (
-                <span className="calendar-demo__reason">{check.duration.reason}</span>
-              )}
-            </label>
-          </section>
-
-          <section className="calendar-demo__group calendar-demo__group--subday">
-            <div className="calendar-demo__group-head">
-              <div className="calendar-demo__group-kicker">Sub-day</div>
-              <div className="calendar-demo__group-caption">Choose one strategy branch</div>
-            </div>
-
-            <div className="calendar-demo__branch-grid">
-              <div
-                className={cls(
-                  'calendar-demo__control',
-                  !check.everyHour.enabled && 'calendar-demo__control--disabled',
-                )}
-              >
-                <span className="calendar-demo__label" title={fieldMeta.everyHour.detail}>
-                  {fieldMeta.everyHour.label}
-                </span>
-                <div className="calendar-demo__toggle-grid calendar-demo__toggle-grid--hours">
-                  {hourOptions.map((hour) => (
-                    <button
-                      key={hour}
-                      type="button"
-                      aria-pressed={everyHourValues.includes(hour)}
-                      title={formatHour(hour)}
-                      className={cls(
-                        'calendar-demo__toggle',
-                        everyHourValues.includes(hour) && 'calendar-demo__toggle--active',
-                      )}
-                      disabled={!check.everyHour.enabled}
-                      onClick={() => toggleNumberList('everyHour', hour)}
-                    >
-                      {formatHourChip(hour)}
-                    </button>
-                  ))}
-                </div>
-                {!check.everyHour.enabled && check.everyHour.reason && (
-                  <span className="calendar-demo__reason">{check.everyHour.reason}</span>
-                )}
-              </div>
-
-              <div className="calendar-demo__control">
-                <span className="calendar-demo__label">Interval</span>
-                <div className="calendar-demo__interval-fields">
-                  <label
-                    className={cls(
-                      'calendar-demo__control',
-                      'calendar-demo__control--nested',
-                      !check.startTime.enabled && 'calendar-demo__control--disabled',
-                    )}
-                  >
-                    <span className="calendar-demo__label" title={fieldMeta.startTime.detail}>
-                      {fieldMeta.startTime.label}
-                    </span>
-                    <input
-                      className="calendar-demo__input"
-                      type="time"
-                      value={String(values.startTime ?? '')}
-                      disabled={!check.startTime.enabled}
-                      onChange={(event) => updateStringField('startTime', event.currentTarget.value)}
-                    />
-                    {!check.startTime.enabled && check.startTime.reason && (
-                      <span className="calendar-demo__reason">{check.startTime.reason}</span>
-                    )}
-                  </label>
-
-                  <label
-                    className={cls(
-                      'calendar-demo__control',
-                      'calendar-demo__control--nested',
-                      !check.endTime.enabled && 'calendar-demo__control--disabled',
-                    )}
-                  >
-                    <span className="calendar-demo__label" title={fieldMeta.endTime.detail}>
-                      {fieldMeta.endTime.label}
-                    </span>
-                    <input
-                      className="calendar-demo__input"
-                      type="time"
-                      value={String(values.endTime ?? '')}
-                      disabled={!check.endTime.enabled}
-                      onChange={(event) => updateStringField('endTime', event.currentTarget.value)}
-                    />
-                    {!check.endTime.enabled && check.endTime.reason && (
-                      <span className="calendar-demo__reason">{check.endTime.reason}</span>
-                    )}
-                  </label>
-
-                  <label
-                    className={cls(
-                      'calendar-demo__control',
-                      'calendar-demo__control--nested',
-                      !check.repeatEvery.enabled && 'calendar-demo__control--disabled',
-                    )}
-                  >
-                    <span className="calendar-demo__label" title={fieldMeta.repeatEvery.detail}>
-                      {fieldMeta.repeatEvery.label}
-                    </span>
-                    <div className="calendar-demo__input-row">
-                      <input
-                        className="calendar-demo__input"
-                        type="number"
-                        min="1"
-                        inputMode="numeric"
-                        value={String(values.repeatEvery ?? '')}
-                        disabled={!check.repeatEvery.enabled}
-                        onChange={(event) => updateNumberField('repeatEvery', event.currentTarget.value)}
-                      />
-                      <span className="calendar-demo__suffix">min</span>
-                    </div>
-                    {!check.repeatEvery.enabled && check.repeatEvery.reason && (
-                      <span className="calendar-demo__reason">{check.repeatEvery.reason}</span>
-                    )}
-                  </label>
-                </div>
-              </div>
-            </div>
-          </section>
         </div>
       </section>
-
-      <div className="calendar-demo__lower">
-        <section className="calendar-demo__panel">
-          <div className="calendar-demo__panel-header">
-            <div>
-              <div className="calendar-demo__eyebrow">neo-reckoning preview</div>
-              <h3 className="calendar-demo__panel-title">{previewMonth.label}</h3>
-            </div>
-
-            <div className="calendar-demo__nav">
-              <button
-                type="button"
-                className="calendar-demo__nav-button"
-                aria-label="Previous month"
-                onClick={prev}
-              >
-                Prev
-              </button>
-              <button
-                type="button"
-                className="calendar-demo__nav-button"
-                aria-label="Next month"
-                onClick={next}
-              >
-                Next
-              </button>
-            </div>
-          </div>
-
-          <div className="calendar-demo__panel-body">
-            {!hasPreviewCriteria && (
-              <p className="calendar-demo__note">
-                Pick explicit dates or a day-level pattern to light up the month grid.
-              </p>
-            )}
-
-            <div className="calendar-demo__weekday-row">
-              {weekdayHeaders.map((weekday) => (
-                <div key={weekday} className="calendar-demo__weekday">
-                  {weekday}
-                </div>
-              ))}
-            </div>
-
-            <div className="calendar-demo__month-grid">
-              {previewMonth.weeks.map((week) =>
-                week.days.map((day) => {
-                  const isActive = activeDates.has(day.date)
-                  const isExcluded = hasExceptions && activeBaseDates.has(day.date) && !isActive
-                  const isOutOfBounds = isOutsideBounds(day.date, values.fromDate, values.toDate)
-
-                  return (
-                    <div
-                      key={day.date}
-                      className={cls(
-                        'calendar-demo__day',
-                        isActive && 'calendar-demo__day--active',
-                        isExcluded && 'calendar-demo__day--excluded',
-                        isOutOfBounds && 'calendar-demo__day--outside-window',
-                        !day.isCurrentMonth && 'calendar-demo__day--adjacent',
-                        day.isToday && 'calendar-demo__day--today',
-                      )}
-                    >
-                      <span className="calendar-demo__day-number">{day.dayOfMonth}</span>
-                      <span className="calendar-demo__day-markers">
-                        {isActive && <span className="calendar-demo__day-marker calendar-demo__day-marker--active" />}
-                        {isExcluded && <span className="calendar-demo__day-marker calendar-demo__day-marker--excluded" />}
-                        {isOutOfBounds && <span className="calendar-demo__day-marker calendar-demo__day-marker--bounds" />}
-                      </span>
-                    </div>
-                  )
-                }),
-              )}
-            </div>
-
-            <div className="calendar-demo__legend">
-              <div className="calendar-demo__legend-item">
-                <span className="calendar-demo__legend-swatch calendar-demo__legend-swatch--active" />
-                <span>active day</span>
-              </div>
-              <div className="calendar-demo__legend-item">
-                <span className="calendar-demo__legend-swatch calendar-demo__legend-swatch--excluded" />
-                <span>excluded</span>
-              </div>
-              <div className="calendar-demo__legend-item">
-                <span className="calendar-demo__legend-swatch calendar-demo__legend-swatch--bounds" />
-                <span>outside bounds</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="calendar-demo__panel">
-          <div className="calendar-demo__panel-header">
-            <div>
-              <div className="calendar-demo__eyebrow">Availability</div>
-              <h3 className="calendar-demo__panel-title">Live field status</h3>
-            </div>
-            <span className="calendar-demo__accent">check()</span>
-          </div>
-
-          <div className="calendar-demo__panel-body calendar-demo__panel-body--table">
-            <div className="calendar-demo__table-shell">
-              <table className="calendar-demo__table">
-                <thead>
-                  <tr>
-                    <th>Field</th>
-                    <th>Status</th>
-                    <th>Reason</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fieldOrder.map((field) => {
-                    const availability = check[field]
-
-                    return (
-                      <tr key={field}>
-                        <td className="calendar-demo__table-field" title={fieldMeta[field].detail}>
-                          {fieldMeta[field].label}
-                        </td>
-                        <td>
-                          <span
-                            className={cls(
-                              'calendar-demo__status',
-                              availability.enabled
-                                ? 'calendar-demo__status--enabled'
-                                : 'calendar-demo__status--disabled',
-                            )}
-                          >
-                            <span className="calendar-demo__status-dot" />
-                            <span className="calendar-demo__status-text">
-                              {availability.enabled ? 'enabled' : 'disabled'}
-                            </span>
-                          </span>
-                        </td>
-                        <td className="calendar-demo__table-reason">
-                          {availability.reason ?? 'available'}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-      </div>
     </div>
   )
 }

@@ -108,6 +108,7 @@
     rgba(255, 255, 255, 0.018);
 }
 
+.calendar-demo__group--exceptions,
 .calendar-demo__group--patterns,
 .calendar-demo__group--subday {
   grid-column: 1 / -1;
@@ -418,13 +419,9 @@
   cursor: not-allowed;
 }
 
-.calendar-demo__branch-grid,
-.calendar-demo__lower {
+.calendar-demo__branch-grid {
   display: grid;
   gap: 1rem;
-}
-
-.calendar-demo__branch-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -433,8 +430,12 @@
   gap: 0.55rem;
 }
 
-.calendar-demo__lower {
-  grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+.calendar-demo__panel--preview .calendar-demo__month-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-demo__panel--preview .calendar-demo__day {
+  min-height: 5.5rem;
 }
 
 .calendar-demo__panel-body {
@@ -447,6 +448,26 @@
 
 .calendar-demo__note {
   margin: 0 0 0.9rem;
+}
+
+.calendar-demo__hint {
+  margin: 0;
+  padding: 0.6rem 0.78rem;
+  border: 1px solid rgba(254, 208, 35, 0.18);
+  border-radius: 0.72rem;
+  background: rgba(254, 208, 35, 0.06);
+  color: rgba(254, 208, 35, 0.82);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.calendar-demo__hint code {
+  padding: 0.1em 0.3em;
+  border-radius: 0.3em;
+  background: rgba(254, 208, 35, 0.12);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+  color: rgba(254, 208, 35, 0.95);
 }
 
 .calendar-demo__weekday-row,
