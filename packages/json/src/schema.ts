@@ -7,7 +7,7 @@ export interface JsonConditionDef {
   description?: string
 }
 
-export type JsonIsEmptyStrategy = 'string' | 'number' | 'boolean' | 'array' | 'present'
+export type JsonIsEmptyStrategy = 'string' | 'number' | 'boolean' | 'array' | 'object' | 'present'
 
 export interface JsonFieldDef {
   required?: boolean

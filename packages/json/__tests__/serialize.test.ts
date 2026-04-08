@@ -1,4 +1,12 @@
-import { anyOf, disables, enabledWhen, oneOf, requires } from '@umpire/core'
+import {
+  anyOf,
+  disables,
+  enabledWhen,
+  isEmptyObject,
+  isEmptyString,
+  oneOf,
+  requires,
+} from '@umpire/core'
 
 import { fromJson, hydrateIsEmptyStrategy, toJson } from '../src/index.js'
 import type { UmpireJsonSchema } from '../src/index.js'
@@ -51,11 +59,12 @@ describe('toJson', () => {
 
   test('serializes structural hand-written rules and collects unsupported pieces in excluded', () => {
     const fields = {
-      email: { required: true, isEmpty: hydrateIsEmptyStrategy('string') },
+      email: { required: true, isEmpty: isEmptyString },
       username: {},
       password: {},
       submit: {},
       mode: {},
+      settings: { isEmpty: isEmptyObject },
       extra: { isEmpty: (value: unknown) => value == null || value === '' },
       profile: { default: { theme: 'dark' } as unknown as never },
     }
@@ -83,6 +92,7 @@ describe('toJson', () => {
         password: {},
         submit: {},
         mode: {},
+        settings: { isEmpty: 'object' },
         extra: {},
         profile: {},
       },

@@ -5,6 +5,8 @@ description: A typed field declaration helper that enables typed fairWhen predic
 
 `field<V>()` is a field declaration helper. Its main job is capturing the value type `V` so that `fairWhen` predicates receive a typed `value` parameter instead of `unknown`. It also supports a curried builder style as an alternative to plain object declarations.
 
+For common empty-state rules, `@umpire/core` exports helpers such as `isEmptyString`, `isEmptyArray`, and `isEmptyObject`, so you do not have to repeat the same inline `isEmpty` functions everywhere.
+
 ## Two forms
 
 ### Anonymous — inside `umpire()`

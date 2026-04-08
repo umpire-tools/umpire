@@ -15,6 +15,7 @@ describe('fromJson', () => {
         companyName: {},
         planId: {},
         email: { isEmpty: 'string' },
+        settings: { isEmpty: 'object' },
       },
       rules: [
         {
@@ -42,6 +43,8 @@ describe('fromJson', () => {
 
     expect(fields.email.isEmpty?.('')).toBe(true)
     expect(fields.email.isEmpty?.('a')).toBe(false)
+    expect(fields.settings.isEmpty?.({})).toBe(true)
+    expect(fields.settings.isEmpty?.({ theme: 'dark' })).toBe(false)
 
     expect(
       runtime.check(

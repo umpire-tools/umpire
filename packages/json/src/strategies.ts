@@ -1,4 +1,4 @@
-import type { FieldDef } from '@umpire/core'
+import { isEmptyArray, isEmptyObject, isEmptyPresent, isEmptyString, type FieldDef } from '@umpire/core'
 
 import type { JsonIsEmptyStrategy } from './schema.js'
 
@@ -6,11 +6,12 @@ const IS_EMPTY_STRATEGIES: Record<
   JsonIsEmptyStrategy,
   NonNullable<FieldDef['isEmpty']>
 > = {
-  string: (value) => typeof value !== 'string' || value.length === 0,
+  string: isEmptyString,
   number: (value) => typeof value !== 'number' || Number.isNaN(value),
   boolean: (value) => typeof value !== 'boolean',
-  array: (value) => !Array.isArray(value) || value.length === 0,
-  present: (value) => value === null || value === undefined,
+  array: isEmptyArray,
+  object: isEmptyObject,
+  present: isEmptyPresent,
 }
 
 export function isJsonIsEmptyStrategy(value: unknown): value is JsonIsEmptyStrategy {

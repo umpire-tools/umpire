@@ -1,3 +1,4 @@
+import { isEmptyPresent } from './emptiness.js'
 import type { FieldDef } from './types.js'
 
 export function isSatisfied(value: unknown, fieldDef?: FieldDef): boolean {
@@ -5,5 +6,5 @@ export function isSatisfied(value: unknown, fieldDef?: FieldDef): boolean {
     return !fieldDef.isEmpty(value)
   }
 
-  return value !== undefined && value !== null
+  return !isEmptyPresent(value)
 }

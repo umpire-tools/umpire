@@ -39,6 +39,23 @@ const ump = umpire({
 })
 ```
 
+If you use the common built-ins often, `@umpire/core` also exports shorthand helpers:
+
+```ts
+import { isEmptyArray, isEmptyObject, isEmptyString } from '@umpire/core'
+
+const ump = umpire({
+  fields: {
+    startTime: { isEmpty: isEmptyString },
+    weekdays: { isEmpty: isEmptyArray },
+    shippingAddress: { isEmpty: isEmptyObject },
+  },
+  rules: [],
+})
+```
+
+Those are just convenience functions for the most common cases. Use an inline function when your empty state is domain-specific.
+
 In that configuration:
 
 - `startTime: ''` is empty.
