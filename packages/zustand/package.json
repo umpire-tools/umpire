@@ -1,6 +1,6 @@
 {
   "name": "@umpire/zustand",
-  "version": "0.1.0-alpha.8",
+  "version": "0.1.0-alpha.9",
   "description": "Zustand entry point for @umpire/store",
   "license": "MIT",
   "type": "module",
