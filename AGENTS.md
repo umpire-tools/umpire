@@ -26,6 +26,7 @@
 ## Behavior To Preserve
 
 - Satisfaction is presence-based by default: only `null` and `undefined` are unsatisfied unless a field overrides `isEmpty`.
+- When describing `fair: false`, say the field or value is `foul`, not `unfair`.
 - `requires` checks both dependency satisfaction and dependency availability.
 - `disables` and `oneOf` inspect source values only, not source availability.
 - Multiple rules on the same target are ANDed; use `anyOf()` for OR behavior.
