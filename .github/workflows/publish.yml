@@ -1,44 +1,14 @@
-name: Build, Test & Publish
+name: Publish
 
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: yarn
-
-      - name: Install dependencies
-        run: yarn install --immutable
-
-      - name: Build
-        run: yarn turbo run build
-
-      - name: Test with coverage
-        run: yarn jest --coverage
-        env:
-          NODE_OPTIONS: '--experimental-vm-modules'
-
-      - name: Upload coverage to Coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          file: coverage/lcov.info
-
   detect-version-changes:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     outputs:
       any_changed: ${{ steps.versions.outputs.any_changed }}
@@ -120,8 +90,8 @@ jobs:
           NODE
 
   publish:
-    needs: [build-and-test, detect-version-changes]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.detect-version-changes.outputs.any_changed == 'true'
+    needs: [detect-version-changes]
+    if: needs.detect-version-changes.outputs.any_changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
