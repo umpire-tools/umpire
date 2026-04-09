@@ -103,4 +103,17 @@ describe('activeSchema', () => {
     expect(schema.shape.missingSchema).toBeUndefined()
     expect(Object.keys(schema.shape)).toEqual(['requiredName'])
   })
+
+  test('throws if given a z.object instead of per-field schemas', () => {
+    expect(() => activeSchema(
+      createAvailability(),
+      z.object({
+        requiredName: z.string(),
+      }) as never,
+      z,
+    )).toThrow(
+      '[@umpire/zod] activeSchema() expects per-field schemas, not a z.object(). ' +
+      'Pass formSchema.shape instead of formSchema.',
+    )
+  })
 })

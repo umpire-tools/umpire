@@ -56,10 +56,11 @@ Or use a React hook that handles registration automatically — see [React Helpe
 The panel shows:
 
 - A field matrix built from `scorecard()`
+- A dedicated conditions tab for current and previous snapshot conditions
 - Per-field challenge traces from `challenge()`
 - A rolling foul log for disabled-with-value transitions
 - A graph view of the structural dependency DAG
-- An optional reads view when you register a reads table
+- Optional extension tabs, including reads when you register a reads table
 
 ## React Helpers
 
@@ -121,6 +122,33 @@ register('checkout', ump, values, conditions, {
 
 When the reads tab is available, the panel shows dependency edges, bridge wiring, and current computed values.
 
+## Custom Extensions
+
+Extensions let other packages contribute their own devtools tabs without teaching `@umpire/devtools` about those packages directly.
+
+```ts
+register('checkout', ump, values, conditions, {
+  extensions: [{
+    id: 'validation',
+    label: 'validation',
+    inspect({ conditions, scorecard }) {
+      return {
+        sections: [{
+          kind: 'rows',
+          title: 'Summary',
+          rows: [
+            { label: 'plan', value: conditions?.plan },
+            { label: 'enabledFields', value: scorecard.graph.nodes.length },
+          ],
+        }],
+      }
+    },
+  }],
+})
+```
+
+Each extension returns structured view data, not framework UI. That keeps the devtools in control of rendering and lets packages like `@umpire/zod` add a validation tab without becoming a hard dependency of the panel.
+
 ## Production Safety
 
 `mount()` and `register()` are both no-ops in production (`NODE_ENV === 'production'`) unless `process.env.UMPIRE_INTERNAL === 'true'` is set — the deliberate escape hatch used by this docs site.
@@ -158,7 +186,7 @@ mount({
 | `position` | `'bottom-right'` | One of `top-left`, `top-right`, `bottom-left`, `bottom-right` |
 | `offset` | `{ x: 16, y: 16 }` | Distance from the corner in CSS pixels |
 | `foulLogDepth` | `50` | Max foul events retained in the rolling log |
-| `defaultTab` | `'matrix'` | Starting tab: `matrix`, `fouls`, `graph`, or `reads` |
+| `defaultTab` | `'matrix'` | Starting tab: `matrix`, `conditions`, `fouls`, `graph`, `reads`, or a custom extension id |
 
 ## Slim Build
 

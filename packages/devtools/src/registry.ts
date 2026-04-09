@@ -1,14 +1,16 @@
 import type {
   FieldDef,
   InputValues,
+  ScorecardResult,
+  Snapshot,
   Umpire,
 } from '@umpire/core'
 import type {
-  ReadTable,
   ReadTableInspection,
 } from '@umpire/reads'
 import type {
   AnyReadInspection,
+  ResolvedDevtoolsExtension,
   AnySnapshot,
   DevtoolsFoulEvent,
   RegisterFn,
@@ -21,6 +23,14 @@ const listeners = new Set<() => void>()
 
 let foulLogDepth = 50
 let registryVersion = 0
+
+const RESERVED_EXTENSION_IDS = new Set([
+  'matrix',
+  'conditions',
+  'fouls',
+  'graph',
+  'reads',
+])
 
 function notify() {
   for (const listener of listeners) {
@@ -38,25 +48,26 @@ function isReadInspection(
     'values' in value
 }
 
-function isReadTable<
-  ReadInput extends Record<string, unknown>,
-  Reads extends Record<string, unknown>,
->(
-  value: RegisterOptions<ReadInput, Reads>['reads'],
-): value is ReadTable<ReadInput, Reads> {
+function hasReadInspect(
+  value: unknown,
+): value is {
+  inspect(input: Record<string, unknown>): AnyReadInspection
+} {
   return typeof value === 'function' ||
     (typeof value === 'object' &&
       value !== null &&
-      'inspect' in value)
+      'inspect' in value &&
+      typeof value.inspect === 'function')
 }
 
 function resolveReadsInspection<
   F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
   ReadInput extends Record<string, unknown>,
   Reads extends Record<string, unknown>,
 >(
   values: InputValues<F>,
-  options?: RegisterOptions<ReadInput, Reads>,
+  options?: RegisterOptions<F, C, ReadInput, Reads>,
 ): AnyReadInspection | null {
   const reads = options?.reads
 
@@ -68,13 +79,118 @@ function resolveReadsInspection<
     return reads as AnyReadInspection
   }
 
-  if (!isReadTable(reads)) {
+  if (!hasReadInspect(reads)) {
     return null
   }
 
-  const input = (options.readInput ?? values) as ReadInput
+  const input = (options?.readInput ?? values) as Record<string, unknown>
 
   return reads.inspect(input) as AnyReadInspection
+}
+
+function join(values: string[]) {
+  return values.length > 0 ? values.join(', ') : 'none'
+}
+
+function readInspectionToExtension(
+  inspection: AnyReadInspection,
+): ResolvedDevtoolsExtension {
+  const sections: ResolvedDevtoolsExtension['view']['sections'] = []
+
+  if (inspection.bridges.length > 0) {
+    sections.push({
+      kind: 'badges',
+      title: 'Bridges',
+      badges: inspection.bridges.map((bridge) => ({
+        value: `${bridge.read} -> ${bridge.field} (${bridge.type})`,
+      })),
+    })
+  }
+
+  if (inspection.graph.nodes.length > 0) {
+    sections.push({
+      kind: 'items',
+      title: 'Reads',
+      items: inspection.graph.nodes.map((readId) => {
+        const node = inspection.nodes[readId]
+
+        return {
+          id: readId,
+          title: readId,
+          badge: {
+            tone: 'fair',
+            value: node.value,
+          },
+          rows: [
+            { label: 'fields', value: join(node.dependsOnFields) },
+            { label: 'reads', value: join(node.dependsOnReads) },
+          ],
+        }
+      }),
+    })
+  }
+
+  return {
+    id: 'reads',
+    label: 'reads',
+    view: {
+      empty: 'No reads available in this inspection.',
+      sections,
+    },
+  }
+}
+
+function resolveExtensions<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+  ReadInput extends Record<string, unknown>,
+  Reads extends Record<string, unknown>,
+>(
+  ump: Umpire<F, C>,
+  values: InputValues<F>,
+  conditions: C | undefined,
+  previous: Snapshot<F, C> | null,
+  scorecard: ScorecardResult<F, C>,
+  readsInspection: AnyReadInspection | null,
+  options?: RegisterOptions<F, C, ReadInput, Reads>,
+): ResolvedDevtoolsExtension[] {
+  const resolved: ResolvedDevtoolsExtension[] = []
+  const seen = new Set<string>(RESERVED_EXTENSION_IDS)
+
+  if (readsInspection) {
+    resolved.push(readInspectionToExtension(readsInspection))
+    seen.add('reads')
+  }
+
+  for (const extension of options?.extensions ?? []) {
+    if (seen.has(extension.id)) {
+      console.warn(
+        `[umpire/devtools] Skipping duplicate or reserved extension id "${extension.id}"`,
+      )
+      continue
+    }
+
+    const view = extension.inspect({
+      conditions,
+      previous,
+      scorecard,
+      ump,
+      values,
+    })
+
+    if (!view) {
+      continue
+    }
+
+    resolved.push({
+      id: extension.id,
+      label: extension.label ?? extension.id,
+      view,
+    })
+    seen.add(extension.id)
+  }
+
+  return resolved
 }
 
 function buildFoulLog(
@@ -95,33 +211,51 @@ function buildFoulLog(
   return [...previousLog, ...freshEvents].slice(-foulLogDepth)
 }
 
-export const register: RegisterFn = (id, ump, values, conditions, options) => {
+export const register: RegisterFn = <
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+  ReadInput extends Record<string, unknown> = InputValues<F>,
+  Reads extends Record<string, unknown> = Record<string, unknown>,
+>(
+  id: string,
+  ump: Umpire<F, C>,
+  values: InputValues<F>,
+  conditions?: C,
+  options?: RegisterOptions<F, C, ReadInput, Reads>,
+) => {
   if (process.env.NODE_ENV === 'production' && process.env.UMPIRE_INTERNAL !== 'true') {
     return
   }
 
   const existing = registry.get(id)
-  const previous = (existing?.snapshot as {
-    conditions?: typeof conditions
-    values: typeof values
-  } | null) ?? null
-  const currentSnapshot = {
+  const previous = (existing?.snapshot as Snapshot<F, C> | null) ?? null
+  const currentSnapshot: Snapshot<F, C> = {
     values,
     conditions,
   }
 
   const scorecard = ump.scorecard(currentSnapshot, {
     before: previous ?? undefined,
-  }) as RegistryEntry['scorecard']
+  })
   const renderIndex = (existing?.renderIndex ?? 0) + 1
+  const readsInspection = resolveReadsInspection(values, options)
 
   const nextEntry: RegistryEntry = {
+    extensions: resolveExtensions(
+      ump,
+      values,
+      conditions,
+      previous,
+      scorecard,
+      readsInspection,
+      options,
+    ) as RegistryEntry['extensions'],
     foulLog: [],
     id,
-    previous,
-    reads: resolveReadsInspection(values, options),
+    previous: previous as RegistryEntry['previous'],
+    reads: readsInspection,
     renderIndex,
-    scorecard,
+    scorecard: scorecard as RegistryEntry['scorecard'],
     snapshot: currentSnapshot as AnySnapshot,
     ump: ump as RegistryEntry['ump'],
     updatedAt: Date.now(),

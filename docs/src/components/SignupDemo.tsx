@@ -5,6 +5,7 @@ import { anyOf, check, disables, enabledWhen, requires, umpire } from '@umpire/c
 // Swap back to: import { useUmpire } from '@umpire/react'  (remove leading id arg)
 import { useUmpireWithDevtools } from '@umpire/devtools/react'
 import { activeSchema, activeErrors, zodErrors } from '@umpire/zod'
+import { zodValidationExtension } from '@umpire/zod/devtools'
 
 // ── Known SSO domains ─────────────────────────────────────────────────────────
 // When the email domain matches one of these, SSO mode activates automatically:
@@ -90,6 +91,30 @@ const fieldSchemas = z.object({
   companySize: z.string().min(1, 'Company size is required').regex(/^\d+$/, 'Must be a number'),
 })
 
+type SignupValues = ReturnType<typeof signupUmp.init>
+type SignupAvailability = ReturnType<typeof signupUmp.check>
+
+function buildSignupValidation(
+  availability: SignupAvailability,
+  values: SignupValues,
+) {
+  const baseSchema = activeSchema(availability, fieldSchemas.shape, z)
+  const schema = baseSchema
+    .refine(
+      (data) => !data.confirmPassword || !data.password || data.confirmPassword === data.password,
+      { message: 'Passwords do not match', path: ['confirmPassword'] },
+    )
+  const result = schema.safeParse(values)
+
+  return {
+    result,
+    schemaFields: Object.keys(baseSchema.shape),
+    validationErrors: result.success
+      ? {}
+      : activeErrors(availability, zodErrors(result.error)),
+  }
+}
+
 // ── Field metadata ───────────────────────────────────────────────────────────
 
 const fieldOrder = [
@@ -136,21 +161,24 @@ export default function SignupDemo() {
   const sso = ssoCompany !== null
 
   const conditions: SignupConditions = { plan, sso }
-  const { check: availability, fouls } = useUmpireWithDevtools('signup', signupUmp, values, conditions)
+  const { check: availability, fouls } = useUmpireWithDevtools('signup', signupUmp, values, conditions, {
+    extensions: [
+      zodValidationExtension({
+        resolve({ scorecard, values }) {
+          const validation = buildSignupValidation(scorecard.check, values)
 
-  // Build a dynamic Zod schema from availability — disabled fields are
-  // excluded, enabled+required fields use the base schema, enabled+optional
-  // fields get .optional(). This is the @umpire/zod composition.
-  const validationErrors = useMemo(() => {
-    const schema = activeSchema(availability, fieldSchemas.shape, z)
-      .refine(
-        (data) => !data.confirmPassword || !data.password || data.confirmPassword === data.password,
-        { message: 'Passwords do not match', path: ['confirmPassword'] },
-      )
-    const result = schema.safeParse(values)
-    if (result.success) return {}
-    return activeErrors(availability, zodErrors(result.error))
-  }, [availability, values])
+          return {
+            result: validation.result,
+            schemaFields: validation.schemaFields,
+          }
+        },
+      }),
+    ],
+  })
+  const validationErrors = useMemo(
+    () => buildSignupValidation(availability, values).validationErrors,
+    [availability, values],
+  )
 
   function updateValue(field: SignupField, nextValue: string) {
     if (field === 'email') {

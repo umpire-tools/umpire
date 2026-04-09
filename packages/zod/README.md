@@ -72,6 +72,45 @@ Filters normalized field errors to only include enabled fields. Returns `Partial
 
 Normalizes a Zod error's `issues` array into `{ field, message }[]` pairs for use with `activeErrors`.
 
+## Devtools
+
+If you use `@umpire/devtools`, `@umpire/zod/devtools` can expose validation state in a tab. The most ergonomic path is to derive from the current devtools context:
+
+```ts
+import { useUmpireWithDevtools } from '@umpire/devtools/react'
+import { zodValidationExtension } from '@umpire/zod/devtools'
+
+const { check } = useUmpireWithDevtools('signup', ump, values, conditions, {
+  extensions: [
+    zodValidationExtension({
+      resolve({ scorecard, values }) {
+        const baseSchema = activeSchema(scorecard.check, fieldSchemas, z)
+        const schema = baseSchema.refine(
+          (data) => !data.confirmPassword || !data.password || data.confirmPassword === data.password,
+          { message: 'Passwords do not match', path: ['confirmPassword'] },
+        )
+
+        return {
+          result: schema.safeParse(values),
+          schemaFields: Object.keys(baseSchema.shape),
+        }
+      },
+    }),
+  ],
+})
+```
+
+If you already have a precomputed parse result, the helper also accepts `availability`, `result`, and optional `schemaFields` directly.
+
+The first pass shows:
+- valid/invalid
+- surfaced error count
+- suppressed and unmapped issue counts
+- the active error map after availability filtering
+- optional active schema field names
+
+It does not currently detect skipped `refine()`/`superRefine()` execution on its own. If we want that, we will likely need richer validation instrumentation than a plain `safeParse()` result exposes.
+
 ## The Render Loop
 
 The payoff — one loop renders every field regardless of availability, validation, or fouls:
