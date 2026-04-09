@@ -45,6 +45,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      - name: Build devtools (tests import from dist)
+        run: yarn turbo run build --filter=@umpire/devtools
+
       - name: Test with coverage
         run: yarn jest --coverage
         env:
