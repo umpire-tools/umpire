@@ -7,6 +7,7 @@ import type {
   RegistryEntry,
 } from '../types.js'
 import { ChallengeDrawer } from './ChallengeDrawer.js'
+import { ConditionsTab } from './tabs/ConditionsTab.js'
 import { FoulLog } from './tabs/FoulLog.js'
 import { FieldMatrix } from './tabs/FieldMatrix.js'
 import { GraphTab } from './tabs/GraphTab.js'
@@ -52,8 +53,8 @@ function panelAnchor(position: Required<MountOptions>['position'], offset: Requi
 
 function resolveTabs(entry: RegistryEntry | null): DevtoolsTab[] {
   return entry?.reads
-    ? ['matrix', 'fouls', 'graph', 'reads']
-    : ['matrix', 'fouls', 'graph']
+    ? ['matrix', 'conditions', 'fouls', 'graph', 'reads']
+    : ['matrix', 'conditions', 'fouls', 'graph']
 }
 
 function EmptyState() {
@@ -311,6 +312,15 @@ function PanelBody({
 }) {
   if (tab === 'fouls') {
     return <FoulLog events={entry.foulLog} />
+  }
+
+  if (tab === 'conditions') {
+    return (
+      <ConditionsTab
+        current={entry.snapshot}
+        previous={entry.previous}
+      />
+    )
   }
 
   if (tab === 'graph') {

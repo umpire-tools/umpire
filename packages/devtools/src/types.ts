@@ -7,7 +7,7 @@ import type {
 } from '@umpire/core'
 import type { ReadTable, ReadTableInspection } from '@umpire/reads'
 
-export type DevtoolsTab = 'matrix' | 'fouls' | 'graph' | 'reads'
+export type DevtoolsTab = 'matrix' | 'conditions' | 'fouls' | 'graph' | 'reads'
 
 export type DevtoolsPosition =
   | 'bottom-right'
