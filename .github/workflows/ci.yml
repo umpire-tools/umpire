@@ -27,8 +27,8 @@ jobs:
       - name: Typecheck
         run: yarn turbo run typecheck
 
-  build-and-test:
-    name: Build & Test
+  test:
+    name: Test
     runs-on: ubuntu-latest
     needs: typecheck
     steps:
@@ -45,9 +45,6 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Build
-        run: yarn turbo run build
-
       - name: Test with coverage
         run: yarn jest --coverage
         env:
@@ -58,3 +55,24 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: coverage/lcov.info
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build
+        run: yarn turbo run build
