@@ -39,7 +39,7 @@ export function useUmpireWithDevtools<
   ump: Umpire<F, C>,
   values: InputValues<F>,
   conditions?: C,
-  options?: RegisterOptions<ReadInput, Reads>,
+  options?: RegisterOptions<F, C, ReadInput, Reads>,
 ) {
   const prevRef = useRef<Snapshot<F, C> | undefined>(undefined)
 
@@ -90,7 +90,7 @@ export function useUmpire<
   ump: Umpire<F, C>,
   values: InputValues<F>,
   conditions?: C,
-  options?: RegisterOptions<ReadInput, Reads>,
+  options?: RegisterOptions<F, C, ReadInput, Reads>,
 ) {
   const idRef = useRef<string | null>(null)
   if (idRef.current === null) {

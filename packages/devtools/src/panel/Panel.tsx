@@ -4,14 +4,15 @@ import type {
   AnyScorecard,
   DevtoolsTab,
   MountOptions,
+  ResolvedDevtoolsExtension,
   RegistryEntry,
 } from '../types.js'
 import { ChallengeDrawer } from './ChallengeDrawer.js'
 import { ConditionsTab } from './tabs/ConditionsTab.js'
+import { ExtensionTab } from './tabs/ExtensionTab.js'
 import { FoulLog } from './tabs/FoulLog.js'
 import { FieldMatrix } from './tabs/FieldMatrix.js'
 import { GraphTab } from './tabs/GraphTab.js'
-import { ReadsTab } from './tabs/ReadsTab.js'
 import { fontFamily, scrollPaneStyle, sectionHeadingStyle, tabStyle, theme } from './theme.js'
 
 type Props = {
@@ -51,10 +52,31 @@ function panelAnchor(position: Required<MountOptions>['position'], offset: Requi
   return anchor
 }
 
-function resolveTabs(entry: RegistryEntry | null): DevtoolsTab[] {
-  return entry?.reads
-    ? ['matrix', 'conditions', 'fouls', 'graph', 'reads']
-    : ['matrix', 'conditions', 'fouls', 'graph']
+type PanelTab = {
+  id: DevtoolsTab
+  label: string
+}
+
+function resolveTabs(entry: RegistryEntry | null): PanelTab[] {
+  const tabs: PanelTab[] = [
+    { id: 'matrix', label: 'matrix' },
+    { id: 'conditions', label: 'conditions' },
+    { id: 'fouls', label: 'fouls' },
+    { id: 'graph', label: 'graph' },
+  ]
+
+  if (!entry) {
+    return tabs
+  }
+
+  for (const extension of entry.extensions) {
+    tabs.push({
+      id: extension.id,
+      label: extension.label,
+    })
+  }
+
+  return tabs
 }
 
 function EmptyState() {
@@ -95,7 +117,7 @@ export function Panel({ options }: Props) {
   const activeEntry = activeId ? entries.get(activeId) ?? null : null
   const activeTabs = resolveTabs(activeEntry)
   const activeScorecard = activeEntry?.scorecard ?? null
-  const tab = activeTabs.includes(preferredTab) ? preferredTab : 'matrix'
+  const tab = activeTabs.some((entryTab) => entryTab.id === preferredTab) ? preferredTab : 'matrix'
   const selectedField = selectedFieldState?.entryId === activeId &&
       selectedFieldState.field in (activeScorecard?.fields ?? {})
     ? selectedFieldState.field
@@ -250,15 +272,15 @@ export function Panel({ options }: Props) {
           >
             {activeTabs.map((entryTab) => (
               <button
-                key={entryTab}
+                key={entryTab.id}
                 onClick={() => {
                   setSelectedFieldState(null)
-                  setPreferredTab(entryTab)
+                  setPreferredTab(entryTab.id)
                 }}
-                style={tabStyle(tab === entryTab && !selectedField)}
+                style={tabStyle(tab === entryTab.id && !selectedField)}
                 type="button"
               >
-                {entryTab}
+                {entryTab.label}
               </button>
             ))}
           </div>
@@ -333,8 +355,10 @@ function PanelBody({
     )
   }
 
-  if (tab === 'reads') {
-    return <ReadsTab inspection={entry.reads} />
+  const extension = entry.extensions.find((candidate) => candidate.id === tab) ?? null
+
+  if (extension) {
+    return <ExtensionTab extension={extension} />
   }
 
   return (

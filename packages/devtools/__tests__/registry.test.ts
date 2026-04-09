@@ -135,6 +135,29 @@ describe('registry', () => {
     )
 
     expect(snapshot().get('demo')?.reads).toEqual(inspection)
+    expect(snapshot().get('demo')?.extensions).toEqual([{
+      id: 'reads',
+      label: 'reads',
+      view: {
+        empty: 'No reads available in this inspection.',
+        sections: [{
+          items: [{
+            badge: {
+              tone: 'fair',
+              value: 'ready',
+            },
+            id: 'status',
+            rows: [
+              { label: 'fields', value: 'gate' },
+              { label: 'reads', value: 'none' },
+            ],
+            title: 'status',
+          }],
+          kind: 'items',
+          title: 'Reads',
+        }],
+      },
+    }])
   })
 
   it('uses readInput overrides when resolving read tables', () => {
@@ -173,6 +196,7 @@ describe('registry', () => {
 
     expect(inspect).toHaveBeenCalledWith({ externalGate: 'override' })
     expect(snapshot().get('demo')?.reads?.values).toEqual({ status: 'override' })
+    expect(snapshot().get('demo')?.extensions[0]?.id).toBe('reads')
   })
 
   it('uses form values as the default read table input', () => {
@@ -213,6 +237,7 @@ describe('registry', () => {
       target: 'kept',
     })
     expect(snapshot().get('demo')?.reads?.values).toEqual({ status: 'open' })
+    expect(snapshot().get('demo')?.extensions[0]?.id).toBe('reads')
   })
 
   it('ignores invalid reads options that are neither inspections nor read tables', () => {
@@ -230,6 +255,60 @@ describe('registry', () => {
     )
 
     expect(snapshot().get('demo')?.reads).toBeNull()
+    expect(snapshot().get('demo')?.extensions).toEqual([])
+  })
+
+  it('stores resolved custom extensions from register options', () => {
+    const inspect = jest.fn(() => ({
+      sections: [{
+        kind: 'rows' as const,
+        title: 'Summary',
+        rows: [
+          { label: 'status', value: 'blocked' },
+          { label: 'reason', value: 'gate required' },
+        ],
+      }],
+    }))
+
+    register(
+      'demo',
+      demoUmp,
+      {
+        gate: '',
+        target: 'kept',
+      },
+      { flow: 'signup' },
+      {
+        extensions: [{
+          id: 'validation',
+          label: 'validation',
+          inspect,
+        }],
+      },
+    )
+
+    expect(inspect).toHaveBeenCalledWith(expect.objectContaining({
+      conditions: { flow: 'signup' },
+      previous: null,
+      values: {
+        gate: '',
+        target: 'kept',
+      },
+    }))
+    expect(snapshot().get('demo')?.extensions).toContainEqual({
+      id: 'validation',
+      label: 'validation',
+      view: {
+        sections: [{
+          kind: 'rows',
+          title: 'Summary',
+          rows: [
+            { label: 'status', value: 'blocked' },
+            { label: 'reason', value: 'gate required' },
+          ],
+        }],
+      },
+    })
   })
 
   it('does not register in production without the internal override', () => {
