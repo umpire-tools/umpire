@@ -6,9 +6,13 @@ on:
     types: [completed]
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: false
+
 jobs:
   detect-version-changes:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     outputs:
       any_changed: ${{ steps.versions.outputs.any_changed }}
@@ -29,6 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v4
@@ -38,14 +43,29 @@ jobs:
       - name: Detect package version changes
         id: versions
         env:
-          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           node <<'NODE' >> "$GITHUB_OUTPUT"
           const { execFileSync } = require('node:child_process');
           const fs = require('node:fs');
           const path = require('node:path');
 
-          const before = process.env.BEFORE_SHA;
+          const head = process.env.HEAD_SHA;
+          const before = (() => {
+            if (!head) {
+              return null;
+            }
+
+            try {
+              return execFileSync(
+                'git',
+                ['rev-parse', `${head}^1`],
+                { encoding: 'utf8' }
+              ).trim();
+            } catch {
+              return null;
+            }
+          })();
           const isZeroSha = !before || /^0+$/.test(before);
           const packages = ['core', 'json', 'reads', 'devtools', 'store', 'signals', 'react', 'redux', 'pinia', 'tanstack-store', 'vuex', 'zustand', 'zod', 'testing'];
 
@@ -99,6 +119,8 @@ jobs:
     environment: npm
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Enable Corepack
         run: corepack enable
