@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { afterEach, describe, expect, it, mock, test } from 'bun:test'
 import { enabledWhen, umpire } from '@umpire/core'
 import type { ReadTableInspection } from '@umpire/reads'
 import {
@@ -31,7 +31,7 @@ describe('registry', () => {
   })
 
   it('stores entries and notifies subscribers for each register', () => {
-    const listener = jest.fn()
+    const listener = mock()
     const unsubscribe = subscribe(listener)
 
     expect(getRegistryVersion()).toBe(0)
@@ -73,7 +73,7 @@ describe('registry', () => {
   })
 
   it('removes entries when unregistered', () => {
-    const listener = jest.fn()
+    const listener = mock()
     subscribe(listener)
 
     register('demo', demoUmp, {
@@ -161,7 +161,7 @@ describe('registry', () => {
   })
 
   it('uses readInput overrides when resolving read tables', () => {
-    const inspect = jest.fn((input: Record<string, unknown>) => ({
+    const inspect = mock((input: Record<string, unknown>) => ({
       bridges: [],
       graph: {
         edges: [],
@@ -200,7 +200,7 @@ describe('registry', () => {
   })
 
   it('uses form values as the default read table input', () => {
-    const inspect = jest.fn((input: Record<string, unknown>) => ({
+    const inspect = mock((input: Record<string, unknown>) => ({
       bridges: [],
       graph: {
         edges: [],
@@ -259,7 +259,7 @@ describe('registry', () => {
   })
 
   it('stores resolved custom extensions from register options', () => {
-    const inspect = jest.fn(() => ({
+    const inspect = mock(() => ({
       sections: [{
         kind: 'rows' as const,
         title: 'Summary',
@@ -312,7 +312,7 @@ describe('registry', () => {
   })
 
   it('does not register in production without the internal override', () => {
-    const listener = jest.fn()
+    const listener = mock()
     subscribe(listener)
     process.env.NODE_ENV = 'production'
     delete process.env.UMPIRE_INTERNAL
@@ -341,7 +341,7 @@ describe('registry', () => {
   })
 
   it('does nothing when unregistering an unknown id', () => {
-    const listener = jest.fn()
+    const listener = mock()
     subscribe(listener)
 
     unregister('missing')

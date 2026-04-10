@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { describe, expect, spyOn, test } from 'bun:test'
 import { oneOf } from '../src/rules.js'
 import { umpire } from '../src/umpire.js'
 
@@ -70,7 +70,7 @@ describe('oneOf resolution', () => {
   })
 
   test('falls back to the first satisfied branch and warns when prev is absent', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
 
     try {
       const ump = umpire<TestFields>({

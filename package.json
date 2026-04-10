@@ -4,7 +4,8 @@
   "type": "module",
   "packageManager": "yarn@4.13.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=24",
+    "bun": ">=1.2"
   },
   "workspaces": [
     "packages/*"
@@ -15,14 +16,12 @@
     "docs:build": "cd docs && npx astro build",
     "test": "turbo run test",
     "test:coverage": "turbo run test -- --coverage",
+    "test:smoke": "yarn workspace @umpire/devtools test:smoke",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
     "@changesets/cli": "^2.30.0",
-    "@types/jest": "^29.5.14",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^30.3.0",
-    "ts-jest": "^29.3.4",
+    "@happy-dom/global-registrator": "^20.0.10",
     "turbo": "^2.5.0",
     "typescript": "^5.8.3"
   }

@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { describe, expect, spyOn, test } from 'bun:test'
 import { field } from '../src/field.js'
 import { isNamedCheck } from '../src/validation.js'
 import {
@@ -367,7 +367,7 @@ describe('oneOf', () => {
   })
 
   test('warns and falls back when prev introduces multiple newly satisfied branches', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
 
     try {
       const rule = oneOf<TestFields, TestConditions>('strategy', {
@@ -398,7 +398,7 @@ describe('oneOf', () => {
   })
 
   test('does not warn in production when ambiguity falls back to the first branch', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
     const previousEnv = process.env.NODE_ENV
     process.env.NODE_ENV = 'production'
 

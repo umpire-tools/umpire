@@ -1,5 +1,6 @@
-import { jest } from '@jest/globals'
-import { mount, unmount } from '../dist/index.js'
+import { afterEach, describe, expect, it, mock, spyOn, test } from 'bun:test'
+import { mount, unmount } from '../src/index.js'
+import { resetRegistry } from '../src/registry.js'
 
 const originalNodeEnv = process.env.NODE_ENV
 const originalInternal = process.env.UMPIRE_INTERNAL
@@ -7,10 +8,11 @@ const originalInternal = process.env.UMPIRE_INTERNAL
 describe('mount', () => {
   afterEach(() => {
     unmount()
+    resetRegistry()
     document.body.innerHTML = ''
     process.env.NODE_ENV = originalNodeEnv
     process.env.UMPIRE_INTERNAL = originalInternal
-    jest.restoreAllMocks()
+    mock.restore()
   })
 
   it('creates and removes the shadow host', () => {
@@ -42,7 +44,7 @@ describe('mount', () => {
     process.env.NODE_ENV = 'production'
     delete process.env.UMPIRE_INTERNAL
 
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
     const cleanup = mount()
 
     expect(document.getElementById('umpire-devtools')).toBeNull()
