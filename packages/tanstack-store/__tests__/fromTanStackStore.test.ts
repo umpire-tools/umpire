@@ -127,4 +127,30 @@ describe('fromTanStackStore', () => {
 
     us.destroy()
   })
+
+  it('normalizes function subscriptions from TanStack-style stores', () => {
+    let unsubscribeCalls = 0
+
+    const store = {
+      state: defaultState,
+      subscribe() {
+        return () => {
+          unsubscribeCalls += 1
+        }
+      },
+    }
+    const ump = umpire({ fields, rules })
+    const us = fromTanStackStore(ump, store, {
+      select: (state) => ({
+        username: state.username,
+        password: state.password,
+        confirmPassword: state.confirmPassword,
+        inviteCode: state.inviteCode,
+      }),
+    })
+
+    us.destroy()
+
+    expect(unsubscribeCalls).toBe(1)
+  })
 })
