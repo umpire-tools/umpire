@@ -46,6 +46,7 @@ export { isEmptyArray, isEmptyObject, isEmptyPresent, isEmptyString } from './em
 export { field } from './field.js'
 export { foulMap } from './foul-map.js'
 export { isSatisfied } from './satisfaction.js'
+export { isNamedCheck } from './validation.js'
 export {
   defineRule,
   enabledWhen,
@@ -59,7 +60,6 @@ export {
   getNamedCheckMetadata,
   inspectPredicate,
   inspectRule,
-  isNamedCheck,
 } from './rules.js'
 export { scorecard } from './scorecard.js'
 export { umpire } from './umpire.js'

@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals'
 import { field } from '../src/field.js'
+import { isNamedCheck } from '../src/validation.js'
 import {
   anyOf,
   check,
@@ -10,7 +11,6 @@ import {
   getNamedCheckMetadata,
   inspectPredicate,
   inspectRule,
-  isNamedCheck,
   oneOf,
   requires,
 } from '../src/rules.js'

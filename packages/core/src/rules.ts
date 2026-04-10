@@ -404,8 +404,6 @@ function cloneNamedCheckMetadata(metadata: NamedCheckMetadata): NamedCheckMetada
   })
 }
 
-export { isNamedCheck } from './validation.js'
-
 function isNamedCheckMetadataCarrier(value: unknown): value is NamedCheckMetadataCarrier {
   return (typeof value === 'function' || typeof value === 'object') && value !== null
 }
