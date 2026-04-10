@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { z } from 'zod'
 import { anyOf, check, disables, enabledWhen, fairWhen, requires, umpire } from '@umpire/core'
+import type { FieldValues } from '@umpire/core'
 // useUmpireWithDevtools powers the named instance in the optional panel on this page.
 // Swap back to: import { useUmpire } from '@umpire/react'  (remove leading id arg)
 import { useUmpireWithDevtools } from '@umpire/devtools/react'
@@ -70,16 +71,14 @@ const hasValidEmail = check('email', fieldSchemas.shape.email)
 const hasStrongPassword = check('password', fieldSchemas.shape.password)
 const hasNumericCompanySize = check('companySize', fieldSchemas.shape.companySize)
 
-function allowWhenSsoOr<F extends Record<string, unknown>>(
-  predicate: (values: F, conditions: SignupConditions) => boolean,
-) {
-  return (values: F, conditions: SignupConditions) => conditions.sso || predicate(values, conditions)
+type SignupPredicate = (values: FieldValues<typeof signupFields>, conditions: SignupConditions) => boolean
+
+function allowWhenSsoOr(predicate: SignupPredicate): SignupPredicate {
+  return (values, conditions) => conditions.sso || predicate(values, conditions)
 }
 
-function allowWhenNotBusiness<F extends Record<string, unknown>>(
-  predicate: (values: F, conditions: SignupConditions) => boolean,
-) {
-  return (values: F, conditions: SignupConditions) => conditions.plan !== 'business' || predicate(values, conditions)
+function allowWhenNotBusiness(predicate: SignupPredicate): SignupPredicate {
+  return (values, conditions) => conditions.plan !== 'business' || predicate(values, conditions)
 }
 
 const signupUmp = umpire<typeof signupFields, SignupConditions>({
