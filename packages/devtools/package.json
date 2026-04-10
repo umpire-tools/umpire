@@ -22,7 +22,8 @@
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "test": "bun test",
+    "test:smoke": "yarn build && BUN_DISABLE_WORKSPACE_MOCKS='true' bun test ./smoke/build.ts",
     "typecheck": "tsc --noEmit"
   },
   "files": [

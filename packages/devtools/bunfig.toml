@@ -1,0 +1,4 @@
+[test]
+preload = ["../../test/preload-workspace-aliases.ts", "./happydom.ts"]
+coverageSkipTestFiles = true
+coveragePathIgnorePatterns = ["src/panel/**", "**/src/panel/**"]

@@ -43,8 +43,7 @@ jobs:
         run: yarn install --immutable
 
       - name: Build docs
-        working-directory: docs
-        run: npx astro build
+        run: yarn docs:build
 
       - uses: actions/upload-pages-artifact@v3
         with:

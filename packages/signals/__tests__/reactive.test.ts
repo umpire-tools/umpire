@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { describe, expect, it, spyOn, test } from 'bun:test'
 import { umpire, enabledWhen, requires, disables } from '@umpire/core'
 import type { FieldDef } from '@umpire/core'
 import type { SignalProtocol } from '../src/protocol.js'
@@ -398,7 +398,7 @@ describe('reactiveUmp', () => {
 
 describe('reactiveUmp without effect', () => {
   test('logs a warning when adapter has no effect', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
 
     const adapter = createMockAdapter()
     // Remove effect to simulate TC39 adapter
@@ -419,7 +419,7 @@ describe('reactiveUmp without effect', () => {
   })
 
   test('fouls throws when adapter has no effect', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
 
     const adapter = createMockAdapter()
     const noEffectAdapter: SignalProtocol = {
@@ -437,7 +437,7 @@ describe('reactiveUmp without effect', () => {
   })
 
   test('field availability still works without effect', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
 
     const adapter = createMockAdapter()
     const noEffectAdapter: SignalProtocol = {

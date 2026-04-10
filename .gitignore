@@ -11,3 +11,4 @@ dist/
 .astro/
 docs/.yarn/
 coverage/
+coverage-istanbul/

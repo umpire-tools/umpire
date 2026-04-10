@@ -1,5 +1,6 @@
 import { umpire } from '@umpire/core'
-import { mount, register, unregister, unmount } from '../dist/index.js'
+import { mount, register, unregister, unmount } from '../src/index.js'
+import { resetRegistry } from '../src/registry.js'
 
 const demoUmp = umpire({
   fields: {
@@ -8,10 +9,17 @@ const demoUmp = umpire({
   rules: [],
 })
 
+function flushUi() {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0)
+  })
+}
+
 describe('Panel', () => {
   afterEach(() => {
     unregister('signup')
     unmount()
+    resetRegistry()
     document.body.innerHTML = ''
   })
 
@@ -39,7 +47,7 @@ describe('Panel', () => {
     expect(toggle).not.toBeNull()
 
     toggle?.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-    await Promise.resolve()
+    await flushUi()
 
     const conditionsTab = [...(root?.querySelectorAll('button') ?? [])]
       .find((button) => button.textContent?.trim().toLowerCase() === 'conditions')
@@ -47,7 +55,7 @@ describe('Panel', () => {
     expect(conditionsTab).not.toBeNull()
 
     conditionsTab?.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-    await Promise.resolve()
+    await flushUi()
 
     const text = root?.textContent ?? ''
 
@@ -92,7 +100,7 @@ describe('Panel', () => {
     expect(toggle).not.toBeNull()
 
     toggle?.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-    await Promise.resolve()
+    await flushUi()
 
     const validationTab = [...(root?.querySelectorAll('button') ?? [])]
       .find((button) => button.textContent?.trim().toLowerCase() === 'validation')
@@ -100,7 +108,7 @@ describe('Panel', () => {
     expect(validationTab).not.toBeNull()
 
     validationTab?.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
-    await Promise.resolve()
+    await flushUi()
 
     const text = root?.textContent ?? ''
 

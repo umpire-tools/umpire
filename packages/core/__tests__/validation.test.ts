@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals'
+import { describe, expect, spyOn, test } from 'bun:test'
 import { enabledWhen } from '../src/rules.js'
 import { umpire } from '../src/umpire.js'
 
@@ -126,7 +126,7 @@ describe('surface validation metadata', () => {
   })
 
   test('warns in development when a validation function returns an unsupported result', () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
 
     try {
       const ump = umpire({

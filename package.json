@@ -4,25 +4,30 @@
   "type": "module",
   "packageManager": "yarn@4.13.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=24",
+    "bun": ">=1.2"
   },
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "build": "turbo run build",
-    "docs": "cd docs && npx astro dev",
-    "docs:build": "cd docs && npx astro build",
+    "coverage:merge": "bun ./scripts/merge-lcov.mjs",
+    "docs": "yarn --cwd docs dev",
+    "docs:build": "yarn --cwd docs build",
     "test": "turbo run test",
-    "test:coverage": "turbo run test -- --coverage",
+    "test:coverage": "turbo run test --force -- --coverage --coverage-reporter=lcov --coverage-dir=coverage && bun ./scripts/merge-lcov.mjs",
+    "test:coverage:istanbul": "bun ./scripts/test-coverage-istanbul.ts",
+    "test:smoke": "yarn workspace @umpire/devtools test:smoke",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
     "@changesets/cli": "^2.30.0",
-    "@types/jest": "^29.5.14",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^30.3.0",
-    "ts-jest": "^29.3.4",
+    "@happy-dom/global-registrator": "^20.0.10",
+    "istanbul-lib-coverage": "^3.2.2",
+    "istanbul-lib-instrument": "^6.0.3",
+    "istanbul-lib-report": "^3.0.1",
+    "istanbul-reports": "^3.2.0",
     "turbo": "^2.5.0",
     "typescript": "^5.8.3"
   }

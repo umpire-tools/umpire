@@ -103,6 +103,18 @@ const fouls = signupUmp.play(
 npm install @umpire/core
 ```
 
+Published packages do not require Bun to consume.
+
+## Contributing
+
+Local repo work expects:
+
+- Node 24+
+- Yarn 4
+- Bun 1.2+
+
+`yarn test` and `yarn test:coverage` use Bun under the hood, so those commands will fail if Bun is not installed.
+
 ## Docs
 
 Full docs, concepts, and examples live at https://sdougbrown.github.io/umpire/

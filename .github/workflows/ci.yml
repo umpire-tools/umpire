@@ -25,7 +25,7 @@ jobs:
         run: yarn install --immutable
 
       - name: Typecheck
-        run: yarn turbo run typecheck
+        run: yarn typecheck
 
   test:
     name: Test
@@ -42,22 +42,21 @@ jobs:
           node-version: 24
           cache: yarn
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Build devtools (tests import from dist)
-        run: yarn turbo run build --filter=@umpire/devtools
-
-      - name: Test with coverage
-        run: yarn jest --coverage
-        env:
-          NODE_OPTIONS: '--experimental-vm-modules'
+      - name: Test with Istanbul coverage
+        run: yarn test:coverage:istanbul
 
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          file: coverage/lcov.info
+          file: coverage-istanbul/lcov.info
 
   build:
     name: Build
@@ -74,8 +73,18 @@ jobs:
           node-version: 24
           cache: yarn
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.11
+
       - name: Install dependencies
         run: yarn install --immutable
 
       - name: Build
-        run: yarn turbo run build
+        run: yarn build
+
+      - name: Smoke built devtools
+        working-directory: packages/devtools
+        env:
+          BUN_DISABLE_WORKSPACE_MOCKS: 'true'
+        run: bun test ./smoke/build.ts

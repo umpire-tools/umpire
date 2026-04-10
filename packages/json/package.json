@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "files": [

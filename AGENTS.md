@@ -11,10 +11,11 @@
 ## Build And Test
 
 - Use Yarn 4 with `nodeLinker: node-modules`. Never use `npm` in this repo.
+- Bun 1.2+ is required for repo test commands; `yarn test` shells out to `bun test`.
 - Root commands: `yarn build`, `yarn test`, `yarn typecheck`, `yarn docs`, `yarn docs:build`.
 - Most packages build with `tsc`; `@umpire/devtools` builds with `tsup`.
 - Prefer `yarn turbo run test --filter=@umpire/<package>` for a single package.
-- For docs edits, `cd docs && npx astro build` is the practical end-to-end check.
+- For docs edits, `cd docs && yarn build` is the practical end-to-end check.
 
 ## Architecture
 
