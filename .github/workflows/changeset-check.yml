@@ -20,12 +20,48 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
 
+      - name: Determine whether a changeset is required
+        id: changeset-scope
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: |
+          changed_files="$(git diff --name-only "$BASE_REF"...HEAD)"
+
+          if [ -z "$changed_files" ]; then
+            echo "required=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          while IFS= read -r file; do
+            case "$file" in
+              .github/*|.github/**|docs/*|docs/**|*.md|**.md)
+                ;;
+              */__tests__/*|__tests__/*)
+                ;;
+              *)
+                echo "required=true" >> "$GITHUB_OUTPUT"
+                exit 0
+                ;;
+            esac
+          done <<EOF
+          $changed_files
+          EOF
+
+          echo "required=false" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-node@v4
+        if: steps.changeset-scope.outputs.required == 'true'
         with:
           node-version: 24
           cache: yarn
 
       - run: yarn install --immutable
+        if: steps.changeset-scope.outputs.required == 'true'
 
       - name: Check for changeset
+        if: steps.changeset-scope.outputs.required == 'true'
         run: yarn changeset status --since=origin/main
+
+      - name: Skip changeset check for test-only changes
+        if: steps.changeset-scope.outputs.required != 'true'
+        run: echo "Only __tests__ files changed; skipping changeset requirement."

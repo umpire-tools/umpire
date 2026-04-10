@@ -1,6 +1,11 @@
 import { check, getNamedCheckMetadata } from '@umpire/core'
 
-import { checks, createNamedCheckFromRule, defaultCheckReason } from '../src/index.js'
+import { checks, createNamedCheckFromRule, defaultCheckReason, hydrateIsEmptyStrategy } from '../src/index.js'
+import {
+  assertValidCheckSpec,
+  createCheckRuleFromMetadata,
+  createCheckSpecFromMetadata,
+} from '../src/check-ops.js'
 
 describe('checks', () => {
   test.each([
@@ -61,5 +66,92 @@ describe('checks', () => {
       __check: 'matches',
       params: { pattern: '^[a-z]+$' },
     })
+  })
+
+  test('serializes named-check metadata back into portable specs', () => {
+    expect(createCheckSpecFromMetadata({
+      __check: 'matches',
+      params: { pattern: '^[a-z]+$' },
+    })).toEqual({
+      op: 'matches',
+      pattern: '^[a-z]+$',
+    })
+
+    expect(createCheckSpecFromMetadata({
+      __check: 'range',
+      params: { min: 2, max: 4 },
+    })).toEqual({
+      op: 'range',
+      min: 2,
+      max: 4,
+    })
+  })
+
+  test.each([
+    {
+      __check: 'matches',
+      params: {},
+    },
+    {
+      __check: 'minLength',
+      params: { value: '3' },
+    },
+    {
+      __check: 'range',
+      params: { min: 2 },
+    },
+    {
+      __check: 'custom',
+    },
+  ])('returns undefined for malformed metadata: %j', (metadata) => {
+    expect(createCheckSpecFromMetadata(metadata as never)).toBeUndefined()
+  })
+
+  test('creates portable check rules and omits default reasons', () => {
+    expect(createCheckRuleFromMetadata(
+      'score',
+      { __check: 'min', params: { value: 3 } },
+      'Must be at least 3',
+    )).toEqual({
+      type: 'check',
+      field: 'score',
+      op: 'min',
+      value: 3,
+    })
+
+    expect(createCheckRuleFromMetadata(
+      'score',
+      { __check: 'min', params: { value: 3 } },
+      'Need at least three runs',
+    )).toEqual({
+      type: 'check',
+      field: 'score',
+      op: 'min',
+      value: 3,
+      reason: 'Need at least three runs',
+    })
+
+    expect(createCheckRuleFromMetadata(
+      'score',
+      { __check: 'range', params: { min: 1 } },
+      'Broken metadata',
+    )).toBeUndefined()
+  })
+
+  test('falls back for unknown reason labels and rejects invalid specs', () => {
+    expect(defaultCheckReason({ __check: 'custom' } as never)).toBe('Invalid value')
+    expect(() => hydrateIsEmptyStrategy('mystery' as never)).toThrow('Unknown isEmpty strategy')
+
+    expect(() =>
+      assertValidCheckSpec({ op: 'min', value: Number.NaN }),
+    ).toThrow('Check rule "min" requires a numeric value')
+
+    expect(() =>
+      assertValidCheckSpec({ op: 'range', min: 1, max: Number.NaN }),
+    ).toThrow('Check rule "range" requires numeric min and max values')
+
+    expect(() =>
+      assertValidCheckSpec({ op: 'custom' } as never),
+    ).toThrow('Unknown named check op "custom"')
   })
 })
