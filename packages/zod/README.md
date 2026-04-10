@@ -97,6 +97,36 @@ Creates a convenience adapter with:
 
 If you need every issue or deeper control, you can still use `activeSchema()` and `safeParse()` directly.
 
+### Blank strings and `isEmpty`
+
+The generated validators follow Umpire's satisfaction semantics. By default,
+only `null` and `undefined` count as empty. So if a string field does not define
+`isEmpty`, a value like `''` is still considered satisfied and may surface
+`valid: false` immediately.
+
+For form-style inputs, define an explicit empty-state rule:
+
+```ts
+import { isEmptyString, umpire } from '@umpire/core'
+
+const validation = createZodValidation({
+  schemas: {
+    email: z.string().email('Enter a valid email'),
+  },
+})
+
+const ump = umpire({
+  fields: {
+    email: { required: true, isEmpty: isEmptyString },
+  },
+  rules: [],
+  validators: validation.validators,
+})
+```
+
+That keeps blank strings out of the validation path until the field is
+satisfied under your chosen emptiness semantics.
+
 ## Devtools
 
 If you use `@umpire/devtools`, `@umpire/zod/devtools` can expose validation state in a tab. The most ergonomic path is to derive from the current devtools context:

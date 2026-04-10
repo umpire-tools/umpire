@@ -18,6 +18,27 @@ This page shows how to compose Umpire with validation libraries like Zod, Yup, o
 
 The handoff point is `check()`. It wraps a validator into something Umpire can use as a rule source, without Umpire taking ownership of validation logic.
 
+Validation still follows Umpire's satisfaction semantics. By default, only
+`null` and `undefined` are treated as empty. That means `''` is considered
+present and satisfied unless the field defines `isEmpty`.
+
+If you want blank strings to behave like "not yet validateable" form input, give
+the field an explicit empty-state rule:
+
+```ts
+import { isEmptyString } from '@umpire/core'
+
+const ump = umpire({
+  fields: {
+    email: { required: true, isEmpty: isEmptyString },
+  },
+  rules: [],
+})
+```
+
+Without that, a field can be `satisfied: true` and `valid: false` at the same
+time, which is often the right result for non-empty invalid input.
+
 ## `check()` is the bridge
 
 `check(field, validator)` creates a predicate that Umpire can use inside `requires()`, `enabledWhen()`, or `disables()`. The validator runs against the field's current value and returns a boolean.

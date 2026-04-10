@@ -77,6 +77,32 @@ const errors = activeErrors(availability, zodErrors(result.error))
 // companyName omitted if disabled on the current plan
 ```
 
+## Blank strings and `isEmpty`
+
+`@umpire/zod` follows Umpire's satisfaction rules. By default, only `null` and
+`undefined` count as empty. So if a field does not define `isEmpty`, an empty
+string is still considered satisfied and can surface `valid: false` from
+`validators` immediately.
+
+For form-style string inputs, use an explicit empty-state helper:
+
+```ts
+import { isEmptyString, umpire } from '@umpire/core'
+
+const ump = umpire({
+  fields: {
+    email: { required: true, isEmpty: isEmptyString },
+  },
+  rules: [],
+  validators: createZodValidation({
+    schemas: { email: z.string().email('Enter a valid email') },
+  }).validators,
+})
+```
+
+That keeps blank strings in the "not yet validateable" lane until the field is
+actually satisfied under your chosen emptiness rule.
+
 ## Chaining refinements
 
 Cross-field refinements chain normally on the result of `activeSchema`:
