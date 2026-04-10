@@ -23,7 +23,7 @@
   "scripts": {
     "build": "tsup",
     "test": "bun test",
-    "test:smoke": "yarn build && bun test ./smoke/build.ts",
+    "test:smoke": "yarn build && BUN_DISABLE_WORKSPACE_MOCKS='true' bun test ./smoke/build.ts",
     "typecheck": "tsc --noEmit"
   },
   "files": [

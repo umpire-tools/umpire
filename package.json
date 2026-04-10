@@ -12,10 +12,11 @@
   ],
   "scripts": {
     "build": "turbo run build",
+    "coverage:merge": "bun ./scripts/merge-lcov.mjs",
     "docs": "cd docs && npx astro dev",
     "docs:build": "cd docs && npx astro build",
     "test": "turbo run test",
-    "test:coverage": "turbo run test -- --coverage",
+    "test:coverage": "turbo run test --force -- --coverage --coverage-reporter=lcov --coverage-dir=coverage && bun ./scripts/merge-lcov.mjs",
     "test:smoke": "yarn workspace @umpire/devtools test:smoke",
     "typecheck": "turbo run typecheck"
   },
