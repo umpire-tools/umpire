@@ -22,12 +22,13 @@ const schema = {
     email: { isEmpty: 'string' },
     submit: {},
   },
-  rules: [
-    { type: 'check', field: 'email', op: 'email' },
-  ],
+  rules: [],
+  validators: {
+    email: { op: 'email', error: 'Enter a valid email address' },
+  },
 }
 
-const { fields, rules } = fromJson(schema)
+const { fields, rules, validators } = fromJson(schema)
 
 const mergedRules = [
   ...rules,
@@ -39,11 +40,13 @@ const mergedRules = [
 const ump = umpire({
   fields,
   rules: mergedRules,
+  validators,
 })
 
 const json = toJson({
   fields,
   rules: mergedRules,
+  validators,
 })
 ```
 
@@ -51,19 +54,21 @@ const json = toJson({
 
 ### `fromJson(schema)`
 
-Parses a portable Umpire JSON schema into `{ fields, rules }` values you can pass into `umpire()` or compose with hand-written rules.
+Parses a portable Umpire JSON schema into `{ fields, rules, validators }` values you can pass into `umpire()` or compose with hand-written rules.
 
-### `toJson({ fields, rules, conditions })`
+### `toJson({ fields, rules, validators, conditions })`
 
 Serializes a TypeScript config back into the portable JSON contract.
 
 - Rules hydrated from JSON round-trip exactly
+- Validators hydrated from JSON round-trip exactly
 - Hand-written rules serialize when they map cleanly to the contract
+- Hand-written validators serialize when they use portable named checks
 - Unsupported pieces go into `excluded` instead of disappearing
 
 ### `checks.*()`
 
-Named validators for use with `check(field, validator)`:
+Named validators for use with `check(field, validator)` and JSON `validators`:
 
 - `checks.email()`
 - `checks.url()`
@@ -75,7 +80,23 @@ Named validators for use with `check(field, validator)`:
 - `checks.range(min, max)`
 - `checks.integer()`
 
-Use these when you want a rule to survive the JSON boundary. Plain functions, regexes, and library schemas still work with `check()`, but they stay TypeScript-specific.
+Use these when you want a validator or check-backed rule to survive the JSON boundary. Plain functions, regexes, and library schemas still work at runtime, but they stay TypeScript-specific.
+
+## `validators`
+
+Use top-level `validators` for field-local correctness checks that should surface `valid` / `error` through `ump.check()`:
+
+```json
+{
+  "validators": {
+    "email": { "op": "email", "error": "Enter a valid email address" }
+  }
+}
+```
+
+This is the first-class validation path in `@umpire/json`.
+
+Top-level `"check"` rules still exist for legacy compatibility, but they remain structural fairness rules rather than validator metadata.
 
 ## `excluded`
 

@@ -28,6 +28,7 @@ export type {
   JsonIsEmptyStrategy,
   JsonRequiresDependency,
   JsonRule,
+  JsonValidatorDef,
   UmpireJsonSchema,
 } from './schema.js'
 export type { JsonExprBuilder, PortableRuleOptions } from './builders.js'

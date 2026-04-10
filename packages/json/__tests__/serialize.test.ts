@@ -44,6 +44,12 @@ describe('toJson', () => {
           reason: 'Selected plan is not available for this account',
         },
       ],
+      validators: {
+        email: {
+          op: 'email',
+          error: 'Must be a valid email address',
+        },
+      },
       excluded: [
         {
           type: 'custom',
@@ -57,6 +63,53 @@ describe('toJson', () => {
     const parsed = fromJson(schema)
 
     expect(toJson(parsed)).toEqual(schema)
+  })
+
+  test('serializes portable validators and excludes unsupported validator shapes', () => {
+    const fields = {
+      email: {},
+      username: {},
+      slug: {},
+    }
+
+    expect(toJson({
+      fields,
+      rules: [],
+      validators: {
+        email: checks.email(),
+        username: {
+          validator: checks.minLength(3),
+          error: 'Username must be at least 3 characters',
+        },
+        slug: /^[a-z-]+$/,
+      },
+    })).toEqual({
+      version: 1,
+      fields: {
+        email: {},
+        username: {},
+        slug: {},
+      },
+      rules: [],
+      validators: {
+        email: {
+          op: 'email',
+        },
+        username: {
+          op: 'minLength',
+          value: 3,
+          error: 'Username must be at least 3 characters',
+        },
+      },
+      excluded: [
+        {
+          type: 'field:validator',
+          field: 'slug',
+          description: 'Field validator cannot be serialized unless it uses a named check from @umpire/json',
+          key: 'field:slug:validator',
+        },
+      ],
+    })
   })
 
   test('serializes structural hand-written rules and collects unsupported pieces in excluded', () => {

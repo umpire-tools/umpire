@@ -73,6 +73,48 @@ describe('fromJson', () => {
     expect(getJsonDef(rules[2])).toEqual(schema.rules[2])
   })
 
+  test('hydrates validators into core config and surfaces validation metadata', () => {
+    const schema: UmpireJsonSchema = {
+      version: 1,
+      fields: {
+        email: { isEmpty: 'string' },
+      },
+      rules: [],
+      validators: {
+        email: {
+          op: 'email',
+          error: 'Must be a valid email address',
+        },
+      },
+    }
+
+    const parsed = fromJson(schema)
+    const runtime = umpire(parsed)
+
+    expect(runtime.check({ email: '' })).toMatchObject({
+      email: {
+        enabled: true,
+        fair: true,
+        required: false,
+      },
+    })
+    expect(runtime.check({ email: '' }).email.valid).toBeUndefined()
+    expect(runtime.check({ email: '' }).email.error).toBeUndefined()
+
+    expect(runtime.check({ email: 'invalid' })).toMatchObject({
+      email: {
+        enabled: true,
+        fair: true,
+        required: false,
+        valid: false,
+        error: 'Must be a valid email address',
+      },
+    })
+
+    expect(parsed.validators.email).toBeDefined()
+    expect(toJson(parsed)).toEqual(schema)
+  })
+
   test('rejects unknown isEmpty strategies', () => {
     expect(() =>
       fromJson({
@@ -148,5 +190,18 @@ describe('validateSchema', () => {
         ],
       }),
     ).toThrow('Invalid regex pattern')
+
+    expect(() =>
+      validateSchema({
+        version: 1,
+        fields: {},
+        rules: [],
+        validators: {
+          email: {
+            op: 'email',
+          },
+        },
+      }),
+    ).toThrow('Validator references unknown field "email"')
   })
 })

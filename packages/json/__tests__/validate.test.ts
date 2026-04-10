@@ -163,6 +163,37 @@ describe('validateSchema', () => {
       },
       'Unknown rule type "mystery"',
     ],
+    [
+      'rejects validators that reference unknown fields',
+      {
+        version: 1,
+        fields: {},
+        rules: [],
+        validators: {
+          email: {
+            op: 'email',
+          },
+        },
+      },
+      'Validator references unknown field "email"',
+    ],
+    [
+      'rejects validators with non-string errors',
+      {
+        version: 1,
+        fields: {
+          email: {},
+        },
+        rules: [],
+        validators: {
+          email: {
+            op: 'email',
+            error: 7,
+          },
+        },
+      },
+      'Validator for field "email" must use a string error when provided',
+    ],
   ])('%s', (_label, schema, expectedMessage) => {
     expect(() =>
       validateSchema(schema as unknown as UmpireJsonSchema),

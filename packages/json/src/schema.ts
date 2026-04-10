@@ -60,6 +60,10 @@ export type JsonCheckRule = {
   reason?: string
 } & JsonCheckSpec
 
+export type JsonValidatorDef = JsonCheckSpec & {
+  error?: string
+}
+
 export type JsonRequiresDependency = string | JsonExpr
 
 export type JsonRule =
@@ -87,5 +91,6 @@ export interface UmpireJsonSchema {
   conditions?: Record<string, JsonConditionDef>
   fields: Record<string, JsonFieldDef>
   rules: JsonRule[]
+  validators?: Record<string, JsonValidatorDef>
   excluded?: ExcludedRule[]
 }

@@ -1,6 +1,6 @@
 import type { JsonPrimitive, NamedCheck, NamedCheckMetadata } from '@umpire/core'
 
-import type { JsonCheckRule, JsonCheckOp, JsonCheckSpec } from './schema.js'
+import type { JsonCheckRule, JsonCheckOp, JsonCheckSpec, JsonValidatorDef } from './schema.js'
 
 type Params = Readonly<Record<string, JsonPrimitive>>
 
@@ -172,6 +172,21 @@ export function createCheckRuleFromMetadata(
   return resolvedReason
     ? { type: 'check', field, reason: resolvedReason, ...spec }
     : { type: 'check', field, ...spec }
+}
+
+export function createValidatorDefFromMetadata(
+  metadata: NamedCheckMetadata,
+  error?: string,
+): JsonValidatorDef | undefined {
+  const spec = createCheckSpecFromMetadata(metadata)
+
+  if (!spec) {
+    return undefined
+  }
+
+  return error === undefined
+    ? spec
+    : { ...spec, error }
 }
 
 export function createNamedCheckFromSpec(spec: JsonCheckSpec): NamedCheck<any> {
