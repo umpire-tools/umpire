@@ -33,10 +33,25 @@ export type FieldValidator<T = unknown> =
   | SafeParseValidator<T>
   | StringTestValidator
 
+export type ValidationResult = {
+  valid: boolean
+  error?: string
+}
+
+export type ValidationOutcome = boolean | ValidationResult
+
+export type ValidationFunction<T = unknown> = (value: NonNullable<T>) => ValidationOutcome
+
+export type ValidationValidator<T = unknown> =
+  | ValidationFunction<T>
+  | NamedCheck<T>
+  | SafeParseValidator<T>
+  | StringTestValidator
+
 export type ValidationEntry<T = unknown> =
-  | FieldValidator<T>
+  | ValidationValidator<T>
   | {
-      validator: FieldValidator<T>
+      validator: ValidationValidator<T>
       error?: string
     }
 

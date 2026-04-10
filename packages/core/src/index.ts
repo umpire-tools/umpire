@@ -27,6 +27,10 @@ export type {
   NamedCheck,
   NamedCheckMetadata,
   FieldValidator,
+  ValidationFunction,
+  ValidationOutcome,
+  ValidationResult,
+  ValidationValidator,
   ValidationEntry,
   ValidationMap,
 } from './types.js'

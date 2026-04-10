@@ -1,22 +1,21 @@
+import { shouldWarnInDev } from './dev.js'
 import type {
   FieldValidator,
   NamedCheck,
   SafeParseValidator,
+  ValidationOutcome,
   StringTestValidator,
+  ValidationResult,
+  ValidationValidator,
 } from './types.js'
 
 export type NormalizedValidationEntry<T = unknown> = {
-  validate: (value: NonNullable<T>) => boolean
-  error?: string
-}
-
-export type ValidationResult = {
-  valid: boolean
+  validate: (value: NonNullable<T>) => ValidationOutcome
   error?: string
 }
 
 type ValidationEntryObject<T = unknown> = {
-  validator: FieldValidator<T>
+  validator: ValidationValidator<T>
   error?: string
 }
 
@@ -45,16 +44,67 @@ function isFieldValidator<T = unknown>(validator: unknown): validator is FieldVa
     isStringTestValidator(validator)
 }
 
+function isValidationValidator<T = unknown>(validator: unknown): validator is ValidationValidator<T> {
+  return typeof validator === 'function' ||
+    isNamedCheck<T>(validator) ||
+    isSafeParseValidator<T>(validator) ||
+    isStringTestValidator(validator)
+}
+
+function isValidationResult(result: unknown): result is ValidationResult {
+  return isRecord(result) &&
+    typeof result.valid === 'boolean' &&
+    (!('error' in result) || result.error === undefined || typeof result.error === 'string')
+}
+
 function isValidationEntryObject<T = unknown>(entry: unknown): entry is ValidationEntryObject<T> {
   return isRecord(entry) &&
     'validator' in entry &&
-    isFieldValidator<T>(entry.validator) &&
+    isValidationValidator<T>(entry.validator) &&
     (!('error' in entry) || entry.error === undefined || typeof entry.error === 'string')
 }
 
+function normalizeValidationResult(
+  result: unknown,
+  fallbackError?: string,
+): ValidationResult {
+  if (typeof result === 'boolean') {
+    return result
+      ? { valid: true }
+      : fallbackError === undefined
+        ? { valid: false }
+        : { valid: false, error: fallbackError }
+  }
+
+  if (!isValidationResult(result)) {
+    if (shouldWarnInDev()) {
+      console.warn(
+        '[umpire] Validation functions must return a boolean or { valid, error? }. ' +
+        'Received an unsupported result and treated it as invalid.',
+      )
+    }
+
+    return fallbackError === undefined
+      ? { valid: false }
+      : { valid: false, error: fallbackError }
+  }
+
+  if (result.valid) {
+    return { valid: true }
+  }
+
+  if (result.error !== undefined) {
+    return { valid: false, error: result.error }
+  }
+
+  return fallbackError === undefined
+    ? { valid: false }
+    : { valid: false, error: fallbackError }
+}
+
 function toValidationFunction<T = unknown>(
-  validator: FieldValidator<T>,
-): (value: NonNullable<T>) => boolean {
+  validator: ValidationValidator<T>,
+): (value: NonNullable<T>) => ValidationOutcome {
   if (typeof validator === 'function') {
     return validator
   }
@@ -73,7 +123,7 @@ function toValidationFunction<T = unknown>(
 export function normalizeValidationEntry<T = unknown>(
   entry: unknown,
 ): NormalizedValidationEntry<T> | null {
-  if (isFieldValidator<T>(entry)) {
+  if (isValidationValidator<T>(entry)) {
     return { validate: toValidationFunction(entry) }
   }
 
@@ -100,18 +150,12 @@ export function runFieldValidator<T = unknown>(
     return false
   }
 
-  return toValidationFunction(validator)(value)
+  return normalizeValidationResult(toValidationFunction(validator)(value)).valid
 }
 
 export function runValidationEntry<T = unknown>(
   entry: NormalizedValidationEntry<T>,
   value: NonNullable<T>,
 ): ValidationResult {
-  const result: ValidationResult = { valid: entry.validate(value) }
-
-  if (!result.valid && entry.error !== undefined) {
-    result.error = entry.error
-  }
-
-  return result
+  return normalizeValidationResult(entry.validate(value), entry.error)
 }

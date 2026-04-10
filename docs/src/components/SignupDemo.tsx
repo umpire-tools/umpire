@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { z } from 'zod'
-import { anyOf, check, disables, enabledWhen, requires, umpire } from '@umpire/core'
+import { anyOf, check, disables, enabledWhen, fairWhen, requires, umpire } from '@umpire/core'
 // useUmpireWithDevtools powers the named instance in the optional panel on this page.
 // Swap back to: import { useUmpire } from '@umpire/react'  (remove leading id arg)
 import { useUmpireWithDevtools } from '@umpire/devtools/react'
-import { activeSchema, activeErrors, zodErrors } from '@umpire/zod'
+import { createZodValidation } from '@umpire/zod'
 import { zodValidationExtension } from '@umpire/zod/devtools'
 
 // ── Known SSO domains ─────────────────────────────────────────────────────────
@@ -39,12 +39,59 @@ const signupFields = {
 type SignupConditions = { plan: 'personal' | 'business'; sso: boolean }
 type SignupField = keyof typeof signupFields
 
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+// ── Zod: per-field validation schemas ────────────────────────────────────────
+// These are the "correctness" checks. Umpire handles "should this field be
+// in play?" — Zod handles "is this value well-formed?"
+
+const fieldSchemas = z.object({
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(8, 'At least 8 characters'),
+  confirmPassword: z.string(),
+  referralCode: z.string(),
+  companyName: z.string(),
+  companySize: z.string().regex(/^\d+$/, 'Must be a number'),
+})
+
+const signupValidation = createZodValidation({
+  schemas: fieldSchemas.shape,
+  zod: z,
+  build(baseSchema) {
+    // Keep the schema-level refinement too: Umpire owns availability and
+    // blocked-submit reasons, while this remains an optional final parse-time
+    // correctness check for submit handlers and tooling.
+    return baseSchema.refine(
+      (data) => !data.confirmPassword || !data.password || data.confirmPassword === data.password,
+      { message: 'Passwords do not match', path: ['confirmPassword'] },
+    )
+  },
+})
+
+const hasValidEmail = check('email', fieldSchemas.shape.email)
+const hasStrongPassword = check('password', fieldSchemas.shape.password)
+const hasNumericCompanySize = check('companySize', fieldSchemas.shape.companySize)
+
+function allowWhenSsoOr<F extends Record<string, unknown>>(
+  predicate: (values: F, conditions: SignupConditions) => boolean,
+) {
+  return (values: F, conditions: SignupConditions) => conditions.sso || predicate(values, conditions)
+}
+
+function allowWhenNotBusiness<F extends Record<string, unknown>>(
+  predicate: (values: F, conditions: SignupConditions) => boolean,
+) {
+  return (values: F, conditions: SignupConditions) => conditions.plan !== 'business' || predicate(values, conditions)
+}
 
 const signupUmp = umpire<typeof signupFields, SignupConditions>({
   fields: signupFields,
   rules: [
     requires('confirmPassword', 'password'),
+    // Model the password/confirmation relationship structurally so Umpire can
+    // see it for fair/foul state and downstream dependency chains, independent
+    // of whether the Zod object-level refine runs on a given pass.
+    fairWhen('confirmPassword', (confirmPassword, values) => confirmPassword === values.password, {
+      reason: 'Match your password exactly',
+    }),
     enabledWhen('companyName', (_v, c) => c.plan === 'business', {
       reason: 'business plan required',
     }),
@@ -63,7 +110,7 @@ const signupUmp = umpire<typeof signupFields, SignupConditions>({
     //   Path B — SSO: the domain is a known SSO provider
     // anyOf enables submit when at least one path is satisfied.
     anyOf(
-      enabledWhen('submit', check('email', emailRegex), {
+      enabledWhen('submit', hasValidEmail, {
         reason: 'Enter a valid email address',
       }),
       enabledWhen('submit', (_v, c) => c.sso, {
@@ -71,49 +118,35 @@ const signupUmp = umpire<typeof signupFields, SignupConditions>({
       }),
     ),
 
-    // Path A also requires a password — SSO bypasses this
-    enabledWhen('submit', (v, c) => c.sso || !!v.password, {
+    // `oneOf()` does not fit here because it switches field branches, not
+    // predicate branches. These helpers keep the submit-path split readable.
+    enabledWhen('submit', allowWhenSsoOr((v) => !!v.password), {
       reason: 'Enter a password',
     }),
+    enabledWhen('submit', allowWhenSsoOr(hasStrongPassword), {
+      reason: 'Use at least 8 password characters',
+    }),
+    enabledWhen('submit', allowWhenSsoOr((v) => !!v.confirmPassword), {
+      reason: 'Confirm your password',
+    }),
+    enabledWhen('submit', allowWhenSsoOr((v) => v.confirmPassword === v.password), {
+      reason: 'Passwords must match',
+    }),
+
+    enabledWhen('submit', allowWhenNotBusiness((v) => !!v.companyName), {
+      reason: 'Enter a company name',
+    }),
+    enabledWhen('submit', allowWhenNotBusiness((v) => !!v.companySize), {
+      reason: 'Enter company size',
+    }),
+    enabledWhen('submit', allowWhenNotBusiness(hasNumericCompanySize), {
+      reason: 'Company size must be a number',
+    }),
   ],
-})
-
-// ── Zod: per-field validation schemas ────────────────────────────────────────
-// These are the "correctness" checks. Umpire handles "should this field be
-// in play?" — Zod handles "is this value well-formed?"
-
-const fieldSchemas = z.object({
-  email: z.string().email('Enter a valid email'),
-  password: z.string().min(8, 'At least 8 characters'),
-  confirmPassword: z.string().min(1, 'Confirm your password'),
-  referralCode: z.string(),
-  companyName: z.string().min(1, 'Company name is required'),
-  companySize: z.string().min(1, 'Company size is required').regex(/^\d+$/, 'Must be a number'),
+  validators: signupValidation.validators,
 })
 
 type SignupValues = ReturnType<typeof signupUmp.init>
-type SignupAvailability = ReturnType<typeof signupUmp.check>
-
-function buildSignupValidation(
-  availability: SignupAvailability,
-  values: SignupValues,
-) {
-  const baseSchema = activeSchema(availability, fieldSchemas.shape, z)
-  const schema = baseSchema
-    .refine(
-      (data) => !data.confirmPassword || !data.password || data.confirmPassword === data.password,
-      { message: 'Passwords do not match', path: ['confirmPassword'] },
-    )
-  const result = schema.safeParse(values)
-
-  return {
-    result,
-    schemaFields: Object.keys(baseSchema.shape),
-    validationErrors: result.success
-      ? {}
-      : activeErrors(availability, zodErrors(result.error)),
-  }
-}
 
 // ── Field metadata ───────────────────────────────────────────────────────────
 
@@ -154,6 +187,7 @@ export default function SignupDemo() {
   const [values, setValues] = useState(() => signupUmp.init())
   const [plan, setPlan] = useState<'personal' | 'business'>('personal')
   const [touched, setTouched] = useState<Set<string>>(new Set())
+  const [submissionIssues, setSubmissionIssues] = useState<Array<{ field: string; message: string }>>([])
 
   // SSO is derived from the email — no extra state needed
   const emailDomain = domainFromEmail(String(values.email ?? ''))
@@ -165,22 +199,15 @@ export default function SignupDemo() {
     extensions: [
       zodValidationExtension({
         resolve({ scorecard, values }) {
-          const validation = buildSignupValidation(scorecard.check, values)
-
-          return {
-            result: validation.result,
-            schemaFields: validation.schemaFields,
-          }
+          return signupValidation.run(scorecard.check, values)
         },
       }),
     ],
   })
-  const validationErrors = useMemo(
-    () => buildSignupValidation(availability, values).validationErrors,
-    [availability, values],
-  )
 
   function updateValue(field: SignupField, nextValue: string) {
+    setSubmissionIssues([])
+
     if (field === 'email') {
       const domain = domainFromEmail(nextValue)
       const company = domain ? (knownDomains[domain] ?? null) : null
@@ -205,6 +232,7 @@ export default function SignupDemo() {
   }
 
   function applyResets() {
+    setSubmissionIssues([])
     setValues((current) => {
       const next = { ...current }
       for (const foul of fouls) {
@@ -212,6 +240,11 @@ export default function SignupDemo() {
       }
       return next
     })
+  }
+
+  function submit() {
+    const result = signupValidation.run(availability, values)
+    setSubmissionIssues(result.normalizedErrors)
   }
 
   const canSubmit = availability.submit.enabled
@@ -266,7 +299,10 @@ export default function SignupDemo() {
                     'umpire-demo__plan-option',
                     plan === option.value && 'umpire-demo__plan-option--active',
                   )}
-                  onClick={() => setPlan(option.value)}
+                  onClick={() => {
+                    setSubmissionIssues([])
+                    setPlan(option.value)
+                  }}
                 >
                   {option.label}
                 </button>
@@ -278,7 +314,9 @@ export default function SignupDemo() {
                 const meta = fieldMeta[field]
                 const av = availability[field]
                 const isEnabled = av.enabled
-                const error = touched.has(field) ? validationErrors[field] : undefined
+                const error = isEnabled && touched.has(field)
+                  ? av.error ?? (av.fair === false ? av.reason : undefined)
+                  : undefined
 
                 return (
                   <div
@@ -318,14 +356,18 @@ export default function SignupDemo() {
 
             <button
               type="button"
+              disabled={!canSubmit}
               className={cls(
                 'signup-demo__submit',
                 canSubmit ? 'signup-demo__submit--ready' : 'signup-demo__submit--blocked',
               )}
-              disabled={!canSubmit}
+              onClick={submit}
             >
               {sso ? `Continue with SSO` : `Create account`}
             </button>
+            {!canSubmit && availability.submit.reason && (
+              <div className="signup-demo__reason">{availability.submit.reason}</div>
+            )}
           </div>
         </section>
 
@@ -354,7 +396,9 @@ export default function SignupDemo() {
                 <tbody>
                   {tableOrder.map((field) => {
                     const av = availability[field]
-                    const error = field !== 'submit' ? validationErrors[field] : undefined
+                    const error = field !== 'submit' && av.enabled
+                      ? av.error ?? (av.fair === false ? av.reason : undefined)
+                      : undefined
 
                     return (
                       <tr key={field} className={field === 'submit' ? 'signup-demo__table-row--submit' : undefined}>
@@ -405,6 +449,24 @@ export default function SignupDemo() {
           </div>
         </section>
       </div>
+
+      {submissionIssues.length > 0 && (
+        <div className="umpire-demo__fouls">
+          <div className="umpire-demo__fouls-copy">
+            <div className="umpire-demo__fouls-kicker">Submit validation</div>
+            <div className="umpire-demo__fouls-list">
+              {submissionIssues.map((issue) => (
+                <div key={`${issue.field}:${issue.message}`} className="umpire-demo__foul">
+                  <span className="umpire-demo__foul-field">
+                    {fieldMeta[issue.field as SignupField]?.label ?? issue.field}
+                  </span>
+                  <span className="umpire-demo__foul-reason">{issue.message}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

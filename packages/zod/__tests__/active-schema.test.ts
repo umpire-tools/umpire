@@ -112,7 +112,7 @@ describe('activeSchema', () => {
       }) as never,
       z,
     )).toThrow(
-      '[@umpire/zod] activeSchema() expects per-field schemas, not a z.object(). ' +
+      'activeSchema() expects per-field schemas, not a z.object(). ' +
       'Pass formSchema.shape instead of formSchema.',
     )
   })

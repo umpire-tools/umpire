@@ -1,3 +1,4 @@
+import { shouldWarnInDev } from './dev.js'
 import { getFieldBuilderName } from './field.js'
 import { isSatisfied } from './satisfaction.js'
 import { isNamedCheck as isNamedCheckValidator, runFieldValidator } from './validation.js'
@@ -809,11 +810,6 @@ function branchHasSatisfiedField<F extends Record<string, FieldDef>>(
   }
 
   return branchFields.some((field) => isSatisfied(values[field], fields?.[field]))
-}
-
-function shouldWarnInDev(): boolean {
-  const processLike = globalThis as { process?: { env?: Record<string, string | undefined> } }
-  return processLike.process?.env?.NODE_ENV !== 'production'
 }
 
 function warnAmbiguousOneOf(groupName: string, branchNames: string[]): void {

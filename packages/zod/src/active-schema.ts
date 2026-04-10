@@ -1,5 +1,6 @@
 import type { z } from 'zod'
 import type { AvailabilityMap, FieldDef } from '@umpire/core'
+import { assertFieldSchemas } from './schema-guards.js'
 
 type FieldSchemas<F extends Record<string, FieldDef>> = Partial<
   Record<keyof F & string, z.ZodTypeAny>
@@ -24,13 +25,7 @@ export function activeSchema<F extends Record<string, FieldDef>>(
     object(shape: Record<string, z.ZodTypeAny>): z.ZodObject<Record<string, z.ZodTypeAny>>
   },
 ): z.ZodObject<Record<string, z.ZodTypeAny>> {
-  // Catch the common mistake of passing a z.object() instead of its .shape
-  if ('_def' in schemas || '_zod' in schemas) {
-    throw new Error(
-      '[@umpire/zod] activeSchema() expects per-field schemas, not a z.object(). ' +
-      'Pass formSchema.shape instead of formSchema.',
-    )
-  }
+  assertFieldSchemas(schemas, 'activeSchema')
 
   const fieldSchemas = schemas
 

@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals'
 import { enabledWhen } from '../src/rules.js'
 import { umpire } from '../src/umpire.js'
 
@@ -80,6 +81,71 @@ describe('surface validation metadata', () => {
       valid: true,
     })
     expect(ump.check({ email: 'ok@example.com' }).email.error).toBeUndefined()
+  })
+
+  test('supports validators that return normalized validation results', () => {
+    const ump = umpire({
+      fields: {
+        username: { required: true, isEmpty: (value: unknown) => !value },
+      },
+      rules: [],
+      validators: {
+        username: (value: string) => value === 'doug'
+          ? { valid: true }
+          : { valid: false, error: 'Username is taken' },
+      },
+    })
+
+    expect(ump.check({ username: 'doug' }).username).toMatchObject({
+      valid: true,
+    })
+    expect(ump.check({ username: 'alice' }).username).toMatchObject({
+      valid: false,
+      error: 'Username is taken',
+    })
+  })
+
+  test('uses wrapped validation errors as a fallback for normalized validator results', () => {
+    const ump = umpire({
+      fields: {
+        username: { required: true, isEmpty: (value: unknown) => !value },
+      },
+      rules: [],
+      validators: {
+        username: {
+          validator: (value: string) => ({ valid: value === 'doug' }),
+          error: 'Username is invalid',
+        },
+      },
+    })
+
+    expect(ump.check({ username: 'alice' }).username).toMatchObject({
+      valid: false,
+      error: 'Username is invalid',
+    })
+  })
+
+  test('warns in development when a validation function returns an unsupported result', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+    try {
+      const ump = umpire({
+        fields: {
+          username: { required: true, isEmpty: (value: unknown) => !value },
+        },
+        rules: [],
+        validators: {
+          username: (() => undefined) as never,
+        },
+      })
+
+      expect(ump.check({ username: 'doug' }).username).toMatchObject({
+        valid: false,
+      })
+      expect(warn).toHaveBeenCalledTimes(1)
+    } finally {
+      warn.mockRestore()
+    }
   })
 
   test('skips validation metadata for disabled fields', () => {

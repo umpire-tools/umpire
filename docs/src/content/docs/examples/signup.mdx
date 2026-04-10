@@ -11,14 +11,28 @@ import SignupDemo from '../../../components/SignupDemo.tsx'
   <SignupDemo client:load />
 </div>
 
-This demo composes two layers: **Umpire** decides which fields are available (enabled, required, or due for cleanup), and **Zod** validates the enabled ones. The two layers are authored independently — Umpire rules don't reference Zod, and Zod schemas don't reference Umpire. They compose at the call site through [`@umpire/zod`](/umpire/adapters/zod/), a thin adapter that builds a dynamic Zod schema from the availability map.
+This demo composes two layers: **Umpire** decides which fields are available, required, fair, or due for cleanup, and **Zod** handles value correctness for the fields that are in play. The button state and the primary user-facing reasons come from Umpire's relationship model; a submit handler can still run a final Zod pass in userland when you want a schema issue summary.
 
 Try typing `bob@acme.com` — the form recognizes the domain as an SSO provider, flips to the business plan, fills in the company name, and disables the password fields entirely.
 
 ## The Availability Rules
 
+Assume the `fieldSchemas` object from the validation section below is already defined. The submit rules reuse those same field schemas through `check()` anywhere the logic is just “is this value well-formed?”
+
 ```ts
-import { anyOf, check, disables, enabledWhen, requires, umpire } from '@umpire/core'
+import { anyOf, check, disables, enabledWhen, fairWhen, requires, umpire } from '@umpire/core'
+
+const hasValidEmail = check('email', fieldSchemas.shape.email)
+const hasStrongPassword = check('password', fieldSchemas.shape.password)
+const hasNumericCompanySize = check('companySize', fieldSchemas.shape.companySize)
+
+function allowWhenSsoOr(predicate) {
+  return (values, conditions) => conditions.sso || predicate(values, conditions)
+}
+
+function allowWhenNotBusiness(predicate) {
+  return (values, conditions) => conditions.plan !== 'business' || predicate(values, conditions)
+}
 
 const signupUmp = umpire({
   fields: {
@@ -32,6 +46,9 @@ const signupUmp = umpire({
   },
   rules: [
     requires('confirmPassword', 'password'),
+    fairWhen('confirmPassword', (confirmPassword, values) => confirmPassword === values.password, {
+      reason: 'Match your password exactly',
+    }),
     enabledWhen('companyName', (_v, c) => c.plan === 'business', {
       reason: 'business plan required',
     }),
@@ -47,7 +64,7 @@ const signupUmp = umpire({
 
     // Submit is available via EITHER path — anyOf enables it when at least one passes
     anyOf(
-      enabledWhen('submit', check('email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/), {
+      enabledWhen('submit', hasValidEmail, {
         reason: 'Enter a valid email address',
       }),
       enabledWhen('submit', (_v, c) => c.sso, {
@@ -55,17 +72,37 @@ const signupUmp = umpire({
       }),
     ),
 
-    // Path A (standard auth) also requires a password — SSO bypasses this
-    enabledWhen('submit', (v, c) => c.sso || !!v.password, {
+    // `oneOf()` is not the right fit here because it selects field branches,
+    // not predicate branches. These helpers keep the path gating readable.
+    enabledWhen('submit', allowWhenSsoOr((v) => !!v.password), {
       reason: 'Enter a password',
+    }),
+    enabledWhen('submit', allowWhenSsoOr(hasStrongPassword), {
+      reason: 'Use at least 8 password characters',
+    }),
+    enabledWhen('submit', allowWhenSsoOr((v) => !!v.confirmPassword), {
+      reason: 'Confirm your password',
+    }),
+    enabledWhen('submit', allowWhenSsoOr((v) => v.confirmPassword === v.password), {
+      reason: 'Passwords must match',
+    }),
+
+    enabledWhen('submit', allowWhenNotBusiness((v) => !!v.companyName), {
+      reason: 'Enter a company name',
+    }),
+    enabledWhen('submit', allowWhenNotBusiness((v) => !!v.companySize), {
+      reason: 'Enter company size',
+    }),
+    enabledWhen('submit', allowWhenNotBusiness(hasNumericCompanySize), {
+      reason: 'Company size must be a number',
     }),
   ],
 })
 ```
 
-`confirmPassword` waits for `password`. Company fields gate on the business plan. Company size waits for company name. When a field is disabled, Umpire suppresses `required` to `false` — a validation library should never complain about a field that isn't in play.
+`confirmPassword` waits for `password`, and `fairWhen()` gives it a direct mismatch reason without disabling it. Company fields gate on the business plan. Company size waits for company name. The value-shape checks for email, password strength, and numeric company size are reused directly from the Zod field schemas instead of being rewritten by hand. When a field is disabled, Umpire suppresses `required` to `false` — a validation library should never complain about a field that isn't in play.
 
-The `submit` field ties the paths together. `anyOf` expresses OR-logic: submit is available if the standard auth path OR the SSO path is satisfied. The separate `enabledWhen` for password applies to both — but because it guards on `c.sso || !!v.password`, it passes on the SSO path without needing a password.
+The `submit` field ties the paths together. `anyOf` expresses OR-logic: submit is available if the standard auth path OR the SSO path is satisfied. The extra `enabledWhen` rules keep submit blocked until the active path has everything it needs, including password confirmation and business-only fields.
 
 ## The SSO Conditions
 
@@ -95,14 +132,14 @@ import { z } from 'zod'
 const fieldSchemas = z.object({
   email: z.string().email('Enter a valid email'),
   password: z.string().min(8, 'At least 8 characters'),
-  confirmPassword: z.string().min(1, 'Confirm your password'),
+  confirmPassword: z.string(),
   referralCode: z.string(),
-  companyName: z.string().min(1, 'Company name is required'),
-  companySize: z.string().min(1, 'Company size is required').regex(/^\d+$/, 'Must be a number'),
+  companyName: z.string(),
+  companySize: z.string().regex(/^\d+$/, 'Must be a number'),
 })
 ```
 
-These are pure correctness checks — is the email well-formed, is the password long enough, is company size a number. They say nothing about whether a field should be visible or required. That's Umpire's job. `submit` is not in this schema — it has no value to validate, only availability.
+These are value-shape checks — is the email well-formed, is the password long enough, is company size numeric. They do not own requiredness or submit availability. That's Umpire's job. `submit` is not in this schema — it has no value to validate, only availability.
 
 ## Composing Them
 
@@ -146,7 +183,9 @@ The entire form is one loop. No branching per field, no special cases for SSO, n
 ```tsx
 {fieldOrder.map((field) => {
   const av = availability[field]
-  const error = touched.has(field) ? validationErrors[field] : undefined
+  const error = av.enabled && touched.has(field)
+    ? av.error ?? (av.fair === false ? av.reason : undefined)
+    : undefined
 
   return (
     <div className={cls('field', !av.enabled && 'field--disabled')}>
@@ -169,19 +208,22 @@ The entire form is one loop. No branching per field, no special cases for SSO, n
 <button disabled={!availability.submit.enabled}>
   {sso ? 'Continue with SSO' : 'Create account'}
 </button>
+{!availability.submit.enabled && availability.submit.reason && (
+  <div className="reason">{availability.submit.reason}</div>
+)}
 ```
 
-Availability, validation, required markers, disabled states, inline errors — all derived from two objects (`availability` and `validationErrors`) that update together. The SSO condition changes the availability map, and the render loop reads it without knowing about SSO directly.
+Availability, required markers, disabled states, inline feedback, and blocked-submit reasons all come from `availability`. Zod just fills `FieldStatus.error` when a field-local validator runs, while structural feedback like password mismatch comes from Umpire's own `reason`.
 
 ## What Happens When You Interact
 
 **Personal plan** — company fields are disabled by Umpire. Zod never sees them. No validation errors for fields that aren't in play.
 
-**Business plan** — company fields enable. `companyName` becomes required, and Zod validates it's non-empty. `companySize` must be digits only.
+**Business plan** — company fields enable. Umpire keeps submit blocked until the company fields are filled, and Zod still checks that `companySize` is digits only.
 
 **Type a known domain** (e.g. `bob@acme.com`) — SSO condition activates. Plan flips to business. Company name fills automatically. Password fields disable via `disables()`. `anyOf` switches to the SSO path — submit no longer needs a password, just an email.
 
-**Switch plans with stale values** — `play()` recommends clearing company fields. Apply resets and the validation errors disappear with the values.
+**Switch plans with stale values** — `play()` recommends clearing company fields. Apply resets and any stale submit or validation issues disappear with the values.
 
 **Typed a password before SSO kicked in** — `play()` flags the now-disabled password fields as fouls and recommends clearing them.
 
@@ -193,6 +235,6 @@ Availability, validation, required markers, disabled states, inline errors — a
 | Which submit path is valid? | Umpire `anyOf` | Password auth OR SSO — whichever path satisfies |
 | Is this value well-formed? | Zod | `email` must match a pattern |
 | What should reset after a transition? | Umpire `play()` | Password fields flagged when SSO activates |
-| Should we show this validation error? | `@umpire/zod` | Only for enabled fields |
+| Do we want a final submit-time schema pass? | Userland | Run Zod on button click and show a summary if desired |
 
 See [Composing with Validation](/umpire/concepts/validation/) for the full patterns, including dynamic schema building and the `check()` bridge for gating availability on validity.

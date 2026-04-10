@@ -17,7 +17,7 @@ npm install @umpire/core @umpire/zod zod
 ```ts
 import { z } from 'zod'
 import { umpire, enabledWhen, requires } from '@umpire/core'
-import { activeSchema, activeErrors, zodErrors } from '@umpire/zod'
+import { activeSchema, activeErrors, createZodValidation, zodErrors } from '@umpire/zod'
 
 // 1. Define availability rules
 const ump = umpire({
@@ -49,6 +49,24 @@ if (!result.success) {
   // errors.email → 'Enter a valid email' (only if email is enabled)
   // errors.companyName → undefined (disabled on personal plan)
 }
+
+const validation = createZodValidation({
+  schemas: fieldSchemas,
+  zod: z,
+})
+
+const umpWithValidation = umpire({
+  fields: {
+    email:       { required: true, isEmpty: (v) => !v },
+    companyName: { required: true, isEmpty: (v) => !v },
+  },
+  rules: [
+    enabledWhen('companyName', (_v, c) => c.plan === 'business', {
+      reason: 'business plan required',
+    }),
+  ],
+  validators: validation.validators,
+})
 ```
 
 ## API
@@ -72,6 +90,14 @@ Filters normalized field errors to only include enabled fields. Returns `Partial
 
 Normalizes a Zod error's `issues` array into `{ field, message }[]` pairs for use with `activeErrors`.
 
+### `createZodValidation({ schemas, zod, build? })`
+
+Creates a convenience adapter with:
+- `validators` for `umpire({ validators })`, surfacing the first field-level Zod issue as `error`
+- `run(availability, values)` for the full `activeSchema() -> safeParse() -> activeErrors()` flow
+
+If you need every issue or deeper control, you can still use `activeSchema()` and `safeParse()` directly.
+
 ## Devtools
 
 If you use `@umpire/devtools`, `@umpire/zod/devtools` can expose validation state in a tab. The most ergonomic path is to derive from the current devtools context:
@@ -80,20 +106,22 @@ If you use `@umpire/devtools`, `@umpire/zod/devtools` can expose validation stat
 import { useUmpireWithDevtools } from '@umpire/devtools/react'
 import { zodValidationExtension } from '@umpire/zod/devtools'
 
+const validation = createZodValidation({
+  schemas: fieldSchemas,
+  zod: z,
+  build(baseSchema) {
+    return baseSchema.refine(
+      (data) => !data.confirmPassword || !data.password || data.confirmPassword === data.password,
+      { message: 'Passwords do not match', path: ['confirmPassword'] },
+    )
+  },
+})
+
 const { check } = useUmpireWithDevtools('signup', ump, values, conditions, {
   extensions: [
     zodValidationExtension({
       resolve({ scorecard, values }) {
-        const baseSchema = activeSchema(scorecard.check, fieldSchemas, z)
-        const schema = baseSchema.refine(
-          (data) => !data.confirmPassword || !data.password || data.confirmPassword === data.password,
-          { message: 'Passwords do not match', path: ['confirmPassword'] },
-        )
-
-        return {
-          result: schema.safeParse(values),
-          schemaFields: Object.keys(baseSchema.shape),
-        }
+        return validation.run(scorecard.check, values)
       },
     }),
   ],
