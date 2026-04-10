@@ -7,7 +7,7 @@ import type {
 import type { z } from 'zod'
 import { activeErrors, zodErrors, type NormalizedFieldError } from './active-errors.js'
 import { activeSchema } from './active-schema.js'
-import { assertFieldSchemas } from './schema-guards.js'
+import { assertFieldSchemas, isRecord } from './schema-guards.js'
 
 type FieldSchemas<F extends Record<string, FieldDef>> = Partial<
   Record<keyof F & string, z.ZodTypeAny>
@@ -48,10 +48,6 @@ export type ZodValidationAdapter<F extends Record<string, FieldDef>> = {
     values: InputValues<F>,
   ): ZodValidationRunResult<F>
   validators: ValidationMap<F>
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }
 
 function firstIssueMessage(error: ZodErrorLike): string | undefined {
