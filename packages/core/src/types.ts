@@ -179,11 +179,11 @@ export type ScorecardField<F extends Record<string, FieldDef>> = {
   satisfied: boolean
   enabled: boolean
   fair: boolean
-  valid?: boolean
-  error?: string
   required: boolean
   reason: string | null
   reasons: string[]
+  valid?: boolean
+  error?: string
   changed: boolean
   cascaded: boolean
   foul: Foul<F> | null

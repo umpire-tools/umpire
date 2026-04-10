@@ -30,6 +30,8 @@ type FieldStatus = {
   required: boolean
   reason: string | null
   reasons: string[]
+  valid?: boolean
+  error?: string
 }
 
 type AvailabilityMap<F extends Record<string, FieldDef>> = {

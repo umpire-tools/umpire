@@ -59,6 +59,8 @@ type ScorecardField<F> = {
   required: boolean
   reason: string | null
   reasons: string[]
+  valid?: boolean
+  error?: string
 
   // Transition
   changed: boolean       // this field's value differs from before
