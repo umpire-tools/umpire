@@ -4,6 +4,7 @@ import {
   anyOf,
   check,
   disables,
+  eitherOf,
   enabledWhen,
   oneOf,
   requires,
@@ -485,6 +486,96 @@ export function AnyOfDemo() {
           Request link
         </button>
       </FieldCard>
+    </div>
+  )
+}
+
+const eitherOfFields = {
+  username: { isEmpty: (value: unknown) => !value },
+  password: { isEmpty: (value: unknown) => !value },
+  token:    { isEmpty: (value: unknown) => !value },
+  submit:   {},
+}
+
+const eitherOfUmp = umpire<typeof eitherOfFields>({
+  fields: eitherOfFields,
+  rules: [
+    eitherOf('loginPath', {
+      token: [
+        enabledWhen('submit', ({ token }) => !!token, {
+          reason: 'Enter a token',
+        }),
+      ],
+      credentials: [
+        enabledWhen('submit', ({ username }) => !!username, {
+          reason: 'Enter a username',
+        }),
+        enabledWhen('submit', ({ password }) => !!password, {
+          reason: 'Enter a password',
+        }),
+      ],
+    }),
+  ],
+})
+
+export function EitherOfDemo() {
+  const [values, setValues] = useState({
+    username: '',
+    password: '',
+    token: '',
+  })
+  const availability = eitherOfUmp.check({ ...values, submit: undefined })
+
+  function update(field: 'username' | 'password' | 'token', v: string) {
+    setValues((current) => ({ ...current, [field]: v }))
+  }
+
+  return (
+    <div className="learn-demo__stack">
+      <div className="learn-demo__row">
+        <FieldCard label="Username" availability={availability.username}>
+          <input
+            className="umpire-demo__input"
+            type="text"
+            aria-label="Username"
+            placeholder="alice"
+            value={values.username}
+            onInput={(event) => update('username', event.currentTarget.value)}
+          />
+        </FieldCard>
+
+        <FieldCard label="Password" availability={availability.password}>
+          <input
+            className="umpire-demo__input"
+            type="password"
+            aria-label="Password"
+            placeholder="••••••••"
+            value={values.password}
+            onInput={(event) => update('password', event.currentTarget.value)}
+          />
+        </FieldCard>
+
+        <FieldCard label="Backup token" availability={availability.token}>
+          <input
+            className="umpire-demo__input"
+            type="text"
+            aria-label="Backup token"
+            placeholder="ABC-123"
+            value={values.token}
+            onInput={(event) => update('token', event.currentTarget.value)}
+          />
+        </FieldCard>
+
+        <FieldCard label="Submit" availability={availability.submit}>
+          <button
+            type="button"
+            className="learn-demo__submit"
+            disabled={!availability.submit.enabled}
+          >
+            Sign in
+          </button>
+        </FieldCard>
+      </div>
     </div>
   )
 }

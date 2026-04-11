@@ -10,6 +10,7 @@ import {
   OneOfDemo,
   CheckDemo,
   AnyOfDemo,
+  EitherOfDemo,
   PlayDemo,
 } from '../../components/LearnDemos.tsx'
 
@@ -170,6 +171,34 @@ ump.check({ phone: '', email: '', submit: undefined }).submit
 
 <div class="umpire-demo learn-demo">
   <AnyOfDemo client:load />
+</div>
+
+## `eitherOf()`
+
+Use `eitherOf()` when the OR paths each require multiple rules to all pass. Each branch is ANDed internally — any one branch satisfying is enough to unlock the target. Branches are named so `challenge()` can tell you exactly which path matched.
+
+```ts
+const ump = umpire({
+  fields: { username: {}, password: {}, token: {}, submit: {} },
+  rules: [eitherOf('loginPath', {
+    token: [
+      enabledWhen('submit', ({ token }) => !!token, { reason: 'Enter a token' }),
+    ],
+    credentials: [
+      enabledWhen('submit', ({ username }) => !!username, { reason: 'Enter a username' }),
+      enabledWhen('submit', ({ password }) => !!password, { reason: 'Enter a password' }),
+    ],
+  })],
+})
+
+ump.check({ username: 'alice', password: '', token: '', submit: undefined }).submit
+// disabled — credentials branch needs both fields, token branch needs a token
+// fill username + password → enabled via 'credentials'
+// fill token alone → enabled via 'token'
+```
+
+<div class="umpire-demo learn-demo">
+  <EitherOfDemo client:load />
 </div>
 
 ## `play()`

@@ -109,6 +109,7 @@ Submit unlocks the moment either branch fully passes. If you're on a known SSO d
 
 ## See also
 
+- [Quick Start: eitherOf](/umpire/learn/#eitherof) — interactive demo
 - [`anyOf()`](/umpire/api/rules/any-of/) — plain OR across single rules, no branch names
 - [`oneOf()`](/umpire/api/rules/one-of/) — mutually exclusive field branches
 - [Signup Form example](/umpire/examples/signup/) — `eitherOf` wiring SSO and password auth paths on a real form
