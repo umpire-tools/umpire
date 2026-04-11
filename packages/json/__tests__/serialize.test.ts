@@ -279,6 +279,64 @@ describe('toJson', () => {
     })
   })
 
+  test('drops carried eitherOf exclusions when the group now serializes', () => {
+    const parsed = fromJson({
+      version: 1,
+      fields: {
+        submit: {},
+        email: {},
+        ssoToken: {},
+      },
+      rules: [],
+      excluded: [
+        {
+          type: 'eitherOf',
+          description: 'Prior runtime could not serialize auth branching',
+          key: 'rule:eitherOf:auth',
+        },
+      ],
+    })
+
+    expect(toJson({
+      fields: parsed.fields,
+      rules: [
+        eitherOf('auth', {
+          password: [requires('submit', 'email')],
+          sso: [requires('submit', 'ssoToken')],
+        }),
+      ],
+    })).toEqual({
+      version: 1,
+      fields: {
+        submit: {},
+        email: {},
+        ssoToken: {},
+      },
+      rules: [
+        {
+          type: 'eitherOf',
+          group: 'auth',
+          branches: {
+            password: [
+              {
+                type: 'requires',
+                field: 'submit',
+                dependency: 'email',
+              },
+            ],
+            sso: [
+              {
+                type: 'requires',
+                field: 'submit',
+                dependency: 'ssoToken',
+              },
+            ],
+          },
+        },
+      ],
+    })
+  })
+
   test('replaces carried exclusions with current generated exclusions that share a key', () => {
     const parsed = fromJson({
       version: 1,
@@ -384,6 +442,7 @@ describe('toJson', () => {
         expect.objectContaining({
           type: 'eitherOf',
           description: 'eitherOf() contains inner rules that cannot be serialized one-to-one into JSON',
+          key: 'rule:eitherOf:auth',
         }),
       ]),
     )

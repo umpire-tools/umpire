@@ -672,7 +672,7 @@ function serializeInspection(
                   'eitherOf',
                   'eitherOf() contains inner rules that cannot be serialized one-to-one into JSON',
                   undefined,
-                  undefined,
+                  createKey('rule', 'eitherOf', inspection.groupName),
                 ),
               ],
               coverageKeys: [],
