@@ -1,0 +1,109 @@
+{
+  "fixtureVersion": 1,
+  "id": "validator-surface",
+  "description": "Portable validators should only surface valid/error for enabled, satisfied fields and should not change structural availability.",
+  "schema": {
+    "version": 1,
+    "conditions": {
+      "emailEnabled": {
+        "type": "boolean"
+      }
+    },
+    "fields": {
+      "email": {
+        "isEmpty": "string"
+      }
+    },
+    "rules": [
+      {
+        "type": "enabledWhen",
+        "field": "email",
+        "when": { "op": "cond", "condition": "emailEnabled" },
+        "reason": "Email entry is disabled"
+      }
+    ],
+    "validators": {
+      "email": {
+        "op": "email",
+        "error": "Enter a valid email address"
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "disabled-field-skips-validator",
+      "values": {
+        "email": "not-an-email"
+      },
+      "conditions": {
+        "emailEnabled": false
+      },
+      "expectedAvailability": {
+        "email": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Email entry is disabled",
+          "reasons": ["Email entry is disabled"]
+        }
+      }
+    },
+    {
+      "id": "empty-satisfied-gate-skips-validator",
+      "values": {
+        "email": ""
+      },
+      "conditions": {
+        "emailEnabled": true
+      },
+      "expectedAvailability": {
+        "email": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": []
+        }
+      }
+    },
+    {
+      "id": "invalid-email-surfaces-validation-error",
+      "values": {
+        "email": "not-an-email"
+      },
+      "conditions": {
+        "emailEnabled": true
+      },
+      "expectedAvailability": {
+        "email": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "valid": false,
+          "error": "Enter a valid email address"
+        }
+      }
+    },
+    {
+      "id": "valid-email-surfaces-valid-true",
+      "values": {
+        "email": "crew@ballpark.example"
+      },
+      "conditions": {
+        "emailEnabled": true
+      },
+      "expectedAvailability": {
+        "email": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "valid": true
+        }
+      }
+    }
+  ]
+}
