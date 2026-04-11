@@ -164,6 +164,155 @@ describe('validateSchema', () => {
       'Unknown rule type "mystery"',
     ],
     [
+      'rejects empty anyOf rules',
+      {
+        version: 1,
+        fields: {
+          submit: {},
+        },
+        rules: [
+          {
+            type: 'anyOf',
+            rules: [],
+          },
+        ],
+      },
+      'anyOf() requires at least one rule',
+    ],
+    [
+      'rejects mixed anyOf constraints',
+      {
+        version: 1,
+        fields: {
+          submit: {},
+          email: {},
+          password: {},
+        },
+        rules: [
+          {
+            type: 'anyOf',
+            rules: [
+              {
+                type: 'enabledWhen',
+                field: 'submit',
+                when: { op: 'present', field: 'email' },
+              },
+              {
+                type: 'fairWhen',
+                field: 'submit',
+                when: { op: 'present', field: 'password' },
+              },
+            ],
+          },
+        ],
+      },
+      'anyOf() cannot mix fairWhen rules with availability rules',
+    ],
+    [
+      'rejects eitherOf without branches',
+      {
+        version: 1,
+        fields: {
+          submit: {},
+        },
+        rules: [
+          {
+            type: 'eitherOf',
+            group: 'auth',
+            branches: {},
+          },
+        ],
+      },
+      'eitherOf("auth") must include at least one branch',
+    ],
+    [
+      'rejects empty eitherOf branches',
+      {
+        version: 1,
+        fields: {
+          submit: {},
+        },
+        rules: [
+          {
+            type: 'eitherOf',
+            group: 'auth',
+            branches: {
+              password: [],
+            },
+          },
+        ],
+      },
+      'eitherOf("auth") branch "password" must not be empty',
+    ],
+    [
+      'rejects mixed eitherOf constraints',
+      {
+        version: 1,
+        fields: {
+          submit: {},
+          email: {},
+          password: {},
+        },
+        rules: [
+          {
+            type: 'eitherOf',
+            group: 'auth',
+            branches: {
+              password: [
+                {
+                  type: 'enabledWhen',
+                  field: 'submit',
+                  when: { op: 'present', field: 'email' },
+                },
+              ],
+              override: [
+                {
+                  type: 'fairWhen',
+                  field: 'submit',
+                  when: { op: 'present', field: 'password' },
+                },
+              ],
+            },
+          },
+        ],
+      },
+      'eitherOf("auth") cannot mix fairWhen rules with availability rules',
+    ],
+    [
+      'rejects eitherOf rules that target different fields',
+      {
+        version: 1,
+        fields: {
+          submit: {},
+          password: {},
+          email: {},
+        },
+        rules: [
+          {
+            type: 'eitherOf',
+            group: 'auth',
+            branches: {
+              password: [
+                {
+                  type: 'enabledWhen',
+                  field: 'submit',
+                  when: { op: 'present', field: 'email' },
+                },
+              ],
+              confirm: [
+                {
+                  type: 'enabledWhen',
+                  field: 'password',
+                  when: { op: 'present', field: 'email' },
+                },
+              ],
+            },
+          },
+        ],
+      },
+      'eitherOf("auth") rules must target the same fields',
+    ],
+    [
       'rejects validators that reference unknown fields',
       {
         version: 1,

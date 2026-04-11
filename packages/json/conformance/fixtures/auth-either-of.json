@@ -1,0 +1,180 @@
+{
+  "fixtureVersion": 1,
+  "id": "auth-either-of",
+  "description": "eitherOf() with named auth paths: submit is enabled when any branch's ANDed rules all pass. Covers single-branch pass, multi-branch pass, all-branches-fail, and a three-branch scenario.",
+  "schema": {
+    "version": 1,
+    "conditions": {
+      "ssoAvailable": {
+        "type": "boolean",
+        "description": "Whether SSO is configured for this domain"
+      },
+      "magicLinkEnabled": {
+        "type": "boolean",
+        "description": "Whether magic link auth is enabled for this tenant"
+      }
+    },
+    "fields": {
+      "email": {
+        "isEmpty": "string"
+      },
+      "password": {
+        "isEmpty": "string"
+      },
+      "ssoToken": {
+        "isEmpty": "string"
+      },
+      "submit": {}
+    },
+    "rules": [
+      {
+        "type": "eitherOf",
+        "group": "authPath",
+        "branches": {
+          "password": [
+            {
+              "type": "enabledWhen",
+              "field": "submit",
+              "when": { "op": "present", "field": "email" },
+              "reason": "Enter your email"
+            },
+            {
+              "type": "enabledWhen",
+              "field": "submit",
+              "when": { "op": "present", "field": "password" },
+              "reason": "Enter your password"
+            }
+          ],
+          "sso": [
+            {
+              "type": "enabledWhen",
+              "field": "submit",
+              "when": { "op": "cond", "condition": "ssoAvailable" },
+              "reason": "SSO is not available for this account"
+            },
+            {
+              "type": "enabledWhen",
+              "field": "submit",
+              "when": { "op": "present", "field": "email" },
+              "reason": "Enter your email"
+            }
+          ],
+          "magicLink": [
+            {
+              "type": "enabledWhen",
+              "field": "submit",
+              "when": { "op": "cond", "condition": "magicLinkEnabled" },
+              "reason": "Magic link is not enabled for this tenant"
+            },
+            {
+              "type": "enabledWhen",
+              "field": "submit",
+              "when": { "op": "present", "field": "email" },
+              "reason": "Enter your email"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "password-branch-passes",
+      "values": {
+        "email": "scout@example.com",
+        "password": "hunter2"
+      },
+      "conditions": {
+        "ssoAvailable": false,
+        "magicLinkEnabled": false
+      },
+      "expectedAvailability": {
+        "email": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "ssoToken": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "submit": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+      }
+    },
+    {
+      "id": "sso-branch-passes",
+      "values": {
+        "email": "scout@enterprise.com",
+        "ssoToken": "tok_abc"
+      },
+      "conditions": {
+        "ssoAvailable": true,
+        "magicLinkEnabled": false
+      },
+      "expectedAvailability": {
+        "email": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "ssoToken": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "submit": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+      }
+    },
+    {
+      "id": "magic-link-branch-passes",
+      "values": {
+        "email": "scout@example.com"
+      },
+      "conditions": {
+        "ssoAvailable": false,
+        "magicLinkEnabled": true
+      },
+      "expectedAvailability": {
+        "email": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "ssoToken": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "submit": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+      }
+    },
+    {
+      "id": "all-branches-pass-simultaneously",
+      "values": {
+        "email": "scout@enterprise.com",
+        "password": "hunter2",
+        "ssoToken": "tok_abc"
+      },
+      "conditions": {
+        "ssoAvailable": true,
+        "magicLinkEnabled": true
+      },
+      "expectedAvailability": {
+        "email": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "ssoToken": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "submit": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+      }
+    },
+    {
+      "id": "all-branches-fail-empty-form",
+      "values": {},
+      "conditions": {
+        "ssoAvailable": false,
+        "magicLinkEnabled": false
+      },
+      "expectedAvailability": {
+        "email": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "ssoToken": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "submit": { "enabled": false, "fair": true, "required": false, "reason": "Enter your email", "reasons": ["Enter your email", "Enter your password", "SSO is not available for this account", "Enter your email", "Magic link is not enabled for this tenant", "Enter your email"] }
+      }
+    },
+    {
+      "id": "email-present-but-no-password-and-no-sso",
+      "values": {
+        "email": "scout@example.com"
+      },
+      "conditions": {
+        "ssoAvailable": false,
+        "magicLinkEnabled": false
+      },
+      "expectedAvailability": {
+        "email": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "ssoToken": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "submit": { "enabled": false, "fair": true, "required": false, "reason": "Enter your password", "reasons": ["Enter your password", "SSO is not available for this account", "Magic link is not enabled for this tenant"] }
+      }
+    }
+  ]
+}

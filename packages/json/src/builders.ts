@@ -1,6 +1,7 @@
 import {
   anyOf,
   disables,
+  eitherOf,
   enabledWhen,
   fairWhen,
   requires,
@@ -115,11 +116,14 @@ function compilePortableFairExpr<
   return fairPredicate
 }
 
-function getRequiredJsonDef(rule: Rule<Record<string, FieldDef>, Record<string, unknown>>): JsonRule {
+function getRequiredJsonDef(
+  rule: Rule<Record<string, FieldDef>, Record<string, unknown>>,
+  caller: string,
+): JsonRule {
   const jsonDef = getJsonDef<JsonRule>(rule)
 
   if (!jsonDef) {
-    throw new Error('[umpire/json] anyOfJson() requires every inner rule to carry JSON metadata')
+    throw new Error(`[umpire/json] ${caller} requires every inner rule to carry JSON metadata`)
   }
 
   return cloneJson(jsonDef)
@@ -331,11 +335,38 @@ export function anyOfJson<
   const jsonRule: Extract<JsonRule, { type: 'anyOf' }> = {
     type: 'anyOf',
     rules: rules.map((rule) =>
-      getRequiredJsonDef(rule as Rule<Record<string, FieldDef>, Record<string, unknown>>),
+      getRequiredJsonDef(rule as Rule<Record<string, FieldDef>, Record<string, unknown>>, 'anyOfJson()'),
     ),
   }
 
   return attachJsonDef(anyOf<F, C>(...rules), jsonRule)
+}
+
+export function eitherOfJson<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
+  groupName: string,
+  branches: Record<string, Array<Rule<F, C>>>,
+): Rule<F, C> {
+  const jsonBranches: Record<string, JsonRule[]> = {}
+
+  for (const [branchName, branchRules] of Object.entries(branches)) {
+    jsonBranches[branchName] = branchRules.map((rule) =>
+      getRequiredJsonDef(
+        rule as Rule<Record<string, FieldDef>, Record<string, unknown>>,
+        'eitherOfJson()',
+      ),
+    )
+  }
+
+  const jsonRule: Extract<JsonRule, { type: 'eitherOf' }> = {
+    type: 'eitherOf',
+    group: groupName,
+    branches: jsonBranches,
+  }
+
+  return attachJsonDef(eitherOf<F, C>(groupName, branches), jsonRule)
 }
 
 export function createJsonRules<
@@ -357,6 +388,10 @@ export function createJsonRules<
     fairWhenExpr: (field: keyof F & string, when: JsonExpr, options?: PortableRuleOptions) =>
       fairWhenExpr<F, C>(field, when, options),
     anyOfJson: (...rules: Array<Rule<F, C>>) => anyOfJson<F, C>(...rules),
+    eitherOfJson: (
+      groupName: string,
+      branches: Record<string, Array<Rule<F, C>>>,
+    ) => eitherOfJson<F, C>(groupName, branches),
   }
 }
 

@@ -2,6 +2,7 @@ import {
   anyOf,
   check,
   disables,
+  eitherOf,
   enabledWhen,
   isEmptyObject,
   isEmptyString,
@@ -357,5 +358,34 @@ describe('toJson', () => {
         },
       ],
     })
+  })
+
+  test('excludes eitherOf when inner rules contain non-portable predicates', () => {
+    const fields = {
+      submit: {},
+      email: {},
+      ssoToken: {},
+    }
+
+    const rule = eitherOf<typeof fields>('auth', {
+      password: [
+        enabledWhen('submit', (v) => !!v.email, { reason: 'Enter your email' }),
+      ],
+      sso: [
+        enabledWhen('submit', (v) => !!v.ssoToken, { reason: 'No SSO token' }),
+      ],
+    })
+
+    const result = toJson({ fields, rules: [rule] })
+
+    expect(result.rules).toEqual([])
+    expect(result.excluded).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'eitherOf',
+          description: 'eitherOf() contains inner rules that cannot be serialized one-to-one into JSON',
+        }),
+      ]),
+    )
   })
 })

@@ -74,6 +74,7 @@ export type JsonRule =
   | { type: 'disables'; source: string; targets: string[]; reason?: string }
   | { type: 'disables'; when: JsonExpr; targets: string[]; reason?: string }
   | { type: 'oneOf'; group: string; branches: Record<string, string[]> }
+  | { type: 'eitherOf'; group: string; branches: Record<string, JsonRule[]> }
   | { type: 'fairWhen'; field: string; when: JsonExpr; reason?: string }
   | { type: 'anyOf'; rules: JsonRule[] }
   | JsonCheckRule

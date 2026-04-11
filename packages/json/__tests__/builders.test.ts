@@ -3,6 +3,8 @@ import { enabledWhen, umpire } from '@umpire/core'
 import {
   anyOfJson,
   createJsonRules,
+  eitherOfJson,
+  fromJson,
   namedValidators,
   toJson,
 } from '../src/index.js'
@@ -457,5 +459,150 @@ describe('portable JSON builders', () => {
     expect(() =>
       requiresJson('bullpenCart'),
     ).toThrow('requiresJson("bullpenCart") requires at least one dependency')
+  })
+
+  test('eitherOfJson serializes to exact JSON shape', () => {
+    const fields = {
+      submit: {},
+      email: {},
+      ssoToken: {},
+      magicLink: {},
+    }
+
+    type Conditions = {
+      ssoAvailable: boolean
+      magicLinkEnabled: boolean
+    }
+
+    const conditions = {
+      ssoAvailable: { type: 'boolean' as const },
+      magicLinkEnabled: { type: 'boolean' as const },
+    }
+
+    const { expr, enabledWhenExpr, eitherOfJson } = createJsonRules<typeof fields, Conditions>()
+
+    const rules = [
+      eitherOfJson('authPath', {
+        password: [
+          enabledWhenExpr('submit', expr.present('email'), { reason: 'Enter your email' }),
+        ],
+        sso: [
+          enabledWhenExpr('submit', expr.cond('ssoAvailable'), { reason: 'SSO not available for this account' }),
+        ],
+        magicLink: [
+          enabledWhenExpr('submit', expr.present('email'), { reason: 'Enter your email' }),
+          enabledWhenExpr('submit', expr.cond('magicLinkEnabled'), { reason: 'Magic link not enabled' }),
+        ],
+      }),
+    ]
+
+    expect(toJson({ fields, rules, conditions })).toEqual<UmpireJsonSchema>({
+      version: 1,
+      conditions,
+      fields: {
+        submit: {},
+        email: {},
+        ssoToken: {},
+        magicLink: {},
+      },
+      rules: [
+        {
+          type: 'eitherOf',
+          group: 'authPath',
+          branches: {
+            password: [
+              { type: 'enabledWhen', field: 'submit', when: { op: 'present', field: 'email' }, reason: 'Enter your email' },
+            ],
+            sso: [
+              { type: 'enabledWhen', field: 'submit', when: { op: 'cond', condition: 'ssoAvailable' }, reason: 'SSO not available for this account' },
+            ],
+            magicLink: [
+              { type: 'enabledWhen', field: 'submit', when: { op: 'present', field: 'email' }, reason: 'Enter your email' },
+              { type: 'enabledWhen', field: 'submit', when: { op: 'cond', condition: 'magicLinkEnabled' }, reason: 'Magic link not enabled' },
+            ],
+          },
+        },
+      ],
+    })
+  })
+
+  test('eitherOfJson round-trips through fromJson and evaluates correctly', () => {
+    const fields = {
+      submit: {},
+      email: {},
+      ssoToken: {},
+    }
+
+    type Conditions = {
+      ssoAvailable: boolean
+    }
+
+    const conditions = {
+      ssoAvailable: { type: 'boolean' as const },
+    }
+
+    const { expr, enabledWhenExpr, eitherOfJson } = createJsonRules<typeof fields, Conditions>()
+
+    const rules = [
+      eitherOfJson('authPath', {
+        password: [
+          enabledWhenExpr('submit', expr.present('email'), { reason: 'Enter your email' }),
+        ],
+        sso: [
+          enabledWhenExpr('submit', expr.cond('ssoAvailable'), { reason: 'SSO not available' }),
+        ],
+      }),
+    ]
+
+    const schema = toJson({ fields, rules, conditions })
+
+    // verify round-trip
+    expect(schema.rules[0]).toEqual({
+      type: 'eitherOf',
+      group: 'authPath',
+      branches: {
+        password: [{ type: 'enabledWhen', field: 'submit', when: { op: 'present', field: 'email' }, reason: 'Enter your email' }],
+        sso: [{ type: 'enabledWhen', field: 'submit', when: { op: 'cond', condition: 'ssoAvailable' }, reason: 'SSO not available' }],
+      },
+    })
+
+    const parsed = fromJson<Conditions>(schema)
+    const runtime = umpire({ fields: parsed.fields, rules: parsed.rules })
+
+    // sso branch passes → submit enabled
+    expect(runtime.check(
+      { email: '', ssoToken: '' },
+      { ssoAvailable: true },
+    ).submit).toMatchObject({ enabled: true, reason: null })
+
+    // password branch passes → submit enabled
+    expect(runtime.check(
+      { email: 'user@example.com', ssoToken: '' },
+      { ssoAvailable: false },
+    ).submit).toMatchObject({ enabled: true, reason: null })
+
+    // both branches fail → submit disabled
+    expect(runtime.check(
+      {},
+      { ssoAvailable: false },
+    ).submit).toMatchObject({ enabled: false })
+  })
+
+  test('eitherOfJson requires every inner rule to carry JSON metadata', () => {
+    const fields = {
+      submit: {},
+      email: {},
+    }
+
+    const { expr, enabledWhenExpr } = createJsonRules<typeof fields>()
+
+    expect(() =>
+      eitherOfJson('authPath', {
+        password: [
+          enabledWhenExpr('submit', expr.present('email')),
+          enabledWhen<typeof fields>('submit', () => true),
+        ],
+      }),
+    ).toThrow('eitherOfJson() requires every inner rule to carry JSON metadata')
   })
 })

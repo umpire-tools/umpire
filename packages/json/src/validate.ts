@@ -9,6 +9,8 @@ import { assertValidCheckRule, assertValidValidatorSpec } from './check-ops.js'
 import { compileExpr } from './expr.js'
 import { isJsonIsEmptyStrategy } from './strategies.js'
 
+type JsonRuleConstraint = 'enabled' | 'fair'
+
 function isJsonPrimitive(value: unknown): boolean {
   return value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
 }
@@ -64,6 +66,101 @@ function validateValidator(field: string, validator: JsonValidatorDef, fieldName
   if (validator.error !== undefined && typeof validator.error !== 'string') {
     throw new Error(`[umpire/json] Validator for field "${field}" must use a string error when provided`)
   }
+}
+
+function uniqueFields(fields: string[]): string[] {
+  return [...new Set(fields)]
+}
+
+function getRuleConstraint(rule: JsonRule): JsonRuleConstraint {
+  switch (rule.type) {
+    case 'fairWhen':
+    case 'check':
+      return 'fair'
+    case 'anyOf':
+      return resolveCompositeShape('anyOf()', rule.rules).constraint
+    case 'eitherOf':
+      return resolveEitherOfShape(rule).constraint
+    default:
+      return 'enabled'
+  }
+}
+
+function getRuleTargets(rule: JsonRule): string[] {
+  switch (rule.type) {
+    case 'requires':
+    case 'enabledWhen':
+    case 'fairWhen':
+    case 'check':
+      return [rule.field]
+    case 'disables':
+      return [...rule.targets]
+    case 'oneOf':
+      return uniqueFields(Object.values(rule.branches).flatMap((branchFields) => branchFields))
+    case 'anyOf':
+      return resolveCompositeShape('anyOf()', rule.rules).targets
+    case 'eitherOf':
+      return resolveEitherOfShape(rule).targets
+  }
+}
+
+function resolveCompositeShape(
+  label: string,
+  rules: JsonRule[],
+): {
+  targets: string[]
+  constraint: JsonRuleConstraint
+} {
+  if (rules.length === 0) {
+    throw new Error(`[umpire/json] ${label} requires at least one rule`)
+  }
+
+  const expectedTargets = uniqueFields(getRuleTargets(rules[0])).sort()
+
+  for (const rule of rules.slice(1)) {
+    const currentTargets = uniqueFields(getRuleTargets(rule)).sort()
+
+    if (
+      currentTargets.length !== expectedTargets.length ||
+      currentTargets.some((target, index) => target !== expectedTargets[index])
+    ) {
+      throw new Error(`[umpire/json] ${label} rules must target the same fields`)
+    }
+  }
+
+  const constraint = getRuleConstraint(rules[0])
+
+  for (const innerRule of rules.slice(1)) {
+    if (getRuleConstraint(innerRule) !== constraint) {
+      throw new Error(`[umpire/json] ${label} cannot mix fairWhen rules with availability rules`)
+    }
+  }
+
+  return {
+    targets: [...getRuleTargets(rules[0])],
+    constraint,
+  }
+}
+
+function resolveEitherOfShape(
+  rule: Extract<JsonRule, { type: 'eitherOf' }>,
+): {
+  targets: string[]
+  constraint: JsonRuleConstraint
+} {
+  const branchNames = Object.keys(rule.branches)
+
+  if (branchNames.length === 0) {
+    throw new Error(`[umpire/json] eitherOf("${rule.group}") must include at least one branch`)
+  }
+
+  for (const branchName of branchNames) {
+    if (rule.branches[branchName].length === 0) {
+      throw new Error(`[umpire/json] eitherOf("${rule.group}") branch "${branchName}" must not be empty`)
+    }
+  }
+
+  return resolveCompositeShape(`eitherOf("${rule.group}")`, Object.values(rule.branches).flat())
 }
 
 function validateRule(
@@ -125,7 +222,16 @@ function validateRule(
       assertField(rule.field, fieldNames, '"fairWhen"')
       compileExpr(rule.when, { fieldNames, conditions })
       return
+    case 'eitherOf':
+      resolveEitherOfShape(rule)
+      for (const branchRules of Object.values(rule.branches)) {
+        for (const innerRule of branchRules) {
+          validateRule(innerRule, fieldNames, conditions)
+        }
+      }
+      return
     case 'anyOf':
+      resolveCompositeShape('anyOf()', rule.rules)
       for (const innerRule of rule.rules) {
         validateRule(innerRule, fieldNames, conditions)
       }

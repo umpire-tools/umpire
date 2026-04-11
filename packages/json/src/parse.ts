@@ -1,6 +1,7 @@
 import {
   anyOf,
   disables,
+  eitherOf,
   enabledWhen,
   fairWhen,
   getNamedCheckMetadata,
@@ -170,6 +171,15 @@ function parseRule<C extends Record<string, unknown>>(
       return attachJsonDef(fairWhen<ParsedFields, C>(rule.field, compileFairExpr<C>(rule, schema), {
         reason: rule.reason,
       }), rule)
+    case 'eitherOf': {
+      const parsedBranches: Record<string, Array<Rule<ParsedFields, C>>> = {}
+
+      for (const [branchName, branchRules] of Object.entries(rule.branches)) {
+        parsedBranches[branchName] = branchRules.map((innerRule) => parseRule<C>(innerRule, schema))
+      }
+
+      return attachJsonDef(eitherOf<ParsedFields, C>(rule.group, parsedBranches), rule)
+    }
     case 'anyOf': {
       const innerRules = rule.rules.map((innerRule) => parseRule<C>(innerRule, schema))
       return attachJsonDef(anyOf<ParsedFields, C>(...innerRules), rule)

@@ -7,6 +7,7 @@ export {
   anyOfJson,
   createJsonRules,
   disablesExpr,
+  eitherOfJson,
   enabledWhenExpr,
   expr,
   fairWhenExpr,

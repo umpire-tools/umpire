@@ -150,6 +150,8 @@ function createRuleKey(rule: JsonRule): string | undefined {
         : undefined
     case 'oneOf':
       return createKey('rule', 'oneOf', rule.group)
+    case 'eitherOf':
+      return createKey('rule', 'eitherOf', rule.group)
     case 'fairWhen':
       return createKey('rule', 'fairWhen', rule.field)
     case 'anyOf': {
@@ -650,19 +652,49 @@ function serializeInspection(
           : [],
       }
     }
-    case 'eitherOf':
-      return {
-        rules: [],
-        excluded: [
-          createExcluded(
-            'eitherOf',
-            'eitherOf() is not part of the JSON spec',
-            undefined,
-            undefined,
-          ),
-        ],
-        coverageKeys: [],
+    case 'eitherOf': {
+      const jsonBranches: Record<string, JsonRule[]> = {}
+
+      for (const [branchName, branchRules] of Object.entries(inspection.branches)) {
+        const serializedBranch: JsonRule[] = []
+
+        for (const branchRule of branchRules) {
+          const inner = serializeInspection(
+            branchRule as RuleInspection<Record<string, FieldDef>, Record<string, unknown>>,
+            true,
+          )
+
+          if (inner.excluded.length > 0 || inner.rules.length !== 1) {
+            return {
+              rules: [],
+              excluded: [
+                createExcluded(
+                  'eitherOf',
+                  'eitherOf() contains inner rules that cannot be serialized one-to-one into JSON',
+                  undefined,
+                  undefined,
+                ),
+              ],
+              coverageKeys: [],
+            }
+          }
+
+          serializedBranch.push(inner.rules[0])
+        }
+
+        jsonBranches[branchName] = serializedBranch
       }
+
+      return {
+        rules: [{
+          type: 'eitherOf',
+          group: inspection.groupName,
+          branches: jsonBranches,
+        }],
+        excluded: [],
+        coverageKeys: [createKey('rule', 'eitherOf', inspection.groupName)],
+      }
+    }
     case 'custom':
       return {
         rules: [],
