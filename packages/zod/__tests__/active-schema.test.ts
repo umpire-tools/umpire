@@ -112,3 +112,117 @@ describe('activeSchema', () => {
     )
   })
 })
+
+describe('activeSchema rejectFoul', () => {
+  function createAvailabilityWithFoul(
+    overrides: Partial<AvailabilityMap<TestFields>> = {},
+  ): AvailabilityMap<TestFields> {
+    return {
+      requiredName: {
+        enabled: true,
+        fair: true,
+        required: true,
+        reason: null,
+        reasons: [],
+      },
+      optionalNickname: {
+        enabled: true,
+        fair: true,
+        required: false,
+        reason: null,
+        reasons: [],
+      },
+      disabledSecret: {
+        enabled: false,
+        fair: true,
+        required: false,
+        reason: 'disabled',
+        reasons: ['disabled'],
+      },
+      missingSchema: {
+        enabled: true,
+        fair: true,
+        required: true,
+        reason: null,
+        reasons: [],
+      },
+      ...overrides,
+    }
+  }
+
+  test('rejects a foul field value when rejectFoul is true', () => {
+    const schema = activeSchema(
+      createAvailabilityWithFoul({
+        optionalNickname: {
+          enabled: true,
+          fair: false,
+          required: false,
+          reason: 'Nickname is not valid for the current context',
+          reasons: ['Nickname is not valid for the current context'],
+        },
+      }),
+      { optionalNickname: z.string() },
+      { rejectFoul: true },
+    )
+
+    const result = schema.safeParse({ optionalNickname: 'Doug' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        'Nickname is not valid for the current context',
+      )
+    }
+  })
+
+  test('uses a fallback message when reason is null', () => {
+    const schema = activeSchema(
+      createAvailabilityWithFoul({
+        optionalNickname: {
+          enabled: true,
+          fair: false,
+          required: false,
+          reason: null,
+          reasons: [],
+        },
+      }),
+      { optionalNickname: z.string() },
+      { rejectFoul: true },
+    )
+
+    const result = schema.safeParse({ optionalNickname: 'Doug' })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(
+        'Value is not valid for the current context',
+      )
+    }
+  })
+
+  test('passes through foul fields without error when rejectFoul is false', () => {
+    const schema = activeSchema(
+      createAvailabilityWithFoul({
+        optionalNickname: {
+          enabled: true,
+          fair: false,
+          required: false,
+          reason: 'stale value',
+          reasons: ['stale value'],
+        },
+      }),
+      { optionalNickname: z.string() },
+    )
+
+    expect(schema.safeParse({ optionalNickname: 'Doug' }).success).toBe(true)
+  })
+
+  test('fair fields are unaffected when rejectFoul is true', () => {
+    const schema = activeSchema(
+      createAvailabilityWithFoul(),
+      { requiredName: z.string() },
+      { rejectFoul: true },
+    )
+
+    expect(schema.safeParse({ requiredName: 'Douglas' }).success).toBe(true)
+    expect(schema.safeParse({}).success).toBe(false)
+  })
+})

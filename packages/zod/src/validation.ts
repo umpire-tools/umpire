@@ -6,7 +6,7 @@ import type {
 } from '@umpire/core'
 import type { z } from 'zod'
 import { activeErrors, zodErrors, type NormalizedFieldError } from './active-errors.js'
-import { activeSchema } from './active-schema.js'
+import { activeSchema, type ActiveSchemaOptions } from './active-schema.js'
 import { assertFieldSchemas, isRecord } from './schema-guards.js'
 
 type FieldSchemas<F extends Record<string, FieldDef>> = Partial<
@@ -33,7 +33,7 @@ type ZodSchemaLike = {
 export type CreateZodValidationOptions<F extends Record<string, FieldDef>> = {
   schemas: FieldSchemas<F>
   build?(schema: z.ZodObject<Record<string, z.ZodTypeAny>>): ZodSchemaLike
-}
+} & ActiveSchemaOptions
 
 export type ZodValidationRunResult<F extends Record<string, FieldDef>> = {
   errors: Partial<Record<keyof F & string, string>>
@@ -69,6 +69,7 @@ export function createZodValidation<F extends Record<string, FieldDef>>(
   const {
     schemas,
     build,
+    rejectFoul,
   } = options
   const validators = {} as ValidationMap<F>
 
@@ -95,7 +96,7 @@ export function createZodValidation<F extends Record<string, FieldDef>>(
   return {
     validators,
     run(availability, values) {
-      const baseSchema = activeSchema(availability, schemas)
+      const baseSchema = activeSchema(availability, schemas, { rejectFoul })
       const schema = build ? build(baseSchema) : baseSchema
       const result = schema.safeParse(values)
       const normalizedErrors = isFailedParseResult(result) ? zodErrors(result.error) : []
