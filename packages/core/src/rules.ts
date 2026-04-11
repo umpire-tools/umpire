@@ -1,3 +1,7 @@
+import {
+  combineCompositeResults,
+  getCompositeTargetEvaluation,
+} from './composite.js'
 import { shouldWarnInDev } from './dev.js'
 import { getFieldBuilderName } from './field.js'
 import { isSatisfied } from './satisfaction.js'
@@ -521,18 +525,6 @@ function cloneBranches<F extends Record<string, FieldDef>>(
   ) as Record<string, Array<keyof F & string>>
 }
 
-function getRuleEvaluationReasons(result: RuleEvaluation): string[] {
-  if (result.reasons && result.reasons.length > 0) {
-    return [...result.reasons]
-  }
-
-  if (result.reason !== null) {
-    return [result.reason]
-  }
-
-  return []
-}
-
 function getBranchRules<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -540,10 +532,14 @@ function getBranchRules<
   return Object.values(branches).flatMap((branchRules) => branchRules)
 }
 
-function validateCompositeTargets<
+function resolveCompositeRuleShape<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
->(label: string, rules: Rule<F, C>[]): Array<keyof F & string> {
+>(label: string, rules: Rule<F, C>[]): {
+  targets: Array<keyof F & string>
+  sources: Array<keyof F & string>
+  constraint: RuleConstraint
+} {
   const expectedTargets = uniqueFields([...rules[0].targets]).sort()
 
   for (const rule of rules.slice(1)) {
@@ -557,13 +553,6 @@ function validateCompositeTargets<
     }
   }
 
-  return [...rules[0].targets]
-}
-
-function validateCompositeConstraint<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown>,
->(label: string, rules: Rule<F, C>[]): RuleConstraint {
   const constraint = getRuleConstraint(rules[0])
 
   for (const innerRule of rules.slice(1)) {
@@ -572,7 +561,11 @@ function validateCompositeConstraint<
     }
   }
 
-  return constraint
+  return {
+    targets: [...rules[0].targets],
+    sources: uniqueFields(rules.flatMap((rule) => rule.sources)),
+    constraint,
+  }
 }
 
 export function inspectRule<
@@ -1328,9 +1321,7 @@ export function anyOf<
     throw new Error('[umpire] anyOf() requires at least one rule')
   }
 
-  const targets = validateCompositeTargets('anyOf()', rules)
-  const sources = uniqueFields(rules.flatMap((rule) => rule.sources))
-  const constraint = validateCompositeConstraint('anyOf()', rules)
+  const { targets, sources, constraint } = resolveCompositeRuleShape('anyOf()', rules)
 
   const rule: InternalRuleCarrier<F, C> = {
     type: 'anyOf',
@@ -1343,42 +1334,9 @@ export function anyOf<
 
       return createResultMap(targets, (target) => {
         const targetResults = evaluations
-          .map((evaluation) => evaluation.get(target) ?? { enabled: true, reason: null })
+          .map((evaluation) => getCompositeTargetEvaluation(evaluation, target))
 
-        if (constraint === 'fair') {
-          if (targetResults.some((result) => result.fair !== false)) {
-            return {
-              enabled: true,
-              fair: true,
-              reason: null,
-            }
-          }
-
-          const reasons = targetResults
-            .map((result) => result.reason)
-            .filter((reason): reason is string => reason !== null)
-
-          return {
-            enabled: true,
-            fair: false,
-            reason: reasons[0] ?? null,
-            reasons: reasons.length === 0 ? undefined : reasons,
-          }
-        }
-
-        if (targetResults.some((result) => result.enabled)) {
-          return { enabled: true, reason: null }
-        }
-
-        const reasons = targetResults
-          .map((result) => result.reason)
-          .filter((reason): reason is string => reason !== null)
-
-        return {
-          enabled: false,
-          reason: reasons[0] ?? null,
-          reasons: reasons.length === 0 ? undefined : reasons,
-        }
+        return combineCompositeResults(constraint, 'or', targetResults)
       })
     },
   }
@@ -1413,9 +1371,7 @@ export function eitherOf<
 
   const rules = getBranchRules(branches)
   const label = `eitherOf("${groupName}")`
-  const targets = validateCompositeTargets(label, rules)
-  const constraint = validateCompositeConstraint(label, rules)
-  const sources = uniqueFields(rules.flatMap((rule) => rule.sources))
+  const { targets, sources, constraint } = resolveCompositeRuleShape(label, rules)
 
   const rule: InternalRuleCarrier<F, C> = {
     type: 'eitherOf',
@@ -1433,58 +1389,12 @@ export function eitherOf<
       return createResultMap(targets, (target) => {
         const branchResults = branchNames.map((branchName) => {
           const targetResults = branchEvaluations[branchName].map((evaluation) =>
-            evaluation.get(target) ?? { enabled: true, reason: null })
+            getCompositeTargetEvaluation(evaluation, target))
 
-          if (constraint === 'fair') {
-            const passed = targetResults.every((result) => result.fair !== false)
-            const reasons = targetResults.flatMap(getRuleEvaluationReasons)
-
-            return {
-              enabled: true,
-              fair: passed,
-              reason: passed ? null : reasons[0] ?? null,
-              reasons: passed || reasons.length === 0 ? undefined : reasons,
-            }
-          }
-
-          const passed = targetResults.every((result) => result.enabled)
-          const reasons = targetResults.flatMap(getRuleEvaluationReasons)
-
-          return {
-            enabled: passed,
-            reason: passed ? null : reasons[0] ?? null,
-            reasons: passed || reasons.length === 0 ? undefined : reasons,
-          }
+          return combineCompositeResults(constraint, 'and', targetResults)
         })
 
-        if (constraint === 'fair') {
-          if (branchResults.some((result) => result.fair !== false)) {
-            return {
-              enabled: true,
-              fair: true,
-              reason: null,
-            }
-          }
-
-          const reasons = branchResults.flatMap(getRuleEvaluationReasons)
-          return {
-            enabled: true,
-            fair: false,
-            reason: reasons[0] ?? null,
-            reasons: reasons.length === 0 ? undefined : reasons,
-          }
-        }
-
-        if (branchResults.some((result) => result.enabled)) {
-          return { enabled: true, reason: null }
-        }
-
-        const reasons = branchResults.flatMap(getRuleEvaluationReasons)
-        return {
-          enabled: false,
-          reason: reasons[0] ?? null,
-          reasons: reasons.length === 0 ? undefined : reasons,
-        }
+        return combineCompositeResults(constraint, 'or', branchResults)
       })
     },
   }
