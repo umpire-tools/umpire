@@ -105,6 +105,7 @@ export default defineConfig({
               { label: 'disables()', slug: 'api/rules/disables' },
               { label: 'oneOf()', slug: 'api/rules/one-of' },
               { label: 'anyOf()', slug: 'api/rules/any-of' },
+              { label: 'eitherOf()', slug: 'api/rules/either-of' },
               { label: 'check()', slug: 'api/rules/check' },
             ] },
             { label: 'check()', slug: 'api/check' },
