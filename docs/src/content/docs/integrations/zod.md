@@ -15,13 +15,14 @@ yarn add @umpire/core @umpire/zod zod
 
 ## API
 
-### `activeSchema(availability, shape)`
+### `activeSchema(availability, shape, options?)`
 
 Builds a `z.object()` from the availability map:
 
 - **Disabled fields** — excluded from the schema entirely
 - **Enabled + required** — field uses the base schema as-is
 - **Enabled + optional** — field is wrapped with `.optional()`
+- **Foul fields** — see `rejectFoul` below
 
 ```ts
 import { z } from 'zod'
@@ -54,6 +55,19 @@ activeSchema(availability, myFormSchema.shape)
 ```
 
 `activeSchema` throws a descriptive error if it detects a Zod object was passed instead of its shape.
+
+#### `rejectFoul` option
+
+Fields where `fair: false` hold values that were once valid but are now contextually wrong — a selection that no longer fits the current state. By default these pass through with their base schema (useful on the client where the user is still editing). On a **server**, you may want to reject them outright:
+
+```ts
+// Server handler — rejects any submission containing a foul value
+const availability = engine.check(body)
+const schema = activeSchema(availability, fieldSchemas, { rejectFoul: true })
+const result = schema.safeParse(body)
+```
+
+When `rejectFoul: true`, a foul field with a present value fails with the field's `reason` as the Zod issue message. If the field is optional and absent, it passes — only submissions that *contain* a foul value are rejected.
 
 ### `zodErrors(error)`
 
@@ -124,5 +138,6 @@ If `confirmPassword` is disabled, `activeSchema` excludes it and the refinement 
 
 ## See also
 
+- [Validator Integrations](/umpire/integrations/validators/) — the general contract and how it extends to other libraries
 - [Composing with Validation](/umpire/concepts/validation/) — conceptual boundary and manual patterns
 - [Signup Form + Zod](/umpire/examples/signup/) — full walkthrough with `activeSchema`, the render loop, and foul handling

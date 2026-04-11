@@ -153,7 +153,10 @@ export default defineConfig({
         {
           label: 'Integrations',
           items: [
-            { label: 'Zod', slug: 'adapters/zod' },
+            { label: 'Validators', collapsed: false, items: [
+              { label: 'Overview', slug: 'integrations/validators' },
+              { label: 'Zod', slug: 'integrations/zod' },
+            ] },
           ],
         },
         {
