@@ -1,13 +1,18 @@
 import type { JsonPrimitive, NamedCheck, NamedCheckMetadata } from '@umpire/core'
 
-import type { JsonCheckRule, JsonCheckOp, JsonCheckSpec } from './schema.js'
+import type {
+  JsonCheckRule,
+  JsonValidatorDef,
+  JsonValidatorOp,
+  JsonValidatorSpec,
+} from './schema.js'
 
 type Params = Readonly<Record<string, JsonPrimitive>>
 
 const EMAIL_REGEX = /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/
 
-function createNamedCheck<T>(
-  name: JsonCheckOp,
+function createNamedValidator<T>(
+  name: JsonValidatorOp,
   validate: (value: NonNullable<T>) => boolean,
   params?: Params,
 ): NamedCheck<T> {
@@ -29,12 +34,12 @@ function isLengthLike(value: unknown): value is { length: number } {
   return (typeof value === 'string' || Array.isArray(value)) && typeof value.length === 'number'
 }
 
-export const checks = Object.freeze({
+export const namedValidators = Object.freeze({
   email() {
-    return createNamedCheck<string>('email', (value) => EMAIL_REGEX.test(value))
+    return createNamedValidator<string>('email', (value) => EMAIL_REGEX.test(value))
   },
   url() {
-    return createNamedCheck<string>('url', (value) => {
+    return createNamedValidator<string>('url', (value) => {
       try {
         const url = new URL(value)
         return url.protocol.length > 0
@@ -45,41 +50,41 @@ export const checks = Object.freeze({
   },
   matches(pattern: string) {
     const regex = new RegExp(pattern)
-    return createNamedCheck<string>('matches', (value) => regex.test(value), { pattern })
+    return createNamedValidator<string>('matches', (value) => regex.test(value), { pattern })
   },
   minLength(value: number) {
-    return createNamedCheck<string | unknown[]>('minLength', (input) =>
+    return createNamedValidator<string | unknown[]>('minLength', (input) =>
       isLengthLike(input) && input.length >= value, { value })
   },
   maxLength(value: number) {
-    return createNamedCheck<string | unknown[]>('maxLength', (input) =>
+    return createNamedValidator<string | unknown[]>('maxLength', (input) =>
       isLengthLike(input) && input.length <= value, { value })
   },
   min(value: number) {
-    return createNamedCheck<number>('min', (input) => typeof input === 'number' && input >= value, {
+    return createNamedValidator<number>('min', (input) => typeof input === 'number' && input >= value, {
       value,
     })
   },
   max(value: number) {
-    return createNamedCheck<number>('max', (input) => typeof input === 'number' && input <= value, {
+    return createNamedValidator<number>('max', (input) => typeof input === 'number' && input <= value, {
       value,
     })
   },
   range(min: number, max: number) {
-    return createNamedCheck<number>(
+    return createNamedValidator<number>(
       'range',
       (input) => typeof input === 'number' && input >= min && input <= max,
       { min, max },
     )
   },
   integer() {
-    return createNamedCheck<number>('integer', (input) => Number.isInteger(input))
+    return createNamedValidator<number>('integer', (input) => Number.isInteger(input))
   },
 })
 
-export function defaultCheckReason(rule: JsonCheckSpec | NamedCheckMetadata): string {
+export function defaultValidatorMessage(rule: JsonValidatorSpec | NamedCheckMetadata): string {
   const metadata = 'op' in rule
-    ? ({ __check: rule.op, params: paramsFromCheckSpec(rule) } satisfies NamedCheckMetadata)
+    ? ({ __check: rule.op, params: paramsFromValidatorSpec(rule) } satisfies NamedCheckMetadata)
     : rule
 
   switch (metadata.__check) {
@@ -106,7 +111,7 @@ export function defaultCheckReason(rule: JsonCheckSpec | NamedCheckMetadata): st
   }
 }
 
-function paramsFromCheckSpec(rule: JsonCheckSpec): Params | undefined {
+function paramsFromValidatorSpec(rule: JsonValidatorSpec): Params | undefined {
   switch (rule.op) {
     case 'matches':
       return { pattern: rule.pattern }
@@ -126,7 +131,9 @@ function paramsFromNamedCheckMetadata(metadata: NamedCheckMetadata): Params | un
   return metadata.params
 }
 
-export function createCheckSpecFromMetadata(metadata: NamedCheckMetadata): JsonCheckSpec | undefined {
+export function createValidatorSpecFromMetadata(
+  metadata: NamedCheckMetadata,
+): JsonValidatorSpec | undefined {
   const params = paramsFromNamedCheckMetadata(metadata)
 
   switch (metadata.__check) {
@@ -162,8 +169,8 @@ export function createCheckRuleFromMetadata(
   metadata: NamedCheckMetadata,
   reason?: string,
 ): JsonCheckRule | undefined {
-  const resolvedReason = reason && reason !== defaultCheckReason(metadata) ? reason : undefined
-  const spec = createCheckSpecFromMetadata(metadata)
+  const resolvedReason = reason && reason !== defaultValidatorMessage(metadata) ? reason : undefined
+  const spec = createValidatorSpecFromMetadata(metadata)
 
   if (!spec) {
     return undefined
@@ -174,32 +181,47 @@ export function createCheckRuleFromMetadata(
     : { type: 'check', field, ...spec }
 }
 
-export function createNamedCheckFromSpec(spec: JsonCheckSpec): NamedCheck<any> {
+export function createValidatorDefFromMetadata(
+  metadata: NamedCheckMetadata,
+  error?: string,
+): JsonValidatorDef | undefined {
+  const spec = createValidatorSpecFromMetadata(metadata)
+
+  if (!spec) {
+    return undefined
+  }
+
+  return error === undefined
+    ? spec
+    : { ...spec, error }
+}
+
+export function createNamedValidatorFromSpec(spec: JsonValidatorSpec): NamedCheck<any> {
   switch (spec.op) {
     case 'email':
-      return checks.email()
+      return namedValidators.email()
     case 'url':
-      return checks.url()
+      return namedValidators.url()
     case 'matches':
-      return checks.matches(spec.pattern)
+      return namedValidators.matches(spec.pattern)
     case 'minLength':
-      return checks.minLength(spec.value)
+      return namedValidators.minLength(spec.value)
     case 'maxLength':
-      return checks.maxLength(spec.value)
+      return namedValidators.maxLength(spec.value)
     case 'min':
-      return checks.min(spec.value)
+      return namedValidators.min(spec.value)
     case 'max':
-      return checks.max(spec.value)
+      return namedValidators.max(spec.value)
     case 'range':
-      return checks.range(spec.min, spec.max)
+      return namedValidators.range(spec.min, spec.max)
     case 'integer':
-      return checks.integer()
+      return namedValidators.integer()
   }
 }
 
-export const createNamedCheckFromRule: (rule: JsonCheckRule) => NamedCheck<any> = createNamedCheckFromSpec
+export const createNamedValidatorFromRule: (rule: JsonCheckRule) => NamedCheck<any> = createNamedValidatorFromSpec
 
-export function assertValidCheckSpec(rule: JsonCheckSpec): void {
+export function assertValidValidatorSpec(rule: JsonValidatorSpec): void {
   switch (rule.op) {
     case 'email':
     case 'url':
@@ -218,7 +240,7 @@ export function assertValidCheckSpec(rule: JsonCheckSpec): void {
     case 'min':
     case 'max':
       if (typeof rule.value !== 'number' || Number.isNaN(rule.value)) {
-        throw new Error(`[umpire/json] Check rule "${rule.op}" requires a numeric value`)
+        throw new Error(`[umpire/json] Validator "${rule.op}" requires a numeric value`)
       }
       return
     case 'range':
@@ -228,14 +250,14 @@ export function assertValidCheckSpec(rule: JsonCheckSpec): void {
         typeof rule.max !== 'number' ||
         Number.isNaN(rule.max)
       ) {
-        throw new Error('[umpire/json] Check rule "range" requires numeric min and max values')
+        throw new Error('[umpire/json] Validator "range" requires numeric min and max values')
       }
       return
     default:
-      throw new Error(`[umpire/json] Unknown named check op "${String((rule as { op?: unknown }).op)}"`)
+      throw new Error(`[umpire/json] Unknown validator op "${String((rule as { op?: unknown }).op)}"`)
   }
 }
 
 export function assertValidCheckRule(rule: JsonCheckRule): void {
-  assertValidCheckSpec(rule)
+  assertValidValidatorSpec(rule)
 }

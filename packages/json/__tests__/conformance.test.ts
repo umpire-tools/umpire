@@ -21,6 +21,8 @@ type ExpectedFieldStatus = {
   required: boolean
   reason: string | null
   reasons: string[]
+  valid?: boolean
+  error?: string
 }
 
 type ConformanceCase = {
@@ -115,6 +117,7 @@ describe('JSON conformance fixtures', () => {
     const runtime = umpire({
       fields: parsed.fields,
       rules: parsed.rules,
+      validators: parsed.validators,
     })
 
     for (const testCase of cases) {
@@ -146,6 +149,7 @@ describe('JSON conformance failure fixtures', () => {
       const runtime = umpire({
         fields: parsed.fields,
         rules: parsed.rules,
+        validators: parsed.validators,
       })
 
       expect(() =>

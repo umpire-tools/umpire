@@ -9,7 +9,7 @@ import {
   requires,
 } from '@umpire/core'
 
-import { checks, fromJson, hydrateIsEmptyStrategy, toJson } from '../src/index.js'
+import { fromJson, hydrateIsEmptyStrategy, namedValidators, toJson } from '../src/index.js'
 import type { UmpireJsonSchema } from '../src/index.js'
 
 describe('toJson', () => {
@@ -44,6 +44,12 @@ describe('toJson', () => {
           reason: 'Selected plan is not available for this account',
         },
       ],
+      validators: {
+        email: {
+          op: 'email',
+          error: 'Must be a valid email address',
+        },
+      },
       excluded: [
         {
           type: 'custom',
@@ -57,6 +63,53 @@ describe('toJson', () => {
     const parsed = fromJson(schema)
 
     expect(toJson(parsed)).toEqual(schema)
+  })
+
+  test('serializes portable validators and excludes unsupported validator shapes', () => {
+    const fields = {
+      email: {},
+      username: {},
+      slug: {},
+    }
+
+    expect(toJson({
+      fields,
+      rules: [],
+      validators: {
+        email: namedValidators.email(),
+        username: {
+          validator: namedValidators.minLength(3),
+          error: 'Username must be at least 3 characters',
+        },
+        slug: /^[a-z-]+$/,
+      },
+    })).toEqual({
+      version: 1,
+      fields: {
+        email: {},
+        username: {},
+        slug: {},
+      },
+      rules: [],
+      validators: {
+        email: {
+          op: 'email',
+        },
+        username: {
+          op: 'minLength',
+          value: 3,
+          error: 'Username must be at least 3 characters',
+        },
+      },
+      excluded: [
+        {
+          type: 'field:validator',
+          field: 'slug',
+          description: 'Field validator cannot be serialized unless it uses portable validator metadata from @umpire/json',
+          key: 'field:slug:validator',
+        },
+      ],
+    })
   })
 
   test('serializes structural hand-written rules and collects unsupported pieces in excluded', () => {
@@ -74,7 +127,7 @@ describe('toJson', () => {
       requires<typeof fields>('submit', 'email', 'username', {
         reason: 'Need an identity field',
       }),
-      requires<typeof fields>('submit', check('email', checks.email()), 'password', {
+      requires<typeof fields>('submit', check('email', namedValidators.email()), 'password', {
         reason: 'Need a valid email and password',
       }),
       disables<typeof fields>('mode', ['submit']),
@@ -165,7 +218,7 @@ describe('toJson', () => {
         {
           type: 'enabledWhen',
           field: 'submit',
-          description: 'enabledWhen() predicates are only serializable when hydrated from JSON or when they map to a named check',
+          description: 'enabledWhen() predicates are only serializable when hydrated from JSON or when they map to a portable validator',
           key: 'rule:enabledWhen:submit',
         },
       ],

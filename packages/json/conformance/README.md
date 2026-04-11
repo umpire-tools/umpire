@@ -51,7 +51,7 @@ the rules are still small enough to read at a glance.
 
 - structural rules
 - expression DSL operators, including combinators
-- named checks used as field-bound sources inside other rules
+- portable validators used as field-bound sources inside other rules
 - conditions
 - `oneOf()` with `prev`-assisted resolution
 - `anyOf()` reason collection
@@ -59,7 +59,7 @@ the rules are still small enough to read at a glance.
 - disabled-source cascades through downstream `disables()`
 - `fair: false` cascading into downstream availability failures
 - `fairWhen()`
-- named `check` ops
+- named validator ops
 - `isEmpty` strategies
 - schema round-trip, including carried `excluded` metadata
 - invalid schema references and runtime condition failures

@@ -9,17 +9,30 @@ import {
   type FieldDef,
   type FieldValues,
   type Rule,
+  type ValidationMap,
 } from '@umpire/core'
 
-import { createNamedCheckFromRule, defaultCheckReason } from './check-ops.js'
+import {
+  createNamedValidatorFromSpec,
+  createNamedValidatorFromRule,
+  defaultValidatorMessage,
+} from './check-ops.js'
 import { compileExpr } from './expr.js'
 import { attachJsonDef } from './json-def.js'
-import type { ExcludedRule, JsonCheckRule, JsonConditionDef, JsonRule, UmpireJsonSchema } from './schema.js'
+import type {
+  ExcludedRule,
+  JsonCheckRule,
+  JsonConditionDef,
+  JsonRule,
+  JsonValidatorDef,
+  UmpireJsonSchema,
+} from './schema.js'
 import { hydrateIsEmptyStrategy } from './strategies.js'
 import { validateSchema } from './validate.js'
 
 type ParsedFields = Record<string, FieldDef>
 type ParsedRules<C extends Record<string, unknown>> = Rule<ParsedFields, C>[]
+type ParsedValidators = ValidationMap<ParsedFields>
 type ParsedSchemaMeta = {
   conditions?: Record<string, JsonConditionDef>
   excluded?: ExcludedRule[]
@@ -67,7 +80,7 @@ function parseFieldDefs(fields: UmpireJsonSchema['fields']): ParsedFields {
 }
 
 function parseCheckRule<C extends Record<string, unknown>>(rule: JsonCheckRule): Rule<ParsedFields, C> {
-  const validator = createNamedCheckFromRule(rule)
+  const validator = createNamedValidatorFromRule(rule)
   const metadata = getNamedCheckMetadata(validator)
   const predicate = ((value: unknown) => validator.validate(value as never)) as NamedFairPredicate<C>
 
@@ -75,10 +88,31 @@ function parseCheckRule<C extends Record<string, unknown>>(rule: JsonCheckRule):
   predicate._namedCheck = metadata
 
   const parsedRule = fairWhen<ParsedFields, C>(rule.field, predicate, {
-    reason: rule.reason ?? defaultCheckReason(rule),
+    reason: rule.reason ?? defaultValidatorMessage(rule),
   })
 
   return attachJsonDef(parsedRule, rule)
+}
+
+function parseValidatorDef(definition: JsonValidatorDef) {
+  const validator = createNamedValidatorFromSpec(definition)
+
+  return attachJsonDef(
+    definition.error === undefined
+      ? { validator }
+      : { validator, error: definition.error },
+    definition,
+  )
+}
+
+function parseValidators(validators: UmpireJsonSchema['validators']): ParsedValidators {
+  const parsed = {} as ParsedValidators
+
+  for (const [field, definition] of Object.entries(validators ?? {})) {
+    parsed[field] = parseValidatorDef(definition)
+  }
+
+  return parsed
 }
 
 function parseRule<C extends Record<string, unknown>>(
@@ -152,6 +186,7 @@ export function fromJson<C extends Record<string, unknown> = Record<string, unkn
 ): {
   fields: ParsedFields
   rules: ParsedRules<C>
+  validators: ParsedValidators
 } {
   validateSchema(schema)
 
@@ -162,9 +197,11 @@ export function fromJson<C extends Record<string, unknown> = Record<string, unkn
 
   const fields = attachJsonDef(parseFieldDefs(schema.fields), meta)
   const rules = attachJsonDef(schema.rules.map((rule) => parseRule<C>(rule, schema)), meta)
+  const validators = parseValidators(schema.validators)
 
   return {
     fields,
     rules,
+    validators,
   }
 }

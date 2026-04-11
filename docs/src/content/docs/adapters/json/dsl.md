@@ -138,12 +138,12 @@ enabledWhenExpr('holePunch', expr.and(
 })
 ```
 
-### `expr.check(field, checkSpec)`
+### `expr.check(field, validator)`
 
-The field-bound check source. Evaluates to `true` when the named field satisfies a named check:
+The field-bound check source. Evaluates to `true` when the named field satisfies a portable validator:
 
 ```ts
-enabledWhenExpr('submit', expr.check('email', checks.email()), {
+enabledWhenExpr('submit', expr.check('email', namedValidators.email()), {
   reason: 'Enter a valid email address first',
 })
 ```
@@ -175,7 +175,7 @@ This gives three clear tiers:
 | Authored with | `toJson()` output |
 |---|---|
 | Portable builders + `expr.*` | Exact round-trip |
-| Core helpers + `checks.*()` | Usually serializable via introspection |
+| Core helpers + `namedValidators.*()` | Usually serializable via introspection |
 | Plain TypeScript predicates | `excluded` |
 
 The first tier is the only one with a guarantee. The second tier works for common patterns (`requires('a', 'b')`, `enabledWhen` with a `check()` predicate) but depends on introspection, which has limits. The third tier is always `excluded` — it still runs, it just won't cross runtimes.
@@ -192,6 +192,6 @@ The TypeScript implementation is the reference runtime. Other language ports are
 
 ## See also
 
-- [`@umpire/json`](/umpire/adapters/json/) — `fromJson`, `toJson`, portable checks, conditions, `excluded`
+- [`@umpire/json`](/umpire/adapters/json/) — `fromJson`, `toJson`, portable validators, conditions, `excluded`
 - [Composing with Validation](/umpire/concepts/validation/) — conceptual boundary between availability and validation
 - [check() helper](/umpire/api/rules/check/) — validator shapes in core

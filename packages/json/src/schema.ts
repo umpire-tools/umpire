@@ -28,7 +28,7 @@ export type JsonExpr =
   | { op: 'falsy'; field: string }
   | { op: 'in'; field: string; values: JsonPrimitive[] }
   | { op: 'notIn'; field: string; values: JsonPrimitive[] }
-  | { op: 'check'; field: string; check: JsonCheckSpec }
+  | { op: 'check'; field: string; check: JsonValidatorSpec }
   | { op: 'cond'; condition: string }
   | { op: 'condEq'; condition: string; value: JsonPrimitive }
   | { op: 'condIn'; condition: string; values: JsonPrimitive[] }
@@ -37,7 +37,7 @@ export type JsonExpr =
   | { op: 'or'; exprs: JsonExpr[] }
   | { op: 'not'; expr: JsonExpr }
 
-export type JsonCheckOp =
+export type JsonValidatorOp =
   | 'email'
   | 'url'
   | 'matches'
@@ -48,7 +48,7 @@ export type JsonCheckOp =
   | 'range'
   | 'integer'
 
-export type JsonCheckSpec =
+export type JsonValidatorSpec =
   | { op: 'email' | 'url' | 'integer' }
   | { op: 'matches'; pattern: string }
   | { op: 'minLength' | 'maxLength' | 'min' | 'max'; value: number }
@@ -58,7 +58,11 @@ export type JsonCheckRule = {
   type: 'check'
   field: string
   reason?: string
-} & JsonCheckSpec
+} & JsonValidatorSpec
+
+export type JsonValidatorDef = JsonValidatorSpec & {
+  error?: string
+}
 
 export type JsonRequiresDependency = string | JsonExpr
 
@@ -87,5 +91,6 @@ export interface UmpireJsonSchema {
   conditions?: Record<string, JsonConditionDef>
   fields: Record<string, JsonFieldDef>
   rules: JsonRule[]
+  validators?: Record<string, JsonValidatorDef>
   excluded?: ExcludedRule[]
 }

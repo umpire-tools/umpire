@@ -12,7 +12,7 @@ import {
   type Rule,
 } from '@umpire/core'
 
-import { createCheckSpecFromMetadata } from './check-ops.js'
+import { createValidatorSpecFromMetadata } from './check-ops.js'
 import { compileExpr, getExprFieldRefs } from './expr.js'
 import { attachJsonDef, getJsonDef } from './json-def.js'
 import type { JsonExpr, JsonRequiresDependency, JsonRule } from './schema.js'
@@ -78,10 +78,10 @@ function isPortableRuleOptions(value: unknown): value is PortableRuleOptions {
 }
 
 function createPortableCheckExpr(field: string, validator: NamedCheck<unknown>): JsonExpr {
-  const spec = createCheckSpecFromMetadata(validator)
+  const spec = createValidatorSpecFromMetadata(validator)
 
   if (!spec) {
-    throw new Error('[umpire/json] expr.check() requires a named check from @umpire/json')
+    throw new Error('[umpire/json] expr.check() requires a portable validator from @umpire/json')
   }
 
   return {

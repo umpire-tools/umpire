@@ -1,5 +1,11 @@
-import type { ExcludedRule, UmpireJsonSchema, JsonRule, JsonFieldDef } from './schema.js'
-import { assertValidCheckRule } from './check-ops.js'
+import type {
+  ExcludedRule,
+  UmpireJsonSchema,
+  JsonRule,
+  JsonFieldDef,
+  JsonValidatorDef,
+} from './schema.js'
+import { assertValidCheckRule, assertValidValidatorSpec } from './check-ops.js'
 import { compileExpr } from './expr.js'
 import { isJsonIsEmptyStrategy } from './strategies.js'
 
@@ -45,6 +51,18 @@ function validateExcludedRule(rule: ExcludedRule) {
 function assertField(field: string, fieldNames: Set<string>, context: string) {
   if (!fieldNames.has(field)) {
     throw new Error(`[umpire/json] Rule ${context} references unknown field "${field}"`)
+  }
+}
+
+function validateValidator(field: string, validator: JsonValidatorDef, fieldNames: Set<string>) {
+  if (!fieldNames.has(field)) {
+    throw new Error(`[umpire/json] Validator references unknown field "${field}"`)
+  }
+
+  assertValidValidatorSpec(validator)
+
+  if (validator.error !== undefined && typeof validator.error !== 'string') {
+    throw new Error(`[umpire/json] Validator for field "${field}" must use a string error when provided`)
   }
 }
 
@@ -134,6 +152,10 @@ export function validateSchema(schema: UmpireJsonSchema): void {
 
   for (const rule of schema.rules ?? []) {
     validateRule(rule, fieldNames, schema.conditions)
+  }
+
+  for (const [field, validator] of Object.entries(schema.validators ?? {})) {
+    validateValidator(field, validator, fieldNames)
   }
 
   for (const rule of schema.excluded ?? []) {

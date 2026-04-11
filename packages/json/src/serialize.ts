@@ -1,12 +1,18 @@
 import {
+  getNamedCheckMetadata,
   inspectRule,
   type FieldDef,
   type JsonPrimitive,
   type Rule,
   type RuleInspection,
+  type ValidationMap,
 } from '@umpire/core'
 
-import { createCheckRuleFromMetadata, createCheckSpecFromMetadata } from './check-ops.js'
+import {
+  createCheckRuleFromMetadata,
+  createValidatorSpecFromMetadata,
+  createValidatorDefFromMetadata,
+} from './check-ops.js'
 import { getJsonDef } from './json-def.js'
 import type {
   ExcludedRule,
@@ -14,6 +20,7 @@ import type {
   JsonFieldDef,
   JsonExpr,
   JsonRule,
+  JsonValidatorDef,
   UmpireJsonSchema,
 } from './schema.js'
 import { getJsonIsEmptyStrategy } from './strategies.js'
@@ -30,11 +37,18 @@ export type ToJsonConfig<
 > = {
   fields: F
   rules: Rule<F, C>[]
+  validators?: ValidationMap<F>
   conditions?: Record<string, JsonConditionDef>
 }
 
 type SerializeRuleResult = {
   rules: JsonRule[]
+  excluded: ExcludedRule[]
+  coverageKeys: string[]
+}
+
+type SerializeValidatorResult = {
+  validator?: JsonValidatorDef
   excluded: ExcludedRule[]
   coverageKeys: string[]
 }
@@ -73,8 +87,16 @@ function createKey(...parts: string[]): string {
   return parts.map((part) => encodeURIComponent(part)).join(':')
 }
 
-function createFieldSlotKey(field: string, slot: 'default' | 'isEmpty'): string {
+function createFieldSlotKey(field: string, slot: 'default' | 'isEmpty' | 'validator'): string {
   return createKey('field', field, slot)
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isValidationEntryObject(value: unknown): value is { validator: unknown; error?: unknown } {
+  return isRecord(value) && 'validator' in value
 }
 
 function createTargetsKeyPart(targets: string[]): string {
@@ -99,9 +121,9 @@ function createCheckParamsKeyPart(rule: Extract<JsonRule, { type: 'check' }>): s
 
 function createCheckExprFromMetadata(
   field: string,
-  metadata: Parameters<typeof createCheckSpecFromMetadata>[0],
+  metadata: Parameters<typeof createValidatorSpecFromMetadata>[0],
 ): Extract<JsonExpr, { op: 'check' }> | undefined {
-  const spec = createCheckSpecFromMetadata(metadata)
+  const spec = createValidatorSpecFromMetadata(metadata)
 
   return spec
     ? {
@@ -249,6 +271,55 @@ function serializeField(name: string, definition: FieldDef): {
   return { field, excluded, coverageKeys }
 }
 
+function serializeValidator(field: string, entry: unknown): SerializeValidatorResult {
+  const coverageKey = createFieldSlotKey(field, 'validator')
+  const carried = getJsonDef<JsonValidatorDef>(entry)
+
+  if (carried) {
+    return {
+      validator: cloneJson(carried),
+      excluded: [],
+      coverageKeys: [coverageKey],
+    }
+  }
+
+  const validator = isValidationEntryObject(entry) ? entry.validator : entry
+  const error = isValidationEntryObject(entry) && typeof entry.error === 'string' ? entry.error : undefined
+  const metadata = getNamedCheckMetadata(validator)
+
+  if (!metadata) {
+    return {
+      excluded: [createExcluded(
+        'field:validator',
+        'Field validator cannot be serialized unless it uses portable validator metadata from @umpire/json',
+        field,
+        coverageKey,
+      )],
+      coverageKeys: [],
+    }
+  }
+
+  const serialized = createValidatorDefFromMetadata(metadata, error)
+
+  if (!serialized) {
+    return {
+      excluded: [createExcluded(
+        'field:validator',
+        'Field validator uses metadata that is not part of the JSON validator spec',
+        field,
+        coverageKey,
+      )],
+      coverageKeys: [],
+    }
+  }
+
+  return {
+    validator: serialized,
+    excluded: [],
+    coverageKeys: [coverageKey],
+  }
+}
+
 function excludeInspection(
   inspection: RuleInspection<Record<string, FieldDef>, Record<string, unknown>>,
   description: string,
@@ -303,7 +374,7 @@ function serializeInspection(
 
       return excludeInspection(
         inspection,
-        'enabledWhen() predicates are only serializable when hydrated from JSON or when they map to a named check',
+        'enabledWhen() predicates are only serializable when hydrated from JSON or when they map to a portable validator',
         undefined,
         createKey('rule', 'enabledWhen', inspection.target),
       )
@@ -351,7 +422,7 @@ function serializeInspection(
 
         return excludeInspection(
           inspection,
-          'disables() with predicate sources cannot be serialized unless hydrated from JSON or when they map to a named check',
+          'disables() with predicate sources cannot be serialized unless hydrated from JSON or when they map to a portable validator',
         )
       }
 
@@ -420,7 +491,7 @@ function serializeInspection(
 
       return excludeInspection(
         inspection,
-        'fairWhen() predicates are only serializable when hydrated from JSON or when they map to a named check on the same field',
+        'fairWhen() predicates are only serializable when hydrated from JSON or when they map to a portable validator on the same field',
         '(value, values, conditions) => boolean',
         createKey('rule', 'fairWhen', inspection.target),
       )
@@ -460,7 +531,7 @@ function serializeInspection(
       if (serializedDependencies.some((dependency) => dependency === undefined)) {
         return excludeInspection(
           inspection,
-          'requires() with predicate dependencies cannot be serialized unless hydrated from JSON or when those predicates map to named checks',
+          'requires() with predicate dependencies cannot be serialized unless hydrated from JSON or when those predicates map to portable validators',
           undefined,
         )
       }
@@ -641,6 +712,7 @@ export function toJson<
   const meta = getJsonDef<SerializeMeta>(config.fields) ?? getJsonDef<SerializeMeta>(config.rules)
   const fields = {} as Record<string, JsonFieldDef>
   const rules: JsonRule[] = []
+  const validators = {} as Record<string, JsonValidatorDef>
   const generatedExcluded: ExcludedRule[] = []
   const coverageKeys = new Set<string>()
 
@@ -662,6 +734,23 @@ export function toJson<
     }
   }
 
+  for (const [fieldName, entry] of Object.entries(config.validators ?? {})) {
+    if (entry === undefined) {
+      continue
+    }
+
+    const serializedValidator = serializeValidator(fieldName, entry)
+
+    if (serializedValidator.validator) {
+      validators[fieldName] = serializedValidator.validator
+    }
+
+    generatedExcluded.push(...serializedValidator.excluded)
+    for (const key of serializedValidator.coverageKeys) {
+      coverageKeys.add(key)
+    }
+  }
+
   const conditions = config.conditions ?? meta?.conditions
   const excluded = mergeExcluded(
     meta?.excluded ? cloneJson(meta.excluded) : [],
@@ -672,6 +761,7 @@ export function toJson<
     version: 1,
     fields,
     rules,
+    ...(Object.keys(validators).length > 0 ? { validators } : {}),
     ...(conditions ? { conditions: cloneJson(conditions) } : {}),
     ...(excluded.length > 0 ? { excluded } : {}),
   }

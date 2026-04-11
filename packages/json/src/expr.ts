@@ -1,6 +1,6 @@
 import { getNamedCheckMetadata, type FieldDef, type FieldValues, type NamedCheckMetadata } from '@umpire/core'
 
-import { assertValidCheckSpec, createNamedCheckFromSpec } from './check-ops.js'
+import { assertValidValidatorSpec, createNamedValidatorFromSpec } from './check-ops.js'
 import type { JsonConditionDef, JsonExpr } from './schema.js'
 
 type ExprPredicate<
@@ -141,8 +141,8 @@ function compileInner<
       return (values) => !expr.values.includes(values[expr.field as keyof F & string] as never)
     case 'check': {
       assertField(expr.field, expr.op, options.fieldNames)
-      assertValidCheckSpec(expr.check)
-      const validator = createNamedCheckFromSpec(expr.check)
+      assertValidValidatorSpec(expr.check)
+      const validator = createNamedValidatorFromSpec(expr.check)
 
       return (values) => {
         const value = values[expr.field as keyof F & string]
@@ -227,7 +227,7 @@ export function compileExpr<
   }
 
   if (expr.op === 'check') {
-    predicate._namedCheck = getNamedCheckMetadata(createNamedCheckFromSpec(expr.check))
+    predicate._namedCheck = getNamedCheckMetadata(createNamedValidatorFromSpec(expr.check))
   }
 
   return predicate

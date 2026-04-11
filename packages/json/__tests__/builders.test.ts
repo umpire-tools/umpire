@@ -2,8 +2,8 @@ import { enabledWhen, umpire } from '@umpire/core'
 
 import {
   anyOfJson,
-  checks,
   createJsonRules,
+  namedValidators,
   toJson,
 } from '../src/index.js'
 import type { UmpireJsonSchema } from '../src/index.js'
@@ -55,7 +55,7 @@ describe('portable JSON builders', () => {
       requiresJson(
         'bullpenCart',
         'pitchType',
-        expr.check('starter', checks.minLength(4)),
+        expr.check('starter', namedValidators.minLength(4)),
         {
           reason: 'Bullpen cart waits for a pitch call and a full starter name',
         },
@@ -191,7 +191,7 @@ describe('portable JSON builders', () => {
       requiresJson(
         'bullpenCart',
         'pitchType',
-        expr.check('starter', checks.minLength(4)),
+        expr.check('starter', namedValidators.minLength(4)),
         {
           reason: 'Bullpen cart waits for a pitch call and a full starter name',
         },
@@ -279,7 +279,7 @@ describe('portable JSON builders', () => {
     ).toThrow('anyOfJson() requires every inner rule to carry JSON metadata')
   })
 
-  test('requiresJson supports mixed field and named-check dependencies', () => {
+  test('requiresJson supports mixed field and portable-validator dependencies', () => {
     const fields = {
       email: {},
       password: {},
@@ -291,7 +291,7 @@ describe('portable JSON builders', () => {
     const rule = requiresJson(
       'submit',
       'password',
-      expr.check('email', checks.email()),
+      expr.check('email', namedValidators.email()),
       {
         reason: 'Need a valid email and password before submit',
       },
@@ -325,7 +325,7 @@ describe('portable JSON builders', () => {
     })
   })
 
-  test('fairWhenExpr preserves named checks for serialization', () => {
+  test('fairWhenExpr preserves portable validators for serialization', () => {
     const fields = {
       email: {},
       submit: {},
@@ -333,7 +333,7 @@ describe('portable JSON builders', () => {
 
     const { expr, fairWhenExpr } = createJsonRules<typeof fields>()
 
-    const rule = fairWhenExpr('submit', expr.check('email', checks.email()), {
+    const rule = fairWhenExpr('submit', expr.check('email', namedValidators.email()), {
       reason: 'Submit stays foul until the scorer email is valid',
     })
 
@@ -440,7 +440,7 @@ describe('portable JSON builders', () => {
     })
   })
 
-  test('expr.check rejects non-portable named checks', () => {
+  test('expr.check rejects non-portable validators', () => {
     const { expr } = createJsonRules<Record<string, {}>>()
 
     expect(() =>
@@ -448,7 +448,7 @@ describe('portable JSON builders', () => {
         __check: 'custom',
         validate: () => true,
       } as Parameters<typeof expr.check>[1]),
-    ).toThrow('expr.check() requires a named check from @umpire/json')
+    ).toThrow('expr.check() requires a portable validator from @umpire/json')
   })
 
   test('requiresJson requires at least one dependency', () => {
