@@ -30,6 +30,7 @@ jobs:
       zustand_changed: ${{ steps.versions.outputs.zustand_changed }}
       zod_changed: ${{ steps.versions.outputs.zod_changed }}
       testing_changed: ${{ steps.versions.outputs.testing_changed }}
+      eslint_plugin_changed: ${{ steps.versions.outputs.eslint_plugin_changed }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,7 +68,7 @@ jobs:
             }
           })();
           const isZeroSha = !before || /^0+$/.test(before);
-          const packages = ['core', 'json', 'reads', 'devtools', 'store', 'signals', 'react', 'redux', 'pinia', 'tanstack-store', 'vuex', 'zustand', 'zod', 'testing'];
+          const packages = ['core', 'json', 'reads', 'devtools', 'store', 'signals', 'react', 'redux', 'pinia', 'tanstack-store', 'vuex', 'zustand', 'zod', 'testing', 'eslint-plugin'];
 
           const readCurrentVersion = (pkg) => {
             const packageJson = path.join('packages', pkg, 'package.json');
@@ -269,6 +270,16 @@ jobs:
       - name: Publish @umpire/testing
         if: needs.detect-version-changes.outputs.testing_changed == 'true'
         working-directory: packages/testing
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="latest"
+          if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
+          yarn pack -o package.tgz
+          npm publish package.tgz --provenance --access public --tag "$TAG"
+
+      - name: Publish @umpire/eslint-plugin
+        if: needs.detect-version-changes.outputs.eslint_plugin_changed == 'true'
+        working-directory: packages/eslint-plugin
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
