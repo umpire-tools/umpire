@@ -8,6 +8,7 @@ if (process.env.BUN_DISABLE_WORKSPACE_MOCKS !== 'true') {
   mock.module('@umpire/store', () => require('../packages/store/src/index.js'))
   mock.module('@umpire/reads', () => require('../packages/reads/src/index.js'))
   mock.module('@umpire/react', () => require('../packages/react/src/index.js'))
+  mock.module('@umpire/solid', () => require('../packages/solid/src/index.js'))
   mock.module('@umpire/signals', () => require('../packages/signals/src/index.js'))
   mock.module('@umpire/testing', () => require('../packages/testing/src/index.js'))
   mock.module('@umpire/zod', () => require('../packages/zod/src/index.js'))

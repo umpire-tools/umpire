@@ -77,6 +77,7 @@ const fouls = signupUmp.play(
 | --- | --- |
 | [`@umpire/core`](./packages/core/README.md) | Pure logic engine with zero runtime dependencies |
 | [`@umpire/react`](./packages/react/README.md) | `useUmpire()` hook for React |
+| [`@umpire/solid`](./packages/solid/README.md) | `useUmpire()` hook for Solid |
 | [`@umpire/signals`](./packages/signals/README.md) | Signal adapter via `SignalProtocol` (Jotai, Preact, Alien Signals, TC39) |
 | [`@umpire/store`](./packages/store/README.md) | Generic store adapter — bring your own `getState()` + `subscribe(next, prev)` |
 | [`@umpire/zustand`](./packages/zustand/README.md) | Zustand adapter (satisfies the store contract natively) |
@@ -94,7 +95,7 @@ const fouls = signupUmp.play(
 - Pure logic, zero dependencies.
 - Declarative rules: `requires`, `disables`, `enabledWhen`, `fairWhen`, `oneOf`.
 - Recommendations, not mutations: `play()` suggests resets, you decide when to apply them.
-- Adapters for React, Zustand, Redux, TanStack Store, Pinia, Vuex, and signals.
+- Adapters for React, Solid, Zustand, Redux, TanStack Store, Pinia, Vuex, and signals.
 - Debuggable: `challenge()` traces why any field was ruled out, `@umpire/devtools` surfaces it visually.
 
 ## Install
