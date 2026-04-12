@@ -153,4 +153,59 @@ describe('fromTanStackStore', () => {
 
     expect(unsubscribeCalls).toBe(1)
   })
+
+  it('snapshots nested selected objects before in-place mutations', () => {
+    type NestedState = {
+      settings: { allowNote: boolean }
+      note: string
+    }
+
+    const nestedFields = {
+      settings: {},
+      note: { default: '' },
+    } as const
+
+    const listeners = new Set<() => void>()
+    const store = {
+      state: {
+        settings: { allowNote: true },
+        note: 'keep me',
+      } satisfies NestedState,
+      subscribe(listener: () => void) {
+        listeners.add(listener)
+        return () => {
+          listeners.delete(listener)
+        }
+      },
+    }
+    const ump = umpire({
+      fields: nestedFields,
+      rules: [
+        enabledWhen('note', (values) => {
+          return (values.settings as { allowNote: boolean } | undefined)?.allowNote === true
+        }),
+      ],
+    })
+    const us = fromTanStackStore(ump, store, {
+      select: (state) => ({
+        settings: state.settings,
+        note: state.note,
+      }),
+    })
+
+    store.state.settings.allowNote = false
+    store.state = {
+      ...store.state,
+      settings: store.state.settings,
+    }
+
+    for (const listener of listeners) {
+      listener()
+    }
+
+    expect(us.field('note').enabled).toBe(false)
+    expect(us.fouls.some((foul) => foul.field === 'note')).toBe(true)
+
+    us.destroy()
+  })
 })

@@ -47,6 +47,7 @@ export { field } from './field.js'
 export { foulMap } from './foul-map.js'
 export { isSatisfied } from './satisfaction.js'
 export { isNamedCheck } from './validation.js'
+export { snapshotValue } from './snapshot.js'
 export {
   defineRule,
   enabledWhen,

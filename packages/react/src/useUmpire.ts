@@ -7,6 +7,7 @@ import type {
   Snapshot,
   Umpire,
 } from '@umpire/core'
+import { snapshotValue } from '@umpire/core'
 import { formatUmpireDebugValue } from './debugValue.js'
 
 export function useUmpire<
@@ -36,7 +37,10 @@ export function useUmpire<
   }, [ump, values, conditions])
 
   // Update prev ref after computing check and fouls
-  prevRef.current = { values, conditions }
+  prevRef.current = {
+    values: snapshotValue(values),
+    conditions: snapshotValue(conditions),
+  }
 
   useDebugValue({ check, fouls }, formatUmpireDebugValue)
 

@@ -53,7 +53,7 @@ See [Selection](/umpire/concepts/selection/) for the full breakdown of patterns.
 
 Pinia's `$subscribe((mutation, state) => void)` passes the new state but not the previous one. Umpire uses the previous snapshot to detect transitions — which fields just became disabled, which values to recommend clearing. This adapter keeps a snapshot of `$state` before each update and supplies it as the previous state.
 
-The snapshot is a shallow copy. Pinia's `$state` is a Vue reactive proxy, so without copying, both `prev` and `next` would point at the same live object.
+The snapshot clones plain nested data like objects, arrays, maps, sets, and dates so in-place mutations do not rewrite the saved "before" state.
 
 ## Example
 

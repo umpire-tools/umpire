@@ -130,4 +130,50 @@ describe('fromPiniaStore', () => {
 
     us.destroy()
   })
+
+  it('snapshots nested selected objects before in-place mutations', async () => {
+    const nestedFields = {
+      settings: {},
+      note: { default: '' },
+    } as const
+
+    type NestedState = {
+      settings: { allowNote: boolean }
+      note: string
+    }
+
+    const useNestedStore = defineStore('nested-form', {
+      state: (): NestedState => ({
+        settings: { allowNote: true },
+        note: 'keep me',
+      }),
+    })
+
+    setActivePinia(createPinia())
+    const store = useNestedStore()
+    const ump = umpire({
+      fields: nestedFields,
+      rules: [
+        enabledWhen('note', (values) => {
+          return (values.settings as { allowNote: boolean } | undefined)?.allowNote === true
+        }),
+      ],
+    })
+    const us = fromPiniaStore(ump, store, {
+      select: (state) => ({
+        settings: state.settings,
+        note: state.note,
+      }),
+    })
+
+    store.$patch((state) => {
+      state.settings.allowNote = false
+    })
+    await nextTick()
+
+    expect(us.field('note').enabled).toBe(false)
+    expect(us.fouls.some((foul) => foul.field === 'note')).toBe(true)
+
+    us.destroy()
+  })
 })

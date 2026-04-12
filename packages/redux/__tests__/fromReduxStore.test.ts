@@ -156,4 +156,62 @@ describe('fromReduxStore', () => {
     store.dispatch({ type: 'patch', payload: { password: '' } })
     expect(calls).toHaveLength(1)
   })
+
+  it('snapshots nested selected objects before in-place mutations', () => {
+    const nestedFields = {
+      settings: {},
+      note: { default: '' },
+    } as const
+
+    type NestedState = {
+      settings: { allowNote: boolean }
+      note: string
+    }
+
+    type NestedAction = {
+      type: 'disableNote'
+    }
+
+    function nestedReducer(
+      state: NestedState = {
+        settings: { allowNote: true },
+        note: 'keep me',
+      },
+      action: NestedAction,
+    ): NestedState {
+      if (action.type === 'disableNote') {
+        state.settings.allowNote = false
+
+        return {
+          ...state,
+          settings: state.settings,
+        }
+      }
+
+      return state
+    }
+
+    const store = legacy_createStore(nestedReducer)
+    const ump = umpire({
+      fields: nestedFields,
+      rules: [
+        enabledWhen('note', (values) => {
+          return (values.settings as { allowNote: boolean } | undefined)?.allowNote === true
+        }),
+      ],
+    })
+    const us = fromReduxStore(ump, store, {
+      select: (state) => ({
+        settings: state.settings,
+        note: state.note,
+      }),
+    })
+
+    store.dispatch({ type: 'disableNote' })
+
+    expect(us.field('note').enabled).toBe(false)
+    expect(us.fouls.some((foul) => foul.field === 'note')).toBe(true)
+
+    us.destroy()
+  })
 })

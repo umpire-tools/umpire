@@ -1,4 +1,4 @@
-import type { FieldDef, Umpire } from '@umpire/core'
+import { snapshotValue, type FieldDef, type Umpire } from '@umpire/core'
 import {
   fromStore,
   type FromStoreOptions,
@@ -11,7 +11,7 @@ export type VuexStoreApi<S> = {
 }
 
 function snapshotState<S>(state: S): S {
-  return Object.assign({}, state) as S
+  return snapshotValue(state)
 }
 
 export function fromVuexStore<

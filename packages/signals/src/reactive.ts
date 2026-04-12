@@ -6,6 +6,7 @@ import type {
   Foul,
   Umpire,
 } from '@umpire/core'
+import { snapshotValue } from '@umpire/core'
 import type { SignalProtocol } from './protocol.js'
 
 // ---------------------------------------------------------------------------
@@ -173,32 +174,34 @@ export function reactiveUmp<
     // signal dependencies), so it recomputes whenever field/condition signals
     // change — no version counter needed.
 
-    let beforeValues: InputValues<F> = Object.fromEntries(
-      fieldNames.map((n) => [n, fieldSignals.get(n)!.get()]),
-    ) as InputValues<F>
-    let beforeConditions: C = Object.fromEntries(
-      Object.keys(conditionSignals).map((k) => [k, conditionSignals[k].get()]),
-    ) as C
-    let lastValues: InputValues<F> = { ...beforeValues }
-    let lastConditions: C = { ...beforeConditions } as C
+    function readSnapshotValues() {
+      return snapshotValue(Object.fromEntries(
+        fieldNames.map((name) => [name, fieldSignals.get(name)!.get()]),
+      ) as InputValues<F>)
+    }
+
+    function readSnapshotConditions() {
+      return snapshotValue(Object.fromEntries(
+        Object.keys(conditionSignals).map((name) => [name, conditionSignals[name].get()]),
+      ) as C)
+    }
+
+    let beforeValues: InputValues<F> = readSnapshotValues()
+    let beforeConditions: C = readSnapshotConditions()
+    let lastValues: InputValues<F> = snapshotValue(beforeValues)
+    let lastConditions: C = snapshotValue(beforeConditions)
 
     let isFirstRun = true
 
     const dispose = adapter.effect(() => {
       // Read all field signals to register as dependencies
-      const currentVals = {} as InputValues<F>
-      for (const name of fieldNames) {
-        currentVals[name] = fieldSignals.get(name)!.get() as InputValues<F>[typeof name]
-      }
-      const currentCond = {} as Record<string, unknown>
-      for (const k of Object.keys(conditionSignals)) {
-        currentCond[k] = conditionSignals[k].get()
-      }
+      const currentVals = readSnapshotValues()
+      const currentCond = readSnapshotConditions()
 
       if (isFirstRun) {
         isFirstRun = false
         lastValues = currentVals
-        lastConditions = currentCond as C
+        lastConditions = currentCond
         return
       }
 
@@ -208,7 +211,7 @@ export function reactiveUmp<
 
       // Store new current
       lastValues = currentVals
-      lastConditions = currentCond as C
+      lastConditions = currentCond
     })
 
     disposeFns.push(dispose)

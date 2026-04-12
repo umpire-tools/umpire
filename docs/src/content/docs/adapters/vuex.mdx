@@ -51,7 +51,7 @@ See [Selection](/umpire/concepts/selection/) for the full breakdown of patterns.
 
 ## Why Vuex Needs a Shim
 
-Vuex's `subscribe((mutation, state) => void)` fires after every committed mutation and passes the new state, but not the previous one. Umpire uses the previous snapshot to detect transitions — which fields just became disabled, which values to recommend clearing. This adapter saves a reference to state before each mutation fires and supplies it as the previous state.
+Vuex's `subscribe((mutation, state) => void)` fires after every committed mutation and passes the new state, but not the previous one. Umpire uses the previous snapshot to detect transitions — which fields just became disabled, which values to recommend clearing. This adapter snapshots the previous state before each mutation fires and supplies it as the previous state.
 
 Note: `subscribe()` fires on mutations only. If your app dispatches actions that commit mutations, those mutations will still trigger the subscriber — but direct action dispatches without a corresponding mutation will not. In practice, all state changes in a well-structured Vuex app go through mutations, so this is rarely an issue.
 

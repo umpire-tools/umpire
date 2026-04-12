@@ -1,4 +1,4 @@
-import type { FieldDef, Umpire } from '@umpire/core'
+import { snapshotValue, type FieldDef, type Umpire } from '@umpire/core'
 import {
   fromStore,
   type FromStoreOptions,
@@ -33,7 +33,7 @@ export function fromTanStackStore<
   store: TanStackStoreApi<S>,
   options: FromStoreOptions<S, F, C>,
 ): UmpireStore<F> {
-  let prevState = store.state
+  let prevState = snapshotValue(store.state)
 
   return fromStore(ump, {
     getState: () => store.state,
@@ -42,7 +42,7 @@ export function fromTanStackStore<
         const nextState = store.state
         const currentPrevState = prevState
 
-        prevState = nextState
+        prevState = snapshotValue(nextState)
         listener(nextState, currentPrevState)
       }))
     },

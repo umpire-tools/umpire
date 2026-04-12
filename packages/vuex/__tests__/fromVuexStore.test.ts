@@ -128,4 +128,49 @@ describe('fromVuexStore', () => {
 
     us.destroy()
   })
+
+  it('snapshots nested selected objects before in-place mutations', () => {
+    const nestedFields = {
+      settings: {},
+      note: { default: '' },
+    } as const
+
+    type NestedState = {
+      settings: { allowNote: boolean }
+      note: string
+    }
+
+    const store = createStore<NestedState>({
+      state: {
+        settings: { allowNote: true },
+        note: 'keep me',
+      },
+      mutations: {
+        disableNote(state) {
+          state.settings.allowNote = false
+        },
+      },
+    })
+    const ump = umpire({
+      fields: nestedFields,
+      rules: [
+        enabledWhen('note', (values) => {
+          return (values.settings as { allowNote: boolean } | undefined)?.allowNote === true
+        }),
+      ],
+    })
+    const us = fromVuexStore(ump, store, {
+      select: (state) => ({
+        settings: state.settings,
+        note: state.note,
+      }),
+    })
+
+    store.commit('disableNote')
+
+    expect(us.field('note').enabled).toBe(false)
+    expect(us.fouls.some((foul) => foul.field === 'note')).toBe(true)
+
+    us.destroy()
+  })
 })

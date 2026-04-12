@@ -538,4 +538,34 @@ describe('reactiveUmp with disables rules', () => {
     // After clearing the value, the foul should disappear
     expect(reactive.fouls.length).toBe(0)
   })
+
+  test('fouls snapshots nested object values before in-place mutations', () => {
+    const adapter = createMockAdapter()
+    const sharedSettings = { allowNote: true }
+
+    const ump = umpire({
+      fields: {
+        settings: {},
+        note: { default: '' },
+      },
+      rules: [
+        enabledWhen('note', (values) => {
+          return (values.settings as { allowNote: boolean } | undefined)?.allowNote === true
+        }),
+      ],
+    })
+
+    const reactive = reactiveUmp(ump, adapter)
+
+    reactive.set('settings', sharedSettings)
+    reactive.set('note', 'keep me')
+    adapter._flush()
+
+    sharedSettings.allowNote = false
+    reactive.set('settings', sharedSettings)
+    adapter._flush()
+
+    expect(reactive.field('note').enabled).toBe(false)
+    expect(reactive.fouls.some((foul) => foul.field === 'note')).toBe(true)
+  })
 })

@@ -125,6 +125,33 @@ describe('useUmpire', () => {
     expect(result.current.fouls).toEqual([])
   })
 
+  it('snapshots previous nested objects between renders', () => {
+    const nestedFields = {
+      settings: {},
+      note: { default: '' },
+    } satisfies Record<string, FieldDef>
+    const sharedSettings = { allowNote: true }
+    const ump = umpire({
+      fields: nestedFields,
+      rules: [
+        enabledWhen('note', (values) => {
+          return (values.settings as { allowNote: boolean } | undefined)?.allowNote === true
+        }),
+      ],
+    })
+
+    const { result, rerender } = renderHook(
+      ({ values }) => useUmpire(ump, values),
+      { initialProps: { values: { settings: sharedSettings, note: 'keep me' } } },
+    )
+
+    sharedSettings.allowNote = false
+    rerender({ values: { settings: sharedSettings, note: 'keep me' } })
+
+    expect(result.current.check.note.enabled).toBe(false)
+    expect(result.current.fouls.some((foul) => foul.field === 'note')).toBe(true)
+  })
+
   it('passes conditions to check', () => {
     type Ctx = { premium: boolean }
 

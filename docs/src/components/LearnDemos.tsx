@@ -8,6 +8,7 @@ import {
   enabledWhen,
   oneOf,
   requires,
+  snapshotValue,
   umpire,
 } from '@umpire/core'
 import type { FieldStatus, InputValues } from '@umpire/core'
@@ -612,10 +613,16 @@ export function PlayDemo() {
 
   const conditions = { plan }
   const availability = useMemo(() => playUmp.check(values, conditions), [values, plan])
-  const prevRef = useRef({ values, conditions })
+  const prevRef = useRef({
+    values: snapshotValue(values),
+    conditions: snapshotValue(conditions),
+  })
   const fouls = useMemo(() => {
     const result = playUmp.play(prevRef.current, { values, conditions })
-    prevRef.current = { values, conditions }
+    prevRef.current = {
+      values: snapshotValue(values),
+      conditions: snapshotValue(conditions),
+    }
     return result
   }, [values, plan])
 

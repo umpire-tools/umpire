@@ -7,6 +7,7 @@ import type {
   Snapshot,
   Umpire,
 } from '@umpire/core'
+import { snapshotValue } from '@umpire/core'
 import type { RegisterOptions } from '../src/types.js'
 import { register, unregister } from '../src/registry.js'
 
@@ -58,7 +59,10 @@ export function useUmpireWithDevtools<
     return ump.play(prev, { values, conditions })
   }, [conditions, ump, values])
 
-  prevRef.current = { values, conditions }
+  prevRef.current = {
+    values: snapshotValue(values),
+    conditions: snapshotValue(conditions),
+  }
 
   useDebugValue({ check, fouls }, formatUmpireDebugValue)
 
