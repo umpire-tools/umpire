@@ -1,3 +1,4 @@
+import { describe, expect, it, spyOn } from 'bun:test'
 import { createRoot, createSignal } from 'solid-js'
 import { enabledWhen, oneOf, requires, umpire } from '@umpire/core'
 import type { FieldDef } from '@umpire/core'
@@ -89,6 +90,29 @@ describe('useUmpire', () => {
 
     try {
       expect(value.fouls()).toEqual([])
+    } finally {
+      dispose()
+    }
+  })
+
+  it('computes check once on mount', () => {
+    const ump = umpire({
+      fields,
+      rules: [
+        enabledWhen('phone', (values) => !!values.name),
+      ],
+    })
+    const checkSpy = spyOn(ump, 'check')
+
+    const { value, dispose } = withRoot(() => {
+      const [values] = createSignal({ name: 'Alice', email: '', phone: '' })
+      return useUmpire(ump, values)
+    })
+
+    try {
+      expect(checkSpy).toHaveBeenCalledTimes(1)
+      expect(value.check().phone.enabled).toBe(true)
+      expect(checkSpy).toHaveBeenCalledTimes(1)
     } finally {
       dispose()
     }

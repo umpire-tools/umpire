@@ -20,11 +20,7 @@ export function useUmpire<
   check: Accessor<AvailabilityMap<F>>
   fouls: Accessor<Foul<F>[]>
 } {
-  const initialValues = snapshotRecord(values())
-  const initialConditions = snapshotRecord(conditions?.())
-  const [check, setCheck] = createSignal(
-    ump.check(initialValues, initialConditions),
-  )
+  const [currentCheck, setCheck] = createSignal<AvailabilityMap<F>>()
   const [fouls, setFouls] = createSignal<Foul<F>[]>([])
   let previousSnapshot: Snapshot<F, C> | undefined
 
@@ -45,6 +41,8 @@ export function useUmpire<
       }
     })
   })
+
+  const check: Accessor<AvailabilityMap<F>> = () => currentCheck()!
 
   return { check, fouls }
 }

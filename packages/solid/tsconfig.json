@@ -8,5 +8,5 @@
     "jsxImportSource": "solid-js"
   },
   "include": ["src"],
-  "references": [{ "path": "../core" }]
+  "references": [{ "path": "../core" }, { "path": "../signals" }]
 }

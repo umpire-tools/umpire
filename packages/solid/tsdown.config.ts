@@ -1,9 +1,12 @@
 import { defineConfig } from 'tsdown'
 
 export default defineConfig([
-  // Externalized ESM — user provides Solid + core
+  // Bundled ESM — browser and import conditions resolve here
   {
-    entry: { 'index.browser': 'src/index.ts' },
+    entry: {
+      index: 'src/index.ts',
+      'index.browser': 'src/index.ts',
+    },
     format: ['esm'],
     platform: 'browser',
     deps: {
@@ -16,9 +19,9 @@ export default defineConfig([
     minify: true,
     sourcemap: true,
   },
-  // Externalized IIFE — user provides Solid + core via script tags
+  // Bundled IIFE — user provides Solid + core via script tags
   {
-    entry: { 'index': 'src/index.ts' },
+    entry: { index: 'src/index.ts' },
     format: ['iife'],
     globalName: 'UmpireSolid',
     platform: 'browser',
