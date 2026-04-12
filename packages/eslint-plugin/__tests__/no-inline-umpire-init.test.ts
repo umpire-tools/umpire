@@ -107,5 +107,18 @@ tester.run('no-inline-umpire-init', rule, {
       `,
       errors: [{ messageId: 'inlineInit' }],
     },
+    // useMemo outside the component boundary does not protect the component.
+    {
+      code: `
+        const Outer = useMemo(() => {
+          function MyComponent() {
+            const ump = umpire({ fields: { a: {} }, rules: [] })
+          }
+
+          return MyComponent
+        }, [])
+      `,
+      errors: [{ messageId: 'inlineInit' }],
+    },
   ],
 })

@@ -42,6 +42,20 @@ tester.run('no-unknown-fields', rule, {
         })
       `,
     },
+    // eitherOf with all declared fields.
+    {
+      code: `
+        const ump = umpire({
+          fields: { a: {}, b: {} },
+          rules: [
+            eitherOf('grp', {
+              left: [requires('a', 'b')],
+              right: [],
+            }),
+          ],
+        })
+      `,
+    },
     // check() helper in disables source position.
     {
       code: `
@@ -142,6 +156,21 @@ tester.run('no-unknown-fields', rule, {
         const ump = umpire({
           fields: { a: {}, b: {} },
           rules: [anyOf(requires('a', 'c'), requires('a', 'b'))],
+        })
+      `,
+      errors: [{ messageId: 'unknownField', data: { field: 'c' } }],
+    },
+    // Unknown inside eitherOf -> nested requires.
+    {
+      code: `
+        const ump = umpire({
+          fields: { a: {}, b: {} },
+          rules: [
+            eitherOf('grp', {
+              left: [requires('a', 'c')],
+              right: [],
+            }),
+          ],
         })
       `,
       errors: [{ messageId: 'unknownField', data: { field: 'c' } }],

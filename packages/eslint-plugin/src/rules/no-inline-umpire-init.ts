@@ -34,36 +34,39 @@ const rule: Rule.RuleModule = {
         const ancestors: estree.Node[] =
           context.sourceCode.getAncestors(node as estree.Node)
 
-        let enclosingReactFunction = false
-        let wrappedInUseMemo = false
+        let reactFunctionDepth = -1
+        let useMemoDepth = -1
 
         for (let i = ancestors.length - 1; i >= 0; i--) {
           const ancestor = ancestors[i]
 
-          // Track useMemo wrapping: look for a function node whose direct
-          // parent is a useMemo() call and that function is the first arg.
-          if (FUNCTION_TYPES.has(ancestor.type)) {
-            const parent = ancestors[i - 1]
-            if (
-              parent?.type === 'CallExpression' &&
-              isUseMemoCall(parent as estree.CallExpression) &&
-              (parent as estree.CallExpression).arguments[0] === ancestor
-            ) {
-              wrappedInUseMemo = true
-            }
+          if (!FUNCTION_TYPES.has(ancestor.type)) continue
 
-            // Check if this function looks like a React component or hook.
-            const name = resolveFunctionName(
-              ancestor as estree.Function,
-              ancestors[i - 1],
-            )
-            if (name && isReactName(name)) {
-              enclosingReactFunction = true
-            }
+          const parent = ancestors[i - 1]
+          if (
+            parent?.type === 'CallExpression' &&
+            isUseMemoCall(parent as estree.CallExpression) &&
+            (parent as estree.CallExpression).arguments[0] === ancestor &&
+            useMemoDepth === -1
+          ) {
+            useMemoDepth = i
+          }
+
+          // Record the nearest React component or hook boundary so useMemo only
+          // suppresses when it sits inside that boundary.
+          const name = resolveFunctionName(
+            ancestor as estree.Function,
+            parent,
+          )
+          if (name && isReactName(name) && reactFunctionDepth === -1) {
+            reactFunctionDepth = i
           }
         }
 
-        if (enclosingReactFunction && !wrappedInUseMemo) {
+        const wrappedInUseMemo =
+          useMemoDepth !== -1 && useMemoDepth > reactFunctionDepth
+
+        if (reactFunctionDepth !== -1 && !wrappedInUseMemo) {
           context.report({ node: node as unknown as estree.Node, messageId: 'inlineInit' })
         }
       },
