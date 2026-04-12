@@ -1,0 +1,240 @@
+---
+title: ESLint Plugin
+description: Catch umpire schema errors, performance pitfalls, and logical impossibilities at lint time.
+---
+
+`@umpire/eslint-plugin` adds five ESLint rules that catch umpire mistakes before your tests run. Two catch likely bugs (unknown fields, inline instantiation), three catch logical impossibilities that would silently produce fields that can never be enabled.
+
+## Compatibility
+
+| | |
+|---|---|
+| ESLint | ≥ 9.0.0 |
+| Config format | Flat config only (`eslint.config.js`) — legacy `.eslintrc` is not supported |
+| Node | Whatever ESLint 9 requires (≥ 18.18) |
+
+## Install
+
+```bash
+npm install --save-dev @umpire/eslint-plugin
+```
+
+## Setup
+
+Add the recommended config to your `eslint.config.js`:
+
+```js
+import umpire from '@umpire/eslint-plugin'
+
+export default [
+  umpire.configs.recommended,
+  // ... rest of your config
+]
+```
+
+This enables all five rules with the severities shown in the table below. To customize individual rules, spread the config and override:
+
+```js
+import umpire from '@umpire/eslint-plugin'
+
+export default [
+  {
+    ...umpire.configs.recommended,
+    rules: {
+      ...umpire.configs.recommended.rules,
+      '@umpire/no-unknown-fields': 'error', // promote to error
+      '@umpire/no-inline-umpire-init': 'off', // disable if you prefer useMemo discipline elsewhere
+    },
+  },
+]
+```
+
+Or register the plugin manually and pick individual rules:
+
+```js
+import umpire from '@umpire/eslint-plugin'
+
+export default [
+  {
+    plugins: { '@umpire': umpire },
+    rules: {
+      '@umpire/no-self-disable': 'error',
+      '@umpire/no-circular-requires': 'error',
+    },
+  },
+]
+```
+
+## Rules
+
+| Rule | Severity | What it catches |
+|------|----------|-----------------|
+| `no-unknown-fields` | `warn` | Field names in rules that aren't declared in `fields` |
+| `no-inline-umpire-init` | `warn` | `umpire()` called inside a component or hook body without `useMemo` |
+| `no-self-disable` | `error` | A field listed as both source and target of `disables()` |
+| `no-contradicting-rules` | `error` | `requires`/`disables` pairs that make a field permanently unavailable |
+| `no-circular-requires` | `error` | Circular `requires` chains where fields mutually depend on each other |
+
+`warn` rules are style/perf issues you should fix. `error` rules are logical impossibilities — the field they affect can never be enabled, ever.
+
+---
+
+## `no-unknown-fields`
+
+Catches field names used inside rules that don't match any key in the `fields` config. Typos here fail silently at runtime — `check()` just ignores the unknown dependency.
+
+```ts
+// ✗ — 'submitt' is not declared in fields
+const ump = umpire({
+  fields: { mode: {}, details: {}, submit: {} },
+  rules: [
+    requires('submitt', 'mode'), // typo
+  ],
+})
+
+// ✓
+const ump = umpire({
+  fields: { mode: {}, details: {}, submit: {} },
+  rules: [
+    requires('submit', 'mode'),
+  ],
+})
+```
+
+---
+
+## `no-inline-umpire-init`
+
+`umpire()` builds a dependency graph when called. Calling it inside a React component or hook body without `useMemo` rebuilds that graph on every render.
+
+```ts
+// ✗ — umpire() runs on every render
+function CheckoutForm() {
+  const ump = umpire({
+    fields: { card: {}, billing: {}, submit: {} },
+    rules: [requires('submit', 'card')],
+  })
+  const { check } = useUmpire(ump, values)
+  // ...
+}
+
+// ✓ — defined once at module scope
+const ump = umpire({
+  fields: { card: {}, billing: {}, submit: {} },
+  rules: [requires('submit', 'card')],
+})
+
+function CheckoutForm() {
+  const { check } = useUmpire(ump, values)
+  // ...
+}
+
+// ✓ — or memoized if it depends on props
+function CheckoutForm({ requireBilling }: Props) {
+  const ump = useMemo(() => umpire({
+    fields: { card: {}, billing: {}, submit: {} },
+    rules: [
+      requires('submit', 'card'),
+      ...(requireBilling ? [requires('submit', 'billing')] : []),
+    ],
+  }), [requireBilling])
+  // ...
+}
+```
+
+---
+
+## `no-self-disable`
+
+A field listed as both the source and a target of `disables()` would disable itself when it has a value — making it immediately unavailable.
+
+```ts
+// ✗ — 'promo' disables itself
+const ump = umpire({
+  fields: { promo: {}, discount: {} },
+  rules: [
+    disables('promo', ['promo', 'discount']),
+  ],
+})
+
+// ✓
+const ump = umpire({
+  fields: { promo: {}, discount: {} },
+  rules: [
+    disables('promo', ['discount']),
+  ],
+})
+```
+
+---
+
+## `no-contradicting-rules`
+
+Detects `requires`/`disables` pairs that make a field's requirement permanently unsatisfiable. Two patterns are caught:
+
+**Case A** — the dependency disables the requiring field: `requires(A, B)` + `disables(B, [A])`. A needs B to be available, but when B is satisfied it disables A — so A can never hold a value.
+
+**Case B** — the field disables its own dependency: `requires(A, B)` + `disables(A, [B])`. A needs B, but when A is satisfied it disables B — so A's own requirement can never hold while A has a value.
+
+```ts
+// ✗ — Case A: 'annual' requires 'plan', but 'plan' disables 'annual'
+const ump = umpire({
+  fields: { plan: {}, annual: {}, discount: {} },
+  rules: [
+    requires('annual', 'plan'),
+    disables('plan', ['annual']),
+  ],
+})
+
+// ✓ — remove the contradicting disables, or restructure the dependency
+const ump = umpire({
+  fields: { plan: {}, annual: {}, discount: {} },
+  rules: [
+    requires('annual', 'plan'),
+    disables('plan', ['discount']),
+  ],
+})
+```
+
+---
+
+## `no-circular-requires`
+
+Detects cycles in the `requires` dependency graph. If A requires B and B requires A (or a longer chain), neither field can ever satisfy its own requirement.
+
+```ts
+// ✗ — A and B mutually require each other
+const ump = umpire({
+  fields: { a: {}, b: {}, c: {} },
+  rules: [
+    requires('a', 'b'),
+    requires('b', 'a'),
+  ],
+})
+
+// ✗ — three-node cycle: a → b → c → a
+const ump = umpire({
+  fields: { a: {}, b: {}, c: {} },
+  rules: [
+    requires('a', 'b'),
+    requires('b', 'c'),
+    requires('c', 'a'),
+  ],
+})
+
+// ✓ — linear dependency, no cycle
+const ump = umpire({
+  fields: { a: {}, b: {}, c: {} },
+  rules: [
+    requires('a', 'b'),
+    requires('b', 'c'),
+  ],
+})
+```
+
+---
+
+## See also
+
+- [`umpire()` construction-time checks](/api/umpire/#structural-contradiction-detection) — runtime validation that runs when the instance is created
+- [Testing](/extensions/testing/) — `monkeyTest()` for invariant testing across exhaustive input combinations

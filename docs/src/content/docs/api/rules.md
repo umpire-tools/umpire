@@ -16,7 +16,7 @@ Every rule helper returns a `Rule<F, C>` object. Rules are plain values — they
 | [`eitherOf()`](/umpire/api/rules/either-of/) | Named OR paths where each branch is a group of ANDed rules |
 | [`check()`](/umpire/api/rules/check/) | Bridge validators into rules with preserved field metadata |
 
-Try each one interactively on the [Quick Start](/umpire/learn/) page.
+Try each one interactively on the [Quick Start](/umpire/learn/) page. For lint-time validation of `requires()`, `disables()`, and the rest — see the [ESLint Plugin](/umpire/extensions/eslint-plugin/).
 
 ## Custom Reasons
 
