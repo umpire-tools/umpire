@@ -5,7 +5,7 @@ description: Umpire handles availability. Validation libraries handle correctnes
 
 Umpire decides whether a field is **available**. It does not decide whether a value is **correct**. But the two are often entangled — a field might need to be *valid* before a dependent field becomes available, or you might only want to validate fields that are currently *enabled*.
 
-For the common case — building a schema that reflects current availability and filtering errors to active fields — [`@umpire/zod`](/umpire/integrations/zod/) handles the wiring. This page covers the conceptual boundary and the `check()` bridge that makes composition work regardless of which library you use.
+For the common case — building a schema that reflects current availability and filtering errors to active fields — [`@umpire/zod`](/umpire/adapters/validation/zod/) handles the wiring. This page covers the conceptual boundary and the `check()` bridge that makes composition work regardless of which library you use.
 
 ## The boundary
 
@@ -125,7 +125,7 @@ if (!result.success) {
 }
 ```
 
-This is exactly what `deriveSchema` and `deriveErrors` do. See [Validator Integrations](/umpire/integrations/validators/) for the general pattern and how it extends to other libraries.
+This is exactly what `deriveSchema` and `deriveErrors` do. See [Validator Integrations](/umpire/adapters/validation/) for the general pattern and how it extends to other libraries.
 
 ## What stays in userspace
 
@@ -140,8 +140,8 @@ These are all form-framework concerns. Umpire's job ends at "is this field avail
 
 ## See also
 
-- [Validator Integrations](/umpire/integrations/validators/) — the integration contract and how it applies to any library
-- [`@umpire/zod`](/umpire/integrations/zod/) — first-class Zod integration with `deriveSchema` and `deriveErrors`
+- [Validator Integrations](/umpire/adapters/validation/) — the integration contract and how it applies to any library
+- [`@umpire/zod`](/umpire/adapters/validation/zod/) — first-class Zod integration with `deriveSchema` and `deriveErrors`
 - [Satisfaction semantics](/umpire/concepts/satisfaction/) — how Umpire defines "present"
 - [`check()` in the rules API](/umpire/api/rules/check/) — full signature and validator shapes
 - [`@umpire/json`](/umpire/adapters/json/) — portable schemas, named checks, and `excluded`

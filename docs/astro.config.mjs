@@ -148,14 +148,9 @@ export default defineConfig({
               { label: 'TanStack Store', slug: 'adapters/tanstack-store' },
               { label: 'Vuex', slug: 'adapters/vuex' },
             ] },
-          ],
-        },
-        {
-          label: 'Integrations',
-          items: [
-            { label: 'Validators', collapsed: false, items: [
-              { label: 'Overview', slug: 'integrations/validators' },
-              { label: 'Zod', slug: 'integrations/zod' },
+            { label: 'Validation', collapsed: false, items: [
+              { label: 'Overview', slug: 'adapters/validation' },
+              { label: 'Zod', slug: 'adapters/validation/zod' },
             ] },
           ],
         },

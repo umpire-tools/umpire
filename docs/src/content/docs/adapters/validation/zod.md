@@ -138,6 +138,6 @@ If `confirmPassword` is disabled, `deriveSchema` excludes it and the refinement 
 
 ## See also
 
-- [Validator Integrations](/umpire/integrations/validators/) — the general contract and how it extends to other libraries
+- [Validator Integrations](/umpire/adapters/validation/) — the general contract and how it extends to other libraries
 - [Composing with Validation](/umpire/concepts/validation/) — conceptual boundary and manual patterns
 - [Signup Form + Zod](/umpire/examples/signup/) — full walkthrough with `deriveSchema`, the render loop, and foul handling
