@@ -1,6 +1,6 @@
 import type { Rule } from 'eslint'
 import type * as estree from 'estree'
-import { getRulesArray, isUmpireCall } from '../utils.js'
+import { getRulesArray, isStringLiteral, isUmpireCall } from '../utils.js'
 
 /**
  * Detects cycles in the requires dependency graph within a single umpire() call.
@@ -52,11 +52,11 @@ const rule: Rule.RuleModule = {
             (a): a is estree.Expression => a.type !== 'SpreadElement',
           )
           const targetArg = args[0]
-          if (!targetArg || !isStringLit(targetArg)) continue
+          if (!targetArg || !isStringLiteral(targetArg)) continue
           const target = targetArg.value
 
           for (const depArg of args.slice(1)) {
-            if (isStringLit(depArg)) {
+            if (isStringLiteral(depArg)) {
               edges.push({ from: target, to: depArg.value, node: el })
             }
           }
@@ -166,10 +166,4 @@ function normalizeCycle(cycle: string[]): string {
   const min = [...cycle].sort()[0]
   const minIdx = cycle.indexOf(min)
   return [...cycle.slice(minIdx), ...cycle.slice(0, minIdx)].join('→')
-}
-
-function isStringLit(
-  node: estree.Node,
-): node is estree.Literal & { value: string } {
-  return node.type === 'Literal' && typeof node.value === 'string'
 }

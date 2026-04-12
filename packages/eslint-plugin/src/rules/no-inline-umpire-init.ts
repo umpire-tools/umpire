@@ -2,9 +2,6 @@ import type { Rule } from 'eslint'
 import type * as estree from 'estree'
 import { isUmpireCall } from '../utils.js'
 
-// Nodes augmented with the parent reference ESLint adds during traversal.
-type AugmentedNode = estree.Node & { parent?: AugmentedNode }
-
 const FUNCTION_TYPES = new Set([
   'FunctionDeclaration',
   'FunctionExpression',

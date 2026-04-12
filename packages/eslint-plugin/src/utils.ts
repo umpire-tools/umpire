@@ -198,10 +198,10 @@ export function extractFieldRefs(node: estree.CallExpression): FieldRef[] {
 }
 
 // ---------------------------------------------------------------------------
-// Internal helpers
+// Shared helpers
 // ---------------------------------------------------------------------------
 
-function isStringLiteral(
+export function isStringLiteral(
   node: estree.Node,
 ): node is estree.Literal & { value: string } {
   return node.type === 'Literal' && typeof node.value === 'string'

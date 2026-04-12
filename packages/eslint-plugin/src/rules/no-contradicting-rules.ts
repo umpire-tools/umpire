@@ -1,6 +1,6 @@
 import type { Rule } from 'eslint'
 import type * as estree from 'estree'
-import { getRulesArray, isUmpireCall } from '../utils.js'
+import { getRulesArray, isStringLiteral, isUmpireCall } from '../utils.js'
 
 /**
  * Detects pairs of rules that make a field permanently unavailable:
@@ -65,10 +65,10 @@ const rule: Rule.RuleModule = {
 
           if (name === 'requires') {
             const targetArg = args[0]
-            if (!targetArg || !isStringLit(targetArg)) continue
+            if (!targetArg || !isStringLiteral(targetArg)) continue
             const target = targetArg.value
             for (const depArg of args.slice(1)) {
-              if (isStringLit(depArg)) {
+              if (isStringLiteral(depArg)) {
                 requiresList.push({ target, dep: depArg.value })
               }
             }
@@ -76,7 +76,7 @@ const rule: Rule.RuleModule = {
 
           if (name === 'disables') {
             const sourceArg = args[0]
-            if (!sourceArg || !isStringLit(sourceArg)) continue
+            if (!sourceArg || !isStringLiteral(sourceArg)) continue
             const source = sourceArg.value
             const targetsArg = args[1]
             if (!targetsArg || targetsArg.type !== 'ArrayExpression') continue
@@ -124,9 +124,3 @@ const rule: Rule.RuleModule = {
 }
 
 export default rule
-
-function isStringLit(
-  node: estree.Node,
-): node is estree.Literal & { value: string } {
-  return node.type === 'Literal' && typeof node.value === 'string'
-}

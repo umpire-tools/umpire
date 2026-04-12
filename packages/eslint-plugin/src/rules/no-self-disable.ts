@@ -1,5 +1,6 @@
 import type { Rule } from 'eslint'
 import type * as estree from 'estree'
+import { isStringLiteral } from '../utils.js'
 
 const rule: Rule.RuleModule = {
   meta: {
@@ -31,7 +32,7 @@ const rule: Rule.RuleModule = {
         )
 
         const source = args[0]
-        if (!source || source.type !== 'Literal' || typeof source.value !== 'string') {
+        if (!source || !isStringLiteral(source)) {
           return
         }
         const sourceName = source.value
@@ -41,8 +42,8 @@ const rule: Rule.RuleModule = {
 
         for (const element of targets.elements) {
           if (
-            element?.type === 'Literal' &&
-            typeof element.value === 'string' &&
+            element &&
+            isStringLiteral(element) &&
             element.value === sourceName
           ) {
             context.report({
