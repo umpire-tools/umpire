@@ -1,0 +1,189 @@
+{
+  "fixtureVersion": 1,
+  "id": "plan-either-of-fair",
+  "description": "eitherOf() should also support fairWhen branches, keeping a field fair when any named branch's ANDed fairness checks pass.",
+  "schema": {
+    "version": 1,
+    "conditions": {
+      "activePlans": {
+        "type": "string[]",
+        "description": "Plans currently available to the account"
+      },
+      "billingReady": {
+        "type": "boolean",
+        "description": "Whether billing services are ready for standard plans"
+      },
+      "allowLegacyPlan": {
+        "type": "boolean",
+        "description": "Whether legacy plans are still permitted"
+      },
+      "betaPlans": {
+        "type": "string[]",
+        "description": "Plans currently enrolled in beta"
+      },
+      "betaEnabled": {
+        "type": "boolean",
+        "description": "Whether beta access is enabled for this account"
+      }
+    },
+    "fields": {
+      "planId": {
+        "isEmpty": "string"
+      }
+    },
+    "rules": [
+      {
+        "type": "eitherOf",
+        "group": "planEligibility",
+        "branches": {
+          "standard": [
+            {
+              "type": "fairWhen",
+              "field": "planId",
+              "when": {
+                "op": "fieldInCond",
+                "field": "planId",
+                "condition": "activePlans"
+              },
+              "reason": "Selected plan is not active"
+            },
+            {
+              "type": "fairWhen",
+              "field": "planId",
+              "when": {
+                "op": "cond",
+                "condition": "billingReady"
+              },
+              "reason": "Billing is not ready"
+            }
+          ],
+          "legacy": [
+            {
+              "type": "fairWhen",
+              "field": "planId",
+              "when": {
+                "op": "cond",
+                "condition": "allowLegacyPlan"
+              },
+              "reason": "Legacy plans are not allowed"
+            }
+          ],
+          "beta": [
+            {
+              "type": "fairWhen",
+              "field": "planId",
+              "when": {
+                "op": "fieldInCond",
+                "field": "planId",
+                "condition": "betaPlans"
+              },
+              "reason": "Selected plan is not in beta"
+            },
+            {
+              "type": "fairWhen",
+              "field": "planId",
+              "when": {
+                "op": "cond",
+                "condition": "betaEnabled"
+              },
+              "reason": "Beta access is disabled"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "standard-branch-passes",
+      "values": {
+        "planId": "pro"
+      },
+      "conditions": {
+        "activePlans": ["pro", "starter"],
+        "billingReady": true,
+        "allowLegacyPlan": false,
+        "betaPlans": [],
+        "betaEnabled": false
+      },
+      "expectedAvailability": {
+        "planId": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+      }
+    },
+    {
+      "id": "legacy-branch-passes",
+      "values": {
+        "planId": "legacy-gold"
+      },
+      "conditions": {
+        "activePlans": ["pro", "starter"],
+        "billingReady": false,
+        "allowLegacyPlan": true,
+        "betaPlans": [],
+        "betaEnabled": false
+      },
+      "expectedAvailability": {
+        "planId": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+      }
+    },
+    {
+      "id": "beta-branch-passes",
+      "values": {
+        "planId": "beta-x"
+      },
+      "conditions": {
+        "activePlans": ["pro"],
+        "billingReady": false,
+        "allowLegacyPlan": false,
+        "betaPlans": ["beta-x"],
+        "betaEnabled": true
+      },
+      "expectedAvailability": {
+        "planId": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+      }
+    },
+    {
+      "id": "multiple-branches-pass",
+      "values": {
+        "planId": "starter"
+      },
+      "conditions": {
+        "activePlans": ["starter"],
+        "billingReady": true,
+        "allowLegacyPlan": false,
+        "betaPlans": ["starter"],
+        "betaEnabled": true
+      },
+      "expectedAvailability": {
+        "planId": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+      }
+    },
+    {
+      "id": "all-branches-fail-after-partial-standard-match",
+      "values": {
+        "planId": "pro"
+      },
+      "conditions": {
+        "activePlans": ["pro"],
+        "billingReady": false,
+        "allowLegacyPlan": false,
+        "betaPlans": [],
+        "betaEnabled": false
+      },
+      "expectedAvailability": {
+        "planId": {
+          "enabled": true,
+          "fair": false,
+          "required": false,
+          "reason": "Billing is not ready",
+          "reasons": [
+            "Billing is not ready",
+            "Legacy plans are not allowed",
+            "Selected plan is not in beta",
+            "Beta access is disabled"
+          ]
+        }
+      }
+    }
+  ]
+}
