@@ -1,4 +1,4 @@
-import { enabledWhen, umpire } from '@umpire/core'
+import { enabledWhen, fairWhen, umpire } from '@umpire/core'
 import { z } from 'zod'
 import { createZodValidation } from '../src/validation.js'
 
@@ -93,5 +93,44 @@ describe('createZodValidation', () => {
     expect(() => createZodValidation({
       schemas: undefined as never,
     })).toThrow('createZodValidation() expects a per-field schema map object.')
+  })
+
+  test('rejects foul field values when rejectFoul is true', () => {
+    const fields = {
+      spotType: {},
+      vehicleType: {},
+    }
+
+    const validation = createZodValidation({
+      schemas: {
+        spotType: z.enum(['electric', 'standard']),
+        vehicleType: z.enum(['electric', 'gas']),
+      },
+      rejectFoul: true,
+    })
+
+    const ump = umpire({
+      fields,
+      rules: [
+        fairWhen(
+          'vehicleType',
+          (value, values) => value === values.spotType || values.spotType === 'standard',
+          { reason: 'Vehicle type does not match the reserved spot' },
+        ),
+      ],
+    })
+
+    // Electric vehicle in an electric spot — fair, passes
+    const fairAvailability = ump.check({ spotType: 'electric', vehicleType: 'electric' })
+    const fairResult = validation.run(fairAvailability, { spotType: 'electric', vehicleType: 'electric' })
+    expect(fairResult.result.success).toBe(true)
+
+    // Gas vehicle in an electric spot — foul, rejected with reason as error
+    const foulAvailability = ump.check({ spotType: 'electric', vehicleType: 'gas' })
+    const foulResult = validation.run(foulAvailability, { spotType: 'electric', vehicleType: 'gas' })
+    expect(foulResult.result.success).toBe(false)
+    expect(foulResult.errors).toEqual({
+      vehicleType: 'Vehicle type does not match the reserved spot',
+    })
   })
 })
