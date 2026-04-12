@@ -86,6 +86,6 @@ Each library's "always-fail with message" primitive:
 
 ## See also
 
-- [`@umpire/zod`](/umpire/integrations/zod/) — reference implementation
+- [`@umpire/zod`](/umpire/adapters/validation/zod/) — reference implementation
 - [Composing with Validation](/umpire/concepts/validation/) — manual patterns and the `check()` bridge
 - [`fairWhen()`](/umpire/api/rules/fair-when/) — the rule that produces `fair: false`
