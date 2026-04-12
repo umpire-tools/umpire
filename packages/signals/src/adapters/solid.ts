@@ -7,11 +7,11 @@ import type { SignalProtocol } from '../protocol.js'
 import { createSignal, createMemo, createEffect, createRoot, onCleanup, batch } from 'solid-js'
 
 export const solidAdapter: SignalProtocol = {
-  signal(initial) {
-    const [get, set] = createSignal(initial)
+  signal<T>(initial: T) {
+    const [get, set] = createSignal<T>(initial)
     return {
       get,
-      set: (v: unknown) => set(() => v),
+      set: (value: T) => set(() => value),
     }
   },
   computed(fn) {
