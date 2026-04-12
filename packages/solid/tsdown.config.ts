@@ -6,7 +6,10 @@ export default defineConfig([
     entry: { 'index.browser': 'src/index.ts' },
     format: ['esm'],
     platform: 'browser',
-    deps: { neverBundle: ['solid-js', '@umpire/core'] },
+    deps: {
+      neverBundle: ['solid-js', '@umpire/core'],
+      alwaysBundle: ['@umpire/signals', '@umpire/signals/solid'],
+    },
     outDir: 'dist',
     clean: false,
     dts: false,
@@ -19,7 +22,10 @@ export default defineConfig([
     format: ['iife'],
     globalName: 'UmpireSolid',
     platform: 'browser',
-    deps: { neverBundle: ['solid-js', '@umpire/core'] },
+    deps: {
+      neverBundle: ['solid-js', '@umpire/core'],
+      alwaysBundle: ['@umpire/signals', '@umpire/signals/solid'],
+    },
     outputOptions: {
       globals: { 'solid-js': 'Solid', '@umpire/core': 'Umpire' },
     },

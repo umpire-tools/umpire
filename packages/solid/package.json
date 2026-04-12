@@ -25,7 +25,8 @@
     ".claude"
   ],
   "dependencies": {
-    "@umpire/core": "workspace:^"
+    "@umpire/core": "workspace:^",
+    "@umpire/signals": "workspace:^"
   },
   "peerDependencies": {
     "solid-js": "^1.0.0"

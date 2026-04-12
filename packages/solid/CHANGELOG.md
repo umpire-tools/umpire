@@ -5,3 +5,4 @@
 ### Minor Changes
 
 - Initial release: `useUmpire()` hook for Solid with accessor-based inputs and outputs
+- Added `fromSolidStore()` for shared Solid store/context integrations
