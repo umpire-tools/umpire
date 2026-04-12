@@ -150,7 +150,7 @@ You still want live `check()` calls for interactions *within* a printer's option
 The adapter packages layer reactivity on top:
 
 - `@umpire/react` — a `useUmpire` hook that memoizes `check()` and tracks `prev` via `useRef`
-- `@umpire/solid` — `useUmpire()` for Solid components plus `fromSolidStore()` for shared Solid store/context state
+- `@umpire/solid` — Solid adapter for component-local state or shared store-backed state
 - `@umpire/signals` — signal-backed availability with fine-grained proxy tracking
 - `@umpire/store` — strict store adapter foundation for `getState()` + `subscribe((next, prev) => ...)`
 - `@umpire/zustand` — zero-shim entry point over `@umpire/store`

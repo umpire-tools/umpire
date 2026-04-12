@@ -1,14 +1,14 @@
 ---
 title: '@umpire/solid'
-description: Solid adapters for both component-local and shared-store Umpire integrations.
+description: Solid helpers for component-local and shared Umpire state.
 ---
 
-`@umpire/solid` gives Solid apps two integration styles:
+`@umpire/solid` gives Solid apps two small APIs.
 
-- `useUmpire()` for component-local state when one values accessor drives one component subtree
-- `fromSolidStore()` for shared store or context state when many children should read from one Umpire instance
+- `useUmpire()` when a component owns the values
+- `fromSolidStore()` when one shared store or context should back the form
 
-If you want fine-grained field subscriptions without the Solid-specific convenience layer, see [Signals — Solid](/umpire/adapters/signals/solid/).
+If you want to use `reactiveUmp()` directly, see [Signals — Solid](/umpire/adapters/signals/solid/).
 
 ## Install
 
@@ -18,7 +18,7 @@ yarn add @umpire/core @umpire/solid solid-js
 
 ## `useUmpire()`
 
-Use `useUmpire()` when your component already owns a single reactive values object and just needs derived availability plus fouls.
+Use `useUmpire()` when your component already owns the values and just wants derived availability plus fouls.
 
 ```ts
 import type { Accessor } from 'solid-js'
@@ -108,16 +108,13 @@ function SignupForm(props: { plan: Accessor<SignupConditions['plan']> }) {
 
 - `values` and `conditions` are accessors.
 - `check()` and `fouls()` are accessors.
-- The hook tracks the previous snapshot internally.
-- There is no `createEffect()` requirement in consumer code.
+- Previous values are tracked internally.
 
-This is the closest Solid equivalent to `@umpire/react`.
+Like `@umpire/react`, the hook stays focused on derivation. You decide when to act on fouls.
 
 ## `fromSolidStore()`
 
-Use `fromSolidStore()` when one shared Solid store or provider should back a single Umpire instance for many child components.
-
-It is built on top of `@umpire/signals` internally, but the API is shaped for Solid stores and context rather than generic signal plumbing.
+Use `fromSolidStore()` when the form lives in shared Solid state and child components should read from the same Umpire instance.
 
 ```ts
 import type { Accessor } from 'solid-js'
@@ -139,7 +136,7 @@ function fromSolidStore<
 ### Example
 
 ```tsx
-import { createContext, useContext, createSignal } from 'solid-js'
+import { createContext, useContext } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import { enabledWhen, umpire } from '@umpire/core'
 import { fromSolidStore, type SolidStoreUmpire } from '@umpire/solid'
@@ -170,14 +167,10 @@ function EventFormProvider(props: { children: JSX.Element }) {
     startTime: '09:00',
     endTime: '10:00',
   })
-  const [tier] = createSignal<'free' | 'pro'>('pro')
 
   const form = fromSolidStore(eventUmp, {
     values,
     set: (name, value) => setValues(name, value as never),
-    conditions: {
-      tier,
-    },
   })
 
   return (
@@ -201,34 +194,14 @@ function EndTimeField() {
 }
 ```
 
-### Return surface
-
-```ts
-type SolidStoreUmpire<F extends Record<string, FieldDef>> = {
-  field(name: keyof F & string): {
-    readonly enabled: boolean
-    readonly fair: boolean
-    readonly required: boolean
-    readonly reason: string | null
-    readonly reasons: string[]
-  }
-  foul(name: keyof F & string): Foul<F> | undefined
-  set(name: keyof F & string, value: unknown): void
-  update(partial: Partial<Record<keyof F & string, unknown>>): void
-  readonly values: Record<keyof F & string, unknown>
-  readonly fouls: Foul<F>[]
-  dispose(): void
-}
-```
+The returned object gives you `field()`, `foul()`, `set()`, `update()`, `values`, `fouls`, and `dispose()`.
 
 ### When to pick which
 
-- Choose `useUmpire()` when one component owns the form state and wants snapshot-style derivation.
-- Choose `fromSolidStore()` when many child components should read from one shared Umpire instance.
-- Choose [`@umpire/signals/solid`](/umpire/adapters/signals/solid/) when you want the raw signal adapter surface without the Solid-specific wrapper package.
+- Choose `useUmpire()` when one component owns the values and just needs derived availability.
+- Choose `fromSolidStore()` when several children should read from one shared form state.
+- Choose [`@umpire/signals/solid`](/umpire/adapters/signals/solid/) when you want to work with `reactiveUmp()` directly.
 
 ## Notes
 
-- `@umpire/solid` does not use `@umpire/store`; Solid stores are a different integration shape.
-- `fromSolidStore()` uses `@umpire/signals` internally so field reads stay fine-grained.
-- Call `dispose()` for long-lived shared instances you create outside component cleanup.
+- If you create a long-lived shared instance outside component scope, call `dispose()` when you're done.

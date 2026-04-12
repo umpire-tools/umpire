@@ -64,4 +64,8 @@ See [Selection](/umpire/concepts/selection/) for the full breakdown of patterns.
 
 ## Signal-Based Stores
 
-Signal-first libraries like Jotai, Valtio, MobX, and Preact signals are not covered by this package. They do not expose the same `getState()/subscribe()` surface, so they belong in a different bridge layer alongside `@umpire/signals`.
+Signal-first libraries are not covered by this package because they do not expose the same `getState()/subscribe()` surface.
+
+- Solid has first-class shared-store support in [`@umpire/solid`](/umpire/adapters/solid/#fromsolidstore) via `fromSolidStore()`, which uses `@umpire/signals` under the hood.
+- Other signal-first libraries like Jotai, Valtio, MobX, and Preact signals usually fit best as thin adapters built on `@umpire/signals`, not as `@umpire/store` shims.
+- If you'd like to add one, a pull request is welcome.

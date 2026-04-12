@@ -133,14 +133,14 @@ export default defineConfig({
             { label: 'UI', collapsed: false, items: [
               { label: 'React', slug: 'adapters/react' },
               { label: 'Solid', slug: 'adapters/solid' },
-              { label: 'Signals', collapsed: true, items: [
-                { label: 'Overview', slug: 'adapters/signals' },
-                { label: 'Preact', slug: 'adapters/signals/preact' },
-                { label: 'Vue', slug: 'adapters/signals/vue' },
-                { label: 'Solid', slug: 'adapters/signals/solid' },
-                { label: 'alien-signals', slug: 'adapters/signals/alien' },
-                { label: 'TC39', slug: 'adapters/signals/tc39' },
-              ] },
+            ] },
+            { label: 'Signals', collapsed: false, items: [
+              { label: 'Overview', slug: 'adapters/signals' },
+              { label: 'Preact', slug: 'adapters/signals/preact' },
+              { label: 'Vue', slug: 'adapters/signals/vue' },
+              { label: 'Solid', slug: 'adapters/signals/solid' },
+              { label: 'alien-signals', slug: 'adapters/signals/alien' },
+              { label: 'TC39', slug: 'adapters/signals/tc39' },
             ] },
             { label: 'State', collapsed: false, items: [
               { label: 'Store', slug: 'adapters/store' },
