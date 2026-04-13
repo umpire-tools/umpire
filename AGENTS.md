@@ -12,7 +12,7 @@
 
 - Use Yarn 4 with `nodeLinker: node-modules`. Never use `npm` in this repo.
 - Bun 1.2+ is required for repo test commands; `yarn test` shells out to `bun test`.
-- Workspace package tests preload `test/preload-workspace-aliases.ts` so sibling `@umpire/*` imports resolve to source without a prior build. When adding a new exported subpath that tests import from another workspace, add a matching `mock.module(...)` entry there too.
+- Workspace package tests preload `test/preload-workspace-aliases.ts`; add matching `mock.module(...)` entries there for new exported `@umpire/*` subpaths used before build.
 - Root commands: `yarn build`, `yarn test`, `yarn typecheck`, `yarn docs`, `yarn docs:build`.
 - Most packages build with `tsc`; `@umpire/devtools` builds with `tsup`.
 - Prefer `yarn turbo run test --filter=@umpire/<package>` for a single package.
