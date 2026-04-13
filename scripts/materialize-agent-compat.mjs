@@ -18,7 +18,7 @@ if (action !== 'prepack' && action !== 'postpack') {
 const packageDir = process.cwd();
 const packageJson = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8'));
 const agentsPath = join(packageDir, 'AGENTS.md');
-const compatFilename = `${packageJson.name.slice(1).replace('/', '-')}.md`;
+const compatFilename = `${packageJson.name.slice(1).replaceAll('/', '-')}.md`;
 const compatPath = join(packageDir, '.claude', 'rules', compatFilename);
 const statePath = join(packageDir, '.pack-agent-compat-state.json');
 

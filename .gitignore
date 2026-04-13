@@ -12,3 +12,4 @@ dist/
 docs/.yarn/
 coverage/
 coverage-istanbul/
+.pack-agent-compat-state.json
