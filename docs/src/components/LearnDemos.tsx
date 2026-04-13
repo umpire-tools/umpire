@@ -8,9 +8,9 @@ import {
   enabledWhen,
   oneOf,
   requires,
-  snapshotValue,
   umpire,
 } from '@umpire/core'
+import { snapshotValue } from '@umpire/core/snapshot'
 import type { FieldStatus, InputValues } from '@umpire/core'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

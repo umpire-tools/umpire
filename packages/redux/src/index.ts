@@ -1,4 +1,5 @@
-import { snapshotValue, type FieldDef, type Umpire } from '@umpire/core'
+import type { FieldDef, Umpire } from '@umpire/core'
+import { snapshotValue } from '@umpire/core/snapshot'
 import {
   fromStore,
   type FromStoreOptions,

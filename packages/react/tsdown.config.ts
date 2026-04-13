@@ -6,7 +6,10 @@ export default defineConfig([
     entry: { 'index.browser': 'src/index.ts' },
     format: ['esm'],
     platform: 'browser',
-    deps: { neverBundle: ['react', '@umpire/core'] },
+    deps: {
+      neverBundle: ['react', '@umpire/core'],
+      alwaysBundle: ['@umpire/core/snapshot'],
+    },
     outDir: 'dist',
     clean: false,
     dts: false,
@@ -19,7 +22,10 @@ export default defineConfig([
     format: ['iife'],
     globalName: 'UmpireReact',
     platform: 'browser',
-    deps: { neverBundle: ['react', '@umpire/core'] },
+    deps: {
+      neverBundle: ['react', '@umpire/core'],
+      alwaysBundle: ['@umpire/core/snapshot'],
+    },
     outputOptions: {
       globals: { react: 'React', '@umpire/core': 'Umpire' },
     },

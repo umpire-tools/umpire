@@ -10,6 +10,11 @@
       "types": "./dist/index.d.ts",
       "browser": "./dist/index.browser.js",
       "import": "./dist/index.js"
+    },
+    "./snapshot": {
+      "types": "./dist/snapshot.d.ts",
+      "browser": "./dist/snapshot.js",
+      "import": "./dist/snapshot.js"
     }
   },
   "scripts": {

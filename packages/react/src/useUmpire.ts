@@ -7,7 +7,7 @@ import type {
   Snapshot,
   Umpire,
 } from '@umpire/core'
-import { snapshotValue } from '@umpire/core'
+import { snapshotValue } from '@umpire/core/snapshot'
 import { formatUmpireDebugValue } from './debugValue.js'
 
 export function useUmpire<

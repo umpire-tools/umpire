@@ -6,7 +6,7 @@ import type {
   Foul,
   Umpire,
 } from '@umpire/core'
-import { snapshotValue } from '@umpire/core'
+import { snapshotValue } from '@umpire/core/snapshot'
 import type { SignalProtocol } from './protocol.js'
 
 // ---------------------------------------------------------------------------

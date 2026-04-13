@@ -1,4 +1,4 @@
-import { snapshotValue } from '../src/index.js'
+import { snapshotValue } from '../src/snapshot.js'
 
 class CustomValue {
   constructor(readonly value: string) {}

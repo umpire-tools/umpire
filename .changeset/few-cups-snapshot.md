@@ -9,5 +9,5 @@
 "@umpire/vuex": patch
 ---
 
-- Add a shared `snapshotValue()` helper to `@umpire/core` for cloning previous plain-data snapshots without changing custom-instance comparison semantics.
+- Add a shared `snapshotValue()` helper at `@umpire/core/snapshot` for cloning previous plain-data snapshots without changing custom-instance comparison semantics.
 - Use shared snapshotting across the React, devtools, signals, Pinia, Vuex, Redux, and TanStack Store integrations so in-place nested plain-object mutations do not rewrite the saved "before" snapshot.

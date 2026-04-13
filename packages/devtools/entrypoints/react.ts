@@ -7,7 +7,7 @@ import type {
   Snapshot,
   Umpire,
 } from '@umpire/core'
-import { snapshotValue } from '@umpire/core'
+import { snapshotValue } from '@umpire/core/snapshot'
 import type { RegisterOptions } from '../src/types.js'
 import { register, unregister } from '../src/registry.js'
 
