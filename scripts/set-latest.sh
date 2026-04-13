@@ -21,7 +21,7 @@ C_DIM="\033[38;5;243m"
 C_BOLD="\033[1m"
 C_RESET="\033[0m"
 
-ALL_PACKAGES=(core json signals react zustand store redux tanstack-store zod reads devtools testing pinia vuex eslint-plugin)
+ALL_PACKAGES=(core json signals react zustand store redux tanstack-store zod reads devtools testing pinia vuex eslint-plugin solid)
 DRY_RUN=false
 MODE=""
 VERSION=""
