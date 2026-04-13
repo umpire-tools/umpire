@@ -1,6 +1,6 @@
 {
   "name": "@umpire/store",
-  "version": "0.1.0-alpha.9",
+  "version": "0.1.0-alpha.10",
   "description": "Generic store adapter foundation for @umpire/core",
   "license": "MIT",
   "type": "module",
@@ -14,6 +14,8 @@
   },
   "scripts": {
     "build": "tsc",
+    "prepack": "node ../../scripts/materialize-agent-compat.mjs prepack",
+    "postpack": "node ../../scripts/materialize-agent-compat.mjs postpack",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },

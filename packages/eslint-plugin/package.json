@@ -12,6 +12,8 @@
   },
   "scripts": {
     "build": "tsc",
+    "prepack": "node ../../scripts/materialize-agent-compat.mjs prepack",
+    "postpack": "node ../../scripts/materialize-agent-compat.mjs postpack",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },

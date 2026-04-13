@@ -20,6 +20,8 @@
   "scripts": {
     "build": "tsc && tsdown",
     "bench": "yarn build && bun ./scripts/benchmark.mjs",
+    "prepack": "node ../../scripts/materialize-agent-compat.mjs prepack",
+    "postpack": "node ../../scripts/materialize-agent-compat.mjs postpack",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },

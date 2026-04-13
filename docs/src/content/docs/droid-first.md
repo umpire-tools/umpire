@@ -12,7 +12,7 @@ We call this **droid-first** development. The docs are for you. The rules are fo
 Each published `@umpire/*` package includes:
 
 - `AGENTS.md` as the canonical, cross-tool instruction file
-- `.claude/rules/umpire-*.md` as a Claude-oriented compatibility file that points at the same content
+- `.claude/rules/umpire-*.md` as a Claude-oriented compatibility file generated from the same source
 
 That keeps the hints discoverable without making them long. The goal is "small and useful," not "more docs, but for robots."
 
@@ -53,7 +53,7 @@ And `@umpire/solid`:
   of mirroring them into other state.
 ```
 
-No prompt engineering required. Agents that look for `AGENTS.md` get the canonical file. Claude-oriented tooling still finds the compatibility rule file.
+No prompt engineering required. Agents that look for `AGENTS.md` get the canonical file. Claude-oriented tooling still finds the compatibility rule file in the installed package.
 
 ## What this means in practice
 
