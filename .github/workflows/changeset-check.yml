@@ -11,6 +11,9 @@ on:
 jobs:
   check:
     name: Changeset present
+    # The changesets release branch consumes all changesets by design — skip the
+    # check entirely so the version bump PR isn't blocked by its own empty state.
+    if: github.head_ref != 'changeset-release/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

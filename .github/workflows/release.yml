@@ -30,7 +30,15 @@ jobs:
 
       - name: Create Version PR
         uses: changesets/action@v1
-        # No `publish` input — version PR only. Publishing is handled by publish.yml
+        # No `publish` input -- version PR only. Publishing is handled by publish.yml
         # when the version bump lands on main (uses provenance, no NPM_TOKEN needed).
+        #
+        # `version` runs after changesets rewrites package.json versions so the
+        # lockfile is updated and committed alongside the bump. Without this,
+        # `yarn install --immutable` in CI fails on the resulting PR because the
+        # lockfile still references the old version constraints.
+        with:
+          title: "🐪 Version Packages"
+          version: yarn changeset version && yarn install
         env:
           GITHUB_TOKEN: ${{ secrets.CHANGESETS_GITHUB_TOKEN != '' && secrets.CHANGESETS_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
