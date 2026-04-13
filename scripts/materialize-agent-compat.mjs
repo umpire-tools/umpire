@@ -9,6 +9,13 @@ import {
 } from 'node:fs';
 import { dirname, join } from 'node:path';
 
+// ── Config ───────────────────────────────────────────────────────────────────
+// Folders (relative to the package root) where the AGENTS.md compat file
+// should be materialized during `npm pack`. Add more paths here to distribute
+// rules to additional agent runtimes (e.g. '.codex/rules', '.cursor/rules').
+const compatPaths = ['.claude/rules'];
+// ─────────────────────────────────────────────────────────────────────────────
+
 const action = process.argv[2];
 
 if (action !== 'prepack' && action !== 'postpack') {
@@ -19,14 +26,13 @@ const packageDir = process.cwd();
 const packageJson = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8'));
 const agentsPath = join(packageDir, 'AGENTS.md');
 const compatFilename = `${packageJson.name.slice(1).replaceAll('/', '-')}.md`;
-const compatPath = join(packageDir, '.claude', 'rules', compatFilename);
 const statePath = join(packageDir, '.pack-agent-compat-state.json');
 
-function readState() {
-  return JSON.parse(readFileSync(statePath, 'utf8'));
+function resolvedCompatPaths() {
+  return compatPaths.map(folder => join(packageDir, folder, compatFilename));
 }
 
-function captureCompatState() {
+function captureCompatState(compatPath) {
   try {
     const stat = lstatSync(compatPath);
 
@@ -56,45 +62,52 @@ function captureCompatState() {
   }
 }
 
-function restoreCompatState() {
-  try {
-    const state = readState();
+function restoreCompatState(compatPath, state) {
+  rmSync(compatPath, { force: true, recursive: true });
 
-    rmSync(compatPath, { force: true, recursive: true });
+  if (state.existed) {
+    mkdirSync(dirname(compatPath), { recursive: true });
 
-    if (state.existed) {
-      mkdirSync(dirname(compatPath), { recursive: true });
-
-      if (state.type === 'symlink') {
-        symlinkSync(state.linkname, compatPath);
-      } else if (state.type === 'file') {
-        writeFileSync(compatPath, state.content);
-      } else {
-        throw new Error(`Unsupported compatibility file state for ${compatPath}`);
-      }
+    if (state.type === 'symlink') {
+      symlinkSync(state.linkname, compatPath);
+    } else if (state.type === 'file') {
+      writeFileSync(compatPath, state.content);
+    } else {
+      throw new Error(`Unsupported compatibility file state for ${compatPath}`);
     }
+  }
+}
 
+function restoreAllFromStateFile() {
+  try {
+    const savedState = JSON.parse(readFileSync(statePath, 'utf8'));
+    for (const [path, state] of Object.entries(savedState)) {
+      restoreCompatState(path, state);
+    }
     rmSync(statePath, { force: true });
   } catch (error) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
       return;
     }
-
     throw error;
   }
 }
 
 if (action === 'prepack') {
-  restoreCompatState();
+  // Clean up any stale state from an interrupted previous pack
+  restoreAllFromStateFile();
 
-  const state = captureCompatState();
   const agents = readFileSync(agentsPath, 'utf8');
+  const savedState = {};
 
-  writeFileSync(statePath, JSON.stringify(state));
-  mkdirSync(dirname(compatPath), { recursive: true });
-  rmSync(compatPath, { force: true, recursive: true });
-  writeFileSync(compatPath, agents);
-}
+  for (const compatPath of resolvedCompatPaths()) {
+    savedState[compatPath] = captureCompatState(compatPath);
+    mkdirSync(dirname(compatPath), { recursive: true });
+    rmSync(compatPath, { force: true, recursive: true });
+    writeFileSync(compatPath, agents);
+  }
+
+  writeFileSync(statePath, JSON.stringify(savedState));
 } else {
-  restoreCompatState();
+  restoreAllFromStateFile();
 }
