@@ -90,10 +90,11 @@ if (action === 'prepack') {
   const state = captureCompatState();
   const agents = readFileSync(agentsPath, 'utf8');
 
+  writeFileSync(statePath, JSON.stringify(state));
   mkdirSync(dirname(compatPath), { recursive: true });
   rmSync(compatPath, { force: true, recursive: true });
   writeFileSync(compatPath, agents);
-  writeFileSync(statePath, JSON.stringify(state));
+}
 } else {
   restoreCompatState();
 }
