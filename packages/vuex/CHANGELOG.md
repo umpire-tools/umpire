@@ -1,6 +1,6 @@
 # @umpire/vuex
 
-## 0.1.0
+## 0.1.0-alpha.10
 
 ### Patch Changes
 

@@ -1,6 +1,6 @@
 {
   "name": "@umpire/testing",
-  "version": "1.0.0",
+  "version": "0.1.0-alpha.10",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,7 +21,7 @@
     ".claude"
   ],
   "peerDependencies": {
-    "@umpire/core": "^0.1.0"
+    "@umpire/core": "^0.1.0-alpha.10"
   },
   "repository": {
     "type": "git",
