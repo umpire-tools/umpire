@@ -1,5 +1,32 @@
 # @umpire/zod
 
+## 0.1.0-alpha.10
+
+### Minor Changes
+
+- 0ee935e: - Rename `activeSchema()` to `deriveSchema()` for clearer naming consistency with the rest of the `@umpire/zod` surface.
+  - Rename `activeErrors()` to `deriveErrors()`.
+  - Rename `createZodValidation()` to `createZodAdapter()`, matching the existing adapter-oriented type naming.
+  - Rename the exported adapter types to `CreateZodAdapterOptions`, `ZodAdapter`, and `ZodAdapterRunResult`.
+  - Update the `@umpire/zod` docs, examples, and devtools copy to use the new derived-schema terminology consistently.
+- ba5419b: - `activeSchema` now accepts an optional third argument `{ rejectFoul?: boolean }`.
+  - When `rejectFoul: true`, enabled fields whose value is foul (`fair: false`) are included in the schema with a refinement that always fails, using the field's `reason` as the error message.
+  - `createZodValidation` accepts the same `rejectFoul` option and threads it through every `run()` call.
+  - Use this option on the server to reject contextually invalid submissions (e.g. a gas vehicle in an electric-only parking spot) rather than silently accepting or stripping them.
+  - Default is `false`; existing client-side usage is unaffected.
+
+### Patch Changes
+
+- c57b61e: - `@umpire/devtools` now includes a dedicated `conditions` tab and a generalized extension API for custom devtools tabs.
+  - `@umpire/devtools` keeps `reads` support as backwards-compatible sugar on top of the new extension system.
+  - `@umpire/zod` now exposes `@umpire/zod/devtools`, a validation-tab helper for `@umpire/devtools`.
+  - `@umpire/zod/devtools` can surface active validation errors, suppressed issues, unmapped issues, and active schema fields.
+  - `@umpire/zod/devtools` supports a context-driven `resolve(...)` mode so validation tabs can derive from devtools inspect context and `scorecard.check` without a direct dependency on `@umpire/devtools`.
+- Updated dependencies [e570cac]
+- Updated dependencies [73cd485]
+- Updated dependencies [1fcfe46]
+  - @umpire/core@0.1.0
+
 ## 0.1.0-alpha.9
 
 ### Patch Changes

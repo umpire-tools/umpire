@@ -1,0 +1,8 @@
+# @umpire/eslint-plugin
+
+## 0.1.0-alpha.10
+
+### Patch Changes
+
+- e77d58e: - Fix `no-inline-umpire-init` so `useMemo()` only suppresses warnings when it wraps `umpire()` inside the nearest React component or hook boundary.
+  - Add `eitherOf()` coverage to `no-unknown-fields` so nested branch field references stay validated.

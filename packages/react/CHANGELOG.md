@@ -1,5 +1,29 @@
 # @umpire/react
 
+## 0.1.0-alpha.10
+
+### Minor Changes
+
+- e570cac: Add browser/CDN builds via tsdown
+
+  Both `@umpire/core` and `@umpire/react` now ship bundled browser artifacts alongside the existing ESM build:
+
+  - `dist/index.browser.js` — minified ESM for `<script type="module">` and esm.sh
+  - `dist/index.iife.js` — IIFE with `window.Umpire` / `window.UmpireReact` globals
+
+  Both packages now expose a `browser` field and `"browser"` export condition pointing at the ESM build, so bundlers targeting browser environments resolve the right artifact automatically.
+
+  Unpkg / jsDelivr / esm.sh access is automatic — no extra configuration required after publish.
+
+### Patch Changes
+
+- 73cd485: - Add a shared `snapshotValue()` helper at `@umpire/core/snapshot` for cloning previous plain-data snapshots without changing custom-instance comparison semantics.
+  - Use shared snapshotting across the React, devtools, signals, Pinia, Vuex, Redux, and TanStack Store integrations so in-place nested plain-object mutations do not rewrite the saved "before" snapshot.
+- Updated dependencies [e570cac]
+- Updated dependencies [73cd485]
+- Updated dependencies [1fcfe46]
+  - @umpire/core@0.1.0
+
 ## 0.1.0-alpha.9
 
 ### Patch Changes
