@@ -108,10 +108,16 @@ not necessarily the exact structure of the Jest test.
 No Node.js or TypeScript tooling required. The fixtures are plain JSON and the
 evaluation loop is simple. In pseudocode:
 
+All paths in `index.json` are relative to `index.json` itself (i.e., relative
+to the `conformance/` directory). Resolve them against the directory that
+contains `index.json`, not the repo root or the working directory of your test
+runner.
+
 ```
-load index.json
+load index.json                              # located at conformance/index.json
+base_dir = directory containing index.json  # i.e. conformance/
 for each entry in index.fixtures:
-    fixture = parse_json(entry.path)         # ConformanceFixture shape
+    fixture = parse_json(base_dir / entry.path)   # ConformanceFixture shape
     validate that fixture.fixtureVersion == 1
 
     for each case in fixture.cases:
@@ -124,7 +130,7 @@ for each entry in index.fixtures:
         assert result == case.expectedAvailability, case.id
 
 for each entry in index.failures:
-    fixture = parse_json(entry.path)         # FailureFixture shape
+    fixture = parse_json(base_dir / entry.path)   # FailureFixture shape
     for each failure in fixture.failures:
         if failure.phase == "validate":
             assert your_validate_schema(failure.schema) raises error
