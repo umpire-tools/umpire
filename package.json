@@ -12,6 +12,7 @@
   ],
   "scripts": {
     "build": "turbo run build",
+    "changeset": "changeset",
     "coverage:merge": "bun ./scripts/merge-lcov.mjs",
     "docs": "yarn --cwd docs dev",
     "docs:build": "yarn --cwd docs build",
