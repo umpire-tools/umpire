@@ -245,7 +245,7 @@ export function reactiveUmp<
 
       const computeds = fieldComputeds.get(name)
       if (!computeds) {
-        throw new Error(`Unknown field "${name}"`)
+        throw new Error(`[@umpire/signals] Unknown field "${name}"`)
       }
 
       cached = {
@@ -271,7 +271,7 @@ export function reactiveUmp<
 
     set(name: keyof F & string, value: unknown) {
       const sig = fieldSignals.get(name)
-      if (!sig) throw new Error(`Unknown field "${name}"`)
+      if (!sig) throw new Error(`[@umpire/signals] Unknown field "${name}"`)
       sig.set(value)
     },
 

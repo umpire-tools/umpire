@@ -19,7 +19,7 @@ type CompileExprOptions = {
 
 function assertField(field: string, op: string, fieldNames: Set<string>) {
   if (!fieldNames.has(field)) {
-    throw new Error(`[umpire/json] Unknown field "${field}" in "${op}" expression`)
+    throw new Error(`[@umpire/json] Unknown field "${field}" in "${op}" expression`)
   }
 }
 
@@ -31,7 +31,7 @@ function getConditionDef(
   const definition = conditions?.[condition]
 
   if (!definition) {
-    throw new Error(`[umpire/json] Unknown condition "${condition}" in "${op}" expression`)
+    throw new Error(`[@umpire/json] Unknown condition "${condition}" in "${op}" expression`)
   }
 
   return definition
@@ -39,7 +39,7 @@ function getConditionDef(
 
 function getConditionValue<C extends Record<string, unknown>>(condition: string, conditions: C): unknown {
   if (!(condition in conditions) || conditions[condition] === undefined) {
-    throw new Error(`[umpire/json] Missing runtime condition "${condition}"`)
+    throw new Error(`[@umpire/json] Missing runtime condition "${condition}"`)
   }
 
   return conditions[condition]
@@ -173,7 +173,7 @@ function compileInner<
 
         if (conditionDef.type !== 'string[]' && conditionDef.type !== 'number[]') {
           throw new Error(
-            `[umpire/json] "fieldInCond" requires an array condition, but "${expr.condition}" is "${conditionDef.type}"`,
+            `[@umpire/json] "fieldInCond" requires an array condition, but "${expr.condition}" is "${conditionDef.type}"`,
           )
         }
       }
@@ -182,7 +182,7 @@ function compileInner<
         const conditionValue = getConditionValue(expr.condition, conditions)
         if (!Array.isArray(conditionValue)) {
           throw new Error(
-            `[umpire/json] Runtime condition "${expr.condition}" must be an array for "fieldInCond"`,
+            `[@umpire/json] Runtime condition "${expr.condition}" must be an array for "fieldInCond"`,
           )
         }
 
@@ -191,14 +191,14 @@ function compileInner<
     }
     case 'and': {
       if (!Array.isArray(expr.exprs)) {
-        throw new Error('[umpire/json] "and" expression requires an exprs array')
+        throw new Error('[@umpire/json] "and" expression requires an exprs array')
       }
       const predicates = expr.exprs.map((entry) => compileInner<F, C>(entry, options))
       return (values, conditions) => predicates.every((predicate) => predicate(values, conditions))
     }
     case 'or': {
       if (!Array.isArray(expr.exprs)) {
-        throw new Error('[umpire/json] "or" expression requires an exprs array')
+        throw new Error('[@umpire/json] "or" expression requires an exprs array')
       }
       const predicates = expr.exprs.map((entry) => compileInner<F, C>(entry, options))
       return (values, conditions) => predicates.some((predicate) => predicate(values, conditions))
@@ -208,7 +208,7 @@ function compileInner<
       return (values, conditions) => !predicate(values, conditions)
     }
     default:
-      throw new Error(`[umpire/json] Unknown expression op "${String((expr as { op?: unknown }).op)}"`)
+      throw new Error(`[@umpire/json] Unknown expression op "${String((expr as { op?: unknown }).op)}"`)
   }
 }
 

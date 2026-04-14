@@ -17,54 +17,54 @@ function isJsonPrimitive(value: unknown): boolean {
 
 function validateFieldDef(field: string, definition: JsonFieldDef) {
   if (definition.default !== undefined && !isJsonPrimitive(definition.default)) {
-    throw new Error(`[umpire/json] Field "${field}" has a non-serializable default value`)
+    throw new Error(`[@umpire/json] Field "${field}" has a non-serializable default value`)
   }
 
   if (
     definition.isEmpty !== undefined &&
     !isJsonIsEmptyStrategy(definition.isEmpty)
   ) {
-    throw new Error(`[umpire/json] Unknown isEmpty strategy "${String(definition.isEmpty)}"`)
+    throw new Error(`[@umpire/json] Unknown isEmpty strategy "${String(definition.isEmpty)}"`)
   }
 }
 
 function validateExcludedRule(rule: ExcludedRule) {
   if (typeof rule.type !== 'string' || rule.type.length === 0) {
-    throw new Error('[umpire/json] Excluded rules must include a non-empty string type')
+    throw new Error('[@umpire/json] Excluded rules must include a non-empty string type')
   }
 
   if (rule.field !== undefined && typeof rule.field !== 'string') {
-    throw new Error('[umpire/json] Excluded rule field must be a string when provided')
+    throw new Error('[@umpire/json] Excluded rule field must be a string when provided')
   }
 
   if (typeof rule.description !== 'string' || rule.description.length === 0) {
-    throw new Error('[umpire/json] Excluded rules must include a non-empty string description')
+    throw new Error('[@umpire/json] Excluded rules must include a non-empty string description')
   }
 
   if (rule.key !== undefined && typeof rule.key !== 'string') {
-    throw new Error('[umpire/json] Excluded rule key must be a string when provided')
+    throw new Error('[@umpire/json] Excluded rule key must be a string when provided')
   }
 
   if (rule.signature !== undefined && typeof rule.signature !== 'string') {
-    throw new Error('[umpire/json] Excluded rule signature must be a string when provided')
+    throw new Error('[@umpire/json] Excluded rule signature must be a string when provided')
   }
 }
 
 function assertField(field: string, fieldNames: Set<string>, context: string) {
   if (!fieldNames.has(field)) {
-    throw new Error(`[umpire/json] Rule ${context} references unknown field "${field}"`)
+    throw new Error(`[@umpire/json] Rule ${context} references unknown field "${field}"`)
   }
 }
 
 function validateValidator(field: string, validator: JsonValidatorDef, fieldNames: Set<string>) {
   if (!fieldNames.has(field)) {
-    throw new Error(`[umpire/json] Validator references unknown field "${field}"`)
+    throw new Error(`[@umpire/json] Validator references unknown field "${field}"`)
   }
 
   assertValidValidatorSpec(validator)
 
   if (validator.error !== undefined && typeof validator.error !== 'string') {
-    throw new Error(`[umpire/json] Validator for field "${field}" must use a string error when provided`)
+    throw new Error(`[@umpire/json] Validator for field "${field}" must use a string error when provided`)
   }
 }
 
@@ -112,7 +112,7 @@ function resolveCompositeShape(
   constraint: JsonRuleConstraint
 } {
   if (rules.length === 0) {
-    throw new Error(`[umpire/json] ${label} requires at least one rule`)
+    throw new Error(`[@umpire/json] ${label} requires at least one rule`)
   }
 
   const expectedTargets = uniqueFields(getRuleTargets(rules[0])).sort()
@@ -124,7 +124,7 @@ function resolveCompositeShape(
       currentTargets.length !== expectedTargets.length ||
       currentTargets.some((target, index) => target !== expectedTargets[index])
     ) {
-      throw new Error(`[umpire/json] ${label} rules must target the same fields`)
+      throw new Error(`[@umpire/json] ${label} rules must target the same fields`)
     }
   }
 
@@ -132,7 +132,7 @@ function resolveCompositeShape(
 
   for (const innerRule of rules.slice(1)) {
     if (getRuleConstraint(innerRule) !== constraint) {
-      throw new Error(`[umpire/json] ${label} cannot mix fairWhen rules with availability rules`)
+      throw new Error(`[@umpire/json] ${label} cannot mix fairWhen rules with availability rules`)
     }
   }
 
@@ -151,12 +151,12 @@ function resolveEitherOfShape(
   const branchNames = Object.keys(rule.branches)
 
   if (branchNames.length === 0) {
-    throw new Error(`[umpire/json] eitherOf("${rule.group}") must include at least one branch`)
+    throw new Error(`[@umpire/json] eitherOf("${rule.group}") must include at least one branch`)
   }
 
   for (const branchName of branchNames) {
     if (rule.branches[branchName].length === 0) {
-      throw new Error(`[umpire/json] eitherOf("${rule.group}") branch "${branchName}" must not be empty`)
+      throw new Error(`[@umpire/json] eitherOf("${rule.group}") branch "${branchName}" must not be empty`)
     }
   }
 
@@ -178,7 +178,7 @@ function validateRule(
 
       if ('dependencies' in rule) {
         if (!Array.isArray(rule.dependencies) || rule.dependencies.length === 0) {
-          throw new Error('[umpire/json] "requires" rules with dependencies must include at least one entry')
+          throw new Error('[@umpire/json] "requires" rules with dependencies must include at least one entry')
         }
 
         for (const dependency of rule.dependencies) {
@@ -241,13 +241,13 @@ function validateRule(
       assertValidCheckRule(rule)
       return
     default:
-      throw new Error(`[umpire/json] Unknown rule type "${String((rule as { type?: unknown }).type)}"`)
+      throw new Error(`[@umpire/json] Unknown rule type "${String((rule as { type?: unknown }).type)}"`)
   }
 }
 
 export function validateSchema(schema: UmpireJsonSchema): void {
   if (schema.version !== 1) {
-    throw new Error(`[umpire/json] Unsupported schema version "${String(schema.version)}"`)
+    throw new Error(`[@umpire/json] Unsupported schema version "${String(schema.version)}"`)
   }
 
   const fieldNames = new Set(Object.keys(schema.fields ?? {}))

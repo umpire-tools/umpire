@@ -187,7 +187,7 @@ function parseRule<C extends Record<string, unknown>>(
     case 'check':
       return parseCheckRule<C>(rule)
     default:
-      throw new Error(`[umpire/json] Unknown rule type "${String((rule as { type?: unknown }).type)}"`)
+      throw new Error(`[@umpire/json] Unknown rule type "${String((rule as { type?: unknown }).type)}"`)
   }
 }
 

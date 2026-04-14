@@ -266,7 +266,7 @@ describe('surface validation metadata', () => {
       validators: {
         beta: (value: unknown) => value === 'ok',
       } as never,
-    })).toThrow('[umpire] Unknown field "beta" referenced by validators')
+    })).toThrow('Unknown field "beta" referenced by validators')
   })
 
   test('throws for invalid validator config shapes', () => {
@@ -280,6 +280,6 @@ describe('surface validation metadata', () => {
           validator: { nope: true },
         },
       } as never,
-    })).toThrow('[umpire] Invalid validator configured for field "alpha"')
+    })).toThrow('Invalid validator configured for field "alpha"')
   })
 })

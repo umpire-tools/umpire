@@ -90,13 +90,13 @@ function normalizeValidators<F extends Record<string, FieldDef>>(
     }
 
     if (!fieldNames.has(field)) {
-      throw new Error(`[umpire] Unknown field "${field}" referenced by validators`)
+      throw new Error(`[@umpire/core] Unknown field "${field}" referenced by validators`)
     }
 
     const normalizedEntry = normalizeValidationEntry(entry)
 
     if (!normalizedEntry) {
-      throw new Error(`[umpire] Invalid validator configured for field "${field}"`)
+      throw new Error(`[@umpire/core] Invalid validator configured for field "${field}"`)
     }
 
     normalized[field] = normalizedEntry
@@ -226,7 +226,7 @@ function normalizeConfig<
     const namedField = getFieldBuilderName(rawField)
     if (namedField && namedField !== fieldKey) {
       throw new Error(
-        `[umpire] Named field builder "${namedField}" does not match field key "${fieldKey}"`,
+        `[@umpire/core] Named field builder "${namedField}" does not match field key "${fieldKey}"`,
       )
     }
 
@@ -811,7 +811,7 @@ function validateStructuralContradictions<
   for (const { target, dependency } of requirements) {
     if (disablesBySource.get(dependency)?.has(target)) {
       throw new Error(
-        `[umpire] Contradictory rules: "${target}" can never be enabled because it requires "${dependency}", but is disabled whenever "${dependency}" is satisfied`,
+        `[@umpire/core] Contradictory rules: "${target}" can never be enabled because it requires "${dependency}", but is disabled whenever "${dependency}" is satisfied`,
       )
     }
 
@@ -824,7 +824,7 @@ function validateStructuralContradictions<
       }
 
       throw new Error(
-        `[umpire] Contradictory rules: "${target}" can never be enabled because it requires "${dependency}", but oneOf("${group.groupName}") places them in different branches ("${targetBranch}" and "${dependencyBranch}")`,
+        `[@umpire/core] Contradictory rules: "${target}" can never be enabled because it requires "${dependency}", but oneOf("${group.groupName}") places them in different branches ("${targetBranch}" and "${dependencyBranch}")`,
       )
     }
   }
@@ -845,7 +845,7 @@ function validateRules<
         for (const field of branchFields) {
           if (!fieldNames.has(field)) {
             throw new Error(
-              `[umpire] Unknown field "${field}" in oneOf("${metadata.groupName}") branch "${branchName}"`,
+              `[@umpire/core] Unknown field "${field}" in oneOf("${metadata.groupName}") branch "${branchName}"`,
             )
           }
         }
@@ -854,7 +854,7 @@ function validateRules<
 
     for (const field of [...ordering, ...informational, ...rule.targets]) {
       if (!fieldNames.has(field)) {
-        throw new Error(`[umpire] Unknown field "${field}" referenced by ${rule.type} rule`)
+        throw new Error(`[@umpire/core] Unknown field "${field}" referenced by ${rule.type} rule`)
       }
     }
   }
@@ -1019,7 +1019,7 @@ export function umpire<
     prev?: InputValues<NormalizeFields<FInput>>,
   ) {
     if (!(field in fields)) {
-      throw new Error(`[umpire] Unknown field "${field}"`)
+      throw new Error(`[@umpire/core] Unknown field "${field}"`)
     }
 
     const resolvedConditions = createEmptyConditions(conditions)
