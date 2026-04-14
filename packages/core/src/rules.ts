@@ -928,7 +928,7 @@ function warnAmbiguousOneOf(groupName: string, branchNames: string[]): void {
   }
 
   console.warn(
-    `oneOf("${groupName}") is ambiguous; falling back to the first satisfied branch (${branchNames[0]}).`,
+    `[@umpire/core] oneOf("${groupName}") is ambiguous; falling back to the first satisfied branch (${branchNames[0]}).`,
   )
 }
 
