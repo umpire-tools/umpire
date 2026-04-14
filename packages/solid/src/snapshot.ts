@@ -1,4 +1,4 @@
-import { snapshotValue } from '@umpire/core'
+import { snapshotValue } from '@umpire/core/snapshot'
 
 export function snapshotRecord<T extends Record<string, unknown> | undefined>(
   value: T,
