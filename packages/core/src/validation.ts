@@ -80,7 +80,7 @@ function normalizeValidationResult(
   if (!isValidationResult(result)) {
     if (shouldWarnInDev()) {
       console.warn(
-        '[umpire] Validation functions must return a boolean or { valid, error? }. ' +
+        '[@umpire/core] Validation functions must return a boolean or { valid, error? }. ' +
         'Received an unsupported result and treated it as invalid.',
       )
     }

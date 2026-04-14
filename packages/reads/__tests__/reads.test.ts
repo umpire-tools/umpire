@@ -375,7 +375,7 @@ describe('@umpire/reads', () => {
 
       expect(() =>
         fairWhenRead(field<string>(), 'motherboardFair', reads),
-      ).toThrow('[reads] Named field required when using a read-backed rule')
+      ).toThrow('Named field required when using a read-backed rule')
     })
   })
 

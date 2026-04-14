@@ -211,7 +211,7 @@ function getFieldNameOrThrow<
 
   const name = getFieldBuilderName(field)
   if (!name) {
-    throw new Error('[umpire] Named field builder required when passing a field() value to a rule')
+    throw new Error('[@umpire/core] Named field builder required when passing a field() value to a rule')
   }
 
   return name as keyof F & string

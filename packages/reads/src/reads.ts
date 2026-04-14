@@ -214,7 +214,7 @@ function getReadRuleFieldName(field: unknown) {
     return String(field.__umpfield)
   }
 
-  throw new Error('[reads] Named field required when using a read-backed rule')
+  throw new Error('[@umpire/reads] Named field required when using a read-backed rule')
 }
 
 function mergeReadTrace<T>(
@@ -514,7 +514,7 @@ export function createReads<
 
       if (stack.includes(key)) {
         const cycle = [...stack, key].map(String).join(' -> ')
-        throw new Error(`createReads circular dependency: ${cycle}`)
+        throw new Error(`[@umpire/reads] createReads circular dependency: ${cycle}`)
       }
 
       stack.push(key)

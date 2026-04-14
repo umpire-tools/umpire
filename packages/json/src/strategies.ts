@@ -26,7 +26,7 @@ export function hydrateIsEmptyStrategy(
   }
 
   if (!isJsonIsEmptyStrategy(strategy)) {
-    throw new Error(`[umpire/json] Unknown isEmpty strategy "${String(strategy)}"`)
+    throw new Error(`[@umpire/json] Unknown isEmpty strategy "${String(strategy)}"`)
   }
 
   return IS_EMPTY_STRATEGIES[strategy]

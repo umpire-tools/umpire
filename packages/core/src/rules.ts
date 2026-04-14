@@ -364,7 +364,7 @@ function getFieldNameOrThrow<
 
   const name = getFieldBuilderName(field)
   if (!name) {
-    throw new Error('[umpire] Named field builder required when passing a field() value to a rule')
+    throw new Error('[@umpire/core] Named field builder required when passing a field() value to a rule')
   }
 
   return name as keyof F & string
@@ -549,7 +549,7 @@ function resolveCompositeRuleShape<
       currentTargets.length !== expectedTargets.length ||
       currentTargets.some((target, index) => target !== expectedTargets[index])
     ) {
-      throw new Error(`[umpire] ${label} rules must target the same fields`)
+      throw new Error(`[@umpire/core] ${label} rules must target the same fields`)
     }
   }
 
@@ -557,7 +557,7 @@ function resolveCompositeRuleShape<
 
   for (const innerRule of rules.slice(1)) {
     if (getRuleConstraint(innerRule) !== constraint) {
-      throw new Error(`[umpire] ${label} cannot mix fairWhen rules with availability rules`)
+      throw new Error(`[@umpire/core] ${label} cannot mix fairWhen rules with availability rules`)
     }
   }
 
@@ -973,7 +973,7 @@ export function resolveOneOfState<
       }
     }
     if (!(resolvedBranch in branches)) {
-      throw new Error(`[umpire] Unknown active branch "${resolvedBranch}" for oneOf("${groupName}")`)
+      throw new Error(`[@umpire/core] Unknown active branch "${resolvedBranch}" for oneOf("${groupName}")`)
     }
     return {
       activeBranch: resolvedBranch,
@@ -1180,7 +1180,7 @@ export function requires<
     .map((dependency) => normalizeSource(dependency as SourceInput<F, C>))
 
   if (dependencies.length === 0) {
-    throw new Error(`[umpire] requires("${target}") requires at least one dependency`)
+    throw new Error(`[@umpire/core] requires("${target}") requires at least one dependency`)
   }
 
   const rule: InternalRuleCarrier<F, C> = {
@@ -1240,19 +1240,19 @@ export function oneOf<
   const branchNames = Object.keys(resolvedBranches)
 
   if (branchNames.length === 0) {
-    throw new Error(`[umpire] oneOf("${groupName}") must include at least one branch`)
+    throw new Error(`[@umpire/core] oneOf("${groupName}") must include at least one branch`)
   }
 
   for (const branchName of branchNames) {
     const fields = resolvedBranches[branchName]
 
     if (fields.length === 0) {
-      throw new Error(`[umpire] oneOf("${groupName}") branch "${branchName}" must not be empty`)
+      throw new Error(`[@umpire/core] oneOf("${groupName}") branch "${branchName}" must not be empty`)
     }
 
     for (const field of fields) {
       if (seenFields.has(field)) {
-        throw new Error(`[umpire] oneOf("${groupName}") field "${field}" appears in multiple branches`)
+        throw new Error(`[@umpire/core] oneOf("${groupName}") field "${field}" appears in multiple branches`)
       }
 
       seenFields.add(field)
@@ -1261,7 +1261,7 @@ export function oneOf<
 
   if (typeof options?.activeBranch === 'string' && !(options.activeBranch in resolvedBranches)) {
     throw new Error(
-      `[umpire] Unknown active branch "${options.activeBranch}" for oneOf("${groupName}")`,
+      `[@umpire/core] Unknown active branch "${options.activeBranch}" for oneOf("${groupName}")`,
     )
   }
 
@@ -1318,7 +1318,7 @@ export function anyOf<
   C extends Record<string, unknown> = Record<string, unknown>,
 >(...rules: Rule<F, C>[]): Rule<F, C> {
   if (rules.length === 0) {
-    throw new Error('[umpire] anyOf() requires at least one rule')
+    throw new Error('[@umpire/core] anyOf() requires at least one rule')
   }
 
   const { targets, sources, constraint } = resolveCompositeRuleShape('anyOf()', rules)
@@ -1360,12 +1360,12 @@ export function eitherOf<
   const branchNames = Object.keys(branches)
 
   if (branchNames.length === 0) {
-    throw new Error(`[umpire] eitherOf("${groupName}") must include at least one branch`)
+    throw new Error(`[@umpire/core] eitherOf("${groupName}") must include at least one branch`)
   }
 
   for (const branchName of branchNames) {
     if (branches[branchName].length === 0) {
-      throw new Error(`[umpire] eitherOf("${groupName}") branch "${branchName}" must not be empty`)
+      throw new Error(`[@umpire/core] eitherOf("${groupName}") branch "${branchName}" must not be empty`)
     }
   }
 

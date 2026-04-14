@@ -154,7 +154,7 @@ export function detectCycles(graph: DependencyGraph): void {
 
     const cycle = visit(node)
     if (cycle) {
-      throw new Error(`[umpire] Cycle detected: ${cycle.join(' → ')}`)
+      throw new Error(`[@umpire/core] Cycle detected: ${cycle.join(' → ')}`)
     }
   }
 }
@@ -185,7 +185,7 @@ export function topologicalSort(graph: DependencyGraph, fieldNames: string[]): s
 
   if (result.length !== orderedFields.length) {
     detectCycles(graph)
-    throw new Error('[umpire] Unable to produce topological order')
+    throw new Error('[@umpire/core] Unable to produce topological order')
   }
 
   return result

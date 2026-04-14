@@ -82,7 +82,7 @@ function createPortableCheckExpr(field: string, validator: NamedCheck<unknown>):
   const spec = createValidatorSpecFromMetadata(validator)
 
   if (!spec) {
-    throw new Error('[umpire/json] expr.check() requires a portable validator from @umpire/json')
+    throw new Error('[@umpire/json] expr.check() requires a portable validator from @umpire/json')
   }
 
   return {
@@ -123,7 +123,7 @@ function getRequiredJsonDef(
   const jsonDef = getJsonDef<JsonRule>(rule)
 
   if (!jsonDef) {
-    throw new Error(`[umpire/json] ${caller} requires every inner rule to carry JSON metadata`)
+    throw new Error(`[@umpire/json] ${caller} requires every inner rule to carry JSON metadata`)
   }
 
   return cloneJson(jsonDef)
@@ -246,7 +246,7 @@ export function requiresJson<
   const sources = (options ? dependencies.slice(0, -1) : dependencies) as JsonRequiresDependency[]
 
   if (sources.length === 0) {
-    throw new Error(`[umpire/json] requiresJson("${field}") requires at least one dependency`)
+    throw new Error(`[@umpire/json] requiresJson("${field}") requires at least one dependency`)
   }
 
   const jsonRule: Extract<JsonRule, { type: 'requires' }> = sources.length === 1

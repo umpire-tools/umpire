@@ -232,7 +232,7 @@ export function assertValidValidatorSpec(rule: JsonValidatorSpec): void {
         new RegExp(rule.pattern)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        throw new Error(`[umpire/json] Invalid regex pattern "${rule.pattern}": ${message}`)
+        throw new Error(`[@umpire/json] Invalid regex pattern "${rule.pattern}": ${message}`)
       }
       return
     case 'minLength':
@@ -240,7 +240,7 @@ export function assertValidValidatorSpec(rule: JsonValidatorSpec): void {
     case 'min':
     case 'max':
       if (typeof rule.value !== 'number' || Number.isNaN(rule.value)) {
-        throw new Error(`[umpire/json] Validator "${rule.op}" requires a numeric value`)
+        throw new Error(`[@umpire/json] Validator "${rule.op}" requires a numeric value`)
       }
       return
     case 'range':
@@ -250,11 +250,11 @@ export function assertValidValidatorSpec(rule: JsonValidatorSpec): void {
         typeof rule.max !== 'number' ||
         Number.isNaN(rule.max)
       ) {
-        throw new Error('[umpire/json] Validator "range" requires numeric min and max values')
+        throw new Error('[@umpire/json] Validator "range" requires numeric min and max values')
       }
       return
     default:
-      throw new Error(`[umpire/json] Unknown validator op "${String((rule as { op?: unknown }).op)}"`)
+      throw new Error(`[@umpire/json] Unknown validator op "${String((rule as { op?: unknown }).op)}"`)
   }
 }
 
