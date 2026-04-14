@@ -1,7 +1,5 @@
 import { snapshotValue } from '@umpire/core'
 
-export { snapshotValue }
-
 export function snapshotRecord<T extends Record<string, unknown> | undefined>(
   value: T,
 ): T {
