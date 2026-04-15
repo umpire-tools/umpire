@@ -1,3 +1,4 @@
+/** @jsxImportSource preact */
 import { useRef } from 'preact/hooks'
 import { enabledWhen, requires, umpire } from '@umpire/core'
 import { reactiveUmp, type ReactiveUmpire, type SignalProtocol } from '@umpire/signals'
