@@ -199,7 +199,7 @@ export function getFieldBuilderName(value: unknown): string | undefined {
   return typeof name === 'string' ? name : undefined
 }
 
-function getFieldNameOrThrow<
+export function getFieldNameOrThrow<
   F extends Record<string, FieldDef>,
   V,
 >(

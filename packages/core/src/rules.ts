@@ -3,7 +3,7 @@ import {
   getCompositeTargetEvaluation,
 } from './composite.js'
 import { shouldWarnInDev } from './dev.js'
-import { getFieldBuilderName } from './field.js'
+import { getFieldBuilderName, getFieldNameOrThrow } from './field.js'
 import { isSatisfied } from './satisfaction.js'
 import { isNamedCheck as isNamedCheckValidator, runFieldValidator } from './validation.js'
 import type {
@@ -350,24 +350,6 @@ function getFairCheckField<
   predicate: FairPredicate<V, F, C>,
 ): (keyof F & string) | undefined {
   return predicate._checkField
-}
-
-function getFieldNameOrThrow<
-  F extends Record<string, FieldDef>,
-  V,
->(
-  field: FieldSelector<F, V>,
-): keyof F & string {
-  if (typeof field === 'string') {
-    return field
-  }
-
-  const name = getFieldBuilderName(field)
-  if (!name) {
-    throw new Error('[@umpire/core] Named field builder required when passing a field() value to a rule')
-  }
-
-  return name as keyof F & string
 }
 
 export function getSourceField<
