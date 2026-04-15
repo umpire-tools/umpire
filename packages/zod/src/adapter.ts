@@ -45,7 +45,7 @@ export type ZodAdapterRunResult<F extends Record<string, FieldDef>> = {
 export type ZodAdapter<F extends Record<string, FieldDef>> = {
   run(
     availability: AvailabilityMap<F>,
-    values: InputValues<F>,
+    values: InputValues,
   ): ZodAdapterRunResult<F>
   validators: ValidationMap<F>
 }

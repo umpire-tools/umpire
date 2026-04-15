@@ -1,4 +1,4 @@
-import type { FieldDef, InputValues, RuleTraceAttachment } from './types.js'
+import type { FieldDef, FieldValues, RuleTraceAttachment } from './types.js'
 
 const FIELD_BUILDER = Symbol('umpire.fieldBuilder')
 const FIELD_STATE = Symbol('umpire.fieldState')
@@ -6,26 +6,26 @@ const FIELD_STATE = Symbol('umpire.fieldState')
 type ReasonOption<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-> = string | ((values: InputValues<F>, conditions: C) => string)
+> = string | ((values: FieldValues<F>, conditions: C) => string)
 
 type RuleOptions<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 > = {
   reason?: ReasonOption<F, C>
-  trace?: RuleTraceAttachment<InputValues<F>, C> | RuleTraceAttachment<InputValues<F>, C>[]
+  trace?: RuleTraceAttachment<FieldValues<F>, C> | RuleTraceAttachment<FieldValues<F>, C>[]
 }
 
 type Predicate<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-> = (values: InputValues<F>, conditions: C) => boolean
+> = (values: FieldValues<F>, conditions: C) => boolean
 
 type FairPredicate<
   V,
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-> = (value: NonNullable<V>, values: InputValues<F>, conditions: C) => boolean
+> = (value: NonNullable<V>, values: FieldValues<F>, conditions: C) => boolean
 
 type FieldSelector<
   F extends Record<string, FieldDef>,

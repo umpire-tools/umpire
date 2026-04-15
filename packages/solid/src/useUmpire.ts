@@ -14,7 +14,7 @@ export function useUmpire<
   C extends Record<string, unknown>,
 >(
   ump: Umpire<F, C>,
-  values: Accessor<InputValues<F>>,
+  values: Accessor<InputValues>,
   conditions?: Accessor<C>,
 ): {
   check: Accessor<AvailabilityMap<F>>
@@ -22,7 +22,7 @@ export function useUmpire<
 } {
   const [currentCheck, setCheck] = createSignal<AvailabilityMap<F>>()
   const [fouls, setFouls] = createSignal<Foul<F>[]>([])
-  let previousSnapshot: Snapshot<F, C> | undefined
+  let previousSnapshot: Snapshot<C> | undefined
 
   createComputed(() => {
     const currentValues = snapshotRecord(values())

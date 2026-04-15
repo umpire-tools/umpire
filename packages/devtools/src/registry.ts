@@ -66,7 +66,7 @@ function resolveReadsInspection<
   ReadInput extends Record<string, unknown>,
   Reads extends Record<string, unknown>,
 >(
-  values: InputValues<F>,
+  values: InputValues,
   options?: RegisterOptions<F, C, ReadInput, Reads>,
 ): AnyReadInspection | null {
   const reads = options?.reads
@@ -147,9 +147,9 @@ function resolveExtensions<
   Reads extends Record<string, unknown>,
 >(
   ump: Umpire<F, C>,
-  values: InputValues<F>,
+  values: InputValues,
   conditions: C | undefined,
-  previous: Snapshot<F, C> | null,
+  previous: Snapshot<C> | null,
   scorecard: ScorecardResult<F, C>,
   readsInspection: AnyReadInspection | null,
   options?: RegisterOptions<F, C, ReadInput, Reads>,
@@ -214,12 +214,12 @@ function buildFoulLog(
 export const register: RegisterFn = <
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-  ReadInput extends Record<string, unknown> = InputValues<F>,
+  ReadInput extends Record<string, unknown> = InputValues,
   Reads extends Record<string, unknown> = Record<string, unknown>,
 >(
   id: string,
   ump: Umpire<F, C>,
-  values: InputValues<F>,
+  values: InputValues,
   conditions?: C,
   options?: RegisterOptions<F, C, ReadInput, Reads>,
 ) => {
@@ -228,8 +228,8 @@ export const register: RegisterFn = <
   }
 
   const existing = registry.get(id)
-  const previous = (existing?.snapshot as Snapshot<F, C> | null) ?? null
-  const currentSnapshot: Snapshot<F, C> = {
+  const previous = (existing?.snapshot as Snapshot<C> | null) ?? null
+  const currentSnapshot: Snapshot<C> = {
     values,
     conditions,
   }

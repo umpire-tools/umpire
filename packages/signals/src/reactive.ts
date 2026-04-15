@@ -69,8 +69,8 @@ export function reactiveUmp<
   const conditionSignals = options?.conditions ?? {}
 
   // --- 3. Lazy proxy for fine-grained predicate tracking ---
-  function createValuesProxy(): InputValues<F> {
-    return new Proxy({} as InputValues<F>, {
+  function createValuesProxy(): InputValues {
+    return new Proxy({} as InputValues, {
       get(_target, prop) {
         if (typeof prop !== 'string') return undefined
         const sig = fieldSignals.get(prop)
@@ -177,7 +177,7 @@ export function reactiveUmp<
     function readSnapshotValues() {
       return snapshotValue(Object.fromEntries(
         fieldNames.map((name) => [name, fieldSignals.get(name)!.get()]),
-      ) as InputValues<F>)
+      ) as InputValues)
     }
 
     function readSnapshotConditions() {
@@ -186,9 +186,9 @@ export function reactiveUmp<
       ) as C)
     }
 
-    let beforeValues: InputValues<F> = readSnapshotValues()
+    let beforeValues: InputValues = readSnapshotValues()
     let beforeConditions: C = readSnapshotConditions()
-    let lastValues: InputValues<F> = snapshotValue(beforeValues)
+    let lastValues: InputValues = snapshotValue(beforeValues)
     let lastConditions: C = snapshotValue(beforeConditions)
 
     let isFirstRun = true

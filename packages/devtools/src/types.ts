@@ -71,10 +71,10 @@ export type DevtoolsExtensionInspectContext<
   C extends Record<string, unknown>,
 > = {
   conditions?: C
-  previous: Snapshot<F, C> | null
+  previous: Snapshot<C> | null
   scorecard: ScorecardResult<F, C>
   ump: Umpire<F, C>
-  values: InputValues<F>
+  values: InputValues
 }
 
 export type DevtoolsExtension<
@@ -108,7 +108,7 @@ export type DevtoolsFoulEvent = {
   timestamp: number
 }
 
-export type AnySnapshot = Snapshot<Record<string, FieldDef>, Record<string, unknown>>
+export type AnySnapshot = Snapshot<Record<string, unknown>>
 export type AnyScorecard = ScorecardResult<Record<string, FieldDef>, Record<string, unknown>>
 export type AnyUmpire = Umpire<Record<string, FieldDef>, Record<string, unknown>>
 export type AnyReadInspection = ReadTableInspection<Record<string, unknown>, Record<string, unknown>>
@@ -136,12 +136,12 @@ export type RegistryEntry = {
 export type RegisterFn = <
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-  ReadInput extends Record<string, unknown> = InputValues<F>,
+  ReadInput extends Record<string, unknown> = InputValues,
   Reads extends Record<string, unknown> = Record<string, unknown>,
 >(
   id: string,
   ump: Umpire<F, C>,
-  values: InputValues<F>,
+  values: InputValues,
   conditions?: C,
   options?: RegisterOptions<F, C, ReadInput, Reads>,
 ) => void

@@ -63,7 +63,7 @@ const lineupSlots: LineupSlot[] = [
 // affect availability but aren't form fields the user fills in. Conditions go
 // in the second argument to check() and play().
 
-const fields: Record<string, FieldDef> = Object.fromEntries(
+const fields = Object.fromEntries(
   playerIds.map(id => [id, {}]),
 )
 

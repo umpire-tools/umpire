@@ -992,7 +992,7 @@ export function umpire<
     return recommendations
   }
 
-  function initValues(overrides?: InputValues<NormalizeFields<FInput>>) {
+  function initValues(overrides?: InputValues) {
     const values = {} as FieldValues<NormalizeFields<FInput>>
 
     for (const field of fieldNames) {
@@ -1014,9 +1014,9 @@ export function umpire<
 
   function buildChallenge(
     field: keyof NormalizeFields<FInput> & string,
-    values: InputValues<NormalizeFields<FInput>>,
+    values: InputValues,
     conditions?: C,
-    prev?: InputValues<NormalizeFields<FInput>>,
+    prev?: InputValues,
   ) {
     if (!(field in fields)) {
       throw new Error(`[@umpire/core] Unknown field "${field}"`)
@@ -1083,7 +1083,7 @@ export function umpire<
 
   function buildScorecard(
     snapshot: {
-      values: InputValues<NormalizeFields<FInput>>
+      values: InputValues
       conditions?: C
     },
     options: ScorecardOptions<NormalizeFields<FInput>, C> = {},
@@ -1175,7 +1175,11 @@ export function umpire<
   }
 
   return {
-    check(values, conditions, prev) {
+    check(
+      values: InputValues,
+      conditions?: C,
+      prev?: InputValues,
+    ) {
       const typedValues = values as FieldValues<NormalizeFields<FInput>>
 
       return attachValidationMetadata(
@@ -1209,7 +1213,12 @@ export function umpire<
       return buildScorecard(snapshot, options)
     },
 
-    challenge(field, values, conditions, prev) {
+    challenge(
+      field: keyof NormalizeFields<FInput> & string,
+      values: InputValues,
+      conditions?: C,
+      prev?: InputValues,
+    ) {
       return buildChallenge(field, values, conditions, prev)
     },
 

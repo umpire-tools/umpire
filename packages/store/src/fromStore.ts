@@ -17,7 +17,7 @@ export type FromStoreOptions<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 > = {
-  select: (state: S) => InputValues<F>
+  select: (state: S) => InputValues
   conditions?: (state: S) => C
 }
 

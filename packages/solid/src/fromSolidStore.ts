@@ -11,7 +11,7 @@ export type FromSolidStoreOptions<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 > = {
-  values: InputValues<F>
+  values: InputValues
   set(name: keyof F & string, value: unknown): void
   conditions?: Partial<{ [K in keyof C & string]: Accessor<C[K]> }>
 }

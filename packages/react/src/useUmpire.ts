@@ -15,13 +15,13 @@ export function useUmpire<
   C extends Record<string, unknown>,
 >(
   ump: Umpire<F, C>,
-  values: InputValues<F>,
+  values: InputValues,
   conditions?: C,
 ): {
   check: AvailabilityMap<F>
   fouls: Foul<F>[]
 } {
-  const prevRef = useRef<Snapshot<F, C> | undefined>(undefined)
+  const prevRef = useRef<Snapshot<C> | undefined>(undefined)
 
   const check = useMemo(
     () => ump.check(values, conditions, prevRef.current?.values),
