@@ -2,7 +2,6 @@ import {
   combineCompositeResults,
   getCompositeFailureReasons,
 } from './composite.js'
-import { isSatisfied } from './satisfaction.js'
 import { getInternalRuleMetadata, isFairRule, isGateRule, resolveReason } from './rules.js'
 import type { AvailabilityMap, FieldDef, FieldValues, Rule, RuleEvaluation } from './types.js'
 
@@ -103,38 +102,6 @@ export function evaluateRuleForField<
     )
 
     return combineCompositeResults(metadata.constraint, 'or', branchResults)
-  }
-
-  if (metadata?.kind === 'requires') {
-    const reasons = metadata.dependencies.flatMap((dependency) => {
-      if (typeof dependency !== 'string') {
-        if (dependency(values, conditions)) {
-          return []
-        }
-
-        return [
-          resolveReason(metadata.options?.reason, values, conditions, 'required condition not met'),
-        ]
-      }
-
-      const dependencySatisfied = isSatisfied(values[dependency], fields[dependency])
-      const dependencyEnabled = availability[dependency]?.enabled ?? true
-      const dependencyFair = availability[dependency]?.fair ?? true
-
-      if (dependencySatisfied && dependencyEnabled && dependencyFair) {
-        return []
-      }
-
-      return [
-        resolveReason(metadata.options?.reason, values, conditions, `requires ${dependency}`),
-      ]
-    })
-
-    return {
-      enabled: reasons.length === 0,
-      reason: reasons[0] ?? null,
-      reasons: reasons.length === 0 ? undefined : reasons,
-    }
   }
 
   let evaluation = baseRuleCache.get(rule)
