@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { requires, umpire, type Snapshot } from '@umpire/core'
 import { register } from '@umpire/devtools/slim'
 import { createReads, enabledWhenRead, fairWhenRead, ReadInputType } from '@umpire/reads'
-import { createCoach } from '../lib/createCoach.ts'
+import { createCoach } from '../lib/createCoach'
 import '../styles/pc-builder-demo.css'
 
 type Socket = 'LGA1700' | 'AM5'
@@ -211,7 +211,7 @@ const hintUmp = umpire<typeof hintFields, HintInput>({
 type PcValues = ReturnType<typeof pcUmp.init>
 type PcCheck = ReturnType<typeof pcUmp.check>
 type HintCheck = ReturnType<typeof hintUmp.check>
-type PcSnapshot = Snapshot<typeof pcFields, PcConditions>
+type PcSnapshot = Snapshot<PcConditions>
 
 type StepDefinition = {
   index: number

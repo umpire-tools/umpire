@@ -1,3 +1,4 @@
+/** @jsxImportSource preact */
 import { useRef } from 'preact/hooks'
 import { enabledWhen, oneOf, requires, umpire } from '@umpire/core'
 import { register } from '@umpire/devtools/slim'

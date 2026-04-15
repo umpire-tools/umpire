@@ -1,3 +1,4 @@
+/** @jsxImportSource preact */
 import { useMemo, useRef, useState } from 'preact/hooks'
 import type { ComponentChildren } from 'preact'
 import {
@@ -11,7 +12,7 @@ import {
   umpire,
 } from '@umpire/core'
 import { snapshotValue } from '@umpire/core/snapshot'
-import type { FieldStatus, InputValues } from '@umpire/core'
+import type { FieldStatus } from '@umpire/core'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const phonePattern = /^\d{10,}$/
@@ -606,7 +607,7 @@ const playUmp = umpire<typeof playFields, PlanConditions>({
 
 export function PlayDemo() {
   const [plan, setPlan] = useState<PlanConditions['plan']>('business')
-  const [values, setValues] = useState<InputValues>({
+  const [values, setValues] = useState({
     companyName: '',
     companySize: '',
   })
