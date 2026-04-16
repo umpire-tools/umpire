@@ -1,7 +1,7 @@
 import { umpire } from "@umpire/core";
-import type { FieldDef, Umpire } from "@umpire/core";
+import type { FieldDef, FieldValues, Rule, Umpire } from "@umpire/core";
 import { createReads, enabledWhenRead } from "@umpire/reads";
-import type { ReadTable } from "@umpire/reads";
+import type { PredicateReadKey, ReadTable } from "@umpire/reads";
 
 export type CellKey = `c_${number}_${number}`;
 
@@ -17,6 +17,8 @@ export type Board = Record<string, CellMeta>;
 export type CellValue = "revealed" | "flagged" | undefined;
 
 export type Values = Record<string, CellValue>;
+
+type MinesweeperFields = Record<CellKey, FieldDef<CellValue>>;
 
 export type GameConditions = {
   gameStatus: "idle" | "playing" | "won" | "lost";
@@ -383,7 +385,7 @@ export function createMinesweeperReads(
 
 export function buildMinesweeperReadInput(
   board: Board,
-  values: Values,
+  values: FieldValues<MinesweeperFields>,
   conditions: GameConditions,
   options: {
     probeKey?: CellKey | null;
@@ -408,36 +410,42 @@ export function buildMinesweeperReadInput(
 export function createMinesweeperUmpire(
   board: Board,
   reads: ReadTable<MinesweeperReadInput, MinesweeperReads>,
-): Umpire<Record<string, FieldDef>, GameConditions> {
-  const keys = Object.keys(board);
-  const fields: Record<string, FieldDef> = {};
+): Umpire<MinesweeperFields, GameConditions> {
+  const keys = Object.keys(board) as CellKey[];
+  const fields = {} as MinesweeperFields;
 
   for (const key of keys) {
     fields[key] = { default: undefined };
   }
 
-  const selectInput = (values: Values, conditions: GameConditions) =>
+  const selectInput = (
+    values: FieldValues<MinesweeperFields>,
+    conditions: GameConditions,
+  ) =>
     buildMinesweeperReadInput(board, values, conditions);
 
-  const rules = (keys as CellKey[]).flatMap((key) => [
-    enabledWhenRead(key, "gameActive", reads, {
-      reason: "GAME_OVER",
+  const enabledWhenCellRead = (
+    field: CellKey,
+    key: PredicateReadKey<MinesweeperReads>,
+    reason: string,
+  ): Rule<MinesweeperFields, GameConditions> =>
+    enabledWhenRead<
+      MinesweeperFields,
+      GameConditions,
+      MinesweeperReadInput,
+      MinesweeperReads
+    >(field, key, reads, {
+      reason,
       selectInput,
-    }),
-    enabledWhenRead(key, notRevealedReadKey(key), reads, {
-      reason: "ALREADY_REVEALED",
-      selectInput,
-    }),
-    enabledWhenRead(key, notFlagBlockedReadKey(key), reads, {
-      reason: "FLAGGED",
-      selectInput,
-    }),
+    });
+
+  const rules = keys.flatMap((key) => [
+    enabledWhenCellRead(key, "gameActive", "GAME_OVER"),
+    enabledWhenCellRead(key, notRevealedReadKey(key), "ALREADY_REVEALED"),
+    enabledWhenCellRead(key, notFlagBlockedReadKey(key), "FLAGGED"),
   ]);
 
-  return umpire({ fields, rules }) as Umpire<
-    Record<string, FieldDef>,
-    GameConditions
-  >;
+  return umpire({ fields, rules });
 }
 
 export function buildBoard(

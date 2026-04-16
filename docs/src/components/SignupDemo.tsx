@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { z } from 'zod'
 import { check, disables, eitherOf, enabledWhen, fairWhen, requires, umpire } from '@umpire/core'
-import type { FieldValues } from '@umpire/core'
 // useUmpireWithDevtools powers the named instance in the optional panel on this page.
 // Swap back to: import { useUmpire } from '@umpire/react'  (remove leading id arg)
 import { useUmpireWithDevtools } from '@umpire/devtools/react'
@@ -70,12 +69,6 @@ const hasValidEmail = check('email', fieldSchemas.shape.email)
 const hasStrongPassword = check('password', fieldSchemas.shape.password)
 const hasNumericCompanySize = check('companySize', fieldSchemas.shape.companySize)
 
-type SignupPredicate = (values: FieldValues<typeof signupFields>, conditions: SignupConditions) => boolean
-
-function allowWhenNotBusiness(predicate: SignupPredicate): SignupPredicate {
-  return (values, conditions) => conditions.plan !== 'business' || predicate(values, conditions)
-}
-
 const signupUmp = umpire<typeof signupFields, SignupConditions>({
   fields: signupFields,
   rules: [
@@ -126,13 +119,13 @@ const signupUmp = umpire<typeof signupFields, SignupConditions>({
       ],
     }),
 
-    enabledWhen('submit', allowWhenNotBusiness((v) => !!v.companyName), {
+    enabledWhen('submit', (v, c) => c.plan !== 'business' || !!v.companyName, {
       reason: 'Enter a company name',
     }),
-    enabledWhen('submit', allowWhenNotBusiness((v) => !!v.companySize), {
+    enabledWhen('submit', (v, c) => c.plan !== 'business' || !!v.companySize, {
       reason: 'Enter company size',
     }),
-    enabledWhen('submit', allowWhenNotBusiness(hasNumericCompanySize), {
+    enabledWhen('submit', (v, c) => c.plan !== 'business' || hasNumericCompanySize(v, c), {
       reason: 'Company size must be a number',
     }),
   ],
