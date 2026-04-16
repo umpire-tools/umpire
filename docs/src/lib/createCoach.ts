@@ -1,4 +1,4 @@
-import { scorecard, type FieldDef, type ScorecardResult, type Snapshot, type Umpire } from '@umpire/core'
+import { type FieldDef, type ScorecardResult, type Snapshot, type Umpire } from '@umpire/core'
 import type { ReadTable, ReadTableInspection } from '@umpire/reads'
 
 export type CoachInspection<
@@ -18,9 +18,9 @@ export type Coach<
   Reads extends Record<string, unknown>,
 > = {
   inspect(
-    snapshot: Snapshot<F, C>,
+    snapshot: Snapshot<C>,
     options?: {
-      before?: Snapshot<F, C>
+      before?: Snapshot<C>
       includeChallenge?: boolean
     },
   ): CoachInspection<F, C, ReadInput, Reads>
@@ -32,7 +32,7 @@ export function createCoach<
   ReadInput extends Record<string, unknown>,
   Reads extends Record<string, unknown>,
 >(config: {
-  getReadInput: (snapshot: Snapshot<F, C>) => ReadInput
+  getReadInput: (snapshot: Snapshot<C>) => ReadInput
   reads: ReadTable<ReadInput, Reads>
   ump: Umpire<F, C>
 }): Coach<F, C, ReadInput, Reads> {
@@ -44,7 +44,7 @@ export function createCoach<
 
       return {
         reads: readTable,
-        scorecard: scorecard(config.ump, snapshot, {
+        scorecard: config.ump.scorecard(snapshot, {
           before,
           includeChallenge,
         }),
