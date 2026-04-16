@@ -1,8 +1,9 @@
 html,
 body {
+  background-color: #0e0e0e;
   background:
-    radial-gradient(circle at top left, var(--umpire-demo-green-8), transparent 26%),
-    radial-gradient(circle at top right, var(--umpire-demo-yellow-8), transparent 22%),
+    radial-gradient(circle at top left, rgba(107, 254, 156, 0.08), transparent 26%),
+    radial-gradient(circle at top right, rgba(254, 208, 35, 0.08), transparent 22%),
     linear-gradient(180deg, #111 0%, #0e0e0e 18%, #101913 100%);
 }
 
