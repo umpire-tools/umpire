@@ -49,3 +49,7 @@ Changesets workflow with `.changeset/config.json`:
 - Keep `@umpire/core` free of runtime dependencies.
 - Package-level `AGENTS.md` files are intentionally short; keep them high-signal and keep their `.claude/rules/*` compatibility files pointing at the same content.
 - Commit messages use an emoji prefix plus a descriptive summary.
+
+## Slop Scanner
+
+- **`tests.duplicate-mock-setup` is a false positive** — umpire tests deliberately repeat the full `umpire({ fields, rules, ... })` call shape across tests to verify the public API is consistent and usable in a variety of configurations. Do not flag these as duplicate setup.
