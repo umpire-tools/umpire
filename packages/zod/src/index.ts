@@ -8,3 +8,4 @@ export type {
   ZodAdapter,
   ZodAdapterRunResult,
 } from './adapter.js'
+export { deriveOneOf, deriveDiscriminatedFields, type DeriveOptions } from './discriminated.js'
