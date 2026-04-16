@@ -26,14 +26,17 @@
   --umpire-surface: rgba(26, 26, 26, 0.82);
   --umpire-surface-strong: rgba(38, 38, 38, 0.9);
   --umpire-glow: 0 0 60px -15px rgba(107, 254, 156, 0.15);
+  --umpire-font-mono: 'JetBrains Mono', monospace;
+  --umpire-font-heading: 'Space Grotesk', sans-serif;
+  --umpire-font-body: 'Work Sans', sans-serif;
   color-scheme: dark;
 }
 
 html,
 body {
   background:
-    radial-gradient(circle at top left, rgba(107, 254, 156, 0.08), transparent 26%),
-    radial-gradient(circle at top right, rgba(254, 208, 35, 0.08), transparent 22%),
+    radial-gradient(circle at top left, var(--umpire-demo-green-8), transparent 26%),
+    radial-gradient(circle at top right, var(--umpire-demo-yellow-8), transparent 22%),
     linear-gradient(180deg, #111 0%, #0e0e0e 18%, #101913 100%);
 }
 
@@ -50,7 +53,7 @@ starlight-theme-select {
   background:
     linear-gradient(180deg, rgba(26, 26, 26, 0.86), rgba(15, 15, 15, 0.72));
   box-shadow:
-    inset 0 -1px 0 rgba(107, 254, 156, 0.08),
+    inset 0 -1px 0 var(--umpire-demo-green-8),
     0 18px 36px -24px rgba(0, 0, 0, 0.85);
 }
 
@@ -65,7 +68,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--umpire-font-heading);
   letter-spacing: -0.03em;
 }
 
@@ -83,7 +86,7 @@ a:hover {
 }
 
 .hero .copy h1 {
-  text-shadow: 0 0 34px rgba(107, 254, 156, 0.08);
+  text-shadow: 0 0 34px var(--umpire-demo-green-8);
 }
 
 .hero .tagline {
@@ -92,7 +95,7 @@ a:hover {
 
 .hero .actions .secondary {
   border-color: rgba(107, 254, 156, 0.25);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--umpire-demo-white-2);
 }
 
 .hero .actions .minimal {
@@ -102,14 +105,14 @@ a:hover {
 .umpire-scoreboard {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(107, 254, 156, 0.16);
+  border: 1px solid var(--umpire-demo-green-16);
   border-radius: 1.5rem;
   padding: 1.25rem;
   min-width: 20rem;
   max-width: 24rem;
   background:
-    linear-gradient(135deg, rgba(107, 254, 156, 0.08), transparent 45%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(26, 26, 26, 0.96));
+    linear-gradient(135deg, var(--umpire-demo-green-8), transparent 45%),
+    linear-gradient(180deg, var(--umpire-demo-white-3), rgba(26, 26, 26, 0.96));
   box-shadow: var(--umpire-glow);
 }
 
@@ -122,8 +125,8 @@ a:hover {
       90deg,
       transparent 0,
       transparent 22px,
-      rgba(255, 255, 255, 0.02) 22px,
-      rgba(255, 255, 255, 0.02) 23px
+      var(--umpire-demo-white-2) 22px,
+      var(--umpire-demo-white-2) 23px
     );
   pointer-events: none;
 }
@@ -140,7 +143,7 @@ a:hover {
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-font-mono);
   font-size: 0.75rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -163,9 +166,9 @@ a:hover {
   align-items: center;
   border-radius: 999rem;
   padding: 0.25rem 0.75rem;
-  background: rgba(255, 113, 108, 0.12);
+  background: var(--umpire-demo-red-12);
   color: var(--umpire-red);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-font-mono);
   font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -173,7 +176,7 @@ a:hover {
 
 .umpire-scoreboard__headline {
   margin: 0;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--umpire-font-heading);
   font-size: clamp(1.5rem, 2vw, 2rem);
   line-height: 1.05;
   color: var(--sl-color-white);
@@ -193,7 +196,7 @@ a:hover {
 .umpire-scoreboard__meta > div {
   border-radius: 1rem;
   padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--umpire-demo-white-3);
 }
 
 .umpire-scoreboard__label {
@@ -206,7 +209,7 @@ a:hover {
 }
 
 .umpire-scoreboard__value {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-font-mono);
   font-size: 0.8rem;
   color: var(--sl-color-white);
   word-break: break-word;
@@ -239,7 +242,7 @@ pre,
 }
 
 pre {
-  border: 1px solid rgba(107, 254, 156, 0.14);
+  border: 1px solid var(--umpire-demo-green-14);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent),
     linear-gradient(180deg, rgba(26, 26, 26, 0.96), rgba(18, 18, 18, 0.96));
@@ -247,11 +250,11 @@ pre {
 
 blockquote {
   border-inline-start-color: var(--umpire-yellow);
-  background: linear-gradient(90deg, rgba(254, 208, 35, 0.08), transparent 60%);
+  background: linear-gradient(90deg, var(--umpire-demo-yellow-8), transparent 60%);
 }
 
 table {
-  border-color: rgba(107, 254, 156, 0.12);
+  border-color: var(--umpire-demo-green-12);
 }
 
 th {
@@ -281,10 +284,10 @@ th:last-child {
 .umpire-lineup-demo {
   position: relative;
   padding: 1.25rem 1.5rem;
-  border: 1px solid rgba(107, 254, 156, 0.12);
+  border: 1px solid var(--umpire-demo-green-12);
   border-radius: 1rem;
   background:
-    linear-gradient(135deg, rgba(107, 254, 156, 0.04), transparent 40%),
+    linear-gradient(135deg, var(--umpire-demo-green-4), transparent 40%),
     rgba(14, 14, 14, 0.96);
   box-shadow: var(--umpire-glow);
 }

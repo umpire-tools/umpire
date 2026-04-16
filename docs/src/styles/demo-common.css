@@ -39,8 +39,8 @@
   --umpire-demo-fouls-border-color: rgba(254, 208, 35, 0.28);
   --umpire-demo-fouls-radius: 0.95rem;
   --umpire-demo-fouls-bg:
-    linear-gradient(135deg, rgba(254, 208, 35, 0.12), transparent 60%),
-    rgba(255, 255, 255, 0.02);
+    linear-gradient(135deg, var(--umpire-demo-yellow-12), transparent 60%),
+    var(--umpire-demo-white-2);
   --umpire-demo-fouls-shadow: 0 0 0 1px rgba(254, 208, 35, 0.08), 0 0 24px rgba(254, 208, 35, 0.08);
   --umpire-demo-fouls-copy-display: flex;
   --umpire-demo-fouls-copy-direction: column;
@@ -66,7 +66,7 @@
   --umpire-demo-reset-button-color: var(--umpire-demo-yellow);
   --umpire-demo-reset-button-font-size: 0.68rem;
   --umpire-demo-reset-button-font-weight: 600;
-  --umpire-demo-reset-button-letter-spacing: 0.08em;
+  --umpire-demo-reset-button-letter-spacing: var(--umpire-demo-tracking);
   --umpire-demo-reset-button-hover-bg: rgba(254, 208, 35, 0.22);
   --umpire-demo-reset-button-hover-shadow: 0 0 18px rgba(254, 208, 35, 0.14);
   --umpire-demo-reset-button-hover-transform: none;
@@ -75,7 +75,49 @@
   --umpire-demo-status-font-size: 0.6rem;
   --umpire-demo-status-dot-size: 0.45rem;
   --umpire-demo-status-dot-glow: 0 0 10px currentColor;
-  font-family: 'Work Sans', sans-serif;
+  --umpire-demo-font-mono: 'JetBrains Mono', monospace;
+  --umpire-demo-font-heading: 'Space Grotesk', sans-serif;
+  --umpire-demo-font-body: 'Work Sans', sans-serif;
+
+  /* White overlays (glass/surface effects) */
+  --umpire-demo-white-2: rgba(255, 255, 255, 0.02);
+  --umpire-demo-white-3: rgba(255, 255, 255, 0.03);
+  --umpire-demo-white-4: rgba(255, 255, 255, 0.04);
+  --umpire-demo-white-6: rgba(255, 255, 255, 0.06);
+  --umpire-demo-white-8: rgba(255, 255, 255, 0.08);
+
+  /* Green (brand) at various opacities */
+  --umpire-demo-green-4: rgba(107, 254, 156, 0.04);
+  --umpire-demo-green-8: rgba(107, 254, 156, 0.08);
+  --umpire-demo-green-10: rgba(107, 254, 156, 0.10);
+  --umpire-demo-green-12: rgba(107, 254, 156, 0.12);
+  --umpire-demo-green-14: rgba(107, 254, 156, 0.14);
+  --umpire-demo-green-16: rgba(107, 254, 156, 0.16);
+  --umpire-demo-green-18: rgba(107, 254, 156, 0.18);
+  --umpire-demo-green-24: rgba(107, 254, 156, 0.24);
+  --umpire-demo-green-28: rgba(107, 254, 156, 0.28);
+
+  /* Yellow (foul) at various opacities */
+  --umpire-demo-yellow-8: rgba(254, 208, 35, 0.08);
+  --umpire-demo-yellow-12: rgba(254, 208, 35, 0.12);
+  --umpire-demo-yellow-16: rgba(254, 208, 35, 0.16);
+  --umpire-demo-yellow-18: rgba(254, 208, 35, 0.18);
+  --umpire-demo-yellow-24: rgba(254, 208, 35, 0.24);
+  --umpire-demo-yellow-28: rgba(254, 208, 35, 0.28);
+
+  /* Red (disabled/error) at various opacities */
+  --umpire-demo-red-8: rgba(255, 113, 108, 0.08);
+  --umpire-demo-red-12: rgba(255, 113, 108, 0.12);
+  --umpire-demo-red-20: rgba(255, 113, 108, 0.20);
+  --umpire-demo-radius-sm: 0.6rem;
+  --umpire-demo-radius-md: 0.9rem;
+  --umpire-demo-radius-lg: 1rem;
+  --umpire-demo-radius-pill: 999px;
+  --umpire-demo-tracking-tight: 0.06em;
+  --umpire-demo-tracking: 0.08em;
+  --umpire-demo-tracking-wide: 0.12em;
+  --umpire-demo-tracking-wider: 0.16em;
+  font-family: var(--umpire-demo-font-body);
   color: var(--umpire-demo-text);
   display: flex;
   flex-direction: column;
@@ -102,7 +144,7 @@
       var(--umpire-demo-root-accent-secondary),
       transparent var(--umpire-demo-root-accent-secondary-size)
     ),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent var(--umpire-demo-root-highlight-stop)),
+    linear-gradient(180deg, var(--umpire-demo-white-2), transparent var(--umpire-demo-root-highlight-stop)),
     var(--umpire-demo-bg);
   box-shadow: 0 24px 60px var(--umpire-demo-shadow);
 }
@@ -116,7 +158,7 @@
 .umpire-demo__panel {
   min-width: 0;
   border: 1px solid var(--umpire-demo-border);
-  border-radius: 1rem;
+  border-radius: var(--umpire-demo-radius-lg);
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(107, 254, 156, 0.035), transparent 18%),
@@ -135,23 +177,23 @@
 }
 
 .umpire-demo__eyebrow {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.64rem;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--umpire-demo-tracking-wider);
   text-transform: uppercase;
   color: var(--umpire-demo-text-muted);
 }
 
 .umpire-demo__title {
   margin: 0.25rem 0 0;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--umpire-demo-font-heading);
   font-size: 1.25rem;
   line-height: 1.1;
   color: var(--umpire-demo-text);
 }
 
 .umpire-demo__panel-accent {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.7rem;
   letter-spacing: var(--umpire-demo-panel-accent-spacing);
   text-transform: uppercase;
@@ -168,21 +210,21 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.35rem;
   padding: 0.3rem;
-  border: 1px solid rgba(107, 254, 156, 0.12);
-  border-radius: 999px;
+  border: 1px solid var(--umpire-demo-green-12);
+  border-radius: var(--umpire-demo-radius-pill);
   background: rgba(255, 255, 255, 0.035);
 }
 
 .umpire-demo__plan-option {
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--umpire-demo-radius-pill);
   padding: var(--umpire-demo-plan-option-padding);
   background: transparent;
   color: var(--umpire-demo-text-dim);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.76rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--umpire-demo-tracking);
   text-transform: uppercase;
   cursor: pointer;
   transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
@@ -193,11 +235,11 @@
 }
 
 .umpire-demo__plan-option--active {
-  background: rgba(107, 254, 156, 0.16);
+  background: var(--umpire-demo-green-16);
   color: var(--umpire-demo-green);
   box-shadow:
-    inset 0 0 0 1px rgba(107, 254, 156, 0.24),
-    0 0 18px rgba(107, 254, 156, 0.12);
+    inset 0 0 0 1px var(--umpire-demo-green-24),
+    0 0 18px var(--umpire-demo-green-12);
 }
 
 .umpire-demo__fields {
@@ -212,7 +254,7 @@
   flex-direction: column;
   gap: var(--umpire-demo-field-gap);
   padding: var(--umpire-demo-field-padding);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--umpire-demo-white-6);
   border-radius: var(--umpire-demo-field-radius);
   background: rgba(255, 255, 255, 0.025);
   transition: border-color 0.18s ease, background 0.18s ease, opacity 0.18s ease;
@@ -223,7 +265,7 @@
 }
 
 .umpire-demo__field:focus-within {
-  border-color: rgba(107, 254, 156, 0.24);
+  border-color: var(--umpire-demo-green-24);
   background: var(--umpire-demo-field-focus-bg);
 }
 
@@ -245,7 +287,7 @@
   align-items: center;
   gap: 0.4rem;
   min-width: 0;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--umpire-demo-font-heading);
   font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.1;
@@ -256,22 +298,22 @@
   align-items: center;
   justify-content: center;
   padding: 0.15rem 0.4rem;
-  border: 1px solid rgba(254, 208, 35, 0.16);
-  border-radius: 999px;
-  background: rgba(254, 208, 35, 0.08);
+  border: 1px solid var(--umpire-demo-yellow-16);
+  border-radius: var(--umpire-demo-radius-pill);
+  background: var(--umpire-demo-yellow-8);
   color: var(--umpire-demo-yellow);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.58rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--umpire-demo-tracking);
   text-transform: uppercase;
 }
 
 .umpire-demo__field--fouled {
-  border-color: rgba(254, 208, 35, 0.24);
+  border-color: var(--umpire-demo-yellow-24);
   background:
-    linear-gradient(135deg, rgba(254, 208, 35, 0.08), transparent 50%),
-    rgba(255, 255, 255, 0.02);
+    linear-gradient(135deg, var(--umpire-demo-yellow-8), transparent 50%),
+    var(--umpire-demo-white-2);
 }
 
 .umpire-demo__field-foul {
@@ -280,13 +322,13 @@
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.5rem 0.65rem;
-  border: 1px solid rgba(254, 208, 35, 0.18);
-  border-radius: 0.6rem;
+  border: 1px solid var(--umpire-demo-yellow-18);
+  border-radius: var(--umpire-demo-radius-sm);
   background: rgba(254, 208, 35, 0.06);
 }
 
 .umpire-demo__field-foul-reason {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.68rem;
   line-height: 1.35;
   color: rgba(254, 208, 35, 0.85);
@@ -295,14 +337,14 @@
 .umpire-demo__field-foul-reset {
   flex-shrink: 0;
   padding: 0.3rem 0.6rem;
-  border: 1px solid rgba(254, 208, 35, 0.28);
-  border-radius: 999px;
+  border: 1px solid var(--umpire-demo-yellow-28);
+  border-radius: var(--umpire-demo-radius-pill);
   background: rgba(254, 208, 35, 0.1);
   color: var(--umpire-demo-yellow);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.6rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--umpire-demo-tracking);
   text-transform: uppercase;
   cursor: pointer;
   transition: background 0.18s ease;
@@ -313,7 +355,7 @@
 }
 
 .umpire-demo__field-reason {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.68rem;
   line-height: 1.35;
   color: rgba(255, 113, 108, 0.85);
@@ -328,11 +370,11 @@
   align-items: center;
   gap: var(--umpire-demo-status-gap);
   padding: var(--umpire-demo-status-padding);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  font-family: 'JetBrains Mono', monospace;
+  border: 1px solid var(--umpire-demo-white-8);
+  border-radius: var(--umpire-demo-radius-pill);
+  font-family: var(--umpire-demo-font-mono);
   font-size: var(--umpire-demo-status-font-size);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--umpire-demo-tracking);
   text-transform: uppercase;
   white-space: nowrap;
   flex-shrink: 0;
@@ -341,25 +383,25 @@
 .umpire-demo__status--enabled {
   color: var(--umpire-demo-green);
   border-color: rgba(107, 254, 156, 0.2);
-  background: rgba(107, 254, 156, 0.08);
+  background: var(--umpire-demo-green-8);
 }
 
 .umpire-demo__status--disabled {
   color: var(--umpire-demo-red);
   border-color: rgba(255, 113, 108, 0.2);
-  background: rgba(255, 113, 108, 0.08);
+  background: var(--umpire-demo-red-8);
 }
 
 .umpire-demo__status--fouled {
   color: var(--umpire-demo-yellow);
   border-color: rgba(254, 208, 35, 0.2);
-  background: rgba(254, 208, 35, 0.08);
+  background: var(--umpire-demo-yellow-8);
 }
 
 .umpire-demo__status-dot {
   width: var(--umpire-demo-status-dot-size);
   height: var(--umpire-demo-status-dot-size);
-  border-radius: 999px;
+  border-radius: var(--umpire-demo-radius-pill);
   background: currentColor;
   box-shadow: var(--umpire-demo-status-dot-glow);
 }
@@ -375,20 +417,20 @@
   gap: 0.75rem;
   padding: 0.72rem 0.85rem;
   border: 1px dashed rgba(255, 255, 255, 0.1);
-  border-radius: 0.85rem;
-  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--umpire-demo-radius-md);
+  background: var(--umpire-demo-white-2);
 }
 
 .umpire-demo__conditions-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.68rem;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
   color: var(--umpire-demo-text-muted);
 }
 
 .umpire-demo__conditions-code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.79rem;
   color: var(--umpire-demo-text);
 }
@@ -417,7 +459,7 @@
 }
 
 .umpire-demo__fouls-kicker {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: var(--umpire-demo-fouls-kicker-font-size);
   font-weight: 700;
   letter-spacing: var(--umpire-demo-fouls-kicker-letter-spacing);
@@ -443,7 +485,7 @@
 }
 
 .umpire-demo__foul-field {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: var(--umpire-demo-foul-field-font-size);
   font-weight: var(--umpire-demo-foul-field-font-weight);
   color: var(--umpire-demo-foul-field-color);
@@ -458,10 +500,10 @@
   flex-shrink: 0;
   padding: var(--umpire-demo-reset-button-padding);
   border: 1px solid var(--umpire-demo-reset-button-border-color);
-  border-radius: 999px;
+  border-radius: var(--umpire-demo-radius-pill);
   background: var(--umpire-demo-reset-button-bg);
   color: var(--umpire-demo-reset-button-color);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: var(--umpire-demo-reset-button-font-size);
   font-weight: var(--umpire-demo-reset-button-font-weight);
   letter-spacing: var(--umpire-demo-reset-button-letter-spacing);
@@ -478,9 +520,9 @@
 
 .umpire-demo__json-shell {
   border: 1px solid rgba(107, 254, 156, 0.1);
-  border-radius: 0.95rem;
+  border-radius: var(--umpire-demo-radius-md);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--umpire-demo-white-2);
 }
 
 .umpire-demo__json-header {
@@ -489,22 +531,22 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.65rem 0.85rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--umpire-demo-white-6);
+  background: var(--umpire-demo-white-3);
 }
 
 .umpire-demo__json-title {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.68rem;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
   color: var(--umpire-demo-text-dim);
 }
 
 .umpire-demo__json-meta {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.62rem;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
   color: var(--umpire-demo-green);
 }
@@ -517,7 +559,7 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 18%),
     rgba(10, 10, 10, 0.8);
   color: var(--umpire-demo-text);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.8rem;
   line-height: 1.65;
   white-space: pre;
@@ -527,7 +569,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.72rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -536,12 +578,12 @@
 
 .umpire-demo__input {
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--umpire-demo-white-8);
   border-radius: var(--umpire-demo-input-radius);
   padding: var(--umpire-demo-input-padding);
   background: var(--umpire-demo-input-bg);
   color: var(--umpire-demo-text);
-  font-family: 'Work Sans', sans-serif;
+  font-family: var(--umpire-demo-font-body);
   font-size: 0.95rem;
   line-height: 1.25;
   outline: none;
@@ -558,7 +600,7 @@
 
 .umpire-demo__input:disabled {
   border-color: rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--umpire-demo-white-3);
   color: rgba(245, 247, 244, 0.42);
   cursor: not-allowed;
 }

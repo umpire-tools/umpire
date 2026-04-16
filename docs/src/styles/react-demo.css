@@ -4,7 +4,7 @@
   --umpire-demo-shadow: rgba(0, 0, 0, 0.34);
   --umpire-demo-layout-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   --umpire-demo-fouls-padding: 0.9rem 1rem;
-  --umpire-demo-fouls-border-color: rgba(254, 208, 35, 0.18);
+  --umpire-demo-fouls-border-color: var(--umpire-demo-yellow-18);
   --umpire-demo-fouls-radius: 1rem;
   --umpire-demo-fouls-bg:
     linear-gradient(90deg, rgba(254, 208, 35, 0.14), rgba(254, 208, 35, 0.05)),
@@ -16,7 +16,7 @@
   --umpire-demo-fouls-list-gap: 0.45rem 1rem;
   --umpire-demo-fouls-list-margin-top: 0.45rem;
   --umpire-demo-fouls-kicker-font-size: 0.67rem;
-  --umpire-demo-fouls-kicker-letter-spacing: 0.16em;
+  --umpire-demo-fouls-kicker-letter-spacing: var(--umpire-demo-tracking-wider);
   --umpire-demo-fouls-kicker-color: rgba(254, 208, 35, 0.8);
   --umpire-demo-foul-wrap: wrap;
   --umpire-demo-foul-gap: 0.45rem;
@@ -28,11 +28,11 @@
   --umpire-demo-foul-reason-color: rgba(255, 243, 184, 0.78);
   --umpire-demo-reset-button-padding: 0.72rem 1rem;
   --umpire-demo-reset-button-border-color: rgba(254, 208, 35, 0.34);
-  --umpire-demo-reset-button-bg: rgba(254, 208, 35, 0.16);
+  --umpire-demo-reset-button-bg: var(--umpire-demo-yellow-16);
   --umpire-demo-reset-button-color: #fff1a8;
   --umpire-demo-reset-button-font-size: 0.76rem;
   --umpire-demo-reset-button-font-weight: 700;
-  --umpire-demo-reset-button-hover-bg: rgba(254, 208, 35, 0.24);
+  --umpire-demo-reset-button-hover-bg: var(--umpire-demo-yellow-24);
   --umpire-demo-reset-button-hover-shadow: none;
   --umpire-demo-reset-button-hover-transform: translateY(-1px);
 }
@@ -47,12 +47,12 @@
   display: grid;
   gap: 0.7rem;
   padding: 0.95rem 1rem;
-  border: 1px solid rgba(107, 254, 156, 0.18);
-  border-radius: 1rem;
+  border: 1px solid var(--umpire-demo-green-18);
+  border-radius: var(--umpire-demo-radius-lg);
   background:
-    linear-gradient(135deg, rgba(107, 254, 156, 0.14), rgba(107, 254, 156, 0.04)),
-    rgba(255, 255, 255, 0.02);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    linear-gradient(135deg, var(--umpire-demo-green-14), var(--umpire-demo-green-4)),
+    var(--umpire-demo-white-2);
+  box-shadow: inset 0 1px 0 var(--umpire-demo-white-4);
 }
 
 .react-demo__badge {
@@ -61,20 +61,20 @@
   justify-content: center;
   min-height: 2.3rem;
   padding: 0.45rem 0.8rem;
-  border-radius: 999px;
-  border: 1px solid rgba(107, 254, 156, 0.28);
+  border-radius: var(--umpire-demo-radius-pill);
+  border: 1px solid var(--umpire-demo-green-28);
   background: rgba(14, 14, 14, 0.9);
   color: var(--umpire-demo-green);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.73rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
-  box-shadow: 0 0 22px rgba(107, 254, 156, 0.14);
+  box-shadow: 0 0 22px var(--umpire-demo-green-14);
 }
 
 .react-demo__callout-title {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--umpire-demo-font-heading);
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.1;
@@ -92,15 +92,12 @@
 }
 
 .react-demo__hook-label {
-  font-family: 'JetBrains Mono', monospace;
   font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--umpire-demo-text-muted);
+  letter-spacing: var(--umpire-demo-tracking-wide);
 }
 
 .react-demo__hook-code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.79rem;
   color: var(--umpire-demo-text);
 }
@@ -123,30 +120,30 @@
   display: inline-flex;
   align-items: center;
   padding: 0.2rem 0.45rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-family: 'JetBrains Mono', monospace;
+  border-radius: var(--umpire-demo-radius-pill);
+  border: 1px solid var(--umpire-demo-white-8);
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.62rem;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--umpire-demo-tracking);
   text-transform: uppercase;
 }
 
 .react-demo__chip--required {
   color: var(--umpire-demo-yellow);
-  border-color: rgba(254, 208, 35, 0.16);
-  background: rgba(254, 208, 35, 0.08);
+  border-color: var(--umpire-demo-yellow-16);
+  background: var(--umpire-demo-yellow-8);
 }
 
 .react-demo__chip--enabled {
   color: var(--umpire-demo-green);
-  border-color: rgba(107, 254, 156, 0.18);
-  background: rgba(107, 254, 156, 0.08);
+  border-color: var(--umpire-demo-green-18);
+  background: var(--umpire-demo-green-8);
 }
 
 .react-demo__chip--disabled {
   color: rgba(255, 113, 108, 0.88);
   border-color: rgba(255, 113, 108, 0.16);
-  background: rgba(255, 113, 108, 0.08);
+  background: var(--umpire-demo-red-8);
 }
 
 .react-demo__field-meta {
@@ -157,7 +154,7 @@
 }
 
 .react-demo__field-code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.7rem;
   color: var(--umpire-demo-text-muted);
 }
@@ -181,17 +178,17 @@
   gap: 0.35rem;
   padding: 0.85rem;
   border: 1px solid rgba(107, 254, 156, 0.1);
-  border-radius: 0.9rem;
+  border-radius: var(--umpire-demo-radius-md);
   background: rgba(107, 254, 156, 0.035);
 }
 
 .react-demo__json-section--alert {
-  border-color: rgba(254, 208, 35, 0.28);
-  box-shadow: 0 0 0 1px rgba(254, 208, 35, 0.08), 0 0 24px rgba(254, 208, 35, 0.08);
+  border-color: var(--umpire-demo-yellow-28);
+  box-shadow: 0 0 0 1px var(--umpire-demo-yellow-8), 0 0 24px var(--umpire-demo-yellow-8);
 }
 
 .react-demo__json-section--alert .umpire-demo__json-header {
-  background: rgba(254, 208, 35, 0.08);
+  background: var(--umpire-demo-yellow-8);
 }
 
 .react-demo__json-section--alert .umpire-demo__json-meta {

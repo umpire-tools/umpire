@@ -1,6 +1,6 @@
 .account-settings-demo {
   --umpire-demo-layout-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
-  --umpire-demo-root-accent-primary: rgba(107, 254, 156, 0.16);
+  --umpire-demo-root-accent-primary: var(--umpire-demo-green-16);
   --umpire-demo-root-accent-secondary: rgba(120, 184, 255, 0.1);
 }
 
@@ -16,8 +16,8 @@
 
 .account-settings-demo__intro {
   padding: 0.9rem 1rem;
-  border: 1px solid rgba(107, 254, 156, 0.12);
-  border-radius: 0.95rem;
+  border: 1px solid var(--umpire-demo-green-12);
+  border-radius: var(--umpire-demo-radius-md);
   background: rgba(107, 254, 156, 0.05);
   color: rgba(245, 247, 244, 0.8);
 }
@@ -31,7 +31,7 @@
 .account-settings-demo__section {
   padding: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 1rem;
+  border-radius: var(--umpire-demo-radius-lg);
   background:
     linear-gradient(180deg, rgba(107, 254, 156, 0.035), transparent 42%),
     rgba(255, 255, 255, 0.025);
@@ -47,23 +47,21 @@
 
 .account-settings-demo__section-kicker,
 .account-settings-demo__summary-label {
-  font-family: 'JetBrains Mono', monospace;
   font-size: 0.66rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   color: rgba(245, 247, 244, 0.46);
 }
 
 .account-settings-demo__section-title {
   margin: 0.2rem 0 0;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--umpire-demo-font-heading);
   font-size: 1rem;
   line-height: 1.1;
 }
 
 .account-settings-demo__section-code,
 .account-settings-demo__summary-code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.74rem;
   color: #6bfe9c;
 }
@@ -88,11 +86,11 @@
 
 .account-settings-demo__chip {
   padding: 0.2rem 0.48rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-family: 'JetBrains Mono', monospace;
+  border-radius: var(--umpire-demo-radius-pill);
+  border: 1px solid var(--umpire-demo-white-8);
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.64rem;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--umpire-demo-tracking);
   text-transform: uppercase;
   color: rgba(245, 247, 244, 0.72);
 }
@@ -100,19 +98,19 @@
 .account-settings-demo__chip--enabled {
   color: #6bfe9c;
   border-color: rgba(107, 254, 156, 0.26);
-  background: rgba(107, 254, 156, 0.08);
+  background: var(--umpire-demo-green-8);
 }
 
 .account-settings-demo__chip--disabled {
   color: #ffb8b5;
   border-color: rgba(255, 113, 108, 0.2);
-  background: rgba(255, 113, 108, 0.08);
+  background: var(--umpire-demo-red-8);
 }
 
 .account-settings-demo__chip--required {
   color: #fed023;
   border-color: rgba(254, 208, 35, 0.22);
-  background: rgba(254, 208, 35, 0.08);
+  background: var(--umpire-demo-yellow-8);
 }
 
 .account-settings-demo__reason {
@@ -127,7 +125,7 @@
 }
 
 .account-settings-demo__section-note code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
 }
 
 .account-settings-demo__summary-grid {
@@ -138,9 +136,9 @@
 
 .account-settings-demo__summary-card {
   padding: 0.8rem 0.9rem;
-  border-radius: 0.95rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--umpire-demo-radius-md);
+  border: 1px solid var(--umpire-demo-white-8);
+  background: var(--umpire-demo-white-3);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -156,15 +154,15 @@
   gap: 0.6rem;
   align-items: baseline;
   padding: 0.7rem 0.85rem;
-  border-radius: 0.9rem;
+  border-radius: var(--umpire-demo-radius-md);
   background: rgba(255, 255, 255, 0.028);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--umpire-demo-white-6);
 }
 
 .account-settings-demo__rule strong {
   min-width: 3.8rem;
   font-size: 0.74rem;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--umpire-demo-tracking);
   text-transform: uppercase;
   color: #6bfe9c;
 }

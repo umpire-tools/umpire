@@ -2,9 +2,9 @@
   display: grid;
   gap: 0.6rem;
   padding: 1.5rem;
-  border: 1px dashed rgba(107, 254, 156, 0.18);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--umpire-demo-green-18);
+  border-radius: var(--umpire-demo-radius-lg);
+  background: var(--umpire-demo-white-2);
   text-align: center;
 }
 
@@ -13,14 +13,14 @@
   width: fit-content;
   margin: 0 auto;
   padding: 0.4rem 0.72rem;
-  border-radius: 999px;
-  border: 1px solid rgba(107, 254, 156, 0.28);
+  border-radius: var(--umpire-demo-radius-pill);
+  border: 1px solid var(--umpire-demo-green-28);
   background: rgba(14, 14, 14, 0.9);
   color: var(--umpire-demo-green, #6bfe9c);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
 }
 
@@ -37,7 +37,7 @@
   --umpire-demo-root-highlight-stop: 32%;
   --umpire-demo-layout-columns: minmax(0, 0.94fr) minmax(0, 1.06fr);
   --umpire-demo-fouls-padding: 0.9rem 1rem;
-  --umpire-demo-fouls-border-color: rgba(254, 208, 35, 0.18);
+  --umpire-demo-fouls-border-color: var(--umpire-demo-yellow-18);
   --umpire-demo-fouls-radius: 1rem;
   --umpire-demo-fouls-bg:
     linear-gradient(90deg, rgba(254, 208, 35, 0.14), rgba(254, 208, 35, 0.05)),
@@ -49,7 +49,7 @@
   --umpire-demo-fouls-list-gap: 0.45rem 1rem;
   --umpire-demo-fouls-list-margin-top: 0.45rem;
   --umpire-demo-fouls-kicker-font-size: 0.67rem;
-  --umpire-demo-fouls-kicker-letter-spacing: 0.16em;
+  --umpire-demo-fouls-kicker-letter-spacing: var(--umpire-demo-tracking-wider);
   --umpire-demo-fouls-kicker-color: rgba(254, 208, 35, 0.8);
   --umpire-demo-foul-wrap: wrap;
   --umpire-demo-foul-gap: 0.45rem;
@@ -61,19 +61,18 @@
   --umpire-demo-foul-reason-color: rgba(255, 243, 184, 0.78);
   --umpire-demo-reset-button-padding: 0.72rem 1rem;
   --umpire-demo-reset-button-border-color: rgba(254, 208, 35, 0.34);
-  --umpire-demo-reset-button-bg: rgba(254, 208, 35, 0.16);
+  --umpire-demo-reset-button-bg: var(--umpire-demo-yellow-16);
   --umpire-demo-reset-button-color: #fff1a8;
   --umpire-demo-reset-button-font-size: 0.76rem;
   --umpire-demo-reset-button-font-weight: 700;
-  --umpire-demo-reset-button-hover-bg: rgba(254, 208, 35, 0.24);
+  --umpire-demo-reset-button-hover-bg: var(--umpire-demo-yellow-24);
   --umpire-demo-reset-button-hover-shadow: none;
   --umpire-demo-reset-button-hover-transform: translateY(-1px);
 }
 
-.zustand-demo__summary-label,
 .zustand-demo__field-key {
-  font-family: 'JetBrains Mono', monospace;
-  letter-spacing: 0.12em;
+  font-family: var(--umpire-demo-font-mono);
+  letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
 }
 
@@ -97,12 +96,12 @@
   display: grid;
   gap: 0.7rem;
   padding: 0.95rem 1rem;
-  border: 1px solid rgba(107, 254, 156, 0.18);
-  border-radius: 1rem;
+  border: 1px solid var(--umpire-demo-green-18);
+  border-radius: var(--umpire-demo-radius-lg);
   background:
-    linear-gradient(135deg, rgba(107, 254, 156, 0.14), rgba(107, 254, 156, 0.04)),
-    rgba(255, 255, 255, 0.02);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    linear-gradient(135deg, var(--umpire-demo-green-14), var(--umpire-demo-green-4)),
+    var(--umpire-demo-white-2);
+  box-shadow: inset 0 1px 0 var(--umpire-demo-white-4);
 }
 
 .zustand-demo__badge {
@@ -112,16 +111,16 @@
   justify-content: center;
   min-height: 2rem;
   padding: 0.4rem 0.72rem;
-  border-radius: 999px;
-  border: 1px solid rgba(107, 254, 156, 0.28);
+  border-radius: var(--umpire-demo-radius-pill);
+  border: 1px solid var(--umpire-demo-green-28);
   background: rgba(14, 14, 14, 0.9);
   color: var(--umpire-demo-green);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
-  box-shadow: 0 0 22px rgba(107, 254, 156, 0.14);
+  box-shadow: 0 0 22px var(--umpire-demo-green-14);
 }
 
 .zustand-demo__callout-text {
@@ -143,24 +142,25 @@
   display: grid;
   gap: 0.35rem;
   padding: 0.8rem 0.85rem;
-  border: 1px solid rgba(107, 254, 156, 0.12);
-  border-radius: 0.9rem;
+  border: 1px solid var(--umpire-demo-green-12);
+  border-radius: var(--umpire-demo-radius-md);
   background: rgba(255, 255, 255, 0.025);
 }
 
 .zustand-demo__summary-label {
   font-size: 0.62rem;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   color: var(--umpire-demo-text-muted);
 }
 
 .zustand-demo__summary-code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.75rem;
   color: var(--umpire-demo-green);
 }
 
 .zustand-demo__summary-value {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--umpire-demo-font-heading);
   font-size: 1.35rem;
   line-height: 1.05;
   color: var(--umpire-demo-text);
@@ -187,8 +187,8 @@
   display: grid;
   gap: 0.8rem;
   padding: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 0.95rem;
+  border: 1px solid var(--umpire-demo-white-6);
+  border-radius: var(--umpire-demo-radius-md);
   background: rgba(255, 255, 255, 0.025);
   transition: border-color 0.18s ease, background 0.18s ease;
 }
@@ -196,8 +196,8 @@
 .zustand-demo__field-card--disabled {
   border-color: rgba(255, 113, 108, 0.14);
   background:
-    linear-gradient(135deg, rgba(255, 113, 108, 0.08), transparent 50%),
-    rgba(255, 255, 255, 0.02);
+    linear-gradient(135deg, var(--umpire-demo-red-8), transparent 50%),
+    var(--umpire-demo-white-2);
 }
 
 .zustand-demo__field-top {
@@ -208,7 +208,7 @@
 }
 
 .zustand-demo__field-name {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--umpire-demo-font-heading);
   font-size: 1rem;
   line-height: 1.1;
 }
@@ -216,7 +216,7 @@
 .zustand-demo__field-code {
   display: inline-block;
   margin-top: 0.2rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.7rem;
   color: var(--umpire-demo-text-muted);
 }
@@ -248,21 +248,21 @@
   width: fit-content;
   align-items: center;
   padding: 0.18rem 0.45rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-family: 'JetBrains Mono', monospace;
+  border-radius: var(--umpire-demo-radius-pill);
+  border: 1px solid var(--umpire-demo-white-8);
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.68rem;
 }
 
 .zustand-demo__pill--required {
   color: var(--umpire-demo-yellow);
-  border-color: rgba(254, 208, 35, 0.16);
-  background: rgba(254, 208, 35, 0.08);
+  border-color: var(--umpire-demo-yellow-16);
+  background: var(--umpire-demo-yellow-8);
 }
 
 .zustand-demo__pill--optional {
   color: var(--umpire-demo-text-dim);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--umpire-demo-white-3);
 }
 
 .zustand-demo__note {

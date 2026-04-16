@@ -2,8 +2,8 @@
 
 .signals-demo {
   --umpire-demo-field-disabled-bg:
-    linear-gradient(135deg, rgba(255, 113, 108, 0.08), transparent 50%),
-    rgba(255, 255, 255, 0.02);
+    linear-gradient(135deg, var(--umpire-demo-red-8), transparent 50%),
+    var(--umpire-demo-white-2);
   --umpire-demo-field-disabled-border-color: rgba(255, 113, 108, 0.14);
   --umpire-demo-field-disabled-opacity: 1;
 }
@@ -17,7 +17,7 @@
 .signals-demo__panel {
   min-width: 0;
   border: 1px solid var(--umpire-demo-border);
-  border-radius: 1rem;
+  border-radius: var(--umpire-demo-radius-lg);
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(107, 254, 156, 0.035), transparent 18%),
@@ -36,8 +36,8 @@
   flex-direction: column;
   gap: 0.55rem;
   padding: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 0.95rem;
+  border: 1px solid var(--umpire-demo-white-6);
+  border-radius: var(--umpire-demo-radius-md);
   background: rgba(255, 255, 255, 0.025);
   transition: border-color 0.18s ease, background 0.18s ease, opacity 0.18s ease;
 }
@@ -48,13 +48,13 @@
 
 .signals-demo__field-value {
   padding: 0.45rem 0.6rem;
-  border-radius: 0.6rem;
+  border-radius: var(--umpire-demo-radius-sm);
   background: rgba(255, 255, 255, 0.035);
   min-height: 1.6rem;
 }
 
 .signals-demo__field-value .signals-demo__field-code {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.78rem;
   color: var(--umpire-demo-text-dim);
 }
@@ -72,13 +72,13 @@
   min-height: 2rem;
   padding: 0.4rem 0.65rem;
   border: 1px solid rgba(107, 254, 156, 0.35);
-  border-radius: 999px;
-  background: rgba(107, 254, 156, 0.08);
+  border-radius: var(--umpire-demo-radius-pill);
+  background: var(--umpire-demo-green-8);
   color: var(--umpire-demo-green);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.66rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--umpire-demo-tracking);
   text-transform: uppercase;
   cursor: pointer;
   transition:
@@ -90,7 +90,7 @@
 
 .signals-demo__button:hover:not(:disabled) {
   background: rgba(107, 254, 156, 0.22);
-  box-shadow: 0 0 18px rgba(107, 254, 156, 0.12);
+  box-shadow: 0 0 18px var(--umpire-demo-green-12);
 }
 
 .signals-demo__button:disabled {
@@ -99,13 +99,13 @@
 }
 
 .signals-demo__button--ghost {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--umpire-demo-white-3);
   border-color: rgba(255, 255, 255, 0.1);
   color: var(--umpire-demo-text-dim);
 }
 
 .signals-demo__button--ghost:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--umpire-demo-white-8);
   box-shadow: none;
 }
 

@@ -22,7 +22,7 @@
   border: 1px solid var(--umpire-demo-root-border);
   border-radius: var(--umpire-demo-root-radius);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 24%),
+    linear-gradient(180deg, var(--umpire-demo-white-3), transparent 24%),
     rgba(14, 14, 14, 0.9);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.18);
   gap: 0.75rem;
@@ -70,15 +70,15 @@
 
 .learn-demo__submit {
   width: 100%;
-  border: 1px solid rgba(107, 254, 156, 0.24);
+  border: 1px solid var(--umpire-demo-green-24);
   border-radius: 0.72rem;
   padding: 0.72rem 0.82rem;
-  background: rgba(107, 254, 156, 0.14);
+  background: var(--umpire-demo-green-14);
   color: var(--umpire-demo-text);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--umpire-demo-tracking);
   text-transform: uppercase;
   cursor: pointer;
   transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
@@ -91,7 +91,7 @@
 
 .learn-demo__submit:disabled {
   border-color: rgba(255, 113, 108, 0.18);
-  background: rgba(255, 113, 108, 0.08);
+  background: var(--umpire-demo-red-8);
   color: rgba(245, 247, 244, 0.42);
   cursor: not-allowed;
 }
@@ -102,11 +102,11 @@
   gap: 0.65rem;
   width: 100%;
   padding: 0.72rem 0.78rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--umpire-demo-white-8);
   border-radius: 0.72rem;
   background: rgba(255, 255, 255, 0.035);
   color: var(--umpire-demo-text);
-  font-family: 'Work Sans', sans-serif;
+  font-family: var(--umpire-demo-font-body);
   font-size: 0.9rem;
   cursor: pointer;
 }

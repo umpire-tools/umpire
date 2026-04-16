@@ -1,7 +1,7 @@
 .freight-demo {
   --umpire-demo-field-disabled-bg:
-    linear-gradient(135deg, rgba(255, 113, 108, 0.08), transparent 50%),
-    rgba(255, 255, 255, 0.02);
+    linear-gradient(135deg, var(--umpire-demo-red-8), transparent 50%),
+    var(--umpire-demo-white-2);
   --umpire-demo-field-disabled-border-color: rgba(255, 113, 108, 0.14);
   --umpire-demo-field-disabled-opacity: 1;
 }
@@ -15,7 +15,7 @@
 .freight-demo__panel {
   min-width: 0;
   border: 1px solid var(--umpire-demo-border);
-  border-radius: 1rem;
+  border-radius: var(--umpire-demo-radius-lg);
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(107, 254, 156, 0.035), transparent 18%),
@@ -27,12 +27,12 @@
   display: grid;
   gap: 0.7rem;
   padding: 0.95rem 1rem;
-  border: 1px solid rgba(107, 254, 156, 0.18);
-  border-radius: 1rem;
+  border: 1px solid var(--umpire-demo-green-18);
+  border-radius: var(--umpire-demo-radius-lg);
   background:
     linear-gradient(135deg, rgba(107, 254, 156, 0.1), rgba(254, 208, 35, 0.06)),
-    rgba(255, 255, 255, 0.02);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    var(--umpire-demo-white-2);
+  box-shadow: inset 0 1px 0 var(--umpire-demo-white-4);
 }
 
 .freight-demo__badge {
@@ -42,16 +42,16 @@
   justify-content: center;
   min-height: 2rem;
   padding: 0.4rem 0.72rem;
-  border-radius: 999px;
-  border: 1px solid rgba(107, 254, 156, 0.28);
+  border-radius: var(--umpire-demo-radius-pill);
+  border: 1px solid var(--umpire-demo-green-28);
   background: rgba(14, 14, 14, 0.9);
   color: var(--umpire-demo-green);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
-  box-shadow: 0 0 22px rgba(107, 254, 156, 0.14);
+  box-shadow: 0 0 22px var(--umpire-demo-green-14);
 }
 
 .freight-demo__callout-text {
@@ -68,11 +68,6 @@
 
 .freight-demo__group-label {
   padding: 0 0.15rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.64rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--umpire-demo-text-muted);
 }
 
 .freight-demo__group-fields {
@@ -91,7 +86,7 @@
   align-items: flex-start;
   gap: 0.7rem;
   padding: 0.78rem 0.82rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--umpire-demo-white-8);
   border-radius: var(--umpire-demo-input-radius);
   background: var(--umpire-demo-input-bg);
   color: var(--umpire-demo-text);

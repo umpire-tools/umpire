@@ -2,20 +2,20 @@
   --umpire-demo-root-padding: 1rem;
   --umpire-demo-root-radius: 1.2rem;
   --umpire-demo-root-accent-primary-position: top right;
-  --umpire-demo-root-accent-primary: rgba(107, 254, 156, 0.16);
+  --umpire-demo-root-accent-primary: var(--umpire-demo-green-16);
   --umpire-demo-root-accent-primary-size: 34%;
   --umpire-demo-root-accent-secondary-position: bottom left;
   --umpire-demo-root-accent-secondary: rgba(254, 208, 35, 0.1);
   --umpire-demo-root-accent-secondary-size: 32%;
   --umpire-demo-root-highlight-stop: 24%;
-  --calendar-demo-panel-border: rgba(107, 254, 156, 0.12);
-  --calendar-demo-soft-border: rgba(255, 255, 255, 0.08);
-  --calendar-demo-soft-surface: rgba(255, 255, 255, 0.03);
+  --calendar-demo-panel-border: var(--umpire-demo-green-12);
+  --calendar-demo-soft-border: var(--umpire-demo-white-8);
+  --calendar-demo-soft-surface: var(--umpire-demo-white-3);
   --calendar-demo-soft-surface-strong: rgba(255, 255, 255, 0.045);
-  --calendar-demo-green-soft: rgba(107, 254, 156, 0.16);
+  --calendar-demo-green-soft: var(--umpire-demo-green-16);
   --calendar-demo-yellow-soft: rgba(254, 208, 35, 0.14);
   --calendar-demo-red-soft: rgba(255, 113, 108, 0.16);
-  --calendar-demo-day-shadow: 0 0 22px rgba(107, 254, 156, 0.12);
+  --calendar-demo-day-shadow: 0 0 22px var(--umpire-demo-green-12);
 }
 
 .sl-markdown-content .calendar-demo section + section,
@@ -35,10 +35,10 @@
 .calendar-demo__panel {
   min-width: 0;
   border: 1px solid var(--umpire-demo-border);
-  border-radius: 1rem;
+  border-radius: var(--umpire-demo-radius-lg);
   overflow: hidden;
   background:
-    linear-gradient(180deg, rgba(107, 254, 156, 0.04), transparent 20%),
+    linear-gradient(180deg, var(--umpire-demo-green-4), transparent 20%),
     var(--umpire-demo-surface);
   backdrop-filter: blur(18px);
 }
@@ -52,32 +52,30 @@
   padding: 0.95rem 1rem 0.85rem;
   border-bottom: 1px solid rgba(107, 254, 156, 0.1);
   background:
-    linear-gradient(90deg, rgba(107, 254, 156, 0.08), transparent 58%),
-    rgba(255, 255, 255, 0.02);
+    linear-gradient(90deg, var(--umpire-demo-green-8), transparent 58%),
+    var(--umpire-demo-white-2);
 }
 
-.calendar-demo__eyebrow,
 .calendar-demo__accent,
 .calendar-demo__group-kicker,
-.calendar-demo__label,
 .calendar-demo__suffix,
-.calendar-demo__weekday,
 .calendar-demo__table th,
 .calendar-demo__status-text {
-  font-family: 'JetBrains Mono', monospace;
-  letter-spacing: 0.12em;
+  font-family: var(--umpire-demo-font-mono);
+  letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
 }
 
 .calendar-demo__eyebrow {
   font-size: 0.64rem;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   color: var(--umpire-demo-text-muted);
 }
 
 .calendar-demo__title,
 .calendar-demo__panel-title {
   margin: 0.25rem 0 0;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--umpire-demo-font-heading);
   font-size: 1.22rem;
   line-height: 1.08;
   color: var(--umpire-demo-text);
@@ -102,7 +100,7 @@
   gap: 0.75rem;
   padding: 0.85rem;
   border: 1px solid var(--calendar-demo-panel-border);
-  border-radius: 0.95rem;
+  border-radius: var(--umpire-demo-radius-md);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 56%),
     rgba(255, 255, 255, 0.018);
@@ -145,8 +143,8 @@
   flex-direction: column;
   gap: 0.42rem;
   padding: 0.78rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 0.85rem;
+  border: 1px solid var(--umpire-demo-white-6);
+  border-radius: var(--umpire-demo-radius-md);
   background: var(--calendar-demo-soft-surface);
   transition: border-color 0.18s ease, background 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
 }
@@ -183,6 +181,7 @@
 
 .calendar-demo__label {
   font-size: 0.62rem;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   color: var(--umpire-demo-text-muted);
 }
 
@@ -234,7 +233,7 @@
 }
 
 .calendar-demo__input:focus {
-  border-color: rgba(107, 254, 156, 0.28);
+  border-color: var(--umpire-demo-green-28);
 }
 
 .calendar-demo__input::placeholder {
@@ -248,15 +247,15 @@
 
 .calendar-demo__action,
 .calendar-demo__nav-button {
-  border: 1px solid rgba(107, 254, 156, 0.28);
-  border-radius: 999px;
+  border: 1px solid var(--umpire-demo-green-28);
+  border-radius: var(--umpire-demo-radius-pill);
   padding: 0.72rem 0.95rem;
-  background: rgba(107, 254, 156, 0.12);
+  background: var(--umpire-demo-green-12);
   color: var(--umpire-demo-green);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--umpire-demo-tracking);
   text-transform: uppercase;
   cursor: pointer;
 }
@@ -276,8 +275,8 @@
 
 .calendar-demo__action:hover,
 .calendar-demo__nav-button:hover {
-  background: rgba(107, 254, 156, 0.18);
-  box-shadow: 0 0 18px rgba(107, 254, 156, 0.12);
+  background: var(--umpire-demo-green-18);
+  box-shadow: 0 0 18px var(--umpire-demo-green-12);
 }
 
 .calendar-demo__action:disabled,
@@ -297,11 +296,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.42rem;
-  border-radius: 999px;
+  border-radius: var(--umpire-demo-radius-pill);
   padding: 0.45rem 0.72rem;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--umpire-demo-white-4);
   color: var(--umpire-demo-text);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.72rem;
 }
 
@@ -342,9 +341,9 @@
 .calendar-demo__toggle {
   border-radius: 0.74rem;
   padding: 0.66rem 0.5rem;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--umpire-demo-white-4);
   color: var(--umpire-demo-text-dim);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.69rem;
   font-weight: 600;
   text-align: center;
@@ -356,10 +355,10 @@
 
 .calendar-demo__toggle--active {
   border-color: rgba(107, 254, 156, 0.26);
-  background: rgba(107, 254, 156, 0.16);
+  background: var(--umpire-demo-green-16);
   color: var(--umpire-demo-green);
   box-shadow:
-    inset 0 0 0 1px rgba(107, 254, 156, 0.16),
+    inset 0 0 0 1px var(--umpire-demo-green-16),
     0 0 18px rgba(107, 254, 156, 0.1);
 }
 
@@ -387,8 +386,8 @@
   width: 3.4rem;
   height: 1.95rem;
   border: 1px solid var(--calendar-demo-soft-border);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--umpire-demo-radius-pill);
+  background: var(--umpire-demo-white-6);
   transition: background 0.18s ease, border-color 0.18s ease;
 }
 
@@ -399,14 +398,14 @@
   left: 0.2rem;
   width: 1.34rem;
   height: 1.34rem;
-  border-radius: 50%;
+  border-radius: var(--umpire-demo-radius-pill);
   background: rgba(255, 255, 255, 0.76);
   transition: transform 0.18s ease, background 0.18s ease;
 }
 
 .calendar-demo__switch input:checked + .calendar-demo__switch-track {
-  border-color: rgba(107, 254, 156, 0.28);
-  background: rgba(107, 254, 156, 0.18);
+  border-color: var(--umpire-demo-green-28);
+  background: var(--umpire-demo-green-18);
 }
 
 .calendar-demo__switch input:checked + .calendar-demo__switch-track::after {
@@ -453,7 +452,7 @@
 .calendar-demo__hint {
   margin: 0;
   padding: 0.6rem 0.78rem;
-  border: 1px solid rgba(254, 208, 35, 0.18);
+  border: 1px solid var(--umpire-demo-yellow-18);
   border-radius: 0.72rem;
   background: rgba(254, 208, 35, 0.06);
   color: rgba(254, 208, 35, 0.82);
@@ -464,8 +463,8 @@
 .calendar-demo__hint code {
   padding: 0.1em 0.3em;
   border-radius: 0.3em;
-  background: rgba(254, 208, 35, 0.12);
-  font-family: 'JetBrains Mono', monospace;
+  background: var(--umpire-demo-yellow-12);
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.85em;
   color: rgba(254, 208, 35, 0.95);
 }
@@ -480,6 +479,7 @@
 .calendar-demo__weekday {
   text-align: center;
   font-size: 0.6rem;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   color: var(--umpire-demo-text-muted);
 }
 
@@ -499,10 +499,10 @@
   min-height: 4.75rem;
   padding: 0.58rem;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 0.9rem;
+  border-radius: var(--umpire-demo-radius-md);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 56%),
-    rgba(255, 255, 255, 0.02);
+    var(--umpire-demo-white-2);
   overflow: hidden;
 }
 
@@ -516,7 +516,7 @@
   position: absolute;
   inset: auto 0.58rem 0.58rem;
   height: 0.18rem;
-  border-radius: 999px;
+  border-radius: var(--umpire-demo-radius-pill);
   background: transparent;
 }
 
@@ -526,8 +526,8 @@
   justify-content: center;
   min-width: 1.8rem;
   padding: 0.24rem 0.4rem;
-  border-radius: 999px;
-  font-family: 'JetBrains Mono', monospace;
+  border-radius: var(--umpire-demo-radius-pill);
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.76rem;
   color: var(--umpire-demo-text);
 }
@@ -541,7 +541,7 @@
 .calendar-demo__day-marker {
   width: 0.5rem;
   height: 0.5rem;
-  border-radius: 50%;
+  border-radius: var(--umpire-demo-radius-pill);
   background: rgba(255, 255, 255, 0.2);
 }
 
@@ -561,9 +561,9 @@
 }
 
 .calendar-demo__day--active {
-  border-color: rgba(107, 254, 156, 0.24);
+  border-color: var(--umpire-demo-green-24);
   background:
-    linear-gradient(180deg, rgba(107, 254, 156, 0.18), rgba(107, 254, 156, 0.08)),
+    linear-gradient(180deg, var(--umpire-demo-green-18), var(--umpire-demo-green-8)),
     rgba(255, 255, 255, 0.022);
   box-shadow: var(--calendar-demo-day-shadow);
 }
@@ -579,9 +579,9 @@
 
 .calendar-demo__day--excluded {
   border-style: dashed;
-  border-color: rgba(254, 208, 35, 0.24);
+  border-color: var(--umpire-demo-yellow-24);
   background:
-    linear-gradient(180deg, rgba(254, 208, 35, 0.12), transparent 70%),
+    linear-gradient(180deg, var(--umpire-demo-yellow-12), transparent 70%),
     rgba(255, 255, 255, 0.018);
 }
 
@@ -593,7 +593,7 @@
 
 .calendar-demo__day--outside-window,
 .calendar-demo__day--adjacent {
-  border-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--umpire-demo-white-4);
   background: rgba(255, 255, 255, 0.012);
 }
 
@@ -612,8 +612,8 @@
 
 .calendar-demo__day--today {
   box-shadow:
-    inset 0 0 0 1px rgba(254, 208, 35, 0.28),
-    0 0 20px rgba(254, 208, 35, 0.08);
+    inset 0 0 0 1px var(--umpire-demo-yellow-28),
+    0 0 20px var(--umpire-demo-yellow-8);
 }
 
 .calendar-demo__legend {
@@ -630,14 +630,14 @@
 .calendar-demo__legend-swatch {
   width: 0.72rem;
   height: 0.72rem;
-  border-radius: 50%;
+  border-radius: var(--umpire-demo-radius-pill);
 }
 
 .calendar-demo__table-shell {
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 0.9rem;
+  border: 1px solid var(--umpire-demo-white-6);
+  border-radius: var(--umpire-demo-radius-md);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--umpire-demo-white-2);
 }
 
 .calendar-demo__table {
@@ -655,7 +655,7 @@
 }
 
 .calendar-demo__table th {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--umpire-demo-white-3);
   font-size: 0.62rem;
   color: var(--umpire-demo-text-muted);
 }
@@ -678,7 +678,7 @@
 .calendar-demo__status-dot {
   width: 0.48rem;
   height: 0.48rem;
-  border-radius: 50%;
+  border-radius: var(--umpire-demo-radius-pill);
   box-shadow: 0 0 10px currentColor;
 }
 

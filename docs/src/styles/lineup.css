@@ -1,7 +1,7 @@
 /* Lineup Card Demo — BEM */
 
 .lineup {
-  font-family: 'Work Sans', sans-serif;
+  font-family: var(--umpire-demo-font-body);
   color: #f9f9f9;
 }
 
@@ -21,7 +21,7 @@
   border-radius: 6px;
   border: 1px solid;
   cursor: pointer;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.8rem;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -42,19 +42,19 @@
 }
 
 .lineup__toggle--red {
-  background: rgba(255, 113, 108, 0.12);
+  background: var(--umpire-demo-red-12);
   border-color: rgba(255, 113, 108, 0.3);
   color: #ff716c;
 }
 
 .lineup__toggle--dim {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--umpire-demo-white-4);
   border-color: rgba(255, 255, 255, 0.12);
   color: rgba(245, 247, 244, 0.5);
 }
 
 .lineup__toggle--dim:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--umpire-demo-white-8);
   color: rgba(245, 247, 244, 0.75);
 }
 
@@ -66,14 +66,14 @@
   padding: 0.6rem 1rem;
   margin-bottom: 1rem;
   background:
-    linear-gradient(135deg, rgba(254, 208, 35, 0.08), transparent 45%),
+    linear-gradient(135deg, var(--umpire-demo-yellow-8), transparent 45%),
     rgba(18, 18, 18, 0.96);
 }
 
 .lineup__fouls-title {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.65rem;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
   color: #fed023;
   margin-bottom: 0.4rem;
@@ -118,12 +118,12 @@
 }
 
 .lineup__panel--roster {
-  border: 1px solid rgba(107, 254, 156, 0.12);
+  border: 1px solid var(--umpire-demo-green-12);
   background: rgba(18, 18, 18, 0.96);
 }
 
 .lineup__panel--card {
-  border: 1px solid rgba(254, 208, 35, 0.12);
+  border: 1px solid var(--umpire-demo-yellow-12);
   background: rgba(18, 18, 18, 0.96);
 }
 
@@ -131,9 +131,9 @@
   display: flex;
   justify-content: space-between;
   padding: 0.5rem 0.75rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.65rem;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
   color: #a0a0a0;
 }
@@ -165,7 +165,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.35rem 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--umpire-demo-white-4);
   transition: opacity 0.2s;
 }
 
@@ -223,7 +223,7 @@
 
 .lineup__player-pos,
 .lineup__player-bt {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.65rem;
   color: #a0a0a0;
 }
@@ -240,7 +240,7 @@
 /* Status badges */
 
 .lineup__badge {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.6rem;
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
@@ -262,7 +262,7 @@
 .lineup__injury-btn {
   margin: 0;
   padding: 0.15rem 0.3rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--umpire-demo-white-8);
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.7rem;
@@ -270,7 +270,7 @@
 }
 
 .lineup__injury-btn--clear {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--umpire-demo-white-4);
   color: #666;
 }
 
@@ -282,7 +282,7 @@
 /* Lineup slot rows */
 
 .lineup__slot {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--umpire-demo-white-4);
 }
 
 .lineup__slot--sp {
@@ -303,7 +303,7 @@
 }
 
 .lineup__slot-order {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.7rem;
   font-weight: 700;
   width: 1.5rem;
@@ -316,14 +316,14 @@
 }
 
 .lineup__slot-pos {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.6rem;
   color: #a0a0a0;
   width: 1.8rem;
   text-align: center;
   padding: 0.1rem 0;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--umpire-demo-white-4);
 }
 
 .lineup__slot-name {
@@ -334,7 +334,7 @@
 }
 
 .lineup__slot-bt {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.6rem;
   color: #a0a0a0;
 }
@@ -378,7 +378,7 @@
 }
 
 .lineup__eligible-option:hover {
-  background: rgba(107, 254, 156, 0.08);
+  background: var(--umpire-demo-green-8);
 }
 
 .lineup__eligible-dot {
@@ -395,7 +395,7 @@
 }
 
 .lineup__eligible-bt {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--umpire-demo-font-mono);
   font-size: 0.6rem;
   color: #a0a0a0;
 }
