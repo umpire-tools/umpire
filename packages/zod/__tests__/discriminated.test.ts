@@ -49,6 +49,27 @@ describe('deriveOneOf', () => {
     expect(withBank.cardNumber.enabled).toBe(false)
     expect(withBank.cvv.enabled).toBe(false)
   })
+
+  test('all branch fields enabled when discriminator is not set', () => {
+    const rule = deriveOneOf(paymentSchema, { groupName: 'payment' })
+
+    const u = umpire({
+      fields: {
+        method: { required: true },
+        cardNumber: { required: true },
+        cvv: { required: true },
+        routingNumber: { required: true },
+        accountNumber: { required: true },
+      },
+      rules: [rule],
+    })
+
+    const initial = u.check({})
+    expect(initial.cardNumber.enabled).toBe(true)
+    expect(initial.cvv.enabled).toBe(true)
+    expect(initial.routingNumber.enabled).toBe(true)
+    expect(initial.accountNumber.enabled).toBe(true)
+  })
 })
 
 describe('deriveDiscriminatedFields', () => {
@@ -151,6 +172,71 @@ describe('deriveDiscriminatedFields', () => {
     expect(withCard.cvv.enabled).toBe(true)
     expect(withCard.routingNumber.enabled).toBe(false)
     expect(withCard.accountNumber.enabled).toBe(false)
+  })
+
+  test('branchNames with exclude: fields correctly derived when both options used', () => {
+    const schema = z.discriminatedUnion('kind', [
+      z.object({
+        kind: z.literal('a'),
+        fieldA: z.string(),
+        commonField: z.string(),
+      }),
+      z.object({
+        kind: z.literal('b'),
+        fieldB: z.number(),
+        commonField: z.string(),
+      }),
+    ])
+
+    const { fields, rule } = deriveDiscriminatedFields(schema, {
+      groupName: 'combined',
+      branchNames: { a: 'typeA', b: 'typeB' },
+      exclude: ['commonField'],
+    })
+
+    // Verify commonField is excluded
+    expect(fields.commonField).toBeUndefined()
+    // Verify other fields are present
+    expect(fields.fieldA.required).toBe(true)
+    expect(fields.fieldB.required).toBe(true)
+    expect(fields.kind.required).toBe(true)
+
+    // Verify the rule works end-to-end with the remapped branch names
+    const u = umpire({
+      fields: {
+        kind: { required: true },
+        fieldA: { required: true },
+        fieldB: { required: true },
+      },
+      rules: [rule],
+    })
+
+    const withTypeA = u.check({ kind: 'typeA' })
+    expect(withTypeA.fieldA.enabled).toBe(true)
+    expect(withTypeA.fieldB.enabled).toBe(false)
+
+    const withTypeB = u.check({ kind: 'typeB' })
+    expect(withTypeB.fieldB.enabled).toBe(true)
+    expect(withTypeB.fieldA.enabled).toBe(false)
+  })
+
+  test('overlapping fields across variants throws at oneOf validation', () => {
+    const schema = z.discriminatedUnion('kind', [
+      z.object({
+        kind: z.literal('a'),
+        shared: z.string(),
+        onlyA: z.string(),
+      }),
+      z.object({
+        kind: z.literal('b'),
+        shared: z.string().optional(),
+        onlyB: z.number(),
+      }),
+    ])
+
+    expect(() =>
+      deriveDiscriminatedFields(schema, { groupName: 'overlap' }),
+    ).toThrow('field "shared" appears in multiple branches')
   })
 })
 
