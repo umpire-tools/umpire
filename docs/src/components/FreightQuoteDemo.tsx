@@ -4,7 +4,7 @@ import { enabledWhen, oneOf, requires, umpire } from '@umpire/core'
 import { register } from '@umpire/devtools/slim'
 import { reactiveUmp, type ReactiveUmpire, type SignalProtocol } from '@umpire/signals'
 import { computed, effect, signal } from '@preact/signals'
-import '../styles/freight-demo.css'
+import '../styles/components/_components.freight-demo.css'
 
 const fields = {
   accountType:      { required: true, default: 'personal', isEmpty: (v: unknown) => !v },
@@ -271,28 +271,28 @@ function FieldControl({
   return (
     <div
       class={cls(
-        'umpire-demo__field',
-        !enabled && 'umpire-demo__field--disabled',
-        foul && 'umpire-demo__field--fouled',
-        isHidden && 'freight-demo__field--hidden',
+        'c-umpire-demo__field',
+        !enabled && 'c-umpire-demo__field is-disabled',
+        foul && 'c-umpire-demo__field is-fouled',
+        isHidden && 'c-freight-demo__field is-hidden',
       )}
     >
-      <div class="umpire-demo__field-header">
-        <div class="umpire-demo__field-label">
+      <div class="c-umpire-demo__field-header">
+        <div class="c-umpire-demo__field-label">
           <label for={controlId}>{meta.label}</label>
           {required && (
-            <span class="umpire-demo__required-pill">required</span>
+            <span class="c-umpire-demo__required-pill">required</span>
           )}
         </div>
         <span
           class={cls(
-            'umpire-demo__status',
-            foul ? 'umpire-demo__status--fouled' :
-            enabled ? 'umpire-demo__status--enabled' : 'umpire-demo__status--disabled',
+            'c-umpire-demo__status',
+            foul ? 'c-umpire-demo__status is-fouled' :
+            enabled ? 'c-umpire-demo__status is-enabled' : 'c-umpire-demo__status is-disabled',
           )}
         >
-          <span class="umpire-demo__status-dot" />
-          <span class="umpire-demo__status-text">
+          <span class="c-umpire-demo__status-dot" />
+          <span class="c-umpire-demo__status-text">
             {foul ? 'fouled' : enabled ? 'enabled' : 'disabled'}
           </span>
         </span>
@@ -301,7 +301,7 @@ function FieldControl({
       {meta.kind === 'select' && (
         <select
           id={controlId}
-          class="umpire-demo__input"
+          class="c-umpire-demo__input"
           disabled={!enabled}
           value={typeof value === 'string' ? value : ''}
           onChange={(event) => reactive.set(field, event.currentTarget.value)}
@@ -317,7 +317,7 @@ function FieldControl({
       {meta.kind === 'text' && (
         <input
           id={controlId}
-          class="umpire-demo__input"
+          class="c-umpire-demo__input"
           type="text"
           disabled={!enabled}
           placeholder={meta.placeholder}
@@ -327,7 +327,7 @@ function FieldControl({
       )}
 
       {meta.kind === 'checkbox' && (
-        <label class="freight-demo__checkbox-row" for={controlId}>
+        <label class="c-freight-demo__checkbox-row" for={controlId}>
           <input
             id={controlId}
             type="checkbox"
@@ -340,11 +340,11 @@ function FieldControl({
       )}
 
       {foul && (
-        <div class="umpire-demo__field-foul">
-          <span class="umpire-demo__field-foul-reason">{foul.reason}</span>
+        <div class="c-umpire-demo__field-foul">
+          <span class="c-umpire-demo__field-foul-reason">{foul.reason}</span>
           <button
             type="button"
-            class="umpire-demo__field-foul-reset"
+            class="c-umpire-demo__field-foul-reset"
             onClick={() => reactive.set(field, foul.suggestedValue)}
           >
             Reset
@@ -353,7 +353,7 @@ function FieldControl({
       )}
 
       {!foul && !enabled && reason && (
-        <div class="umpire-demo__field-reason">{reason}</div>
+        <div class="c-umpire-demo__field-reason">{reason}</div>
       )}
     </div>
   )
@@ -369,25 +369,25 @@ function ConditionToggle({
   onChange: (next: boolean) => void
 }) {
   return (
-    <div class="umpire-demo__field">
-      <div class="umpire-demo__field-header">
-        <div class="umpire-demo__field-label">
+    <div class="c-umpire-demo__field">
+      <div class="c-umpire-demo__field-header">
+        <div class="c-umpire-demo__field-label">
           <span>{label}</span>
         </div>
         <span
           class={cls(
-            'umpire-demo__status',
-            value ? 'umpire-demo__status--enabled' : 'umpire-demo__status--disabled',
+            'c-umpire-demo__status',
+            value ? 'c-umpire-demo__status is-enabled' : 'c-umpire-demo__status is-disabled',
           )}
         >
-          <span class="umpire-demo__status-dot" />
-          <span class="umpire-demo__status-text">
+          <span class="c-umpire-demo__status-dot" />
+          <span class="c-umpire-demo__status-text">
             {value ? 'active' : 'inactive'}
           </span>
         </span>
       </div>
 
-      <div class="umpire-demo__plan-toggle" aria-label={label}>
+      <div class="c-umpire-demo__plan-toggle" aria-label={label}>
         {[
           { label: 'Off', value: false },
           { label: 'On', value: true },
@@ -397,8 +397,8 @@ function ConditionToggle({
             type="button"
             aria-pressed={value === option.value}
             class={cls(
-              'umpire-demo__plan-option',
-              value === option.value && 'umpire-demo__plan-option--active',
+              'c-umpire-demo__plan-option',
+              value === option.value && 'c-umpire-demo__plan-option is-active',
             )}
             onClick={() => onChange(option.value)}
           >
@@ -448,36 +448,36 @@ export default function FreightQuoteDemo() {
   register('freight-quote', freightUmp, values, conditions)
 
   return (
-    <div class="freight-demo umpire-demo">
-      <div class="freight-demo__panel">
-        <div class="umpire-demo__panel-header">
+    <div class="c-freight-demo c-umpire-demo">
+      <div class="c-freight-demo__panel">
+        <div class="c-umpire-demo__panel-header">
           <div>
-            <div class="umpire-demo__eyebrow">Signals Adapter</div>
-            <h2 class="umpire-demo__title">Freight Quote</h2>
+            <div class="c-umpire-demo__eyebrow">Signals Adapter</div>
+            <h2 class="c-umpire-demo__title">Freight Quote</h2>
           </div>
-          <span class="umpire-demo__panel-accent">reactiveUmp()</span>
+          <span class="c-umpire-demo__panel-accent">reactiveUmp()</span>
         </div>
 
-        <div class="umpire-demo__panel-body">
-          <div class="freight-demo__callout">
-            <span class="freight-demo__badge">5 rule types</span>
-            <p class="freight-demo__callout-text">
+        <div class="c-umpire-demo__panel-body">
+          <div class="c-freight-demo__callout">
+            <span class="c-freight-demo__badge">5 rule types</span>
+            <p class="c-freight-demo__callout-text">
               Quote logic mixes predicate requirements, direct field dependencies,
               mutually exclusive handling branches, admin gating, and promo locks
               without hand-written orchestration code.
             </p>
           </div>
 
-          <div class="umpire-demo__conditions">
-            <span class="umpire-demo__conditions-label">Conditions</span>
-            <code class="umpire-demo__conditions-code">
+          <div class="c-umpire-demo__conditions">
+            <span class="c-umpire-demo__conditions-label">Conditions</span>
+            <code class="c-umpire-demo__conditions-code">
               {`{ isAdmin: ${conditions.isAdmin}, promoActive: ${conditions.promoActive} }`}
             </code>
           </div>
 
-          <section class="freight-demo__field-group">
-            <div class="freight-demo__group-label umpire-demo__eyebrow">Conditions</div>
-            <div class="freight-demo__group-fields">
+          <section class="c-freight-demo__field-group">
+            <div class="c-freight-demo__group-label c-umpire-demo__eyebrow">Conditions</div>
+            <div class="c-freight-demo__group-fields">
               <ConditionToggle
                 label="Admin Mode"
                 value={conditions.isAdmin}
@@ -492,23 +492,23 @@ export default function FreightQuoteDemo() {
           </section>
 
           {fouls.length > 0 && (
-            <div class="umpire-demo__fouls">
-              <div class="umpire-demo__fouls-copy">
-                <div class="umpire-demo__fouls-kicker">Fouls</div>
-                <div class="umpire-demo__fouls-list">
+            <div class="c-umpire-demo__fouls">
+              <div class="c-umpire-demo__fouls-copy">
+                <div class="c-umpire-demo__fouls-kicker">Fouls</div>
+                <div class="c-umpire-demo__fouls-list">
                   {fouls.map((foul) => (
-                    <div key={foul.field} class="umpire-demo__foul">
-                      <span class="umpire-demo__foul-field">
+                    <div key={foul.field} class="c-umpire-demo__foul">
+                      <span class="c-umpire-demo__foul-field">
                         {fieldMeta[foul.field].label}
                       </span>
-                      <span class="umpire-demo__foul-reason">{foul.reason}</span>
+                      <span class="c-umpire-demo__foul-reason">{foul.reason}</span>
                     </div>
                   ))}
                 </div>
               </div>
               <button
                 type="button"
-                class="umpire-demo__reset-button"
+                class="c-umpire-demo__reset-button"
                 onClick={() => {
                   for (const foul of fouls) {
                     reactive.set(foul.field, foul.suggestedValue)
@@ -520,7 +520,7 @@ export default function FreightQuoteDemo() {
             </div>
           )}
 
-          <div class="umpire-demo__fields">
+          <div class="c-umpire-demo__fields">
             {fieldGroups.map((group) => {
               const visibleFields = group.fields.filter((field) => !isFieldHidden(field, values, conditions))
 
@@ -529,9 +529,9 @@ export default function FreightQuoteDemo() {
               }
 
               return (
-                <section key={group.label} class="freight-demo__field-group">
-                  <div class="freight-demo__group-label umpire-demo__eyebrow">{group.label}</div>
-                  <div class="freight-demo__group-fields">
+                <section key={group.label} class="c-freight-demo__field-group">
+                  <div class="c-freight-demo__group-label c-umpire-demo__eyebrow">{group.label}</div>
+                  <div class="c-freight-demo__group-fields">
                     {group.fields.map((field) => (
                       <FieldControl
                         key={field}
@@ -549,12 +549,12 @@ export default function FreightQuoteDemo() {
             })}
           </div>
 
-          <section class="umpire-demo__json-shell">
-            <div class="umpire-demo__json-header">
-              <span class="umpire-demo__json-title">signal state</span>
-              <span class="umpire-demo__json-meta">@preact/signals</span>
+          <section class="c-umpire-demo__json-shell">
+            <div class="c-umpire-demo__json-header">
+              <span class="c-umpire-demo__json-title">signal state</span>
+              <span class="c-umpire-demo__json-meta">@preact/signals</span>
             </div>
-            <pre class="umpire-demo__code-block">
+            <pre class="c-umpire-demo__code-block">
               <code>{prettyJson({ conditions, values, fouls })}</code>
             </pre>
           </section>

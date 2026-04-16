@@ -1,4 +1,4 @@
-.umpire-lineup-demo {
+.c-lineup-demo {
   position: relative;
   padding: 1.25rem 1.5rem;
   border: 1px solid var(--umpire-demo-green-12);
@@ -7,4 +7,406 @@
     linear-gradient(135deg, var(--umpire-demo-green-4), transparent 40%),
     rgba(14, 14, 14, 0.96);
   box-shadow: var(--umpire-glow);
+}
+
+/* Lineup Card Demo — BEM */
+
+.c-lineup {
+  font-family: var(--umpire-demo-font-body);
+  color: #f9f9f9;
+}
+
+/* Controls */
+
+.c-lineup__controls {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: stretch;
+  margin-bottom: 1rem;
+}
+
+.c-lineup__toggle {
+  margin: 0;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.c-lineup__toggle--green {
+  background: rgba(107, 254, 156, 0.15);
+  border-color: rgba(107, 254, 156, 0.4);
+  color: #6bfe9c;
+}
+
+.c-lineup__toggle--yellow {
+  background: rgba(254, 208, 35, 0.15);
+  border-color: rgba(254, 208, 35, 0.4);
+  color: #fed023;
+}
+
+.c-lineup__toggle--red {
+  background: var(--umpire-demo-red-12);
+  border-color: rgba(255, 113, 108, 0.3);
+  color: #ff716c;
+}
+
+.c-lineup__toggle--dim {
+  background: var(--umpire-demo-white-4);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: rgba(245, 247, 244, 0.5);
+}
+
+.c-lineup__toggle--dim:hover {
+  background: var(--umpire-demo-white-8);
+  color: rgba(245, 247, 244, 0.75);
+}
+
+/* Fouls */
+
+.c-lineup__fouls {
+  border: 1px solid rgba(254, 208, 35, 0.3);
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  background:
+    linear-gradient(135deg, var(--umpire-demo-yellow-8), transparent 45%),
+    rgba(18, 18, 18, 0.96);
+}
+
+.c-lineup__fouls-title {
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.65rem;
+  letter-spacing: var(--umpire-demo-tracking-wide);
+  text-transform: uppercase;
+  color: #fed023;
+  margin-bottom: 0.4rem;
+}
+
+.c-lineup__foul {
+  font-size: 0.8rem;
+  color: #f9f9f9;
+  margin-bottom: 0.15rem;
+}
+
+.c-lineup__foul-reason {
+  color: #a0a0a0;
+}
+
+/* Two-panel layout */
+
+.c-lineup__panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (min-width: 50rem) {
+  .sl-markdown-content .c-lineup__panels .c-lineup__panel + .c-lineup__panel {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 50rem) {
+  .c-lineup__panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Panel (shared) */
+
+.c-lineup__panel {
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.c-lineup__panel--roster {
+  border: 1px solid var(--umpire-demo-green-12);
+  background: rgba(18, 18, 18, 0.96);
+}
+
+.c-lineup__panel--card {
+  border: 1px solid var(--umpire-demo-yellow-12);
+  background: rgba(18, 18, 18, 0.96);
+}
+
+.c-lineup__panel-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.65rem;
+  letter-spacing: var(--umpire-demo-tracking-wide);
+  text-transform: uppercase;
+  color: #a0a0a0;
+}
+
+.c-lineup__panel-header--roster {
+  background: rgba(107, 254, 156, 0.06);
+}
+
+.c-lineup__panel-header--card {
+  background: rgba(254, 208, 35, 0.06);
+}
+
+.c-lineup__panel-accent--green {
+  color: #6bfe9c;
+}
+
+.c-lineup__panel-accent--yellow {
+  color: #fed023;
+}
+
+.c-lineup__panel-body {
+  padding: 0.25rem 0;
+}
+
+/* Roster rows */
+
+.c-lineup__player {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--umpire-demo-white-4);
+  transition: opacity 0.2s;
+}
+
+.c-lineup__player.is-available {
+  opacity: 1;
+}
+
+.c-lineup__player.is-assigned > .c-lineup__player-name{
+  opacity: 0.4;
+}
+
+.c-lineup__player.is-disabled {
+  opacity: 0.35;
+}
+
+.c-lineup__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.c-lineup__dot--green {
+  background: #6bfe9c;
+  box-shadow: 0 0 5px #6bfe9c;
+}
+
+.c-lineup__dot--red {
+  background: #ff716c;
+  box-shadow: 0 0 5px #ff716c;
+}
+
+.c-lineup__dot--dim {
+  background: #a0a0a0;
+}
+
+.c-lineup__player-name {
+  flex: 1;
+  font-size: 0.8rem;
+}
+
+.c-lineup__player-name.is-active {
+  font-weight: 600;
+  color: #f9f9f9;
+}
+
+.c-lineup__player-name.is-inactive {
+  font-weight: 400;
+  color: #666;
+}
+
+.c-lineup__player-name.is-struck {
+  text-decoration: line-through;
+}
+
+.c-lineup__player-pos,
+.c-lineup__player-bt {
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.65rem;
+  color: #a0a0a0;
+}
+
+.c-lineup__player-pos {
+  min-width: 2.5rem;
+}
+
+.c-lineup__player-bt {
+  width: 2rem;
+  text-align: center;
+}
+
+/* Status badges */
+
+.c-lineup__badge {
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.6rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.c-lineup__badge--out {
+  color: #ff716c;
+  background: rgba(255, 113, 108, 0.1);
+}
+
+.c-lineup__badge--in {
+  color: #6bfe9c;
+  background: rgba(107, 254, 156, 0.1);
+}
+
+/* Injury button */
+
+.c-lineup__injury-btn {
+  margin: 0;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid var(--umpire-demo-white-8);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.c-lineup__injury-btn--clear {
+  background: var(--umpire-demo-white-4);
+  color: #666;
+}
+
+.c-lineup__injury-btn.is-injured {
+  background: rgba(255, 113, 108, 0.2);
+  color: #ff716c;
+}
+
+/* Lineup slot rows */
+
+.c-lineup__slot {
+  border-bottom: 1px solid var(--umpire-demo-white-4);
+}
+
+.c-lineup__slot--sp {
+  border-bottom: 1px solid rgba(254, 208, 35, 0.15);
+}
+
+.c-lineup__slot-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.c-lineup__slot-row.is-selecting {
+  background: rgba(107, 254, 156, 0.06);
+}
+
+.c-lineup__slot-order {
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  width: 1.5rem;
+  text-align: center;
+  color: #a0a0a0;
+}
+
+.c-lineup__slot-order--sp {
+  color: #fed023;
+}
+
+.c-lineup__slot-pos {
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.6rem;
+  color: #a0a0a0;
+  width: 1.8rem;
+  text-align: center;
+  padding: 0.1rem 0;
+  border-radius: 3px;
+  background: var(--umpire-demo-white-4);
+}
+
+.c-lineup__slot-name {
+  flex: 1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #f9f9f9;
+}
+
+.c-lineup__slot-bt {
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.6rem;
+  color: #a0a0a0;
+}
+
+.c-lineup__slot-remove {
+  font-size: 0.65rem;
+  color: #a0a0a0;
+  cursor: pointer;
+}
+
+.c-lineup__slot-empty {
+  flex: 1;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: #555;
+}
+
+.c-lineup__slot-empty--none {
+  color: #ff716c;
+}
+
+/* Eligible player dropdown */
+
+.c-lineup__eligible {
+  margin: 0 0.75rem 0.35rem 2.75rem;
+  padding: 0.15rem 0;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(107, 254, 156, 0.15);
+  background: rgba(26, 26, 26, 0.96);
+}
+
+.c-lineup__eligible-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: background 0.1s;
+}
+
+.c-lineup__eligible-option:hover {
+  background: var(--umpire-demo-green-8);
+}
+
+.c-lineup__eligible-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6bfe9c;
+  flex-shrink: 0;
+}
+
+.c-lineup__eligible-name {
+  font-weight: 500;
+  color: #f9f9f9;
+}
+
+.c-lineup__eligible-bt {
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.6rem;
+  color: #a0a0a0;
 }

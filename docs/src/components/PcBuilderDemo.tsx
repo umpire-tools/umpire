@@ -3,7 +3,7 @@ import { requires, umpire, type Snapshot } from '@umpire/core'
 import { register } from '@umpire/devtools/slim'
 import { createReads, enabledWhenRead, fairWhenRead, ReadInputType } from '@umpire/reads'
 import { createCoach } from '../lib/createCoach'
-import '../styles/pc-builder-demo.css'
+import '../styles/components/_components.pc-builder-demo.css'
 
 type Socket = 'LGA1700' | 'AM5'
 type CpuBrand = 'intel' | 'amd'
@@ -643,27 +643,27 @@ function SelectField({
   return (
     <div
       className={cls(
-        'pc-builder__field',
-        !availability.enabled && 'pc-builder__field--disabled',
-        (!availability.fair || foul) && 'pc-builder__field--fouled',
+        'c-pc-builder__field',
+        !availability.enabled && 'c-pc-builder__field is-disabled',
+        (!availability.fair || foul) && 'c-pc-builder__field is-fouled',
       )}
     >
-      <div className="pc-builder__field-header">
-        <div className="pc-builder__field-copy">
-          <label className="pc-builder__field-label umpire-demo__eyebrow" htmlFor={id}>
+      <div className="c-pc-builder__field-header">
+        <div className="c-pc-builder__field-copy">
+          <label className="c-pc-builder__field-label c-umpire-demo__eyebrow" htmlFor={id}>
             {label}
           </label>
-          <p className="pc-builder__field-detail">{detail}</p>
+          <p className="c-pc-builder__field-detail">{detail}</p>
         </div>
         {availability.required && (
-          <span className="pc-builder__required">Required</span>
+          <span className="c-pc-builder__required">Required</span>
         )}
       </div>
 
-      <div className="pc-builder__select-shell">
+      <div className="c-pc-builder__select-shell">
         <select
           id={id}
-          className="pc-builder__select"
+          className="c-pc-builder__select"
           value={value}
           disabled={!availability.enabled}
           onChange={(event) => onChange(event.currentTarget.value)}
@@ -675,7 +675,7 @@ function SelectField({
             </option>
           ))}
         </select>
-        <span className="pc-builder__select-caret" aria-hidden="true">
+        <span className="c-pc-builder__select-caret" aria-hidden="true">
           ▾
         </span>
       </div>
@@ -683,12 +683,12 @@ function SelectField({
       {meta}
 
       {foul ? (
-        <div className="umpire-demo__field-foul">
-          <span className="umpire-demo__field-foul-reason">{foul.reason}</span>
+        <div className="c-umpire-demo__field-foul">
+          <span className="c-umpire-demo__field-foul-reason">{foul.reason}</span>
         </div>
       ) : (
         (!availability.enabled || !availability.fair) && availability.reason && (
-          <div className="umpire-demo__field-reason">{availability.reason}</div>
+          <div className="c-umpire-demo__field-reason">{availability.reason}</div>
         )
       )}
     </div>
@@ -703,9 +703,9 @@ function HintCallout({
   copy: string
 }) {
   return (
-    <div className="pc-builder__hint">
-      <div className="pc-builder__hint-kicker">{title}</div>
-      <p className="pc-builder__hint-copy">{copy}</p>
+    <div className="c-pc-builder__hint">
+      <div className="c-pc-builder__hint-kicker">{title}</div>
+      <p className="c-pc-builder__hint-copy">{copy}</p>
     </div>
   )
 }
@@ -962,12 +962,12 @@ export default function PcBuilderDemo() {
           foul={foulsByField.cpu}
           onChange={(nextValue) => updateSelectField('cpu', nextValue)}
           meta={selectedCpu ? (
-            <div className="pc-builder__spec-list">
-              <span className="pc-builder__spec">Socket {selectedCpu.socket}</span>
-              <span className="pc-builder__spec">{formatTier(selectedCpu.tier)}</span>
+            <div className="c-pc-builder__spec-list">
+              <span className="c-pc-builder__spec">Socket {selectedCpu.socket}</span>
+              <span className="c-pc-builder__spec">{formatTier(selectedCpu.tier)}</span>
             </div>
           ) : (
-            <div className="pc-builder__field-note">
+            <div className="c-pc-builder__field-note">
               Pick Intel first, finish Memory, then switch to AMD.
             </div>
           )}
@@ -992,10 +992,10 @@ export default function PcBuilderDemo() {
           foul={foulsByField.motherboard}
           onChange={(nextValue) => updateSelectField('motherboard', nextValue)}
           meta={selectedMotherboard && (
-            <div className="pc-builder__spec-list">
-              <span className="pc-builder__spec">Socket {selectedMotherboard.socket}</span>
-              <span className="pc-builder__spec">{selectedMotherboard.formFactor}</span>
-              <span className="pc-builder__spec">{formatRamType(selectedMotherboard.ramType)}</span>
+            <div className="c-pc-builder__spec-list">
+              <span className="c-pc-builder__spec">Socket {selectedMotherboard.socket}</span>
+              <span className="c-pc-builder__spec">{selectedMotherboard.formFactor}</span>
+              <span className="c-pc-builder__spec">{formatRamType(selectedMotherboard.ramType)}</span>
             </div>
           )}
         />
@@ -1019,9 +1019,9 @@ export default function PcBuilderDemo() {
           foul={foulsByField.ram}
           onChange={(nextValue) => updateSelectField('ram', nextValue)}
           meta={selectedRam && (
-            <div className="pc-builder__spec-list">
-              <span className="pc-builder__spec">{formatRamType(selectedRam.type)}</span>
-              <span className="pc-builder__spec">{selectedRam.size}GB</span>
+            <div className="c-pc-builder__spec-list">
+              <span className="c-pc-builder__spec">{formatRamType(selectedRam.type)}</span>
+              <span className="c-pc-builder__spec">{selectedRam.size}GB</span>
             </div>
           )}
         />
@@ -1031,7 +1031,7 @@ export default function PcBuilderDemo() {
     if (step.index === 3) {
       return (
         <>
-          <div className="pc-builder__field-grid">
+          <div className="c-pc-builder__field-grid">
             <SelectField
               id="pc-builder-storage"
               label="Storage"
@@ -1046,7 +1046,7 @@ export default function PcBuilderDemo() {
               foul={foulsByField.storage}
               onChange={(nextValue) => updateSelectField('storage', nextValue)}
               meta={selectedStorage && (
-                <div className="pc-builder__field-note">
+                <div className="c-pc-builder__field-note">
                   Storage stays outside the dependency graph in this demo.
                 </div>
               )}
@@ -1066,17 +1066,17 @@ export default function PcBuilderDemo() {
               foul={foulsByField.gpu}
               onChange={(nextValue) => updateSelectField('gpu', nextValue)}
               meta={selectedGpu && (
-                <div className="pc-builder__spec-list">
-                  <span className="pc-builder__spec">{formatTier(selectedGpu.tier)}</span>
+                <div className="c-pc-builder__spec-list">
+                  <span className="c-pc-builder__spec">{formatTier(selectedGpu.tier)}</span>
                 </div>
               )}
             />
           </div>
 
-          <div className="pc-builder__insight">
-            <div className="pc-builder__insight-kicker">UI-only derived value</div>
-            <div className="pc-builder__insight-title">{psuRecommendation} PSU recommendation</div>
-            <p className="pc-builder__insight-copy">
+          <div className="c-pc-builder__insight">
+            <div className="c-pc-builder__insight-kicker">UI-only derived value</div>
+            <div className="c-pc-builder__insight-title">{psuRecommendation} PSU recommendation</div>
+            <p className="c-pc-builder__insight-copy">
               No field, no rule, no Umpire state. This is ordinary view logic driven by CPU tier plus GPU tier.
             </p>
           </div>
@@ -1100,8 +1100,8 @@ export default function PcBuilderDemo() {
         foul={foulsByField.caseSize}
         onChange={(nextValue) => updateSelectField('caseSize', nextValue)}
         meta={selectedCase && (
-          <div className="pc-builder__spec-list">
-            <span className="pc-builder__spec">Fits {selectedCase.fits.join(', ')}</span>
+          <div className="c-pc-builder__spec-list">
+            <span className="c-pc-builder__spec">Fits {selectedCase.fits.join(', ')}</span>
           </div>
         )}
       />
@@ -1135,16 +1135,16 @@ export default function PcBuilderDemo() {
   }
 
   return (
-    <div className="pc-builder-demo umpire-demo">
+    <div className="c-pc-builder-demo c-umpire-demo">
       {fouls.length > 0 && (
-        <div className="umpire-demo__fouls">
-          <div className="umpire-demo__fouls-copy">
-            <div className="umpire-demo__fouls-kicker">Fouls</div>
-            <div className="umpire-demo__fouls-list">
+        <div className="c-umpire-demo__fouls">
+          <div className="c-umpire-demo__fouls-copy">
+            <div className="c-umpire-demo__fouls-kicker">Fouls</div>
+            <div className="c-umpire-demo__fouls-list">
               {fouls.map((foul) => (
-                <div key={foul.field} className="umpire-demo__foul">
-                  <span className="umpire-demo__foul-field">{fieldMeta[foul.field].label}</span>
-                  <span className="umpire-demo__foul-reason">{foul.reason}</span>
+                <div key={foul.field} className="c-umpire-demo__foul">
+                  <span className="c-umpire-demo__foul-field">{fieldMeta[foul.field].label}</span>
+                  <span className="c-umpire-demo__foul-reason">{foul.reason}</span>
                 </div>
               ))}
             </div>
@@ -1152,7 +1152,7 @@ export default function PcBuilderDemo() {
 
           <button
             type="button"
-            className="umpire-demo__reset-button"
+            className="c-umpire-demo__reset-button"
             onClick={applyResets}
           >
             Apply resets
@@ -1167,8 +1167,8 @@ export default function PcBuilderDemo() {
         />
       )}
 
-      <div className="pc-builder__layout">
-        <div className="pc-builder__steps">
+      <div className="c-pc-builder__layout">
+        <div className="c-pc-builder__steps">
           {steps.map((step) => {
             const activeFouls = stepFouls(step)
             const status = getStepStatus(step)
@@ -1179,45 +1179,45 @@ export default function PcBuilderDemo() {
               <section
                 key={step.index}
                 className={cls(
-                  'pc-builder__step',
-                  expanded && 'pc-builder__step--expanded',
-                  activeFouls.length > 0 && 'pc-builder__step--fouled',
+                  'c-pc-builder__step',
+                  expanded && 'c-pc-builder__step--expanded',
+                  activeFouls.length > 0 && 'c-pc-builder__step is-fouled',
                 )}
               >
                 <button
                   type="button"
-                  className="pc-builder__step-toggle"
+                  className="c-pc-builder__step-toggle"
                   aria-expanded={expanded}
                   onClick={() => setCurrentStep(step.index)}
                 >
-                  <div className="pc-builder__step-copy">
-                    <span className="pc-builder__step-number">
+                  <div className="c-pc-builder__step-copy">
+                    <span className="c-pc-builder__step-number">
                       {String(step.index + 1).padStart(2, '0')}
                     </span>
                     <div>
-                      <div className="pc-builder__step-title">{step.title}</div>
-                      <p className="pc-builder__step-caption">{step.caption}</p>
+                      <div className="c-pc-builder__step-title">{step.title}</div>
+                      <p className="c-pc-builder__step-caption">{step.caption}</p>
                     </div>
                   </div>
 
-                  <div className="pc-builder__step-meta">
+                  <div className="c-pc-builder__step-meta">
                      <span
                       className={cls(
-                        'umpire-demo__status',
-                        status.tone === 'fouled' && 'umpire-demo__status--fouled',
-                        status.tone === 'enabled' && 'umpire-demo__status--enabled',
-                        status.tone === 'disabled' && 'umpire-demo__status--disabled',
+                        'c-umpire-demo__status',
+                        status.tone === 'fouled' && 'c-umpire-demo__status is-fouled',
+                        status.tone === 'enabled' && 'c-umpire-demo__status is-enabled',
+                        status.tone === 'disabled' && 'c-umpire-demo__status is-disabled',
                       )}
                     >
-                      <span className="umpire-demo__status-dot" />
-                      <span className="umpire-demo__status-text">{status.label}</span>
+                      <span className="c-umpire-demo__status-dot" />
+                      <span className="c-umpire-demo__status-text">{status.label}</span>
                     </span>
                   </div>
                 </button>
 
                 {expanded && (
                   <>
-                    <div className="pc-builder__step-body">
+                    <div className="c-pc-builder__step-body">
                       {renderStepBody(step)}
                     </div>
                     {renderHintCallout(step)}
@@ -1228,18 +1228,18 @@ export default function PcBuilderDemo() {
           })}
         </div>
 
-        <aside className="pc-builder__sidebar">
-          <section className="pc-builder__summary">
-            <div className="pc-builder__panel-header">
+        <aside className="c-pc-builder__sidebar">
+          <section className="c-pc-builder__summary">
+            <div className="c-pc-builder__panel-header">
               <div>
-                <div className="pc-builder__eyebrow">Sidebar summary</div>
-                <h2 className="pc-builder__panel-title">Build state</h2>
+                <div className="c-pc-builder__eyebrow">Sidebar summary</div>
+                <h2 className="c-pc-builder__panel-title">Build state</h2>
               </div>
-              <span className="pc-builder__panel-accent">play() wizard</span>
+              <span className="c-pc-builder__panel-accent">play() wizard</span>
             </div>
 
-            <div className="pc-builder__summary-body">
-              <div className="pc-builder__summary-list">
+            <div className="c-pc-builder__summary-body">
+              <div className="c-pc-builder__summary-list">
                 {steps.map((step) => {
                   const activeFouls = stepFouls(step)
 
@@ -1248,51 +1248,51 @@ export default function PcBuilderDemo() {
                       key={step.index}
                       type="button"
                       className={cls(
-                        'pc-builder__summary-item',
-                        currentStep === step.index && 'pc-builder__summary-item--active',
-                        activeFouls.length > 0 && 'pc-builder__summary-item--fouled',
+                        'c-pc-builder__summary-item',
+                        currentStep === step.index && 'c-pc-builder__summary-item is-active',
+                        activeFouls.length > 0 && 'c-pc-builder__summary-item is-fouled',
                       )}
                       onClick={() => setCurrentStep(step.index)}
                     >
-                      <div className="pc-builder__summary-row">
-                        <span className="pc-builder__summary-step umpire-demo__eyebrow">
+                      <div className="c-pc-builder__summary-row">
+                        <span className="c-pc-builder__summary-step c-umpire-demo__eyebrow">
                           {String(step.index + 1).padStart(2, '0')} · {step.title}
                         </span>
                         {activeFouls.length > 0 && (
-                          <span className="pc-builder__summary-fouls">{activeFouls.length}</span>
+                          <span className="c-pc-builder__summary-fouls">{activeFouls.length}</span>
                         )}
                       </div>
-                      <div className="pc-builder__summary-copy">{getStepSummary(step)}</div>
+                      <div className="c-pc-builder__summary-copy">{getStepSummary(step)}</div>
                     </button>
                   )
                 })}
               </div>
 
-              <div className="pc-builder__metrics">
-                <div className="pc-builder__metric">
-                  <span className="pc-builder__metric-label umpire-demo__eyebrow">Boards</span>
-                  <strong className="pc-builder__metric-value">
+              <div className="c-pc-builder__metrics">
+                <div className="c-pc-builder__metric">
+                  <span className="c-pc-builder__metric-label c-umpire-demo__eyebrow">Boards</span>
+                  <strong className="c-pc-builder__metric-value">
                     {compatibleMotherboards.length}
                   </strong>
                 </div>
 
-                <div className="pc-builder__metric">
-                  <span className="pc-builder__metric-label umpire-demo__eyebrow">RAM kits</span>
-                  <strong className="pc-builder__metric-value">
+                <div className="c-pc-builder__metric">
+                  <span className="c-pc-builder__metric-label c-umpire-demo__eyebrow">RAM kits</span>
+                  <strong className="c-pc-builder__metric-value">
                     {compatibleRamKits.length}
                   </strong>
                 </div>
 
-                <div className="pc-builder__metric">
-                  <span className="pc-builder__metric-label umpire-demo__eyebrow">Cases</span>
-                  <strong className="pc-builder__metric-value">
+                <div className="c-pc-builder__metric">
+                  <span className="c-pc-builder__metric-label c-umpire-demo__eyebrow">Cases</span>
+                  <strong className="c-pc-builder__metric-value">
                     {compatibleCases.length}
                   </strong>
                 </div>
 
-                <div className="pc-builder__metric">
-                  <span className="pc-builder__metric-label umpire-demo__eyebrow">PSU</span>
-                  <strong className="pc-builder__metric-value">
+                <div className="c-pc-builder__metric">
+                  <span className="c-pc-builder__metric-label c-umpire-demo__eyebrow">PSU</span>
+                  <strong className="c-pc-builder__metric-value">
                     {psuRecommendation}
                   </strong>
                 </div>

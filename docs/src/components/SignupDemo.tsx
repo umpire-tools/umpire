@@ -236,54 +236,54 @@ export default function SignupDemo() {
   const canSubmit = availability.submit.enabled
 
   return (
-    <div className="signup-demo umpire-demo">
+    <div className="c-signup-demo c-umpire-demo">
       {fouls.length > 0 && (
-        <div className="umpire-demo__fouls">
-          <div className="umpire-demo__fouls-copy">
-            <div className="umpire-demo__fouls-kicker">Flag fouls</div>
-            <div className="umpire-demo__fouls-list">
+        <div className="c-umpire-demo__fouls">
+          <div className="c-umpire-demo__fouls-copy">
+            <div className="c-umpire-demo__fouls-kicker">Flag fouls</div>
+            <div className="c-umpire-demo__fouls-list">
               {fouls.map((foul) => (
-                <div key={foul.field} className="umpire-demo__foul">
-                  <span className="umpire-demo__foul-field">
+                <div key={foul.field} className="c-umpire-demo__foul">
+                  <span className="c-umpire-demo__foul-field">
                     {fieldMeta[foul.field as SignupField]?.label ?? foul.field}
                   </span>
-                  <span className="umpire-demo__foul-reason">{foul.reason}</span>
+                  <span className="c-umpire-demo__foul-reason">{foul.reason}</span>
                 </div>
               ))}
             </div>
           </div>
-          <button type="button" className="umpire-demo__reset-button" onClick={applyResets}>
+          <button type="button" className="c-umpire-demo__reset-button" onClick={applyResets}>
             Apply resets
           </button>
         </div>
       )}
 
-      <div className="umpire-demo__layout">
-        <section className="umpire-demo__panel signup-demo__panel--form">
-          <div className="umpire-demo__panel-header">
+      <div className="c-umpire-demo__layout">
+        <section className="c-umpire-demo__panel c-signup-demo__panel--form">
+          <div className="c-umpire-demo__panel-header">
             <div>
-              <div className="umpire-demo__eyebrow">Live example</div>
-              <h2 className="umpire-demo__title">Signup Form</h2>
+              <div className="c-umpire-demo__eyebrow">Live example</div>
+              <h2 className="c-umpire-demo__title">Signup Form</h2>
             </div>
             {sso ? (
-              <span className="signup-demo__sso-badge">
+              <span className="c-signup-demo__sso-badge">
                 SSO — {ssoCompany}
               </span>
             ) : (
-              <span className="umpire-demo__panel-accent">umpire + zod</span>
+              <span className="c-umpire-demo__panel-accent">umpire + zod</span>
             )}
           </div>
 
-          <div className="umpire-demo__panel-body">
-            <div className="umpire-demo__plan-toggle" aria-label="Plan">
+          <div className="c-umpire-demo__panel-body">
+            <div className="c-umpire-demo__plan-toggle" aria-label="Plan">
               {planOptions.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   aria-pressed={plan === option.value}
                   className={cls(
-                    'umpire-demo__plan-option',
-                    plan === option.value && 'umpire-demo__plan-option--active',
+                    'c-umpire-demo__plan-option',
+                    plan === option.value && 'c-umpire-demo__plan-option is-active',
                   )}
                   onClick={() => {
                     setSubmissionIssues([])
@@ -295,7 +295,7 @@ export default function SignupDemo() {
               ))}
             </div>
 
-            <div className="umpire-demo__fields">
+            <div className="c-umpire-demo__fields">
               {fieldOrder.map((field) => {
                 const meta = fieldMeta[field]
                 const av = availability[field]
@@ -308,19 +308,19 @@ export default function SignupDemo() {
                   <div
                     key={field}
                     className={cls(
-                      'umpire-demo__field',
-                      !isEnabled && 'umpire-demo__field--disabled',
+                      'c-umpire-demo__field',
+                      !isEnabled && 'c-umpire-demo__field is-disabled',
                     )}
                   >
-                    <label className="umpire-demo__label" htmlFor={`signup-demo-${field}`}>
+                    <label className="c-umpire-demo__label" htmlFor={`signup-demo-${field}`}>
                       <span>{meta.label}</span>
-                      {av.required && <span className="signup-demo__required">*</span>}
+                      {av.required && <span className="c-signup-demo__required">*</span>}
                     </label>
                     <input
                       id={`signup-demo-${field}`}
                       className={cls(
-                        'umpire-demo__input',
-                        error && 'signup-demo__input--invalid',
+                        'c-umpire-demo__input',
+                        error && 'c-signup-demo__input is-invalid',
                       )}
                       type={meta.type}
                       placeholder={meta.placeholder}
@@ -330,10 +330,10 @@ export default function SignupDemo() {
                       onBlur={() => markTouched(field)}
                     />
                     {!isEnabled && av.reason && (
-                      <div className="signup-demo__reason">{av.reason}</div>
+                      <div className="c-signup-demo__reason">{av.reason}</div>
                     )}
                     {isEnabled && error && (
-                      <div className="signup-demo__validation-error">{error}</div>
+                      <div className="c-signup-demo__validation-error">{error}</div>
                     )}
                   </div>
                 )
@@ -344,39 +344,39 @@ export default function SignupDemo() {
               type="button"
               disabled={!canSubmit}
               className={cls(
-                'signup-demo__submit',
-                canSubmit ? 'signup-demo__submit--ready' : 'signup-demo__submit--blocked',
+                'c-signup-demo__submit',
+                canSubmit ? 'c-signup-demo__submit is-ready' : 'c-signup-demo__submit is-blocked',
               )}
               onClick={submit}
             >
               {sso ? `Continue with SSO` : `Create account`}
             </button>
             {!canSubmit && availability.submit.reason && (
-              <div className="signup-demo__reason">{availability.submit.reason}</div>
+              <div className="c-signup-demo__reason">{availability.submit.reason}</div>
             )}
           </div>
         </section>
 
-        <section className="umpire-demo__panel signup-demo__panel--availability">
-          <div className="umpire-demo__panel-header">
+        <section className="c-umpire-demo__panel c-signup-demo__panel--availability">
+          <div className="c-umpire-demo__panel-header">
             <div>
-              <div className="umpire-demo__eyebrow">Live state</div>
-              <h2 className="umpire-demo__title">Availability + Validation</h2>
+              <div className="c-umpire-demo__eyebrow">Live state</div>
+              <h2 className="c-umpire-demo__title">Availability + Validation</h2>
             </div>
-            <span className="umpire-demo__panel-accent">
+            <span className="c-umpire-demo__panel-accent">
               {sso ? `sso: true` : `plan: ${plan}`}
             </span>
           </div>
 
-          <div className="umpire-demo__panel-body signup-demo__panel-body--table">
-            <div className="signup-demo__table-shell">
-              <table className="signup-demo__table">
+          <div className="c-umpire-demo__panel-body c-signup-demo__panel-body--table">
+            <div className="c-signup-demo__table-shell">
+              <table className="c-signup-demo__table">
                 <thead>
                   <tr>
-                    <th className="signup-demo__table-heading umpire-demo__eyebrow">Field</th>
-                    <th className="signup-demo__table-heading umpire-demo__eyebrow">Enabled</th>
-                    <th className="signup-demo__table-heading umpire-demo__eyebrow">Valid</th>
-                    <th className="signup-demo__table-heading umpire-demo__eyebrow">Status</th>
+                    <th className="c-signup-demo__table-heading c-umpire-demo__eyebrow">Field</th>
+                    <th className="c-signup-demo__table-heading c-umpire-demo__eyebrow">Enabled</th>
+                    <th className="c-signup-demo__table-heading c-umpire-demo__eyebrow">Valid</th>
+                    <th className="c-signup-demo__table-heading c-umpire-demo__eyebrow">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -387,16 +387,16 @@ export default function SignupDemo() {
                       : undefined
 
                     return (
-                      <tr key={field} className={field === 'submit' ? 'signup-demo__table-row--submit' : undefined}>
-                        <td className="signup-demo__table-field">{field}</td>
+                      <tr key={field} className={field === 'submit' ? 'c-signup-demo__table-row--submit' : undefined}>
+                        <td className="c-signup-demo__table-field">{field}</td>
                         <td>
-                          <span className="signup-demo__status">
+                          <span className="c-signup-demo__status">
                             <span
                               className={cls(
-                                'signup-demo__status-dot',
+                                'c-signup-demo__status-dot',
                                 av.enabled
-                                  ? 'signup-demo__status-dot--enabled'
-                                  : 'signup-demo__status-dot--disabled',
+                                  ? 'c-signup-demo__status-dot is-enabled'
+                                  : 'c-signup-demo__status-dot is-disabled',
                               )}
                             />
                             {av.enabled ? 'yes' : 'no'}
@@ -404,22 +404,22 @@ export default function SignupDemo() {
                         </td>
                         <td>
                           {av.enabled ? (
-                            <span className="signup-demo__status">
+                            <span className="c-signup-demo__status">
                               <span
                                 className={cls(
-                                  'signup-demo__status-dot',
+                                  'c-signup-demo__status-dot',
                                   error
-                                    ? 'signup-demo__status-dot--disabled'
-                                    : 'signup-demo__status-dot--enabled',
+                                    ? 'c-signup-demo__status-dot is-disabled'
+                                    : 'c-signup-demo__status-dot is-enabled',
                                 )}
                               />
                               {error ? 'no' : 'yes'}
                             </span>
                           ) : (
-                            <span className="signup-demo__table-reason">—</span>
+                            <span className="c-signup-demo__table-reason">—</span>
                           )}
                         </td>
-                        <td className="signup-demo__table-reason">
+                        <td className="c-signup-demo__table-reason">
                           {!av.enabled
                             ? av.reason ?? '—'
                             : field === 'submit'
@@ -437,16 +437,16 @@ export default function SignupDemo() {
       </div>
 
       {submissionIssues.length > 0 && (
-        <div className="umpire-demo__fouls">
-          <div className="umpire-demo__fouls-copy">
-            <div className="umpire-demo__fouls-kicker">Submit validation</div>
-            <div className="umpire-demo__fouls-list">
+        <div className="c-umpire-demo__fouls">
+          <div className="c-umpire-demo__fouls-copy">
+            <div className="c-umpire-demo__fouls-kicker">Submit validation</div>
+            <div className="c-umpire-demo__fouls-list">
               {submissionIssues.map((issue) => (
-                <div key={`${issue.field}:${issue.message}`} className="umpire-demo__foul">
-                  <span className="umpire-demo__foul-field">
+                <div key={`${issue.field}:${issue.message}`} className="c-umpire-demo__foul">
+                  <span className="c-umpire-demo__foul-field">
                     {fieldMeta[issue.field as SignupField]?.label ?? issue.field}
                   </span>
-                  <span className="umpire-demo__foul-reason">{issue.message}</span>
+                  <span className="c-umpire-demo__foul-reason">{issue.message}</span>
                 </div>
               ))}
             </div>

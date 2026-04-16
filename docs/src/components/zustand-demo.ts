@@ -115,11 +115,11 @@ export function mount(root: HTMLElement) {
 
   // -- Render initial HTML --
   root.innerHTML = renderShell()
-  const foulsEl = $('.umpire-demo__fouls', root)!
-  const foulsListEl = $('.umpire-demo__fouls-list', root)!
-  const stateJsonEl = $('.zustand-demo__state-json', root)!
-  const planLabelEl = $('.zustand-demo__plan-label', root)!
-  const enabledCountEl = $('.zustand-demo__enabled-count', root)!
+  const foulsEl = $('.c-umpire-demo__fouls', root)!
+  const foulsListEl = $('.c-umpire-demo__fouls-list', root)!
+  const stateJsonEl = $('.c-zustand-demo__state-json', root)!
+  const planLabelEl = $('.c-zustand-demo__plan-label', root)!
+  const enabledCountEl = $('.c-zustand-demo__enabled-count', root)!
 
   // -- Wire input handlers → store.setState() --
   for (const field of fieldOrder) {
@@ -130,7 +130,7 @@ export function mount(root: HTMLElement) {
   }
 
   // -- Wire plan toggle --
-  for (const btn of $$('.zustand-demo__plan-btn', root)) {
+  for (const btn of $$('.c-zustand-demo__plan-btn', root)) {
     btn.addEventListener('click', () => {
       const plan = btn.getAttribute('data-plan') as Cond['plan']
       store.setState({ plan })
@@ -138,7 +138,7 @@ export function mount(root: HTMLElement) {
   }
 
   // -- Wire apply resets button --
-  $('.umpire-demo__reset-button', root)?.addEventListener('click', () => {
+  $('.c-umpire-demo__reset-button', root)?.addEventListener('click', () => {
     const fouls = umpStore.fouls
     const patch: Partial<DemoState> = {}
     for (const foul of fouls) {
@@ -158,9 +158,9 @@ export function mount(root: HTMLElement) {
     }
 
     // Update plan toggle
-    for (const btn of $$('.zustand-demo__plan-btn', root)) {
+    for (const btn of $$('.c-zustand-demo__plan-btn', root)) {
       const isPlan = btn.getAttribute('data-plan') === state.plan
-      toggleClass(btn, 'umpire-demo__plan-option--active', isPlan)
+      toggleClass(btn, 'c-umpire-demo__plan-option is-active', isPlan)
       setAttr(btn, 'aria-pressed', isPlan)
     }
 
@@ -176,22 +176,22 @@ export function mount(root: HTMLElement) {
 
     for (const field of fieldOrder) {
       const fa = availability[field]
-      const card = $(`.zustand-demo__field-card[data-field="${field}"]`, root)
+      const card = $(`.c-zustand-demo__field-card[data-field="${field}"]`, root)
       if (!card) continue
 
-      toggleClass(card, 'zustand-demo__field-card--disabled', !fa.enabled)
+      toggleClass(card, 'c-zustand-demo__field-card is-disabled', !fa.enabled)
 
-      const dot = $('.umpire-demo__status', card)
-      toggleClass(dot, 'umpire-demo__status--enabled', fa.enabled)
-      toggleClass(dot, 'umpire-demo__status--disabled', !fa.enabled)
-      setText($('.umpire-demo__status-text', card), fa.enabled ? 'enabled' : 'disabled')
+      const dot = $('.c-umpire-demo__status', card)
+      toggleClass(dot, 'c-umpire-demo__status is-enabled', fa.enabled)
+      toggleClass(dot, 'c-umpire-demo__status is-disabled', !fa.enabled)
+      setText($('.c-umpire-demo__status-text', card), fa.enabled ? 'enabled' : 'disabled')
 
-      const pill = $('.zustand-demo__pill', card)
-      toggleClass(pill, 'zustand-demo__pill--required', fa.required)
-      toggleClass(pill, 'zustand-demo__pill--optional', !fa.required)
+      const pill = $('.c-zustand-demo__pill', card)
+      toggleClass(pill, 'c-zustand-demo__pill--required', fa.required)
+      toggleClass(pill, 'c-zustand-demo__pill--optional', !fa.required)
       setText(pill, String(fa.required))
 
-      setText($('.zustand-demo__field-reason', card), fa.reason ?? 'available')
+      setText($('.c-zustand-demo__field-reason', card), fa.reason ?? 'available')
 
       // Disable the input when the field is unavailable
       const input = $(`[data-field="${field}"]`, root) as HTMLInputElement | null
@@ -203,18 +203,18 @@ export function mount(root: HTMLElement) {
     setText(enabledCountEl, String(enabledCount))
 
     // Update fouls banner — use textContent, never innerHTML with dynamic values
-    toggleClass(foulsEl, 'umpire-demo__fouls--visible', fouls.length > 0)
+    toggleClass(foulsEl, 'c-umpire-demo__fouls is-visible', fouls.length > 0)
     foulsListEl.replaceChildren()
     for (const foul of fouls) {
       const row = document.createElement('div')
-      row.className = 'umpire-demo__foul'
+      row.className = 'c-umpire-demo__foul'
 
       const fieldSpan = document.createElement('span')
-      fieldSpan.className = 'umpire-demo__foul-field'
+      fieldSpan.className = 'c-umpire-demo__foul-field'
       fieldSpan.textContent = fieldLabels[foul.field as DemoField] ?? foul.field
 
       const reasonSpan = document.createElement('span')
-      reasonSpan.className = 'umpire-demo__foul-reason'
+      reasonSpan.className = 'c-umpire-demo__foul-reason'
       reasonSpan.textContent = foul.reason
 
       row.append(fieldSpan, reasonSpan)
@@ -227,18 +227,18 @@ export function mount(root: HTMLElement) {
   let enabledCount = 0
   for (const field of fieldOrder) {
     const fa = initialAvailability[field]
-    const card = $(`.zustand-demo__field-card[data-field="${field}"]`, root)
+    const card = $(`.c-zustand-demo__field-card[data-field="${field}"]`, root)
     if (!card) continue
-    toggleClass(card, 'zustand-demo__field-card--disabled', !fa.enabled)
-    const dot = $('.umpire-demo__status', card)
-    toggleClass(dot, 'umpire-demo__status--enabled', fa.enabled)
-    toggleClass(dot, 'umpire-demo__status--disabled', !fa.enabled)
-    setText($('.umpire-demo__status-text', card), fa.enabled ? 'enabled' : 'disabled')
-    const pill = $('.zustand-demo__pill', card)
-    toggleClass(pill, 'zustand-demo__pill--required', fa.required)
-    toggleClass(pill, 'zustand-demo__pill--optional', !fa.required)
+    toggleClass(card, 'c-zustand-demo__field-card is-disabled', !fa.enabled)
+    const dot = $('.c-umpire-demo__status', card)
+    toggleClass(dot, 'c-umpire-demo__status is-enabled', fa.enabled)
+    toggleClass(dot, 'c-umpire-demo__status is-disabled', !fa.enabled)
+    setText($('.c-umpire-demo__status-text', card), fa.enabled ? 'enabled' : 'disabled')
+    const pill = $('.c-zustand-demo__pill', card)
+    toggleClass(pill, 'c-zustand-demo__pill--required', fa.required)
+    toggleClass(pill, 'c-zustand-demo__pill--optional', !fa.required)
     setText(pill, String(fa.required))
-    setText($('.zustand-demo__field-reason', card), fa.reason ?? 'available')
+    setText($('.c-zustand-demo__field-reason', card), fa.reason ?? 'available')
     const input = $(`[data-field="${field}"]`, root) as HTMLInputElement | null
     if (input) input.disabled = !fa.enabled
     if (fa.enabled) enabledCount++
@@ -253,51 +253,51 @@ export function mount(root: HTMLElement) {
 
 function renderShell(): string {
   return `
-    <div class="umpire-demo__fouls">
-      <div class="umpire-demo__fouls-copy">
-        <div class="umpire-demo__fouls-kicker">Reset recommendations</div>
-        <div class="umpire-demo__fouls-list"></div>
+    <div class="c-umpire-demo__fouls">
+      <div class="c-umpire-demo__fouls-copy">
+        <div class="c-umpire-demo__fouls-kicker">Reset recommendations</div>
+        <div class="c-umpire-demo__fouls-list"></div>
       </div>
-      <button type="button" class="umpire-demo__reset-button">Apply resets</button>
+      <button type="button" class="c-umpire-demo__reset-button">Apply resets</button>
     </div>
 
-    <div class="umpire-demo__layout">
-      <section class="umpire-demo__panel">
-        <div class="umpire-demo__panel-header">
+    <div class="c-umpire-demo__layout">
+      <section class="c-umpire-demo__panel">
+        <div class="c-umpire-demo__panel-header">
           <div>
-            <div class="umpire-demo__eyebrow">Vanilla Zustand Store</div>
-            <h2 class="umpire-demo__title">Store State</h2>
+            <div class="c-umpire-demo__eyebrow">Vanilla Zustand Store</div>
+            <h2 class="c-umpire-demo__title">Store State</h2>
           </div>
-          <span class="umpire-demo__panel-accent">store.setState()</span>
+          <span class="c-umpire-demo__panel-accent">store.setState()</span>
         </div>
 
-        <div class="umpire-demo__panel-body">
-          <div class="zustand-demo__callout">
-            <span class="zustand-demo__badge">no react</span>
-            <p class="zustand-demo__callout-text">
+        <div class="c-umpire-demo__panel-body">
+          <div class="c-zustand-demo__callout">
+            <span class="c-zustand-demo__badge">no react</span>
+            <p class="c-zustand-demo__callout-text">
               These inputs write to a vanilla Zustand store. Umpire subscribes
               downstream — no hooks, no effects, no framework.
             </p>
           </div>
 
-          <div class="umpire-demo__plan-toggle" aria-label="Plan">
-            <button type="button" class="umpire-demo__plan-option umpire-demo__plan-option--active zustand-demo__plan-btn" data-plan="personal" aria-pressed="true">
+          <div class="c-umpire-demo__plan-toggle" aria-label="Plan">
+            <button type="button" class="c-umpire-demo__plan-option is-active c-zustand-demo__plan-btn" data-plan="personal" aria-pressed="true">
               Personal
             </button>
-            <button type="button" class="umpire-demo__plan-option zustand-demo__plan-btn" data-plan="business" aria-pressed="false">
+            <button type="button" class="c-umpire-demo__plan-option c-zustand-demo__plan-btn" data-plan="business" aria-pressed="false">
               Business
             </button>
           </div>
 
-          <div class="umpire-demo__fields">
+          <div class="c-umpire-demo__fields">
             ${fieldOrder.map((field) => `
-              <div class="umpire-demo__field" data-field="${field}">
-                <label class="umpire-demo__label" for="zustand-demo-${field}">
+              <div class="c-umpire-demo__field" data-field="${field}">
+                <label class="c-umpire-demo__label" for="zustand-demo-${field}">
                   ${fieldLabels[field]}
                 </label>
                 <input
                   id="zustand-demo-${field}"
-                  class="umpire-demo__input"
+                  class="c-umpire-demo__input"
                   type="${field === 'password' ? 'password' : field === 'email' ? 'email' : 'text'}"
                   placeholder="${fieldPlaceholders[field]}"
                   data-field="${field}"
@@ -306,68 +306,68 @@ function renderShell(): string {
             `).join('')}
           </div>
 
-          <section class="umpire-demo__json-shell">
-            <div class="umpire-demo__json-header">
-              <span class="umpire-demo__json-title">store.getState()</span>
-              <span class="umpire-demo__json-meta zustand-demo__plan-label">personal plan</span>
+          <section class="c-umpire-demo__json-shell">
+            <div class="c-umpire-demo__json-header">
+              <span class="c-umpire-demo__json-title">store.getState()</span>
+              <span class="c-umpire-demo__json-meta c-zustand-demo__plan-label">personal plan</span>
             </div>
-            <pre class="umpire-demo__code-block"><code class="zustand-demo__state-json"></code></pre>
+            <pre class="c-umpire-demo__code-block"><code class="c-zustand-demo__state-json"></code></pre>
           </section>
         </div>
       </section>
 
-      <section class="umpire-demo__panel">
-        <div class="umpire-demo__panel-header">
+      <section class="c-umpire-demo__panel">
+        <div class="c-umpire-demo__panel-header">
           <div>
-            <div class="umpire-demo__eyebrow">Adapter Output</div>
-            <h2 class="umpire-demo__title">Umpire Availability</h2>
+            <div class="c-umpire-demo__eyebrow">Adapter Output</div>
+            <h2 class="c-umpire-demo__title">Umpire Availability</h2>
           </div>
-          <span class="umpire-demo__panel-accent">fromStore()</span>
+          <span class="c-umpire-demo__panel-accent">fromStore()</span>
         </div>
 
-        <div class="umpire-demo__panel-body">
-          <div class="zustand-demo__summary">
-            <div class="zustand-demo__summary-card">
-              <div class="zustand-demo__summary-label umpire-demo__eyebrow">Adapter</div>
-              <code class="zustand-demo__summary-code">fromStore(ump, store, …)</code>
+        <div class="c-umpire-demo__panel-body">
+          <div class="c-zustand-demo__summary">
+            <div class="c-zustand-demo__summary-card">
+              <div class="c-zustand-demo__summary-label c-umpire-demo__eyebrow">Adapter</div>
+              <code class="c-zustand-demo__summary-code">fromStore(ump, store, …)</code>
             </div>
-            <div class="zustand-demo__summary-card">
-              <div class="zustand-demo__summary-label umpire-demo__eyebrow">Enabled</div>
-              <div class="zustand-demo__summary-value">
-                <span class="zustand-demo__enabled-count">2</span>
-                <span class="zustand-demo__summary-total"> / ${fieldOrder.length}</span>
+            <div class="c-zustand-demo__summary-card">
+              <div class="c-zustand-demo__summary-label c-umpire-demo__eyebrow">Enabled</div>
+              <div class="c-zustand-demo__summary-value">
+                <span class="c-zustand-demo__enabled-count">2</span>
+                <span class="c-zustand-demo__summary-total"> / ${fieldOrder.length}</span>
               </div>
             </div>
           </div>
 
-          <div class="zustand-demo__field-list">
+          <div class="c-zustand-demo__field-list">
             ${fieldOrder.map((field) => `
-              <article class="zustand-demo__field-card" data-field="${field}">
-                <div class="zustand-demo__field-top">
+              <article class="c-zustand-demo__field-card" data-field="${field}">
+                <div class="c-zustand-demo__field-top">
                   <div>
-                    <div class="zustand-demo__field-name">${fieldLabels[field]}</div>
-                    <code class="zustand-demo__field-code">field('${field}')</code>
+                    <div class="c-zustand-demo__field-name">${fieldLabels[field]}</div>
+                    <code class="c-zustand-demo__field-code">field('${field}')</code>
                   </div>
-                  <div class="umpire-demo__status">
-                    <span class="umpire-demo__status-dot"></span>
-                    <span class="umpire-demo__status-text">enabled</span>
+                  <div class="c-umpire-demo__status">
+                    <span class="c-umpire-demo__status-dot"></span>
+                    <span class="c-umpire-demo__status-text">enabled</span>
                   </div>
                 </div>
-                <div class="zustand-demo__field-grid">
-                  <div class="zustand-demo__field-cell">
-                    <span class="zustand-demo__field-key">required</span>
-                    <span class="zustand-demo__pill">false</span>
+                <div class="c-zustand-demo__field-grid">
+                  <div class="c-zustand-demo__field-cell">
+                    <span class="c-zustand-demo__field-key">required</span>
+                    <span class="c-zustand-demo__pill">false</span>
                   </div>
-                  <div class="zustand-demo__field-cell zustand-demo__field-cell--reason">
-                    <span class="zustand-demo__field-key">reason</span>
-                    <span class="zustand-demo__field-reason">available</span>
+                  <div class="c-zustand-demo__field-cell c-zustand-demo__field-cell--reason">
+                    <span class="c-zustand-demo__field-key">reason</span>
+                    <span class="c-zustand-demo__field-reason">available</span>
                   </div>
                 </div>
               </article>
             `).join('')}
           </div>
 
-          <p class="zustand-demo__note">
+          <p class="c-zustand-demo__note">
             Fill in a company name on the business plan, then switch back to personal — a foul
             recommends clearing the stale value.
           </p>

@@ -1,4 +1,4 @@
-.freight-demo {
+.c-freight-demo {
   --umpire-demo-field-disabled-bg:
     linear-gradient(135deg, var(--umpire-demo-red-8), transparent 50%),
     var(--umpire-demo-white-2);
@@ -6,13 +6,13 @@
   --umpire-demo-field-disabled-opacity: 1;
 }
 
-.freight-demo .umpire-demo__panel-body {
+.c-freight-demo .c-umpire-demo__panel-body {
   display: flex;
   flex-direction: column;
   gap: 0.95rem;
 }
 
-.freight-demo__panel {
+.c-freight-demo__panel {
   min-width: 0;
   border: 1px solid var(--umpire-demo-border);
   border-radius: var(--umpire-demo-radius-lg);
@@ -23,7 +23,7 @@
   backdrop-filter: blur(18px);
 }
 
-.freight-demo__callout {
+.c-freight-demo__callout {
   display: grid;
   gap: 0.7rem;
   padding: 0.95rem 1rem;
@@ -35,7 +35,7 @@
   box-shadow: inset 0 1px 0 var(--umpire-demo-white-4);
 }
 
-.freight-demo__badge {
+.c-freight-demo__badge {
   display: inline-flex;
   width: fit-content;
   align-items: center;
@@ -54,34 +54,34 @@
   box-shadow: 0 0 22px var(--umpire-demo-green-14);
 }
 
-.freight-demo__callout-text {
+.c-freight-demo__callout-text {
   margin: 0;
   color: var(--umpire-demo-text-dim);
   font-size: 0.95rem;
   line-height: 1.45;
 }
 
-.freight-demo__field-group {
+.c-freight-demo__field-group {
   display: grid;
   gap: 0.65rem;
 }
 
-.freight-demo__group-label {
+.c-freight-demo__group-label {
   padding: 0 0.15rem;
 }
 
-.freight-demo__group-fields {
+.c-freight-demo__group-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
   margin-top: 0 !important;
 }
 
-.freight-demo__field--hidden {
+.c-freight-demo__field.is-hidden {
   display: none !important;
 }
 
-.freight-demo__checkbox-row {
+.c-freight-demo__checkbox-row {
   display: flex;
   align-items: flex-start;
   gap: 0.7rem;
@@ -94,7 +94,7 @@
   line-height: 1.4;
 }
 
-.freight-demo__checkbox-row input {
+.c-freight-demo__checkbox-row input {
   width: 1rem;
   height: 1rem;
   margin-top: 0.14rem;
@@ -103,11 +103,11 @@
 }
 
 @media (max-width: 50rem) {
-  .freight-demo__group-fields {
+  .c-freight-demo__group-fields {
     grid-template-columns: 1fr;
   }
 
-  .freight-demo .umpire-demo__field-header {
+  .c-freight-demo .c-umpire-demo__field-header {
     flex-direction: column;
     align-items: flex-start;
   }

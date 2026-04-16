@@ -97,61 +97,61 @@ export default function ReactAdapterDemo() {
   }
 
   return (
-    <div className="react-demo umpire-demo">
+    <div className="c-react-demo c-umpire-demo">
       {fouls.length > 0 && (
-        <div className="umpire-demo__fouls">
-          <div className="umpire-demo__fouls-copy">
-            <div className="umpire-demo__fouls-kicker">Reset recommendations</div>
-            <div className="umpire-demo__fouls-list">
+        <div className="c-umpire-demo__fouls">
+          <div className="c-umpire-demo__fouls-copy">
+            <div className="c-umpire-demo__fouls-kicker">Reset recommendations</div>
+            <div className="c-umpire-demo__fouls-list">
               {fouls.map((foul) => (
-                <div key={foul.field} className="umpire-demo__foul">
-                  <span className="umpire-demo__foul-field">
+                <div key={foul.field} className="c-umpire-demo__foul">
+                  <span className="c-umpire-demo__foul-field">
                     {fieldMeta[foul.field].label}
                   </span>
-                  <span className="umpire-demo__foul-reason">{foul.reason}</span>
+                  <span className="c-umpire-demo__foul-reason">{foul.reason}</span>
                 </div>
               ))}
             </div>
           </div>
-          <button type="button" className="umpire-demo__reset-button" onClick={applyResets}>
+          <button type="button" className="c-umpire-demo__reset-button" onClick={applyResets}>
             Apply resets
           </button>
         </div>
       )}
 
-      <div className="umpire-demo__layout">
-        <section className="umpire-demo__panel react-demo__panel--form">
-          <div className="umpire-demo__panel-header">
+      <div className="c-umpire-demo__layout">
+        <section className="c-umpire-demo__panel c-react-demo__panel--form">
+          <div className="c-umpire-demo__panel-header">
             <div>
-              <div className="umpire-demo__eyebrow">Live component</div>
-              <h2 className="umpire-demo__title">Signup Form</h2>
+              <div className="c-umpire-demo__eyebrow">Live component</div>
+              <h2 className="c-umpire-demo__title">Signup Form</h2>
             </div>
-            <span className="umpire-demo__panel-accent">useUmpire()</span>
+            <span className="c-umpire-demo__panel-accent">useUmpire()</span>
           </div>
 
-          <div className="umpire-demo__panel-body">
-            <div className="react-demo__callout">
-              <span className="react-demo__badge">No useEffect</span>
-              <p className="react-demo__callout-text">
+          <div className="c-umpire-demo__panel-body">
+            <div className="c-react-demo__callout">
+              <span className="c-react-demo__badge">No useEffect</span>
+              <p className="c-react-demo__callout-text">
                 Pass current values and conditions in. Get live availability and reset guidance back.
                 Pure derivation on render.
               </p>
             </div>
 
-            <div className="umpire-demo__conditions">
-              <span className="umpire-demo__conditions-label">Conditions</span>
-              <code className="umpire-demo__conditions-code">{`{ plan: '${plan}' }`}</code>
+            <div className="c-umpire-demo__conditions">
+              <span className="c-umpire-demo__conditions-label">Conditions</span>
+              <code className="c-umpire-demo__conditions-code">{`{ plan: '${plan}' }`}</code>
             </div>
 
-            <div className="umpire-demo__plan-toggle" aria-label="Plan">
+            <div className="c-umpire-demo__plan-toggle" aria-label="Plan">
               {planOptions.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   aria-pressed={plan === option.value}
                   className={cls(
-                    'umpire-demo__plan-option',
-                    plan === option.value && 'umpire-demo__plan-option--active',
+                    'c-umpire-demo__plan-option',
+                    plan === option.value && 'c-umpire-demo__plan-option is-active',
                   )}
                   onClick={() => setPlan(option.value)}
                 >
@@ -160,7 +160,7 @@ export default function ReactAdapterDemo() {
               ))}
             </div>
 
-            <div className="umpire-demo__fields">
+            <div className="c-umpire-demo__fields">
               {fieldOrder.map((field) => {
                 const meta = fieldMeta[field]
                 const availability = check[field]
@@ -170,27 +170,27 @@ export default function ReactAdapterDemo() {
                   <div
                     key={field}
                     className={cls(
-                      'umpire-demo__field',
-                      !availability.enabled && 'umpire-demo__field--disabled',
+                      'c-umpire-demo__field',
+                      !availability.enabled && 'c-umpire-demo__field is-disabled',
                     )}
                   >
-                    <div className="react-demo__field-header">
-                      <label className="umpire-demo__label" htmlFor={`react-demo-${field}`}>
+                    <div className="c-react-demo__field-header">
+                      <label className="c-umpire-demo__label" htmlFor={`react-demo-${field}`}>
                         {meta.label}
                       </label>
 
-                      <div className="react-demo__chips">
+                      <div className="c-react-demo__chips">
                         {availability.required && (
-                          <span className="react-demo__chip react-demo__chip--required">
+                          <span className="c-react-demo__chip c-react-demo__chip--required">
                             required
                           </span>
                         )}
                         <span
                           className={cls(
-                            'react-demo__chip',
+                            'c-react-demo__chip',
                             availability.enabled
-                              ? 'react-demo__chip--enabled'
-                              : 'react-demo__chip--disabled',
+                              ? 'c-react-demo__chip is-enabled'
+                              : 'c-react-demo__chip is-disabled',
                           )}
                         >
                           {availability.enabled ? 'enabled' : 'disabled'}
@@ -200,7 +200,7 @@ export default function ReactAdapterDemo() {
 
                     <input
                       id={`react-demo-${field}`}
-                      className="umpire-demo__input"
+                      className="c-umpire-demo__input"
                       type={meta.type}
                       placeholder={meta.placeholder}
                       disabled={!availability.enabled}
@@ -208,9 +208,9 @@ export default function ReactAdapterDemo() {
                       onChange={(event) => updateValue(field, event.currentTarget.value)}
                     />
 
-                    <div className="react-demo__field-meta">
-                      <code className="react-demo__field-code">check.{field}</code>
-                      <span className="react-demo__field-reason">
+                    <div className="c-react-demo__field-meta">
+                      <code className="c-react-demo__field-code">check.{field}</code>
+                      <span className="c-react-demo__field-reason">
                         {availability.reason ?? 'available'}
                       </span>
                     </div>
@@ -219,54 +219,54 @@ export default function ReactAdapterDemo() {
               })}
             </div>
 
-            <p className="react-demo__note">
+            <p className="c-react-demo__note">
               Fill in a company name on the business plan, then switch back to personal — a foul
               recommends clearing the stale value.
             </p>
           </div>
         </section>
 
-        <section className="umpire-demo__panel react-demo__panel--output">
-          <div className="umpire-demo__panel-header">
+        <section className="c-umpire-demo__panel c-react-demo__panel--output">
+          <div className="c-umpire-demo__panel-header">
             <div>
-              <div className="umpire-demo__eyebrow">Derived hook state</div>
-              <h2 className="umpire-demo__title">Hook Output</h2>
+              <div className="c-umpire-demo__eyebrow">Derived hook state</div>
+              <h2 className="c-umpire-demo__title">Hook Output</h2>
             </div>
-            <span className="umpire-demo__panel-accent">live JSON</span>
+            <span className="c-umpire-demo__panel-accent">live JSON</span>
           </div>
 
-          <div className="umpire-demo__panel-body react-demo__panel-body--output">
-            <div className="react-demo__hook-line">
-              <span className="react-demo__hook-label umpire-demo__eyebrow">Hook</span>
-              <code className="react-demo__hook-code">
+          <div className="c-umpire-demo__panel-body c-react-demo__panel-body--output">
+            <div className="c-react-demo__hook-line">
+              <span className="c-react-demo__hook-label c-umpire-demo__eyebrow">Hook</span>
+              <code className="c-react-demo__hook-code">
                 {'const { check, fouls } = useUmpire(demoUmp, values, conditions)'}
               </code>
             </div>
 
-            <section className="umpire-demo__json-shell">
-              <div className="umpire-demo__json-header">
-                <span className="umpire-demo__json-title">check</span>
-                <span className="umpire-demo__json-meta">AvailabilityMap</span>
+            <section className="c-umpire-demo__json-shell">
+              <div className="c-umpire-demo__json-header">
+                <span className="c-umpire-demo__json-title">check</span>
+                <span className="c-umpire-demo__json-meta">AvailabilityMap</span>
               </div>
-              <pre className="umpire-demo__code-block">
+              <pre className="c-umpire-demo__code-block">
                 <code>{JSON.stringify(check, null, 2)}</code>
               </pre>
             </section>
 
             <section
               className={cls(
-                'umpire-demo__json-shell',
-                'react-demo__json-section--fouls',
-                fouls.length > 0 && 'react-demo__json-section--alert',
+                'c-umpire-demo__json-shell',
+                'c-react-demo__json-section--fouls',
+                fouls.length > 0 && 'c-react-demo__json-section--alert',
               )}
             >
-              <div className="umpire-demo__json-header">
-                <span className="umpire-demo__json-title">fouls</span>
-                <span className="umpire-demo__json-meta">
+              <div className="c-umpire-demo__json-header">
+                <span className="c-umpire-demo__json-title">fouls</span>
+                <span className="c-umpire-demo__json-meta">
                   {fouls.length > 0 ? 'reset recommendations' : '[]'}
                 </span>
               </div>
-              <pre className="umpire-demo__code-block">
+              <pre className="c-umpire-demo__code-block">
                 <code>{fouls.length > 0 ? JSON.stringify(fouls, null, 2) : '[]'}</code>
               </pre>
             </section>

@@ -128,7 +128,7 @@ function numberClass(adjacentMines: number) {
     return null;
   }
 
-  return `minesweeper-demo__number--${adjacentMines}`;
+  return `c-minesweeper-demo__number--${adjacentMines}`;
 }
 
 export default function MinesweeperDemo({
@@ -311,42 +311,42 @@ export default function MinesweeperDemo({
   return (
     <div
       className={cls(
-        "minesweeper-demo",
-        "umpire-demo",
-        compact && "minesweeper-demo--compact",
+        "c-minesweeper-demo",
+        "c-umpire-demo",
+        compact && "c-minesweeper-demo--compact",
       )}
     >
-      <div className={cls("minesweeper-demo__layout")}>
+      <div className={cls("c-minesweeper-demo__layout")}>
         <section
           className={cls(
-            "umpire-demo__panel",
-            "minesweeper-demo__panel",
-            "minesweeper-demo__panel--board",
+            "c-umpire-demo__panel",
+            "c-minesweeper-demo__panel",
+            "c-minesweeper-demo__panel--board",
           )}
         >
-          <div className="umpire-demo__panel-header">
+          <div className="c-umpire-demo__panel-header">
             <div>
-              <div className="umpire-demo__eyebrow">Playable example</div>
-              <h2 className="umpire-demo__title">Minesweeper</h2>
+              <div className="c-umpire-demo__eyebrow">Playable example</div>
+              <h2 className="c-umpire-demo__title">Minesweeper</h2>
             </div>
-            <span className="umpire-demo__panel-accent">
+            <span className="c-umpire-demo__panel-accent">
               64 fields / 192 read-backed rules
             </span>
           </div>
 
-          <div className="umpire-demo__panel-body minesweeper-demo__panel-body">
-            <div className="minesweeper-demo__controls">
+          <div className="c-umpire-demo__panel-body c-minesweeper-demo__panel-body">
+            <div className="c-minesweeper-demo__controls">
               <div
-                className="minesweeper-demo__mode-toggle"
+                className="c-minesweeper-demo__mode-toggle"
                 aria-label="Interaction mode"
               >
                 <button
                   type="button"
                   aria-pressed={!conditions.flagMode}
                   className={cls(
-                    "minesweeper-demo__mode-button",
+                    "c-minesweeper-demo__mode-button",
                     !conditions.flagMode &&
-                      "minesweeper-demo__mode-button--active",
+                      "c-minesweeper-demo__mode-button is-active",
                   )}
                   onClick={() =>
                     setConditions((current) => ({
@@ -361,9 +361,9 @@ export default function MinesweeperDemo({
                   type="button"
                   aria-pressed={conditions.flagMode}
                   className={cls(
-                    "minesweeper-demo__mode-button",
+                    "c-minesweeper-demo__mode-button",
                     conditions.flagMode &&
-                      "minesweeper-demo__mode-button--active",
+                      "c-minesweeper-demo__mode-button is-active",
                   )}
                   onClick={() =>
                     setConditions((current) => ({ ...current, flagMode: true }))
@@ -373,24 +373,24 @@ export default function MinesweeperDemo({
                 </button>
               </div>
 
-              <div className="minesweeper-demo__status">
-                <span className="minesweeper-demo__status-label umpire-demo__eyebrow">
+              <div className="c-minesweeper-demo__status">
+                <span className="c-minesweeper-demo__status-label c-umpire-demo__eyebrow">
                   {STATUS_LABEL[conditions.gameStatus]}
                 </span>
-                <span className="minesweeper-demo__face" aria-hidden="true">
+                <span className="c-minesweeper-demo__face" aria-hidden="true">
                   {STATUS_FACE[conditions.gameStatus]}
                 </span>
               </div>
 
-              <div className="minesweeper-demo__counter">
-                <span className="minesweeper-demo__counter-label umpire-demo__eyebrow">
+              <div className="c-minesweeper-demo__counter">
+                <span className="c-minesweeper-demo__counter-label c-umpire-demo__eyebrow">
                   Mines
                 </span>
                 <span
                   className={cls(
-                    "minesweeper-demo__counter-value",
+                    "c-minesweeper-demo__counter-value",
                     MINE_COUNT - flaggedCount < 0 &&
-                    "minesweeper-demo__counter-value--negative",
+                    "c-minesweeper-demo__counter-value--negative",
                   )}
                 >
                   {MINE_COUNT - flaggedCount}
@@ -399,17 +399,17 @@ export default function MinesweeperDemo({
 
               <button
                 type="button"
-                className="minesweeper-demo__new-game"
+                className="c-minesweeper-demo__new-game"
                 onClick={resetGame}
               >
                 New Game
               </button>
             </div>
 
-            <section className="minesweeper-demo-board">
-              <div className="minesweeper-demo-board__shell">
+            <section className="c-minesweeper-demo-board">
+              <div className="c-minesweeper-demo-board__shell">
                 <div
-                  className="minesweeper-demo__grid"
+                  className="c-minesweeper-demo__grid"
                   style={{
                     gridTemplateColumns: `repeat(${BOARD_WIDTH}, minmax(44px, 1fr))`,
                   }}
@@ -432,14 +432,14 @@ export default function MinesweeperDemo({
                         aria-disabled={!cellAvailability.enabled}
                         aria-label={`Cell ${cell.x + 1}, ${cell.y + 1}: ${describeCellValue(value)}`}
                         className={cls(
-                          "minesweeper-demo__cell",
-                          !isRevealed && "minesweeper-demo__cell--hidden",
-                          isRevealed && "minesweeper-demo__cell--revealed",
+                          "c-minesweeper-demo__cell",
+                          !isRevealed && "c-minesweeper-demo__cell is-hidden",
+                          isRevealed && "c-minesweeper-demo__cell is-revealed",
                           value === "flagged" &&
-                            "minesweeper-demo__cell--flagged",
-                          isMine && "minesweeper-demo__cell--mine",
+                            "c-minesweeper-demo__cell is-flagged",
+                          isMine && "c-minesweeper-demo__cell--mine",
                           !cellAvailability.enabled &&
-                            "minesweeper-demo__cell--disabled",
+                            "c-minesweeper-demo__cell is-disabled",
                         )}
                         onClick={() => handleCellClick(cell)}
                         onContextMenu={(event) => {
@@ -451,15 +451,15 @@ export default function MinesweeperDemo({
                         onFocus={() => inspect(cell)}
                       >
                         {display.kind === "flagged" && (
-                          <span className="minesweeper-demo__flag">⚑</span>
+                          <span className="c-minesweeper-demo__flag">⚑</span>
                         )}
                         {isMine && (
-                          <span className="minesweeper-demo__mine">✺</span>
+                          <span className="c-minesweeper-demo__mine">✺</span>
                         )}
                         {display.kind === "number" && (
                           <span
                             className={cls(
-                              "minesweeper-demo__number",
+                              "c-minesweeper-demo__number",
                               numberClass(display.count),
                             )}
                           >
@@ -474,34 +474,34 @@ export default function MinesweeperDemo({
               {!compact && (
                 <section
                   className={cls(
-                    "minesweeper-demo-board__panel",
-                    "minesweeper-demo__panel",
-                    "minesweeper-demo__panel--inspector",
+                    "c-minesweeper-demo-board__panel",
+                    "c-minesweeper-demo__panel",
+                    "c-minesweeper-demo__panel--inspector",
                   )}
                 >
-                  <div className="minesweeper-demo__inspector-body">
-                    <div className="minesweeper-demo__inspector-meta">
-                      <div className="minesweeper-demo__inspector-row">
-                        <span className="minesweeper-demo__inspector-label umpire-demo__eyebrow">
+                  <div className="c-minesweeper-demo__inspector-body">
+                    <div className="c-minesweeper-demo__inspector-meta">
+                      <div className="c-minesweeper-demo__inspector-row">
+                        <span className="c-minesweeper-demo__inspector-label c-umpire-demo__eyebrow">
                           Coords
                         </span>
-                        <span className="minesweeper-demo__inspector-value">
+                        <span className="c-minesweeper-demo__inspector-value">
                           ({inspectedCell.x}, {inspectedCell.y})
                         </span>
                       </div>
-                      <div className="minesweeper-demo__inspector-row">
-                        <span className="minesweeper-demo__inspector-label umpire-demo__eyebrow">
+                      <div className="c-minesweeper-demo__inspector-row">
+                        <span className="c-minesweeper-demo__inspector-label c-umpire-demo__eyebrow">
                           Value
                         </span>
-                        <span className="minesweeper-demo__inspector-value">
+                        <span className="c-minesweeper-demo__inspector-value">
                           {describeCellValue(values[inspectedCell.key])}
                         </span>
                       </div>
-                      <div className="minesweeper-demo__inspector-row">
-                        <span className="minesweeper-demo__inspector-label umpire-demo__eyebrow">
+                      <div className="c-minesweeper-demo__inspector-row">
+                        <span className="c-minesweeper-demo__inspector-label c-umpire-demo__eyebrow">
                           Board
                         </span>
-                        <span className="minesweeper-demo__inspector-value">
+                        <span className="c-minesweeper-demo__inspector-value">
                           {board
                             ? boardReads.probeWouldExplode
                               ? "mine"
@@ -512,26 +512,26 @@ export default function MinesweeperDemo({
                             : "unseeded"}
                         </span>
                       </div>
-                      <div className="minesweeper-demo__inspector-row">
-                        <span className="minesweeper-demo__inspector-label umpire-demo__eyebrow">
+                      <div className="c-minesweeper-demo__inspector-row">
+                        <span className="c-minesweeper-demo__inspector-label c-umpire-demo__eyebrow">
                           Preview
                         </span>
-                        <span className="minesweeper-demo__inspector-value">
+                        <span className="c-minesweeper-demo__inspector-value">
                           {inspectedPreview}
                         </span>
                       </div>
                     </div>
 
-                    <section className="umpire-demo__json-shell">
-                      <div className="umpire-demo__json-header">
-                        <span className="umpire-demo__json-title">
+                    <section className="c-umpire-demo__json-shell">
+                      <div className="c-umpire-demo__json-header">
+                        <span className="c-umpire-demo__json-title">
                           availability + reads
                         </span>
-                        <span className="umpire-demo__json-meta">
+                        <span className="c-umpire-demo__json-meta">
                           useUmpire() + createReads()
                         </span>
                       </div>
-                      <pre className="umpire-demo__code-block">
+                      <pre className="c-umpire-demo__code-block">
                         <code>{inspectedJson}</code>
                       </pre>
                     </section>

@@ -288,36 +288,36 @@ export default function LineupCard() {
   // --- Render ---
 
   return (
-    <div className="lineup">
+    <div className="c-lineup">
       {/* Toggle buttons — change conditions, watch availability react */}
-      <div className="lineup__controls">
+      <div className="c-lineup__controls">
         <button
-          className={cls('lineup__toggle', `lineup__toggle--${pitcherVariant}`)}
+          className={cls('c-lineup__toggle', `c-lineup__toggle--${pitcherVariant}`)}
           onClick={togglePitcher}
         >
           Opposing: {opposingPitcher === 'L' ? 'LHP' : 'RHP'}
         </button>
         <button
-          className={cls('lineup__toggle', `lineup__toggle--${restVariant}`)}
+          className={cls('c-lineup__toggle', `c-lineup__toggle--${restVariant}`)}
           onClick={toggleRest}
         >
           Morrison: {morrisonRested ? 'rested' : 'fatigued'}
         </button>
         <button
-          className="lineup__toggle lineup__toggle--red"
+          className="c-lineup__toggle c-lineup__toggle--red"
           onClick={randomInjury}
         >
           🤕 Random injury
         </button>
         <span style={{ flex: 1 }} />
         <button
-          className="lineup__toggle lineup__toggle--dim"
+          className="c-lineup__toggle c-lineup__toggle--dim"
           onClick={clearAll}
         >
           Clear
         </button>
         <button
-          className="lineup__toggle lineup__toggle--dim"
+          className="c-lineup__toggle c-lineup__toggle--dim"
           onClick={resetAll}
         >
           Reset
@@ -326,51 +326,51 @@ export default function LineupCard() {
 
       {/* Foul flags — useUmpire detected fields that just became ineligible */}
       {fouls.length > 0 && (
-        <div className="lineup__fouls">
-          <div className="lineup__fouls-title">🚩 Fouls</div>
+        <div className="c-lineup__fouls">
+          <div className="c-lineup__fouls-title">🚩 Fouls</div>
           {fouls.map((p, i) => (
-            <div key={i} className="lineup__foul">
+            <div key={i} className="c-lineup__foul">
               <strong>{roster[p.field]?.name ?? p.field}</strong>
-              <span className="lineup__foul-reason"> — {p.reason}</span>
+              <span className="c-lineup__foul-reason"> — {p.reason}</span>
             </div>
           ))}
         </div>
       )}
 
       {/* Two-panel layout: roster on left, tonight's card on right */}
-      <div className="lineup__panels">
+      <div className="c-lineup__panels">
         {/* Left: full roster with availability indicators */}
-        <div className="lineup__panel lineup__panel--roster">
-          <div className="lineup__panel-header lineup__panel-header--roster">
+        <div className="c-lineup__panel c-lineup__panel--roster">
+          <div className="c-lineup__panel-header c-lineup__panel-header--roster">
             <span>Roster</span>
-            <span className="lineup__panel-accent--green">Boston Crabs</span>
+            <span className="c-lineup__panel-accent--green">Boston Crabs</span>
           </div>
-          <div className="lineup__panel-body">
+          <div className="c-lineup__panel-body">
             {rosterEntries.map(([id, player]) => {
               const state = playerState(id)
               const av = availability[id]
               return (
-                <div key={id} className={cls('lineup__player', `lineup__player--${state}`)}>
-                  <span className={cls('lineup__dot', `lineup__dot--${dotVariant(id)}`)} />
+                <div key={id} className={cls('c-lineup__player', `c-lineup__player--${state}`)}>
+                  <span className={cls('c-lineup__dot', `c-lineup__dot--${dotVariant(id)}`)} />
                   <span className={cls(
-                    'lineup__player-name',
-                    state === 'disabled' ? 'lineup__player-name--inactive' : 'lineup__player-name--active',
-                    state === 'assigned' && 'lineup__player-name--struck',
+                    'c-lineup__player-name',
+                    state === 'disabled' ? 'c-lineup__player-name is-inactive' : 'c-lineup__player-name is-active',
+                    state === 'assigned' && 'c-lineup__player-name is-struck',
                   )}>
                     {player.name}
                   </span>
-                  <span className="lineup__player-pos">{player.positions.join('/')}</span>
-                  <span className="lineup__player-bt">{player.bats}/{player.throws}</span>
+                  <span className="c-lineup__player-pos">{player.positions.join('/')}</span>
+                  <span className="c-lineup__player-bt">{player.bats}/{player.throws}</span>
                   {state === 'disabled' && (
-                    <span className="lineup__badge lineup__badge--out">{av?.reason ?? 'out'}</span>
+                    <span className="c-lineup__badge c-lineup__badge--out">{av?.reason ?? 'out'}</span>
                   )}
                   {state === 'assigned' && (
-                    <span className="lineup__badge lineup__badge--in">in lineup</span>
+                    <span className="c-lineup__badge c-lineup__badge--in">in lineup</span>
                   )}
                   <button
                     className={cls(
-                      'lineup__injury-btn',
-                      injuries[id] ? 'lineup__injury-btn--injured' : 'lineup__injury-btn--clear',
+                      'c-lineup__injury-btn',
+                      injuries[id] ? 'c-lineup__injury-btn is-injured' : 'c-lineup__injury-btn--clear',
                     )}
                     onClick={() => toggleInjury(id)}
                     title={injuries[id] ? 'Clear injury' : 'Add to IL'}
@@ -384,14 +384,14 @@ export default function LineupCard() {
         </div>
 
         {/* Right: tonight's lineup card — click slots to assign eligible players */}
-        <div className="lineup__panel lineup__panel--card">
-          <div className="lineup__panel-header lineup__panel-header--card">
+        <div className="c-lineup__panel c-lineup__panel--card">
+          <div className="c-lineup__panel-header c-lineup__panel-header--card">
             <span>Tonight's Lineup</span>
-            <span className="lineup__panel-accent--yellow">
+            <span className="c-lineup__panel-accent--yellow">
               vs {opposingPitcher === 'L' ? 'LHP' : 'RHP'}
             </span>
           </div>
-          <div className="lineup__panel-body">
+          <div className="c-lineup__panel-body">
             {lineupSlots.map((slot) => {
               const playerId = effectiveLineup[slot.label]
               const player = playerId ? roster[playerId] : null
@@ -400,25 +400,25 @@ export default function LineupCard() {
               const isSP = slot.position === 'SP'
 
               return (
-                <div key={slot.label} className={cls('lineup__slot', isSP && 'lineup__slot--sp')}>
+                <div key={slot.label} className={cls('c-lineup__slot', isSP && 'c-lineup__slot--sp')}>
                   <div
-                    className={cls('lineup__slot-row', isSelecting && 'lineup__slot-row--selecting')}
+                    className={cls('c-lineup__slot-row', isSelecting && 'c-lineup__slot-row is-selecting')}
                     onClick={() => playerId ? clearSlot(slot.label) : setSelectingSlot(isSelecting ? null : slot.label)}
                   >
-                    <span className={cls('lineup__slot-order', isSP && 'lineup__slot-order--sp')}>
+                    <span className={cls('c-lineup__slot-order', isSP && 'c-lineup__slot-order--sp')}>
                       {slot.label}
                     </span>
-                    <span className="lineup__slot-pos">{slot.position}</span>
+                    <span className="c-lineup__slot-pos">{slot.position}</span>
                     {player ? (
                       <>
-                        <span className="lineup__slot-name">{player.name}</span>
-                        <span className="lineup__slot-bt">{player.bats}/{player.throws}</span>
-                        <span className="lineup__slot-remove" title="Remove from lineup">✕</span>
+                        <span className="c-lineup__slot-name">{player.name}</span>
+                        <span className="c-lineup__slot-bt">{player.bats}/{player.throws}</span>
+                        <span className="c-lineup__slot-remove" title="Remove from lineup">✕</span>
                       </>
                     ) : (
                       <span className={cls(
-                        'lineup__slot-empty',
-                        eligible.length === 0 && 'lineup__slot-empty--none',
+                        'c-lineup__slot-empty',
+                        eligible.length === 0 && 'c-lineup__slot-empty--none',
                       )}>
                         {eligible.length > 0 ? `${eligible.length} eligible` : 'no eligible players'}
                       </span>
@@ -426,16 +426,16 @@ export default function LineupCard() {
                   </div>
 
                   {isSelecting && eligible.length > 0 && (
-                    <div className="lineup__eligible">
+                    <div className="c-lineup__eligible">
                       {eligible.map(([id, p]) => (
                         <div
                           key={id}
-                          className="lineup__eligible-option"
+                          className="c-lineup__eligible-option"
                           onClick={(e) => { e.stopPropagation(); assignPlayer(slot.label, id) }}
                         >
-                          <span className="lineup__eligible-dot" />
-                          <span className="lineup__eligible-name">{p.name}</span>
-                          <span className="lineup__eligible-bt">{p.bats}/{p.throws}</span>
+                          <span className="c-lineup__eligible-dot" />
+                          <span className="c-lineup__eligible-name">{p.name}</span>
+                          <span className="c-lineup__eligible-bt">{p.bats}/{p.throws}</span>
                         </div>
                       ))}
                     </div>

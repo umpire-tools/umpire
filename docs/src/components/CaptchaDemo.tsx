@@ -60,18 +60,18 @@ export default function CaptchaDemo() {
   const failingReasons = submitAv.reasons ?? []
 
   return (
-    <div className="captcha-demo">
-      <div className="captcha-demo__panel">
-        <div className="captcha-demo__header">
+    <div className="c-captcha-demo">
+      <div className="c-captcha-demo__panel">
+        <div className="c-captcha-demo__header">
           <span>Login</span>
-          <span className="captcha-demo__header-accent">Captcha Gate</span>
+          <span className="c-captcha-demo__header-accent">Captcha Gate</span>
         </div>
-        <div className="captcha-demo__body">
+        <div className="c-captcha-demo__body">
           {/* Email */}
-          <div className="captcha-demo__field">
-            <label className="captcha-demo__label">Email</label>
+          <div className="c-captcha-demo__field">
+            <label className="c-captcha-demo__label">Email</label>
             <input
-              className="captcha-demo__input"
+              className="c-captcha-demo__input"
               type="email"
               placeholder="user@example.com"
               value={email}
@@ -80,10 +80,10 @@ export default function CaptchaDemo() {
           </div>
 
           {/* Password */}
-          <div className="captcha-demo__field">
-            <label className="captcha-demo__label">Password</label>
+          <div className="c-captcha-demo__field">
+            <label className="c-captcha-demo__label">Password</label>
             <input
-              className="captcha-demo__input"
+              className="c-captcha-demo__input"
               type="password"
               placeholder="••••••••"
               value={password}
@@ -94,20 +94,20 @@ export default function CaptchaDemo() {
           {/* Captcha toggle */}
           <div
             className={cls(
-              'captcha-demo__captcha',
-              captchaSolved && 'captcha-demo__captcha--solved',
+              'c-captcha-demo__captcha',
+              captchaSolved && 'c-captcha-demo__captcha is-solved',
             )}
             onClick={() => setCaptchaSolved((s) => !s)}
           >
             <div
               className={cls(
-                'captcha-demo__checkbox',
-                captchaSolved && 'captcha-demo__checkbox--checked',
+                'c-captcha-demo__checkbox',
+                captchaSolved && 'c-captcha-demo__checkbox is-checked',
               )}
             >
-              {captchaSolved && <span className="captcha-demo__checkbox-mark">✓</span>}
+              {captchaSolved && <span className="c-captcha-demo__checkbox-mark">✓</span>}
             </div>
-            <span className="captcha-demo__captcha-label">
+            <span className="c-captcha-demo__captcha-label">
               🤖 I'm not a robot
             </span>
           </div>
@@ -115,8 +115,8 @@ export default function CaptchaDemo() {
           {/* Submit */}
           <button
             className={cls(
-              'captcha-demo__submit',
-              isEnabled ? 'captcha-demo__submit--enabled' : 'captcha-demo__submit--disabled',
+              'c-captcha-demo__submit',
+              isEnabled ? 'c-captcha-demo__submit is-enabled' : 'c-captcha-demo__submit is-disabled',
             )}
             disabled={!isEnabled}
             onClick={() => {
@@ -127,8 +127,8 @@ export default function CaptchaDemo() {
           </button>
 
           {/* Reasons */}
-          <div className="captcha-demo__reasons">
-            <div className="captcha-demo__reasons-title">
+          <div className="c-captcha-demo__reasons">
+            <div className="c-captcha-demo__reasons-title">
               reason{!isEnabled && primaryReason ? ` → ${primaryReason}` : ''}
             </div>
             {allReasons.map((reason) => {
@@ -139,15 +139,15 @@ export default function CaptchaDemo() {
                 <div
                   key={reason}
                   className={cls(
-                    'captcha-demo__reason',
-                    isFailing ? 'captcha-demo__reason--failing' : 'captcha-demo__reason--passing',
-                    isFailing && isPrimary && 'captcha-demo__reason--primary',
+                    'c-captcha-demo__reason',
+                    isFailing ? 'c-captcha-demo__reason is-failing' : 'c-captcha-demo__reason is-passing',
+                    isFailing && isPrimary && 'c-captcha-demo__reason--primary',
                   )}
                 >
                   <span
                     className={cls(
-                      'captcha-demo__reason-dot',
-                      isFailing ? 'captcha-demo__reason-dot--failing' : 'captcha-demo__reason-dot--passing',
+                      'c-captcha-demo__reason-dot',
+                      isFailing ? 'c-captcha-demo__reason-dot is-failing' : 'c-captcha-demo__reason-dot is-passing',
                     )}
                   />
                   {reason}

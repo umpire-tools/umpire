@@ -157,26 +157,26 @@ function FieldMeta({
   reason: string | null
 }) {
   return (
-    <div className="account-settings-demo__meta">
+    <div className="c-account-settings-demo__meta">
       <span
         className={cls(
-          'account-settings-demo__chip',
+          'c-account-settings-demo__chip',
           enabled
-            ? 'account-settings-demo__chip--enabled'
-            : 'account-settings-demo__chip--disabled',
+            ? 'c-account-settings-demo__chip is-enabled'
+            : 'c-account-settings-demo__chip is-disabled',
         )}
       >
         {enabled ? 'enabled' : 'disabled'}
       </span>
       <span
         className={cls(
-          'account-settings-demo__chip',
-          required && 'account-settings-demo__chip--required',
+          'c-account-settings-demo__chip',
+          required && 'c-account-settings-demo__chip--required',
         )}
       >
         {required ? 'required' : 'optional'}
       </span>
-      <span className="account-settings-demo__reason">{reason ?? 'available'}</span>
+      <span className="c-account-settings-demo__reason">{reason ?? 'available'}</span>
     </div>
   )
 }
@@ -191,22 +191,22 @@ function ProfileSection({
   const profile = useStore(store, (state) => state.profile)
 
   return (
-    <section className="account-settings-demo__section">
-      <div className="account-settings-demo__section-header">
+    <section className="c-account-settings-demo__section">
+      <div className="c-account-settings-demo__section-header">
         <div>
-          <div className="account-settings-demo__section-kicker umpire-demo__eyebrow">ProfileSection</div>
-          <h3 className="account-settings-demo__section-title">Owns profile fields</h3>
+          <div className="c-account-settings-demo__section-kicker c-umpire-demo__eyebrow">ProfileSection</div>
+          <h3 className="c-account-settings-demo__section-title">Owns profile fields</h3>
         </div>
-        <code className="account-settings-demo__section-code">state.profile</code>
+        <code className="c-account-settings-demo__section-code">state.profile</code>
       </div>
 
-      <div className="account-settings-demo__field-grid">
-        <label className="umpire-demo__label" htmlFor="account-settings-email">
+      <div className="c-account-settings-demo__field-grid">
+        <label className="c-umpire-demo__label" htmlFor="account-settings-email">
           Email
         </label>
         <input
           id="account-settings-email"
-          className="umpire-demo__input"
+          className="c-umpire-demo__input"
           value={profile.email}
           onChange={(event) => patchProfile(store, { email: event.currentTarget.value })}
         />
@@ -216,12 +216,12 @@ function ProfileSection({
           reason={availability.email.reason}
         />
 
-        <label className="umpire-demo__label" htmlFor="account-settings-display-name">
+        <label className="c-umpire-demo__label" htmlFor="account-settings-display-name">
           Display Name
         </label>
         <input
           id="account-settings-display-name"
-          className="umpire-demo__input"
+          className="c-umpire-demo__input"
           value={profile.displayName}
           onChange={(event) => patchProfile(store, { displayName: event.currentTarget.value })}
         />
@@ -239,23 +239,23 @@ function PlanSection({ store }: { store: DemoModel['store'] }) {
   const plan = useStore(store, (state) => state.billing.plan)
 
   return (
-    <section className="account-settings-demo__section">
-      <div className="account-settings-demo__section-header">
+    <section className="c-account-settings-demo__section">
+      <div className="c-account-settings-demo__section-header">
         <div>
-          <div className="account-settings-demo__section-kicker umpire-demo__eyebrow">PlanSection</div>
-          <h3 className="account-settings-demo__section-title">Owns billing plan</h3>
+          <div className="c-account-settings-demo__section-kicker c-umpire-demo__eyebrow">PlanSection</div>
+          <h3 className="c-account-settings-demo__section-title">Owns billing plan</h3>
         </div>
-        <code className="account-settings-demo__section-code">state.billing</code>
+        <code className="c-account-settings-demo__section-code">state.billing</code>
       </div>
 
-      <div className="umpire-demo__plan-toggle" aria-label="Billing plan">
+      <div className="c-umpire-demo__plan-toggle" aria-label="Billing plan">
         {(['personal', 'team'] as const).map((option) => (
           <button
             key={option}
             type="button"
             className={cls(
-              'umpire-demo__plan-option',
-              plan === option && 'umpire-demo__plan-option--active',
+              'c-umpire-demo__plan-option',
+              plan === option && 'c-umpire-demo__plan-option is-active',
             )}
             aria-pressed={plan === option}
             onClick={() => patchBilling(store, { plan: option })}
@@ -265,7 +265,7 @@ function PlanSection({ store }: { store: DemoModel['store'] }) {
         ))}
       </div>
 
-      <p className="account-settings-demo__section-note">
+      <p className="c-account-settings-demo__section-note">
         This section never touches team inputs directly. It only flips
         <code> plan </code>
         and Umpire handles the cross-section availability.
@@ -284,22 +284,22 @@ function TeamSection({
   const team = useStore(store, (state) => state.team)
 
   return (
-    <section className="account-settings-demo__section">
-      <div className="account-settings-demo__section-header">
+    <section className="c-account-settings-demo__section">
+      <div className="c-account-settings-demo__section-header">
         <div>
-          <div className="account-settings-demo__section-kicker umpire-demo__eyebrow">TeamSection</div>
-          <h3 className="account-settings-demo__section-title">Owns team fields</h3>
+          <div className="c-account-settings-demo__section-kicker c-umpire-demo__eyebrow">TeamSection</div>
+          <h3 className="c-account-settings-demo__section-title">Owns team fields</h3>
         </div>
-        <code className="account-settings-demo__section-code">state.team</code>
+        <code className="c-account-settings-demo__section-code">state.team</code>
       </div>
 
-      <div className="account-settings-demo__field-grid">
-        <label className="umpire-demo__label" htmlFor="account-settings-team-size">
+      <div className="c-account-settings-demo__field-grid">
+        <label className="c-umpire-demo__label" htmlFor="account-settings-team-size">
           Team Size
         </label>
         <input
           id="account-settings-team-size"
-          className="umpire-demo__input"
+          className="c-umpire-demo__input"
           value={team.size}
           disabled={!availability.teamSize.enabled}
           onChange={(event) => patchTeam(store, { size: event.currentTarget.value })}
@@ -310,12 +310,12 @@ function TeamSection({
           reason={availability.teamSize.reason}
         />
 
-        <label className="umpire-demo__label" htmlFor="account-settings-team-domain">
+        <label className="c-umpire-demo__label" htmlFor="account-settings-team-domain">
           Team Domain
         </label>
         <input
           id="account-settings-team-domain"
-          className="umpire-demo__input"
+          className="c-umpire-demo__input"
           value={team.domain}
           disabled={!availability.teamDomain.enabled}
           onChange={(event) => patchTeam(store, { domain: event.currentTarget.value })}
@@ -366,43 +366,43 @@ export default function AccountSettingsDemo() {
   const teamSizeRead = model.umpStore.field('teamSize')
 
   return (
-    <div className="account-settings-demo umpire-demo">
+    <div className="c-account-settings-demo c-umpire-demo">
       {fouls.length > 0 && (
-        <div className="umpire-demo__fouls">
-          <div className="umpire-demo__fouls-copy">
-            <div className="umpire-demo__fouls-kicker">Reset recommendations</div>
-            <div className="umpire-demo__fouls-list">
+        <div className="c-umpire-demo__fouls">
+          <div className="c-umpire-demo__fouls-copy">
+            <div className="c-umpire-demo__fouls-kicker">Reset recommendations</div>
+            <div className="c-umpire-demo__fouls-list">
               {fouls.map((foul) => (
-                <div key={foul.field} className="umpire-demo__foul">
-                  <span className="umpire-demo__foul-field">{fieldLabels[foul.field]}</span>
-                  <span className="umpire-demo__foul-reason">{foul.reason}</span>
+                <div key={foul.field} className="c-umpire-demo__foul">
+                  <span className="c-umpire-demo__foul-field">{fieldLabels[foul.field]}</span>
+                  <span className="c-umpire-demo__foul-reason">{foul.reason}</span>
                 </div>
               ))}
             </div>
           </div>
-          <button type="button" className="umpire-demo__reset-button" onClick={applyResets}>
+          <button type="button" className="c-umpire-demo__reset-button" onClick={applyResets}>
             Apply resets
           </button>
         </div>
       )}
 
-      <div className="umpire-demo__layout account-settings-demo__layout">
-        <section className="umpire-demo__panel">
-          <div className="umpire-demo__panel-header">
+      <div className="c-umpire-demo__layout c-account-settings-demo__layout">
+        <section className="c-umpire-demo__panel">
+          <div className="c-umpire-demo__panel-header">
             <div>
-              <div className="umpire-demo__eyebrow">Split ownership</div>
-              <h2 className="umpire-demo__title">Account Settings</h2>
+              <div className="c-umpire-demo__eyebrow">Split ownership</div>
+              <h2 className="c-umpire-demo__title">Account Settings</h2>
             </div>
-            <span className="umpire-demo__panel-accent">one store, one umpire</span>
+            <span className="c-umpire-demo__panel-accent">one store, one umpire</span>
           </div>
 
-          <div className="umpire-demo__panel-body account-settings-demo__panel-body">
-            <div className="account-settings-demo__intro">
+          <div className="c-umpire-demo__panel-body c-account-settings-demo__panel-body">
+            <div className="c-account-settings-demo__intro">
               Each section owns its own slice. `fromStore()` pulls them back together with one
               `select()` call.
             </div>
 
-            <div className="account-settings-demo__section-stack">
+            <div className="c-account-settings-demo__section-stack">
               <ProfileSection store={model.store} availability={availability} />
               <PlanSection store={model.store} />
               <TeamSection store={model.store} availability={availability} />
@@ -410,62 +410,62 @@ export default function AccountSettingsDemo() {
           </div>
         </section>
 
-        <section className="umpire-demo__panel">
-          <div className="umpire-demo__panel-header">
+        <section className="c-umpire-demo__panel">
+          <div className="c-umpire-demo__panel-header">
             <div>
-              <div className="umpire-demo__eyebrow">Global reads</div>
-              <h2 className="umpire-demo__title">Aggregated Output</h2>
+              <div className="c-umpire-demo__eyebrow">Global reads</div>
+              <h2 className="c-umpire-demo__title">Aggregated Output</h2>
             </div>
-            <span className="umpire-demo__panel-accent">select + field()</span>
+            <span className="c-umpire-demo__panel-accent">select + field()</span>
           </div>
 
-          <div className="umpire-demo__panel-body account-settings-demo__panel-body">
-            <div className="account-settings-demo__summary-grid">
-              <div className="account-settings-demo__summary-card">
-                <span className="account-settings-demo__summary-label umpire-demo__eyebrow">Condition</span>
-                <code className="account-settings-demo__summary-code">
+          <div className="c-umpire-demo__panel-body c-account-settings-demo__panel-body">
+            <div className="c-account-settings-demo__summary-grid">
+              <div className="c-account-settings-demo__summary-card">
+                <span className="c-account-settings-demo__summary-label c-umpire-demo__eyebrow">Condition</span>
+                <code className="c-account-settings-demo__summary-code">
                   {`{ plan: '${state.billing.plan}' }`}
                 </code>
               </div>
-              <div className="account-settings-demo__summary-card">
-                <span className="account-settings-demo__summary-label umpire-demo__eyebrow">Anywhere read</span>
-                <code className="account-settings-demo__summary-code">
+              <div className="c-account-settings-demo__summary-card">
+                <span className="c-account-settings-demo__summary-label c-umpire-demo__eyebrow">Anywhere read</span>
+                <code className="c-account-settings-demo__summary-code">
                   {`field('teamSize') => ${teamSizeRead.enabled ? 'enabled' : 'disabled'}`}
                 </code>
               </div>
             </div>
 
-            <div className="account-settings-demo__rules">
-              <div className="account-settings-demo__rule">
+            <div className="c-account-settings-demo__rules">
+              <div className="c-account-settings-demo__rule">
                 <strong>Rule 1</strong>
                 <span>`teamSize` only enables on the team plan.</span>
               </div>
-              <div className="account-settings-demo__rule">
+              <div className="c-account-settings-demo__rule">
                 <strong>Rule 2</strong>
                 <span>`teamDomain` requires `teamSize &gt; 0`.</span>
               </div>
-              <div className="account-settings-demo__rule">
+              <div className="c-account-settings-demo__rule">
                 <strong>Rule 3</strong>
                 <span>`email` stays required regardless of which section owns it.</span>
               </div>
             </div>
 
-            <section className="umpire-demo__json-shell">
-              <div className="umpire-demo__json-header">
-                <span className="umpire-demo__json-title">select(state)</span>
-                <span className="umpire-demo__json-meta">InputValues</span>
+            <section className="c-umpire-demo__json-shell">
+              <div className="c-umpire-demo__json-header">
+                <span className="c-umpire-demo__json-title">select(state)</span>
+                <span className="c-umpire-demo__json-meta">InputValues</span>
               </div>
-              <pre className="umpire-demo__code-block">
+              <pre className="c-umpire-demo__code-block">
                 <code>{JSON.stringify(selectedValues, null, 2)}</code>
               </pre>
             </section>
 
-            <section className="umpire-demo__json-shell">
-              <div className="umpire-demo__json-header">
-                <span className="umpire-demo__json-title">availability</span>
-                <span className="umpire-demo__json-meta">field map</span>
+            <section className="c-umpire-demo__json-shell">
+              <div className="c-umpire-demo__json-header">
+                <span className="c-umpire-demo__json-title">availability</span>
+                <span className="c-umpire-demo__json-meta">field map</span>
               </div>
-              <pre className="umpire-demo__code-block">
+              <pre className="c-umpire-demo__code-block">
                 <code>{JSON.stringify(availability, null, 2)}</code>
               </pre>
             </section>

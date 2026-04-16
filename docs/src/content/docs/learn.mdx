@@ -53,7 +53,7 @@ ump.check({ password: '', confirmPassword: '' }).confirmPassword
 // disabled: reason = 'requires password'
 ```
 
-<div class="umpire-demo learn-demo">
+<div class="c-umpire-demo c-learn-demo">
   <RequiresDemo client:load />
 </div>
 
@@ -73,7 +73,7 @@ ump.check({ companyName: '' }, { plan: 'personal' }).companyName
 // disabled: reason = 'business plan required'
 ```
 
-<div class="umpire-demo learn-demo">
+<div class="c-umpire-demo c-learn-demo">
   <EnabledWhenDemo client:load />
 </div>
 
@@ -125,7 +125,7 @@ ump.check({ bannerMode: 'on', paperSize: 'A4' }).paperSize
 // disabled: reason = 'banner mode uses continuous feed'
 ```
 
-<div class="umpire-demo learn-demo">
+<div class="c-umpire-demo c-learn-demo">
   <DisablesDemo client:load />
 </div>
 
@@ -145,7 +145,7 @@ ump.check({ standardRate: '12.00' }, { handling: 'express' }).standardRate
 // disabled: reason = 'conflicts with express strategy'
 ```
 
-<div class="umpire-demo learn-demo">
+<div class="c-umpire-demo c-learn-demo">
   <OneOfDemo client:load />
 </div>
 
@@ -165,7 +165,7 @@ ump.check({ email: 'bad', submit: undefined }).submit
 // disabled: reason = 'enter a valid email'
 ```
 
-<div class="umpire-demo learn-demo">
+<div class="c-umpire-demo c-learn-demo">
   <CheckDemo client:load />
 </div>
 
@@ -186,7 +186,7 @@ ump.check({ phone: '', email: '', submit: undefined }).submit
 // disabled: reasons = ['enter a valid phone', 'enter a valid email']
 ```
 
-<div class="umpire-demo learn-demo">
+<div class="c-umpire-demo c-learn-demo">
   <AnyOfDemo client:load />
 </div>
 
@@ -214,7 +214,7 @@ ump.check({ username: 'alice', password: '', token: '', submit: undefined }).sub
 // fill token alone → enabled via 'token'
 ```
 
-<div class="umpire-demo learn-demo">
+<div class="c-umpire-demo c-learn-demo">
   <EitherOfDemo client:load />
 </div>
 
@@ -237,7 +237,7 @@ ump.play(
 // fouls: companyName, companySize
 ```
 
-<div class="umpire-demo learn-demo">
+<div class="c-umpire-demo c-learn-demo">
   <PlayDemo client:only="preact" />
 </div>
 

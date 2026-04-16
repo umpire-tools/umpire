@@ -1,4 +1,4 @@
-.react-demo {
+.c-react-demo {
   --umpire-demo-text-dim: rgba(245, 247, 244, 0.58);
   --umpire-demo-text-muted: rgba(245, 247, 244, 0.36);
   --umpire-demo-shadow: rgba(0, 0, 0, 0.34);
@@ -37,13 +37,13 @@
   --umpire-demo-reset-button-hover-transform: translateY(-1px);
 }
 
-.react-demo__panel-body--output {
+.c-react-demo__panel-body--output {
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
 }
 
-.react-demo__callout {
+.c-react-demo__callout {
   display: grid;
   gap: 0.7rem;
   padding: 0.95rem 1rem;
@@ -55,7 +55,7 @@
   box-shadow: inset 0 1px 0 var(--umpire-demo-white-4);
 }
 
-.react-demo__badge {
+.c-react-demo__badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -73,50 +73,50 @@
   box-shadow: 0 0 22px var(--umpire-demo-green-14);
 }
 
-.react-demo__callout-title {
+.c-react-demo__callout-title {
   font-family: var(--umpire-demo-font-heading);
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.1;
 }
 
-.react-demo__callout-text {
+.c-react-demo__callout-text {
   margin: 0.3rem 0 0;
   color: var(--umpire-demo-text-dim);
   font-size: 0.95rem;
   line-height: 1.45;
 }
 
-.react-demo .umpire-demo__conditions {
+.c-react-demo .c-umpire-demo__conditions {
   margin-top: 1rem;
 }
 
-.react-demo__hook-label {
+.c-react-demo__hook-label {
   font-size: 0.68rem;
   letter-spacing: var(--umpire-demo-tracking-wide);
 }
 
-.react-demo__hook-code {
+.c-react-demo__hook-code {
   font-family: var(--umpire-demo-font-mono);
   font-size: 0.79rem;
   color: var(--umpire-demo-text);
 }
 
-.react-demo__field-header {
+.c-react-demo__field-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
 }
 
-.react-demo__chips {
+.c-react-demo__chips {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
   justify-content: flex-end;
 }
 
-.react-demo__chip {
+.c-react-demo__chip {
   display: inline-flex;
   align-items: center;
   padding: 0.2rem 0.45rem;
@@ -128,51 +128,51 @@
   text-transform: uppercase;
 }
 
-.react-demo__chip--required {
+.c-react-demo__chip--required {
   color: var(--umpire-demo-yellow);
   border-color: var(--umpire-demo-yellow-16);
   background: var(--umpire-demo-yellow-8);
 }
 
-.react-demo__chip--enabled {
+.c-react-demo__chip.is-enabled {
   color: var(--umpire-demo-green);
   border-color: var(--umpire-demo-green-18);
   background: var(--umpire-demo-green-8);
 }
 
-.react-demo__chip--disabled {
+.c-react-demo__chip.is-disabled {
   color: rgba(255, 113, 108, 0.88);
   border-color: rgba(255, 113, 108, 0.16);
   background: var(--umpire-demo-red-8);
 }
 
-.react-demo__field-meta {
+.c-react-demo__field-meta {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 0.75rem;
 }
 
-.react-demo__field-code {
+.c-react-demo__field-code {
   font-family: var(--umpire-demo-font-mono);
   font-size: 0.7rem;
   color: var(--umpire-demo-text-muted);
 }
 
-.react-demo__field-reason {
+.c-react-demo__field-reason {
   color: var(--umpire-demo-text-dim);
   font-size: 0.84rem;
   text-align: right;
 }
 
-.react-demo__note {
+.c-react-demo__note {
   margin: 1rem 0 0;
   color: var(--umpire-demo-text-dim);
   font-size: 0.88rem;
   line-height: 1.45;
 }
 
-.react-demo__hook-line {
+.c-react-demo__hook-line {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -182,33 +182,33 @@
   background: rgba(107, 254, 156, 0.035);
 }
 
-.react-demo__json-section--alert {
+.c-react-demo__json-section--alert {
   border-color: var(--umpire-demo-yellow-28);
   box-shadow: 0 0 0 1px var(--umpire-demo-yellow-8), 0 0 24px var(--umpire-demo-yellow-8);
 }
 
-.react-demo__json-section--alert .umpire-demo__json-header {
+.c-react-demo__json-section--alert .c-umpire-demo__json-header {
   background: var(--umpire-demo-yellow-8);
 }
 
-.react-demo__json-section--alert .umpire-demo__json-meta {
+.c-react-demo__json-section--alert .c-umpire-demo__json-meta {
   color: var(--umpire-demo-yellow);
 }
 
 @media (max-width: 50rem) {
-  .react-demo .umpire-demo__conditions,
-  .react-demo .umpire-demo__json-header,
-  .react-demo__field-meta {
+  .c-react-demo .c-umpire-demo__conditions,
+  .c-react-demo .c-umpire-demo__json-header,
+  .c-react-demo__field-meta {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .react-demo__field-header {
+  .c-react-demo__field-header {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .react-demo__chips {
+  .c-react-demo__chips {
     justify-content: flex-start;
   }
 }

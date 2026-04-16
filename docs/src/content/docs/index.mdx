@@ -14,28 +14,28 @@ hero:
       variant: secondary
   image:
     html: |
-      <div class="umpire-scoreboard">
-        <div class="umpire-scoreboard__top">
+      <div class="c-umpire-scoreboard">
+        <div class="c-umpire-scoreboard__top">
           <span>Umpire / Live Board</span>
-          <span class="umpire-scoreboard__status">Stadium Night Game</span>
+          <span class="c-umpire-scoreboard__status">Stadium Night Game</span>
         </div>
-        <div class="umpire-scoreboard__call">
-          <span class="umpire-scoreboard__pill">Foul</span>
-          <p class="umpire-scoreboard__headline">starting_pitcher</p>
-          <p class="umpire-scoreboard__body">Morrison pitched yesterday — scratched from tonight's lineup.</p>
+        <div class="c-umpire-scoreboard__call">
+          <span class="c-umpire-scoreboard__pill">Foul</span>
+          <p class="c-umpire-scoreboard__headline">starting_pitcher</p>
+          <p class="c-umpire-scoreboard__body">Morrison pitched yesterday — scratched from tonight's lineup.</p>
         </div>
-        <div class="umpire-scoreboard__meta">
+        <div class="c-umpire-scoreboard__meta">
           <div>
-            <span class="umpire-scoreboard__label">Status</span>
-            <span class="umpire-scoreboard__value">disabled</span>
+            <span class="c-umpire-scoreboard__label">Status</span>
+            <span class="c-umpire-scoreboard__value">disabled</span>
           </div>
           <div>
-            <span class="umpire-scoreboard__label">Reason</span>
-            <span class="umpire-scoreboard__value">needs rest</span>
+            <span class="c-umpire-scoreboard__label">Reason</span>
+            <span class="c-umpire-scoreboard__value">needs rest</span>
           </div>
           <div>
-            <span class="umpire-scoreboard__label">Reset to</span>
-            <span class="umpire-scoreboard__value">Flores</span>
+            <span class="c-umpire-scoreboard__label">Reset to</span>
+            <span class="c-umpire-scoreboard__value">Flores</span>
           </div>
         </div>
       </div>
@@ -49,7 +49,7 @@ import LineupCard from '../../components/LineupCard.tsx'
 Tonight's card is set — full roster against a right-handed pitcher. Now break it. Toggle Morrison to fatigued and watch him get pulled from the mound. Flip the opposing pitcher to a lefty and the platoon swaps kick in. Hit "Random injury" a few times and see slots empty out as players land on the IL.
 </div>
 
-<div class="umpire-lineup-demo">
+<div class="c-lineup-demo">
   <LineupCard client:load />
 </div>
 
@@ -120,11 +120,11 @@ const { check: availability, fouls } = useUmpire(lineupUmp, values, conditions)
 
 import MinesweeperDemo from '../../components/MinesweeperDemo.tsx'
 
-<div class="umpire-minefield-callout">
-  <div class="umpire-minefield-callout__demo">
+<div class="c-umpire-minefield-callout">
+  <div class="c-umpire-minefield-callout__demo">
     <MinesweeperDemo client:load compact />
   </div>
-  <div class="umpire-minefield-callout__copy">
+  <div class="c-umpire-minefield-callout__copy">
     <h2>Not just forms.</h2>
     <p>
       Umpire's field-availability model works anywhere state fits a plain object with interdependent options. This minefield models 64 cells as fields, game state as conditions, and reasons as machine-readable enums — no forms anywhere in sight.

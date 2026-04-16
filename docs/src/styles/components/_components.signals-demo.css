@@ -1,6 +1,6 @@
 /* --- Signals Demo --- */
 
-.signals-demo {
+.c-signals-demo {
   --umpire-demo-field-disabled-bg:
     linear-gradient(135deg, var(--umpire-demo-red-8), transparent 50%),
     var(--umpire-demo-white-2);
@@ -8,13 +8,13 @@
   --umpire-demo-field-disabled-opacity: 1;
 }
 
-.signals-demo .umpire-demo__panel-body {
+.c-signals-demo .c-umpire-demo__panel-body {
   display: flex;
   flex-direction: column;
   gap: 0.95rem;
 }
 
-.signals-demo__panel {
+.c-signals-demo__panel {
   min-width: 0;
   border: 1px solid var(--umpire-demo-border);
   border-radius: var(--umpire-demo-radius-lg);
@@ -25,13 +25,13 @@
   backdrop-filter: blur(18px);
 }
 
-.signals-demo__fields {
+.c-signals-demo__fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
-.signals-demo__field {
+.c-signals-demo__field {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
@@ -42,29 +42,29 @@
   transition: border-color 0.18s ease, background 0.18s ease, opacity 0.18s ease;
 }
 
-.signals-demo__field:first-child {
+.c-signals-demo__field:first-child {
   margin-top: var(--sl-content-gap-y);
 }
 
-.signals-demo__field-value {
+.c-signals-demo__field-value {
   padding: 0.45rem 0.6rem;
   border-radius: var(--umpire-demo-radius-sm);
   background: rgba(255, 255, 255, 0.035);
   min-height: 1.6rem;
 }
 
-.signals-demo__field-value .signals-demo__field-code {
+.c-signals-demo__field-value .c-signals-demo__field-code {
   font-family: var(--umpire-demo-font-mono);
   font-size: 0.78rem;
   color: var(--umpire-demo-text-dim);
 }
 
-.signals-demo__button-row {
+.c-signals-demo__button-row {
   display: flex;
   gap: 0.4rem;
 }
 
-.signals-demo__button {
+.c-signals-demo__button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -88,29 +88,29 @@
     opacity 0.18s ease;
 }
 
-.signals-demo__button:hover:not(:disabled) {
+.c-signals-demo__button:hover:not(:disabled) {
   background: rgba(107, 254, 156, 0.22);
   box-shadow: 0 0 18px var(--umpire-demo-green-12);
 }
 
-.signals-demo__button:disabled {
+.c-signals-demo__button:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
 
-.signals-demo__button--ghost {
+.c-signals-demo__button--ghost {
   background: var(--umpire-demo-white-3);
   border-color: rgba(255, 255, 255, 0.1);
   color: var(--umpire-demo-text-dim);
 }
 
-.signals-demo__button--ghost:hover:not(:disabled) {
+.c-signals-demo__button--ghost:hover:not(:disabled) {
   background: var(--umpire-demo-white-8);
   box-shadow: none;
 }
 
 @media (max-width: 50rem) {
-  .signals-demo__fields {
+  .c-signals-demo__fields {
     grid-template-columns: 1fr;
   }
 }

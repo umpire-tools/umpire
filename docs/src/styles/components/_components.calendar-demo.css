@@ -1,4 +1,4 @@
-.calendar-demo {
+.c-calendar-demo {
   --umpire-demo-root-padding: 1rem;
   --umpire-demo-root-radius: 1.2rem;
   --umpire-demo-root-accent-primary-position: top right;
@@ -18,21 +18,21 @@
   --calendar-demo-day-shadow: 0 0 22px var(--umpire-demo-green-12);
 }
 
-.sl-markdown-content .calendar-demo section + section,
-.sl-markdown-content .calendar-demo button + button,
-.sl-markdown-content .calendar-demo fieldset + fieldset {
+.sl-markdown-content .c-calendar-demo section + section,
+.sl-markdown-content .c-calendar-demo button + button,
+.sl-markdown-content .c-calendar-demo fieldset + fieldset {
   margin-top: 0;
 }
 
-.sl-markdown-content .calendar-demo h2,
-.sl-markdown-content .calendar-demo h3 {
+.sl-markdown-content .c-calendar-demo h2,
+.sl-markdown-content .c-calendar-demo h3 {
   margin: 0.25rem 0 0;
   padding: 0;
   border: 0;
 }
 
-.calendar-demo__strip,
-.calendar-demo__panel {
+.c-calendar-demo__strip,
+.c-calendar-demo__panel {
   min-width: 0;
   border: 1px solid var(--umpire-demo-border);
   border-radius: var(--umpire-demo-radius-lg);
@@ -43,8 +43,8 @@
   backdrop-filter: blur(18px);
 }
 
-.calendar-demo__strip-header,
-.calendar-demo__panel-header {
+.c-calendar-demo__strip-header,
+.c-calendar-demo__panel-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -56,24 +56,24 @@
     var(--umpire-demo-white-2);
 }
 
-.calendar-demo__accent,
-.calendar-demo__group-kicker,
-.calendar-demo__suffix,
-.calendar-demo__table th,
-.calendar-demo__status-text {
+.c-calendar-demo__accent,
+.c-calendar-demo__group-kicker,
+.c-calendar-demo__suffix,
+.c-calendar-demo__table th,
+.c-calendar-demo__status-text {
   font-family: var(--umpire-demo-font-mono);
   letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
 }
 
-.calendar-demo__eyebrow {
+.c-calendar-demo__eyebrow {
   font-size: 0.64rem;
   letter-spacing: var(--umpire-demo-tracking-wide);
   color: var(--umpire-demo-text-muted);
 }
 
-.calendar-demo__title,
-.calendar-demo__panel-title {
+.c-calendar-demo__title,
+.c-calendar-demo__panel-title {
   margin: 0.25rem 0 0;
   font-family: var(--umpire-demo-font-heading);
   font-size: 1.22rem;
@@ -81,20 +81,20 @@
   color: var(--umpire-demo-text);
 }
 
-.calendar-demo__accent {
+.c-calendar-demo__accent {
   font-size: 0.68rem;
   color: var(--umpire-demo-green);
   white-space: nowrap;
 }
 
-.calendar-demo__groups {
+.c-calendar-demo__groups {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
   padding: 1rem;
 }
 
-.calendar-demo__group {
+.c-calendar-demo__group {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -106,39 +106,39 @@
     rgba(255, 255, 255, 0.018);
 }
 
-.calendar-demo__group--exceptions,
-.calendar-demo__group--patterns,
-.calendar-demo__group--subday {
+.c-calendar-demo__group--exceptions,
+.c-calendar-demo__group--patterns,
+.c-calendar-demo__group--subday {
   grid-column: 1 / -1;
 }
 
-.calendar-demo__group-head {
+.c-calendar-demo__group-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 0.75rem;
 }
 
-.calendar-demo__group-kicker {
+.c-calendar-demo__group-kicker {
   font-size: 0.66rem;
   color: var(--umpire-demo-yellow);
 }
 
-.calendar-demo__group-caption,
-.calendar-demo__reason,
-.calendar-demo__empty,
-.calendar-demo__note,
-.calendar-demo__legend-item,
-.calendar-demo__table-reason {
+.c-calendar-demo__group-caption,
+.c-calendar-demo__reason,
+.c-calendar-demo__empty,
+.c-calendar-demo__note,
+.c-calendar-demo__legend-item,
+.c-calendar-demo__table-reason {
   color: var(--umpire-demo-text-dim);
 }
 
-.calendar-demo__group-caption {
+.c-calendar-demo__group-caption {
   font-size: 0.8rem;
   text-align: right;
 }
 
-.calendar-demo__control {
+.c-calendar-demo__control {
   display: flex;
   flex-direction: column;
   gap: 0.42rem;
@@ -149,69 +149,69 @@
   transition: border-color 0.18s ease, background 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
 }
 
-.calendar-demo__control:focus-within {
+.c-calendar-demo__control:focus-within {
   border-color: rgba(107, 254, 156, 0.22);
   background: var(--calendar-demo-soft-surface-strong);
 }
 
-.calendar-demo__control--inline {
+.c-calendar-demo__control--inline {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
 }
 
-.calendar-demo__control--nested {
+.c-calendar-demo__control--nested {
   padding: 0.65rem;
   background: rgba(255, 255, 255, 0.022);
 }
 
-.calendar-demo__control--disabled {
+.c-calendar-demo__control.is-disabled {
   border-color: var(--umpire-demo-field-disabled-border-color);
   background: var(--umpire-demo-field-disabled-bg);
   opacity: var(--umpire-demo-field-disabled-opacity);
 }
 
-.calendar-demo__control-copy {
+.c-calendar-demo__control-copy {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
   min-width: 0;
 }
 
-.calendar-demo__label {
+.c-calendar-demo__label {
   font-size: 0.62rem;
   letter-spacing: var(--umpire-demo-tracking-wide);
   color: var(--umpire-demo-text-muted);
 }
 
-.calendar-demo__reason,
-.calendar-demo__empty,
-.calendar-demo__note,
-.calendar-demo__legend-item,
-.calendar-demo__table-reason {
+.c-calendar-demo__reason,
+.c-calendar-demo__empty,
+.c-calendar-demo__note,
+.c-calendar-demo__legend-item,
+.c-calendar-demo__table-reason {
   font-size: 0.82rem;
 }
 
-.calendar-demo__input-row,
-.calendar-demo__split-inputs,
-.calendar-demo__nav,
-.calendar-demo__chip-row,
-.calendar-demo__legend {
+.c-calendar-demo__input-row,
+.c-calendar-demo__split-inputs,
+.c-calendar-demo__nav,
+.c-calendar-demo__chip-row,
+.c-calendar-demo__legend {
   display: flex;
   gap: 0.5rem;
 }
 
-.calendar-demo__split-inputs {
+.c-calendar-demo__split-inputs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.calendar-demo__input,
-.calendar-demo__toggle,
-.calendar-demo__chip,
-.calendar-demo__action,
-.calendar-demo__nav-button {
+.c-calendar-demo__input,
+.c-calendar-demo__toggle,
+.c-calendar-demo__chip,
+.c-calendar-demo__action,
+.c-calendar-demo__nav-button {
   transition:
     background 0.18s ease,
     border-color 0.18s ease,
@@ -220,7 +220,7 @@
     transform 0.18s ease;
 }
 
-.calendar-demo__input {
+.c-calendar-demo__input {
   width: 100%;
   min-width: 0;
   border: 1px solid var(--calendar-demo-soft-border);
@@ -232,21 +232,21 @@
   outline: none;
 }
 
-.calendar-demo__input:focus {
+.c-calendar-demo__input:focus {
   border-color: var(--umpire-demo-green-28);
 }
 
-.calendar-demo__input::placeholder {
+.c-calendar-demo__input::placeholder {
   color: rgba(245, 247, 244, 0.28);
 }
 
-.calendar-demo__input:disabled {
+.c-calendar-demo__input:disabled {
   color: rgba(245, 247, 244, 0.42);
   cursor: not-allowed;
 }
 
-.calendar-demo__action,
-.calendar-demo__nav-button {
+.c-calendar-demo__action,
+.c-calendar-demo__nav-button {
   border: 1px solid var(--umpire-demo-green-28);
   border-radius: var(--umpire-demo-radius-pill);
   padding: 0.72rem 0.95rem;
@@ -260,39 +260,39 @@
   cursor: pointer;
 }
 
-.calendar-demo__chip,
-.calendar-demo__toggle {
+.c-calendar-demo__chip,
+.c-calendar-demo__toggle {
   border: 1px solid var(--calendar-demo-soft-border);
   cursor: pointer;
 }
 
-.calendar-demo__action:hover,
-.calendar-demo__nav-button:hover,
-.calendar-demo__chip:hover,
-.calendar-demo__toggle:hover {
+.c-calendar-demo__action:hover,
+.c-calendar-demo__nav-button:hover,
+.c-calendar-demo__chip:hover,
+.c-calendar-demo__toggle:hover {
   transform: translateY(-1px);
 }
 
-.calendar-demo__action:hover,
-.calendar-demo__nav-button:hover {
+.c-calendar-demo__action:hover,
+.c-calendar-demo__nav-button:hover {
   background: var(--umpire-demo-green-18);
   box-shadow: 0 0 18px var(--umpire-demo-green-12);
 }
 
-.calendar-demo__action:disabled,
-.calendar-demo__nav-button:disabled,
-.calendar-demo__chip:disabled,
-.calendar-demo__toggle:disabled {
+.c-calendar-demo__action:disabled,
+.c-calendar-demo__nav-button:disabled,
+.c-calendar-demo__chip:disabled,
+.c-calendar-demo__toggle:disabled {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
-.calendar-demo__chip-row {
+.c-calendar-demo__chip-row {
   flex-wrap: wrap;
 }
 
-.calendar-demo__chip {
+.c-calendar-demo__chip {
   display: inline-flex;
   align-items: center;
   gap: 0.42rem;
@@ -304,41 +304,41 @@
   font-size: 0.72rem;
 }
 
-.calendar-demo__chip:hover {
+.c-calendar-demo__chip:hover {
   border-color: rgba(107, 254, 156, 0.22);
 }
 
-.calendar-demo__chip--remove {
+.c-calendar-demo__chip--remove {
   padding-right: 0.58rem;
 }
 
-.calendar-demo__chip-x {
+.c-calendar-demo__chip-x {
   color: var(--umpire-demo-text-dim);
   font-size: 0.68rem;
 }
 
-.calendar-demo__toggle-grid {
+.c-calendar-demo__toggle-grid {
   display: grid;
   gap: 0.42rem;
 }
 
-.calendar-demo__toggle-grid--weekdays {
+.c-calendar-demo__toggle-grid--weekdays {
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
-.calendar-demo__toggle-grid--months {
+.c-calendar-demo__toggle-grid--months {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.calendar-demo__toggle-grid--days {
+.c-calendar-demo__toggle-grid--days {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.calendar-demo__toggle-grid--hours {
+.c-calendar-demo__toggle-grid--hours {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.calendar-demo__toggle {
+.c-calendar-demo__toggle {
   border-radius: 0.74rem;
   padding: 0.66rem 0.5rem;
   background: var(--umpire-demo-white-4);
@@ -349,11 +349,11 @@
   text-align: center;
 }
 
-.calendar-demo__toggle:hover {
+.c-calendar-demo__toggle:hover {
   color: var(--umpire-demo-text);
 }
 
-.calendar-demo__toggle--active {
+.c-calendar-demo__toggle.is-active {
   border-color: rgba(107, 254, 156, 0.26);
   background: var(--umpire-demo-green-16);
   color: var(--umpire-demo-green);
@@ -362,26 +362,26 @@
     0 0 18px rgba(107, 254, 156, 0.1);
 }
 
-.calendar-demo__suffix {
+.c-calendar-demo__suffix {
   flex-shrink: 0;
   align-self: center;
   font-size: 0.72rem;
   color: var(--umpire-demo-text-dim);
 }
 
-.calendar-demo__switch {
+.c-calendar-demo__switch {
   position: relative;
   display: inline-flex;
   cursor: pointer;
 }
 
-.calendar-demo__switch input {
+.c-calendar-demo__switch input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
 
-.calendar-demo__switch-track {
+.c-calendar-demo__switch-track {
   position: relative;
   width: 3.4rem;
   height: 1.95rem;
@@ -391,7 +391,7 @@
   transition: background 0.18s ease, border-color 0.18s ease;
 }
 
-.calendar-demo__switch-track::after {
+.c-calendar-demo__switch-track::after {
   content: '';
   position: absolute;
   top: 0.17rem;
@@ -403,53 +403,53 @@
   transition: transform 0.18s ease, background 0.18s ease;
 }
 
-.calendar-demo__switch input:checked + .calendar-demo__switch-track {
+.c-calendar-demo__switch input:checked + .c-calendar-demo__switch-track {
   border-color: var(--umpire-demo-green-28);
   background: var(--umpire-demo-green-18);
 }
 
-.calendar-demo__switch input:checked + .calendar-demo__switch-track::after {
+.c-calendar-demo__switch input:checked + .c-calendar-demo__switch-track::after {
   transform: translateX(1.42rem);
   background: var(--umpire-demo-green);
 }
 
-.calendar-demo__switch input:disabled + .calendar-demo__switch-track {
+.c-calendar-demo__switch input:disabled + .c-calendar-demo__switch-track {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-.calendar-demo__branch-grid {
+.c-calendar-demo__branch-grid {
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.calendar-demo__interval-fields {
+.c-calendar-demo__interval-fields {
   display: grid;
   gap: 0.55rem;
 }
 
-.calendar-demo__panel--preview .calendar-demo__month-grid {
+.c-calendar-demo__panel--preview .c-calendar-demo__month-grid {
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
-.calendar-demo__panel--preview .calendar-demo__day {
+.c-calendar-demo__panel--preview .c-calendar-demo__day {
   min-height: 5.5rem;
 }
 
-.calendar-demo__panel-body {
+.c-calendar-demo__panel-body {
   padding: 1rem;
 }
 
-.calendar-demo__panel-body--table {
+.c-calendar-demo__panel-body--table {
   padding-top: 0.85rem;
 }
 
-.calendar-demo__note {
+.c-calendar-demo__note {
   margin: 0 0 0.9rem;
 }
 
-.calendar-demo__hint {
+.c-calendar-demo__hint {
   margin: 0;
   padding: 0.6rem 0.78rem;
   border: 1px solid var(--umpire-demo-yellow-18);
@@ -460,7 +460,7 @@
   line-height: 1.55;
 }
 
-.calendar-demo__hint code {
+.c-calendar-demo__hint code {
   padding: 0.1em 0.3em;
   border-radius: 0.3em;
   background: var(--umpire-demo-yellow-12);
@@ -469,29 +469,29 @@
   color: rgba(254, 208, 35, 0.95);
 }
 
-.calendar-demo__weekday-row,
-.calendar-demo__month-grid {
+.c-calendar-demo__weekday-row,
+.c-calendar-demo__month-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 0.4rem;
 }
 
-.calendar-demo__weekday {
+.c-calendar-demo__weekday {
   text-align: center;
   font-size: 0.6rem;
   letter-spacing: var(--umpire-demo-tracking-wide);
   color: var(--umpire-demo-text-muted);
 }
 
-.calendar-demo__weekday:first-child {
+.c-calendar-demo__weekday:first-child {
   margin-top: var(--sl-content-gap-y);
 }
 
-.calendar-demo__month-grid {
+.c-calendar-demo__month-grid {
   margin-top: 0.55rem;
 }
 
-.calendar-demo__day {
+.c-calendar-demo__day {
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -506,12 +506,12 @@
   overflow: hidden;
 }
 
-.sl-markdown-content .calendar-demo__month-grid > div,
-.sl-markdown-content .calendar-demo__legend > .calendar-demo__legend-item {
+.sl-markdown-content .c-calendar-demo__month-grid > div,
+.sl-markdown-content .c-calendar-demo__legend > .c-calendar-demo__legend-item {
   margin-top: 0;
 }
 
-.calendar-demo__day::after {
+.c-calendar-demo__day::after {
   content: '';
   position: absolute;
   inset: auto 0.58rem 0.58rem;
@@ -520,7 +520,7 @@
   background: transparent;
 }
 
-.calendar-demo__day-number {
+.c-calendar-demo__day-number {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -532,35 +532,35 @@
   color: var(--umpire-demo-text);
 }
 
-.calendar-demo__day-markers {
+.c-calendar-demo__day-markers {
   display: flex;
   gap: 0.28rem;
   align-self: flex-end;
 }
 
-.calendar-demo__day-marker {
+.c-calendar-demo__day-marker {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: var(--umpire-demo-radius-pill);
   background: rgba(255, 255, 255, 0.2);
 }
 
-.calendar-demo__day-marker--active,
-.calendar-demo__legend-swatch--active {
+.c-calendar-demo__day-marker.is-active,
+.c-calendar-demo__legend-swatch.is-active {
   background: var(--umpire-demo-green);
 }
 
-.calendar-demo__day-marker--excluded,
-.calendar-demo__legend-swatch--excluded {
+.c-calendar-demo__day-marker--excluded,
+.c-calendar-demo__legend-swatch--excluded {
   background: var(--umpire-demo-yellow);
 }
 
-.calendar-demo__day-marker--bounds,
-.calendar-demo__legend-swatch--bounds {
+.c-calendar-demo__day-marker--bounds,
+.c-calendar-demo__legend-swatch--bounds {
   background: rgba(255, 255, 255, 0.32);
 }
 
-.calendar-demo__day--active {
+.c-calendar-demo__day.is-active {
   border-color: var(--umpire-demo-green-24);
   background:
     linear-gradient(180deg, var(--umpire-demo-green-18), var(--umpire-demo-green-8)),
@@ -568,16 +568,16 @@
   box-shadow: var(--calendar-demo-day-shadow);
 }
 
-.calendar-demo__day--active::after {
+.c-calendar-demo__day.is-active::after {
   background: rgba(107, 254, 156, 0.9);
 }
 
-.calendar-demo__day--active .calendar-demo__day-number {
+.c-calendar-demo__day.is-active .c-calendar-demo__day-number {
   background: rgba(7, 35, 15, 0.55);
   color: #b7ffcc;
 }
 
-.calendar-demo__day--excluded {
+.c-calendar-demo__day--excluded {
   border-style: dashed;
   border-color: var(--umpire-demo-yellow-24);
   background:
@@ -585,172 +585,172 @@
     rgba(255, 255, 255, 0.018);
 }
 
-.calendar-demo__day--excluded .calendar-demo__day-number {
+.c-calendar-demo__day--excluded .c-calendar-demo__day-number {
   color: rgba(255, 243, 184, 0.8);
   text-decoration: line-through;
   text-decoration-color: rgba(254, 208, 35, 0.8);
 }
 
-.calendar-demo__day--outside-window,
-.calendar-demo__day--adjacent {
+.c-calendar-demo__day--outside-window,
+.c-calendar-demo__day--adjacent {
   border-color: var(--umpire-demo-white-4);
   background: rgba(255, 255, 255, 0.012);
 }
 
-.calendar-demo__day--outside-window .calendar-demo__day-number,
-.calendar-demo__day--adjacent .calendar-demo__day-number {
+.c-calendar-demo__day--outside-window .c-calendar-demo__day-number,
+.c-calendar-demo__day--adjacent .c-calendar-demo__day-number {
   color: var(--umpire-demo-text-muted);
 }
 
-.calendar-demo__day--outside-window {
+.c-calendar-demo__day--outside-window {
   opacity: 0.54;
 }
 
-.calendar-demo__day--adjacent {
+.c-calendar-demo__day--adjacent {
   opacity: 0.42;
 }
 
-.calendar-demo__day--today {
+.c-calendar-demo__day--today {
   box-shadow:
     inset 0 0 0 1px var(--umpire-demo-yellow-28),
     0 0 20px var(--umpire-demo-yellow-8);
 }
 
-.calendar-demo__legend {
+.c-calendar-demo__legend {
   flex-wrap: wrap;
   margin-top: 0.9rem;
 }
 
-.calendar-demo__legend-item {
+.c-calendar-demo__legend-item {
   display: inline-flex;
   align-items: center;
   gap: 0.42rem;
 }
 
-.calendar-demo__legend-swatch {
+.c-calendar-demo__legend-swatch {
   width: 0.72rem;
   height: 0.72rem;
   border-radius: var(--umpire-demo-radius-pill);
 }
 
-.calendar-demo__table-shell {
+.c-calendar-demo__table-shell {
   border: 1px solid var(--umpire-demo-white-6);
   border-radius: var(--umpire-demo-radius-md);
   overflow: hidden;
   background: var(--umpire-demo-white-2);
 }
 
-.calendar-demo__table {
+.c-calendar-demo__table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.76rem;
 }
 
-.calendar-demo__table th,
-.calendar-demo__table td {
+.c-calendar-demo__table th,
+.c-calendar-demo__table td {
   padding: 0.8rem 0.85rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   text-align: left;
   vertical-align: top;
 }
 
-.calendar-demo__table th {
+.c-calendar-demo__table th {
   background: var(--umpire-demo-white-3);
   font-size: 0.62rem;
   color: var(--umpire-demo-text-muted);
 }
 
-.calendar-demo__table tbody tr:last-child td {
+.c-calendar-demo__table tbody tr:last-child td {
   border-bottom: 0;
 }
 
-.calendar-demo__table-field {
+.c-calendar-demo__table-field {
   color: var(--umpire-demo-text);
   font-weight: 600;
 }
 
-.calendar-demo__status {
+.c-calendar-demo__status {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
 }
 
-.calendar-demo__status-dot {
+.c-calendar-demo__status-dot {
   width: 0.48rem;
   height: 0.48rem;
   border-radius: var(--umpire-demo-radius-pill);
   box-shadow: 0 0 10px currentColor;
 }
 
-.calendar-demo__status--enabled {
+.c-calendar-demo__status.is-enabled {
   color: var(--umpire-demo-green);
 }
 
-.calendar-demo__status--disabled {
+.c-calendar-demo__status.is-disabled {
   color: var(--umpire-demo-red);
 }
 
-.calendar-demo__status--enabled .calendar-demo__status-dot {
+.c-calendar-demo__status.is-enabled .c-calendar-demo__status-dot {
   background: var(--umpire-demo-green);
 }
 
-.calendar-demo__status--disabled .calendar-demo__status-dot {
+.c-calendar-demo__status.is-disabled .c-calendar-demo__status-dot {
   background: var(--umpire-demo-red);
 }
 
-.calendar-demo__status-text {
+.c-calendar-demo__status-text {
   font-size: 0.66rem;
 }
 
 @media (max-width: 70rem) {
-  .calendar-demo__lower,
-  .calendar-demo__branch-grid {
+  .c-calendar-demo__lower,
+  .c-calendar-demo__branch-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 56rem) {
-  .calendar-demo__groups {
+  .c-calendar-demo__groups {
     grid-template-columns: 1fr;
   }
 
-  .calendar-demo__group-head,
-  .calendar-demo__strip-header,
-  .calendar-demo__panel-header,
-  .calendar-demo__control--inline,
-  .calendar-demo__input-row {
+  .c-calendar-demo__group-head,
+  .c-calendar-demo__strip-header,
+  .c-calendar-demo__panel-header,
+  .c-calendar-demo__control--inline,
+  .c-calendar-demo__input-row {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .calendar-demo__group-caption {
+  .c-calendar-demo__group-caption {
     text-align: left;
   }
 
-  .calendar-demo__toggle-grid--weekdays {
+  .c-calendar-demo__toggle-grid--weekdays {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .calendar-demo__toggle-grid--months {
+  .c-calendar-demo__toggle-grid--months {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 40rem) {
-  .calendar-demo__toggle-grid--hours {
+  .c-calendar-demo__toggle-grid--hours {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .calendar-demo__day {
+  .c-calendar-demo__day {
     min-height: 3.95rem;
     padding: 0.45rem;
   }
 
-  .calendar-demo__table-shell {
+  .c-calendar-demo__table-shell {
     overflow-x: auto;
   }
 
-  .calendar-demo__table {
+  .c-calendar-demo__table {
     min-width: 35rem;
   }
 }

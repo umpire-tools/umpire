@@ -3,7 +3,7 @@ import { useRef } from 'preact/hooks'
 import { enabledWhen, requires, umpire } from '@umpire/core'
 import { reactiveUmp, type ReactiveUmpire, type SignalProtocol } from '@umpire/signals'
 import { computed, effect, signal } from '@preact/signals'
-import '../styles/signals-demo.css'
+import '../styles/components/_components.signals-demo.css'
 
 // --- Umpire config ---
 
@@ -104,42 +104,42 @@ function FieldControl({
   return (
     <div
       class={cls(
-        'signals-demo__field',
-        !enabled && 'umpire-demo__field--disabled',
-        foul && 'umpire-demo__field--fouled',
+        'c-signals-demo__field',
+        !enabled && 'c-umpire-demo__field is-disabled',
+        foul && 'c-umpire-demo__field is-fouled',
       )}
     >
-      <div class="umpire-demo__field-header">
-        <div class="umpire-demo__field-label">
+      <div class="c-umpire-demo__field-header">
+        <div class="c-umpire-demo__field-label">
           <span>{label}</span>
           {required && (
-            <span class="umpire-demo__required-pill">required</span>
+            <span class="c-umpire-demo__required-pill">required</span>
           )}
         </div>
         <span
           class={cls(
-            'umpire-demo__status',
-            foul ? 'umpire-demo__status--fouled' :
-            enabled ? 'umpire-demo__status--enabled' : 'umpire-demo__status--disabled',
+            'c-umpire-demo__status',
+            foul ? 'c-umpire-demo__status is-fouled' :
+            enabled ? 'c-umpire-demo__status is-enabled' : 'c-umpire-demo__status is-disabled',
           )}
         >
-          <span class="umpire-demo__status-dot" />
-          <span class="umpire-demo__status-text">
+          <span class="c-umpire-demo__status-dot" />
+          <span class="c-umpire-demo__status-text">
             {foul ? 'fouled' : enabled ? 'enabled' : 'disabled'}
           </span>
         </span>
       </div>
 
-      <div class="signals-demo__field-value">
-        <code class="signals-demo__field-code">
+      <div class="c-signals-demo__field-value">
+        <code class="c-signals-demo__field-code">
           {hasValue ? String(value) : '—'}
         </code>
       </div>
 
-      <div class="signals-demo__button-row">
+      <div class="c-signals-demo__button-row">
         <button
           type="button"
-          class="signals-demo__button"
+          class="c-signals-demo__button"
           disabled={!enabled}
           onClick={() => reactive.set(field, sample)}
         >
@@ -147,7 +147,7 @@ function FieldControl({
         </button>
         <button
           type="button"
-          class="signals-demo__button signals-demo__button--ghost"
+          class="c-signals-demo__button c-signals-demo__button--ghost"
           disabled={!hasValue}
           onClick={() => reactive.set(field, '')}
         >
@@ -156,11 +156,11 @@ function FieldControl({
       </div>
 
       {foul && (
-        <div class="umpire-demo__field-foul">
-          <span class="umpire-demo__field-foul-reason">{foul.reason}</span>
+        <div class="c-umpire-demo__field-foul">
+          <span class="c-umpire-demo__field-foul-reason">{foul.reason}</span>
           <button
             type="button"
-            class="umpire-demo__field-foul-reset"
+            class="c-umpire-demo__field-foul-reset"
             onClick={() => reactive.set(field, foul.suggestedValue ?? '')}
           >
             Reset
@@ -169,7 +169,7 @@ function FieldControl({
       )}
 
       {!foul && !enabled && reason && (
-        <div class="umpire-demo__field-reason">{reason}</div>
+        <div class="c-umpire-demo__field-reason">{reason}</div>
       )}
     </div>
   )
@@ -202,33 +202,33 @@ export default function SignalsFineGrainedDemo() {
   }
 
   return (
-    <div class="signals-demo umpire-demo">
+    <div class="c-signals-demo c-umpire-demo">
 
-      <div class="signals-demo__panel">
-        <div class="umpire-demo__panel-header">
+      <div class="c-signals-demo__panel">
+        <div class="c-umpire-demo__panel-header">
           <div>
-            <div class="umpire-demo__eyebrow">Live config</div>
-            <h2 class="umpire-demo__title">Event Recurrence</h2>
+            <div class="c-umpire-demo__eyebrow">Live config</div>
+            <h2 class="c-umpire-demo__title">Event Recurrence</h2>
           </div>
-          <span class="umpire-demo__panel-accent">reactiveUmp()</span>
+          <span class="c-umpire-demo__panel-accent">reactiveUmp()</span>
         </div>
 
-        <div class="umpire-demo__panel-body">
+        <div class="c-umpire-demo__panel-body">
           {/* Recurring toggle — condition signal, not a field value */}
-          <div class="umpire-demo__conditions">
-            <span class="umpire-demo__conditions-label">Conditions</span>
-            <code class="umpire-demo__conditions-code">{`{ recurring: ${recurring} }`}</code>
+          <div class="c-umpire-demo__conditions">
+            <span class="c-umpire-demo__conditions-label">Conditions</span>
+            <code class="c-umpire-demo__conditions-code">{`{ recurring: ${recurring} }`}</code>
           </div>
 
-          <div class="umpire-demo__plan-toggle" aria-label="Recurrence mode">
+          <div class="c-umpire-demo__plan-toggle" aria-label="Recurrence mode">
             {modeOptions.map((opt) => (
               <button
                 key={String(opt.value)}
                 type="button"
                 aria-pressed={recurring === opt.value}
                 class={cls(
-                  'umpire-demo__plan-option',
-                  recurring === opt.value && 'umpire-demo__plan-option--active',
+                  'c-umpire-demo__plan-option',
+                  recurring === opt.value && 'c-umpire-demo__plan-option is-active',
                 )}
                 onClick={() => setRecurring(opt.value)}
               >
@@ -239,23 +239,23 @@ export default function SignalsFineGrainedDemo() {
 
           {/* Fouls banner — shows when switching modes leaves stale values */}
           {fouls.length > 0 && (
-            <div class="umpire-demo__fouls">
-              <div class="umpire-demo__fouls-copy">
-                <div class="umpire-demo__fouls-kicker">Fouls</div>
-                <div class="umpire-demo__fouls-list">
+            <div class="c-umpire-demo__fouls">
+              <div class="c-umpire-demo__fouls-copy">
+                <div class="c-umpire-demo__fouls-kicker">Fouls</div>
+                <div class="c-umpire-demo__fouls-list">
                   {fouls.map((foul) => (
-                    <div key={foul.field} class="umpire-demo__foul">
-                      <span class="umpire-demo__foul-field">
+                    <div key={foul.field} class="c-umpire-demo__foul">
+                      <span class="c-umpire-demo__foul-field">
                         {fieldLabels[foul.field]}
                       </span>
-                      <span class="umpire-demo__foul-reason">{foul.reason}</span>
+                      <span class="c-umpire-demo__foul-reason">{foul.reason}</span>
                     </div>
                   ))}
                 </div>
               </div>
               <button
                 type="button"
-                class="umpire-demo__reset-button"
+                class="c-umpire-demo__reset-button"
                 onClick={() => {
                   for (const foul of fouls) {
                     reactive.set(foul.field, foul.suggestedValue ?? '')
@@ -268,7 +268,7 @@ export default function SignalsFineGrainedDemo() {
           )}
 
           {/* Each field reads only the signals it needs during render */}
-          <div class="signals-demo__fields">
+          <div class="c-signals-demo__fields">
             {fieldOrder.map((field) => (
               <FieldControl
                 key={field}
@@ -281,12 +281,12 @@ export default function SignalsFineGrainedDemo() {
           </div>
 
           {/* Live signal state — shows what's happening under the hood */}
-          <section class="umpire-demo__json-shell">
-            <div class="umpire-demo__json-header">
-              <span class="umpire-demo__json-title">signal state</span>
-              <span class="umpire-demo__json-meta">@preact/signals</span>
+          <section class="c-umpire-demo__json-shell">
+            <div class="c-umpire-demo__json-header">
+              <span class="c-umpire-demo__json-title">signal state</span>
+              <span class="c-umpire-demo__json-meta">@preact/signals</span>
             </div>
-            <pre class="umpire-demo__code-block">
+            <pre class="c-umpire-demo__code-block">
               <code>{prettyJson({ conditions: { recurring }, values, fouls })}</code>
             </pre>
           </section>

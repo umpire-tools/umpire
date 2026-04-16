@@ -1,4 +1,4 @@
-.signup-demo {
+.c-signup-demo {
   --umpire-demo-border: var(--umpire-demo-green-14);
   --umpire-demo-text-muted: #9da09b;
   --umpire-demo-root-radius: 1.1rem;
@@ -56,32 +56,32 @@
   --umpire-demo-reset-button-hover-transform: translateY(-1px);
 }
 
-.signup-demo__panel-body--table {
+.c-signup-demo__panel-body--table {
   padding-top: 0.9rem;
   overflow-x: auto;
 }
 
-.signup-demo__required {
+.c-signup-demo__required {
   color: rgba(107, 254, 156, 0.72);
 }
 
-.signup-demo__reason {
+.c-signup-demo__reason {
   font-size: 0.83rem;
   font-style: italic;
   color: rgba(245, 247, 244, 0.52);
 }
 
-.signup-demo__validation-error {
+.c-signup-demo__validation-error {
   font-family: var(--umpire-demo-font-mono);
   font-size: 0.72rem;
   color: var(--umpire-demo-red);
 }
 
-.signup-demo__input--invalid {
+.c-signup-demo__input.is-invalid {
   border-color: rgba(255, 113, 108, 0.4);
 }
 
-.signup-demo__submit {
+.c-signup-demo__submit {
   width: 100%;
   margin-top: 0.5rem;
   padding: 0.82rem 1rem;
@@ -96,24 +96,24 @@
   transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
-.signup-demo__submit--ready {
+.c-signup-demo__submit.is-ready {
   background: var(--umpire-demo-green-16);
   border-color: rgba(107, 254, 156, 0.34);
   color: var(--umpire-demo-green);
 }
 
-.signup-demo__submit--ready:hover {
+.c-signup-demo__submit.is-ready:hover {
   background: var(--umpire-demo-green-24);
 }
 
-.signup-demo__submit--blocked {
+.c-signup-demo__submit.is-blocked {
   background: var(--umpire-demo-white-3);
   border-color: var(--umpire-demo-white-8);
   color: rgba(245, 247, 244, 0.36);
   cursor: not-allowed;
 }
 
-.signup-demo__sso-badge {
+.c-signup-demo__sso-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -128,7 +128,7 @@
   letter-spacing: var(--umpire-demo-tracking-tight);
 }
 
-.signup-demo__sso-badge::before {
+.c-signup-demo__sso-badge::before {
   content: '●';
   font-size: 0.55rem;
   animation: signup-demo-sso-pulse 2s ease-in-out infinite;
@@ -139,89 +139,89 @@
   50% { opacity: 0.4; }
 }
 
-.signup-demo__table-row--submit td {
+.c-signup-demo__table-row--submit td {
   border-top: 1px solid var(--umpire-demo-white-8);
   background: rgba(255, 255, 255, 0.015);
 }
 
-.signup-demo__table-shell {
+.c-signup-demo__table-shell {
   border: 1px solid var(--umpire-demo-white-6);
   border-radius: var(--umpire-demo-radius-md);
   overflow: hidden;
   background: rgba(255, 255, 255, 0.022);
 }
 
-.signup-demo__table {
+.c-signup-demo__table {
   width: 100%;
   border-collapse: collapse;
   font-family: var(--umpire-demo-font-mono);
   font-size: 0.75rem;
 }
 
-.signup-demo__table th,
-.signup-demo__table td {
+.c-signup-demo__table th,
+.c-signup-demo__table td {
   padding: 0.78rem 0.82rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   text-align: left;
   vertical-align: top;
 }
 
-.signup-demo__table-heading {
+.c-signup-demo__table-heading {
   background: var(--umpire-demo-white-3);
   letter-spacing: var(--umpire-demo-tracking-wide);
 }
 
-.signup-demo__table tbody tr:last-child td {
+.c-signup-demo__table tbody tr:last-child td {
   border-bottom: 0;
 }
 
-.signup-demo__table-field,
-.signup-demo__table-required {
+.c-signup-demo__table-field,
+.c-signup-demo__table-required {
   color: var(--umpire-demo-text);
 }
 
-.signup-demo__table-reason {
+.c-signup-demo__table-reason {
   color: rgba(245, 247, 244, 0.64);
 }
 
-.signup-demo__status {
+.c-signup-demo__status {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
 }
 
-.signup-demo__status-dot {
+.c-signup-demo__status-dot {
   width: 0.45rem;
   height: 0.45rem;
   border-radius: var(--umpire-demo-radius-pill);
   flex-shrink: 0;
 }
 
-.signup-demo__status-dot--enabled {
+.c-signup-demo__status-dot.is-enabled {
   background: var(--umpire-demo-green);
   box-shadow: 0 0 6px var(--umpire-demo-green);
 }
 
-.signup-demo__status-dot--disabled {
+.c-signup-demo__status-dot.is-disabled {
   background: var(--umpire-demo-red);
   box-shadow: 0 0 6px var(--umpire-demo-red);
 }
 
 @media (max-width: 50rem) {
-  .signup-demo .umpire-demo__fouls {
+  .c-signup-demo .c-umpire-demo__fouls {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .signup-demo .umpire-demo__reset-button {
+  .c-signup-demo .c-umpire-demo__reset-button {
     width: 100%;
   }
 
-  .signup-demo__table-shell {
+  .c-signup-demo__table-shell {
     overflow-x: auto;
   }
 
-  .signup-demo__table {
+  .c-signup-demo__table {
     min-width: 36rem;
   }
 }

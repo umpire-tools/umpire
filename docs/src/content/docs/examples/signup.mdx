@@ -6,7 +6,7 @@ description: Availability and validation composed — Umpire decides which field
 import DevtoolsPanel from '../../../components/DevtoolsPanel.tsx'
 import SignupDemo from '../../../components/SignupDemo.tsx'
 
-<div class="umpire-demo">
+<div class="c-umpire-demo">
   <DevtoolsPanel defaultTab="matrix" client:only="react" />
   <SignupDemo client:load />
 </div>
@@ -186,7 +186,7 @@ The entire form is one loop. No branching per field, no special cases for SSO, n
     : undefined
 
   return (
-    <div className={cls('field', !av.enabled && 'field--disabled')}>
+    <div className={cls('field', !av.enabled && 'field is-disabled')}>
       <label>
         {meta.label}
         {av.required && <span className="required">*</span>}

@@ -1,4 +1,4 @@
-.zustand-demo__placeholder {
+.c-zustand-demo__placeholder {
   display: grid;
   gap: 0.6rem;
   padding: 1.5rem;
@@ -8,7 +8,7 @@
   text-align: center;
 }
 
-.zustand-demo__placeholder-badge {
+.c-zustand-demo__placeholder-badge {
   display: inline-flex;
   width: fit-content;
   margin: 0 auto;
@@ -24,13 +24,13 @@
   text-transform: uppercase;
 }
 
-.zustand-demo__placeholder-text {
+.c-zustand-demo__placeholder-text {
   margin: 0;
   color: rgba(245, 247, 244, 0.52);
   font-size: 0.92rem;
 }
 
-.zustand-demo {
+.c-zustand-demo {
   --umpire-demo-text-dim: rgba(245, 247, 244, 0.58);
   --umpire-demo-text-muted: rgba(245, 247, 244, 0.36);
   --umpire-demo-shadow: rgba(0, 0, 0, 0.34);
@@ -70,29 +70,29 @@
   --umpire-demo-reset-button-hover-transform: translateY(-1px);
 }
 
-.zustand-demo__field-key {
+.c-zustand-demo__field-key {
   font-family: var(--umpire-demo-font-mono);
   letter-spacing: var(--umpire-demo-tracking-wide);
   text-transform: uppercase;
 }
 
-.zustand-demo .umpire-demo__panel-body {
+.c-zustand-demo .c-umpire-demo__panel-body {
   display: flex;
   flex-direction: column;
   gap: 0.95rem;
 }
 
-.zustand-demo .umpire-demo__fouls {
+.c-zustand-demo .c-umpire-demo__fouls {
   display: none;
 }
 
-.zustand-demo .umpire-demo__fouls.umpire-demo__fouls--visible {
+.c-zustand-demo .c-umpire-demo__fouls.is-visible {
   display: flex;
 }
 
 /* -- Callout -- */
 
-.zustand-demo__callout {
+.c-zustand-demo__callout {
   display: grid;
   gap: 0.7rem;
   padding: 0.95rem 1rem;
@@ -104,7 +104,7 @@
   box-shadow: inset 0 1px 0 var(--umpire-demo-white-4);
 }
 
-.zustand-demo__badge {
+.c-zustand-demo__badge {
   display: inline-flex;
   width: fit-content;
   align-items: center;
@@ -123,7 +123,7 @@
   box-shadow: 0 0 22px var(--umpire-demo-green-14);
 }
 
-.zustand-demo__callout-text {
+.c-zustand-demo__callout-text {
   margin: 0;
   color: var(--umpire-demo-text-dim);
   font-size: 0.95rem;
@@ -132,13 +132,13 @@
 
 /* -- Summary cards -- */
 
-.zustand-demo__summary {
+.c-zustand-demo__summary {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
   gap: 0.75rem;
 }
 
-.zustand-demo__summary-card {
+.c-zustand-demo__summary-card {
   display: grid;
   gap: 0.35rem;
   padding: 0.8rem 0.85rem;
@@ -147,38 +147,38 @@
   background: rgba(255, 255, 255, 0.025);
 }
 
-.zustand-demo__summary-label {
+.c-zustand-demo__summary-label {
   font-size: 0.62rem;
   letter-spacing: var(--umpire-demo-tracking-wide);
   color: var(--umpire-demo-text-muted);
 }
 
-.zustand-demo__summary-code {
+.c-zustand-demo__summary-code {
   font-family: var(--umpire-demo-font-mono);
   font-size: 0.75rem;
   color: var(--umpire-demo-green);
 }
 
-.zustand-demo__summary-value {
+.c-zustand-demo__summary-value {
   font-family: var(--umpire-demo-font-heading);
   font-size: 1.35rem;
   line-height: 1.05;
   color: var(--umpire-demo-text);
 }
 
-.zustand-demo__summary-total {
+.c-zustand-demo__summary-total {
   color: var(--umpire-demo-text-muted);
 }
 
 /* -- Field cards -- */
 
-.zustand-demo__field-list {
+.c-zustand-demo__field-list {
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
 }
 
-.zustand-demo__field-card {
+.c-zustand-demo__field-card {
   --umpire-demo-status-gap: 0.45rem;
   --umpire-demo-status-padding: 0.32rem 0.55rem;
   --umpire-demo-status-font-size: 0.66rem;
@@ -193,27 +193,27 @@
   transition: border-color 0.18s ease, background 0.18s ease;
 }
 
-.zustand-demo__field-card--disabled {
+.c-zustand-demo__field-card.is-disabled {
   border-color: rgba(255, 113, 108, 0.14);
   background:
     linear-gradient(135deg, var(--umpire-demo-red-8), transparent 50%),
     var(--umpire-demo-white-2);
 }
 
-.zustand-demo__field-top {
+.c-zustand-demo__field-top {
   display: flex;
   justify-content: space-between;
   gap: 0.75rem;
   align-items: flex-start;
 }
 
-.zustand-demo__field-name {
+.c-zustand-demo__field-name {
   font-family: var(--umpire-demo-font-heading);
   font-size: 1rem;
   line-height: 1.1;
 }
 
-.zustand-demo__field-code {
+.c-zustand-demo__field-code {
   display: inline-block;
   margin-top: 0.2rem;
   font-family: var(--umpire-demo-font-mono);
@@ -221,29 +221,29 @@
   color: var(--umpire-demo-text-muted);
 }
 
-.zustand-demo__field-grid {
+.c-zustand-demo__field-grid {
   display: grid;
   grid-template-columns: minmax(0, 0.42fr) minmax(0, 0.58fr);
   gap: 0.65rem;
 }
 
-.zustand-demo__field-cell {
+.c-zustand-demo__field-cell {
   display: grid;
   gap: 0.3rem;
 }
 
-.zustand-demo__field-key {
+.c-zustand-demo__field-key {
   font-size: 0.58rem;
   color: var(--umpire-demo-text-muted);
 }
 
-.zustand-demo__field-reason {
+.c-zustand-demo__field-reason {
   color: var(--umpire-demo-text-dim);
   font-size: 0.88rem;
   line-height: 1.35;
 }
 
-.zustand-demo__pill {
+.c-zustand-demo__pill {
   display: inline-flex;
   width: fit-content;
   align-items: center;
@@ -254,18 +254,18 @@
   font-size: 0.68rem;
 }
 
-.zustand-demo__pill--required {
+.c-zustand-demo__pill--required {
   color: var(--umpire-demo-yellow);
   border-color: var(--umpire-demo-yellow-16);
   background: var(--umpire-demo-yellow-8);
 }
 
-.zustand-demo__pill--optional {
+.c-zustand-demo__pill--optional {
   color: var(--umpire-demo-text-dim);
   background: var(--umpire-demo-white-3);
 }
 
-.zustand-demo__note {
+.c-zustand-demo__note {
   margin: 0;
   color: var(--umpire-demo-text-dim);
   font-size: 0.88rem;
@@ -273,19 +273,19 @@
 }
 
 @media (max-width: 50rem) {
-  .zustand-demo .umpire-demo__fouls {
+  .c-zustand-demo .c-umpire-demo__fouls {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .zustand-demo__summary,
-  .zustand-demo__field-grid {
+  .c-zustand-demo__summary,
+  .c-zustand-demo__field-grid {
     grid-template-columns: 1fr;
   }
 
-  .zustand-demo .umpire-demo__json-header,
-  .zustand-demo .umpire-demo__panel-header,
-  .zustand-demo__field-top {
+  .c-zustand-demo .c-umpire-demo__json-header,
+  .c-zustand-demo .c-umpire-demo__panel-header,
+  .c-zustand-demo__field-top {
     flex-direction: column;
     align-items: flex-start;
   }

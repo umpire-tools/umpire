@@ -1,4 +1,4 @@
-.learn-demo {
+.c-learn-demo {
   --umpire-demo-root-padding: 0.9rem;
   --umpire-demo-root-radius: 1rem;
   --umpire-demo-fields-gap: 0.7rem;
@@ -28,47 +28,47 @@
   gap: 0.75rem;
 }
 
-.learn-demo .umpire-demo__field:first-child {
+.c-learn-demo .c-umpire-demo__field:first-child {
   margin-top: 0;
 }
 
 @media (min-width: 50rem) {
-  .sl-markdown-content .learn-demo .umpire-demo__field + .umpire-demo__field {
+  .sl-markdown-content .c-learn-demo .c-umpire-demo__field + .c-umpire-demo__field {
     margin-top: 0;
   }
 }
 
-.learn-demo .umpire-demo__field {
+.c-learn-demo .c-umpire-demo__field {
   flex: 1 1 12.5rem;
   min-width: 0;
 }
 
-.learn-demo .umpire-demo__field-header {
+.c-learn-demo .c-umpire-demo__field-header {
   align-items: flex-start;
 }
 
-.learn-demo .umpire-demo__plan-toggle {
+.c-learn-demo .c-umpire-demo__plan-toggle {
   width: 100%;
 }
 
-.learn-demo .umpire-demo__fouls {
+.c-learn-demo .c-umpire-demo__fouls {
   gap: 0.8rem;
 }
 
-.learn-demo__stack {
+.c-learn-demo__stack {
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
 }
 
-.learn-demo__row {
+.c-learn-demo__row {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
   gap: 0.7rem;
 }
 
-.learn-demo__submit {
+.c-learn-demo__submit {
   width: 100%;
   border: 1px solid var(--umpire-demo-green-24);
   border-radius: 0.72rem;
@@ -84,19 +84,19 @@
   transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
-.learn-demo__submit:hover:not(:disabled) {
+.c-learn-demo__submit:hover:not(:disabled) {
   background: rgba(107, 254, 156, 0.2);
   border-color: rgba(107, 254, 156, 0.34);
 }
 
-.learn-demo__submit:disabled {
+.c-learn-demo__submit:disabled {
   border-color: rgba(255, 113, 108, 0.18);
   background: var(--umpire-demo-red-8);
   color: rgba(245, 247, 244, 0.42);
   cursor: not-allowed;
 }
 
-.learn-demo__toggle {
+.c-learn-demo__toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.65rem;
@@ -111,14 +111,14 @@
   cursor: pointer;
 }
 
-.learn-demo__toggle input {
+.c-learn-demo__toggle input {
   width: 1rem;
   height: 1rem;
   margin: 0;
   accent-color: var(--umpire-demo-green);
 }
 
-.learn-demo__select {
+.c-learn-demo__select {
   appearance: none;
   padding-right: 2rem;
   background-image:
@@ -132,7 +132,7 @@
 }
 
 @media (max-width: 50rem) {
-  .learn-demo__row {
+  .c-learn-demo__row {
     flex-direction: column;
   }
 }

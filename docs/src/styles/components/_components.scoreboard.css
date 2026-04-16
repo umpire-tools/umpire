@@ -1,4 +1,4 @@
-.umpire-scoreboard {
+.c-umpire-scoreboard {
   position: relative;
   overflow: hidden;
   border: 1px solid var(--umpire-demo-green-16);
@@ -12,7 +12,7 @@
   box-shadow: var(--umpire-glow);
 }
 
-.umpire-scoreboard::before {
+.c-umpire-scoreboard::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -27,14 +27,14 @@
   pointer-events: none;
 }
 
-.umpire-scoreboard__top,
-.umpire-scoreboard__call,
-.umpire-scoreboard__meta {
+.c-umpire-scoreboard__top,
+.c-umpire-scoreboard__call,
+.c-umpire-scoreboard__meta {
   position: relative;
   z-index: 1;
 }
 
-.umpire-scoreboard__top {
+.c-umpire-scoreboard__top {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
@@ -46,17 +46,17 @@
   color: var(--sl-color-gray-2);
 }
 
-.umpire-scoreboard__status {
+.c-umpire-scoreboard__status {
   color: var(--umpire-yellow);
 }
 
-.umpire-scoreboard__call {
+.c-umpire-scoreboard__call {
   display: grid;
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
 
-.umpire-scoreboard__pill {
+.c-umpire-scoreboard__pill {
   display: inline-flex;
   width: fit-content;
   align-items: center;
@@ -70,7 +70,7 @@
   text-transform: uppercase;
 }
 
-.umpire-scoreboard__headline {
+.c-umpire-scoreboard__headline {
   margin: 0;
   font-family: var(--umpire-font-heading);
   font-size: clamp(1.5rem, 2vw, 2rem);
@@ -78,24 +78,24 @@
   color: var(--sl-color-white);
 }
 
-.umpire-scoreboard__body {
+.c-umpire-scoreboard__body {
   margin: 0;
   color: var(--sl-color-gray-1);
 }
 
-.umpire-scoreboard__meta {
+.c-umpire-scoreboard__meta {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
 }
 
-.umpire-scoreboard__meta > div {
+.c-umpire-scoreboard__meta > div {
   border-radius: 1rem;
   padding: 0.75rem;
   background: var(--umpire-demo-white-3);
 }
 
-.umpire-scoreboard__label {
+.c-umpire-scoreboard__label {
   display: block;
   margin-bottom: 0.35rem;
   font-size: 0.7rem;
@@ -104,7 +104,7 @@
   color: var(--sl-color-gray-2);
 }
 
-.umpire-scoreboard__value {
+.c-umpire-scoreboard__value {
   font-family: var(--umpire-font-mono);
   font-size: 0.8rem;
   color: var(--sl-color-white);
@@ -113,7 +113,7 @@
 }
 
 @media (max-width: 50rem) {
-  .umpire-scoreboard__meta {
+  .c-umpire-scoreboard__meta {
     grid-template-columns: 1fr;
   }
 }

@@ -452,11 +452,11 @@ export function mount(root: HTMLElement) {
 
   root.innerHTML = renderShell()
 
-  const foulsEl = $('.umpire-demo__fouls', root)
-  const foulsListEl = $('.umpire-demo__fouls-list', root)
-  const resetButton = $('.umpire-demo__reset-button', root) as HTMLButtonElement | null
+  const foulsEl = $('.c-umpire-demo__fouls', root)
+  const foulsListEl = $('.c-umpire-demo__fouls-list', root)
+  const resetButton = $('.c-umpire-demo__reset-button', root) as HTMLButtonElement | null
 
-  for (const button of $$('.printer-demo__printer-btn', root)) {
+  for (const button of $$('.c-printer-demo__printer-btn', root)) {
     button.addEventListener('click', () => {
       const nextPrinter = button.getAttribute('data-printer') as PrinterType | null
       if (!nextPrinter) return
@@ -539,9 +539,9 @@ function renderForm(root: HTMLElement, state: PrintState, availability: Availabi
     const fieldAvailability = availability[field]
     const disabled = visible && !fieldAvailability.enabled
 
-    toggleClass(shell, 'umpire-demo__field--disabled', !visible || disabled)
-    toggleClass(statusEl, 'umpire-demo__status--enabled', fieldAvailability.enabled)
-    toggleClass(statusEl, 'umpire-demo__status--disabled', !fieldAvailability.enabled)
+    toggleClass(shell, 'c-umpire-demo__field is-disabled', !visible || disabled)
+    toggleClass(statusEl, 'c-umpire-demo__status is-enabled', fieldAvailability.enabled)
+    toggleClass(statusEl, 'c-umpire-demo__status is-disabled', !fieldAvailability.enabled)
 
     control.disabled = !visible || disabled
     syncControlValue(control, field, state)
@@ -554,7 +554,7 @@ function renderForm(root: HTMLElement, state: PrintState, availability: Availabi
     const groupEl = $(`[data-field-group="${group.key}"]`, root)
     if (!groupEl) continue
     const anyVisible = group.fields.some((field) => isFieldVisibleForPrinter(field, state.printer))
-    toggleClass(groupEl, 'umpire-demo__field--disabled', !anyVisible)
+    toggleClass(groupEl, 'c-umpire-demo__field is-disabled', !anyVisible)
   }
 }
 
@@ -564,7 +564,7 @@ function renderFouls(
   resetButton: HTMLButtonElement | null,
   fouls: UmpireStore<typeof fields>['fouls'],
 ) {
-  toggleClass(foulsEl, 'umpire-demo__fouls--visible', fouls.length > 0)
+  toggleClass(foulsEl, 'c-umpire-demo__fouls is-visible', fouls.length > 0)
   setAttr(resetButton, 'disabled', fouls.length === 0)
 
   if (!foulsListEl) return
@@ -572,14 +572,14 @@ function renderFouls(
 
   for (const foul of fouls) {
     const row = document.createElement('div')
-    row.className = 'umpire-demo__foul'
+    row.className = 'c-umpire-demo__foul'
 
     const fieldSpan = document.createElement('span')
-    fieldSpan.className = 'umpire-demo__foul-field'
+    fieldSpan.className = 'c-umpire-demo__foul-field'
     fieldSpan.textContent = fieldMeta[foul.field].label
 
     const reasonSpan = document.createElement('span')
-    reasonSpan.className = 'umpire-demo__foul-reason'
+    reasonSpan.className = 'c-umpire-demo__foul-reason'
     reasonSpan.textContent = foul.reason
 
     row.append(fieldSpan, reasonSpan)
@@ -646,9 +646,9 @@ function syncSelectOptions(select: HTMLSelectElement, options: Option[]) {
 }
 
 function syncPrinterButtons(root: HTMLElement, printer: PrinterType) {
-  for (const button of $$('.printer-demo__printer-btn', root)) {
+  for (const button of $$('.c-printer-demo__printer-btn', root)) {
     const isActive = button.getAttribute('data-printer') === printer
-    toggleClass(button, 'umpire-demo__plan-option--active', isActive)
+    toggleClass(button, 'c-umpire-demo__plan-option is-active', isActive)
     setAttr(button, 'aria-pressed', isActive)
   }
 }
@@ -723,69 +723,69 @@ function coerceSuggestedValue(field: PrintField, suggestedValue: unknown) {
 
 function renderShell(): string {
   return `
-    <div class="printer-demo__frame">
-      <section class="umpire-demo__panel">
-        <div class="umpire-demo__panel-header">
+    <div class="c-printer-demo__frame">
+      <section class="c-umpire-demo__panel">
+        <div class="c-umpire-demo__panel-header">
           <div>
-            <div class="umpire-demo__eyebrow">Vanilla Zustand + Umpire</div>
-            <h2 class="umpire-demo__title">Print Settings</h2>
+            <div class="c-umpire-demo__eyebrow">Vanilla Zustand + Umpire</div>
+            <h2 class="c-umpire-demo__title">Print Settings</h2>
           </div>
-          <span class="umpire-demo__panel-accent">store.setState() + fromStore()</span>
+          <span class="c-umpire-demo__panel-accent">store.setState() + fromStore()</span>
         </div>
 
-        <div class="umpire-demo__panel-body">
-          <div class="zustand-demo__callout">
-            <span class="zustand-demo__badge">pure dom</span>
-            <p class="zustand-demo__callout-text">
+        <div class="c-umpire-demo__panel-body">
+          <div class="c-zustand-demo__callout">
+            <span class="c-zustand-demo__badge">pure dom</span>
+            <p class="c-zustand-demo__callout-text">
               Printer buttons and native inputs mutate a vanilla Zustand store.
               Umpire reshapes the dialog, disables incompatible settings, and flags stale state.
             </p>
           </div>
 
-          <section class="printer-demo__field-group">
-            <div class="printer-demo__group-label umpire-demo__eyebrow">Printer</div>
-            <div class="printer-demo__selector" role="group" aria-label="Printer">
+          <section class="c-printer-demo__field-group">
+            <div class="c-printer-demo__group-label c-umpire-demo__eyebrow">Printer</div>
+            <div class="c-printer-demo__selector" role="group" aria-label="Printer">
               ${printers.map((printer) => `
                 <button
                   type="button"
-                  class="umpire-demo__plan-option printer-demo__printer-btn${printer === initialState.printer ? ' umpire-demo__plan-option--active' : ''}"
+                  class="c-umpire-demo__plan-option c-printer-demo__printer-btn${printer === initialState.printer ? ' c-umpire-demo__plan-option is-active' : ''}"
                   data-printer="${printer}"
                   aria-pressed="${printer === initialState.printer ? 'true' : 'false'}"
                 >
-                  <span class="printer-demo__printer-icon" aria-hidden="true">
+                  <span class="c-printer-demo__printer-icon" aria-hidden="true">
                     ${printerMeta[printer].icon}
                   </span>
-                  <span class="printer-demo__printer-label">${printerMeta[printer].label}</span>
+                  <span class="c-printer-demo__printer-label">${printerMeta[printer].label}</span>
                 </button>
               `).join('')}
             </div>
           </section>
 
-          <div class="umpire-demo__fouls">
-            <div class="umpire-demo__fouls-copy">
-              <div class="umpire-demo__fouls-kicker">Reset recommendations</div>
-              <div class="umpire-demo__fouls-list"></div>
+          <div class="c-umpire-demo__fouls">
+            <div class="c-umpire-demo__fouls-copy">
+              <div class="c-umpire-demo__fouls-kicker">Reset recommendations</div>
+              <div class="c-umpire-demo__fouls-list"></div>
             </div>
-            <button type="button" class="umpire-demo__reset-button" disabled>Apply resets</button>
+            <button type="button" class="c-umpire-demo__reset-button" disabled>Apply resets</button>
           </div>
 
-          <div class="umpire-demo__fields printer-demo__groups">
+          <div class="c-umpire-demo__fields c-printer-demo__groups">
             ${groupOrder.map((group) => `
-              <section class="printer-demo__field-group" data-field-group="${group.key}">
-                <div class="printer-demo__group-label umpire-demo__eyebrow">${group.label}</div>
-                <div class="printer-demo__group-fields">
+              <section class="c-printer-demo__field-group" data-field-group="${group.key}">
+                <div class="c-printer-demo__group-label c-umpire-demo__eyebrow">${group.label}</div>
+                <div class="c-printer-demo__group-fields">
                   ${group.fields.map((field) => renderFieldShell(field)).join('')}
                 </div>
               </section>
             `).join('')}
           </div>
 
-          <section class="umpire-demo__json-shell">
-            <div class="umpire-demo__json-header">
-              <span class="umpire-demo__json-title">store.getState()</span>
-              <span class="umpire-demo__json-meta">zustand/vanilla</span>
+          <section class="c-umpire-demo__json-shell">
+            <div class="c-umpire-demo__json-header">
+              <span class="c-umpire-demo__json-title">store.getState()</span>
+              <span class="c-umpire-demo__json-meta">zustand/vanilla</span>
             </div>
-            <pre class="umpire-demo__code-block"><code data-state-json></code></pre>
+            <pre class="c-umpire-demo__code-block"><code data-state-json></code></pre>
           </section>
         </div>
       </section>
@@ -799,67 +799,67 @@ function renderFieldShell(field: Exclude<PrintField, 'printer'>): string {
 
   if (meta.kind === 'checkbox') {
     return `
-      <div class="umpire-demo__field" data-field-shell="${field}">
-        <div class="umpire-demo__field-header">
-          <div class="umpire-demo__field-label">
-            <label class="printer-demo__field-title" for="${id}">${meta.label}</label>
-            <span class="umpire-demo__required-pill" data-field-required="${field}" hidden>required</span>
+      <div class="c-umpire-demo__field" data-field-shell="${field}">
+        <div class="c-umpire-demo__field-header">
+          <div class="c-umpire-demo__field-label">
+            <label class="c-printer-demo__field-title" for="${id}">${meta.label}</label>
+            <span class="c-umpire-demo__required-pill" data-field-required="${field}" hidden>required</span>
           </div>
-          <div class="umpire-demo__status umpire-demo__status--enabled" data-field-status="${field}">
-            <span class="umpire-demo__status-dot"></span>
-            <span class="umpire-demo__status-text" data-field-status-text="${field}">enabled</span>
+          <div class="c-umpire-demo__status c-umpire-demo__status is-enabled" data-field-status="${field}">
+            <span class="c-umpire-demo__status-dot"></span>
+            <span class="c-umpire-demo__status-text" data-field-status-text="${field}">enabled</span>
           </div>
         </div>
-        <label class="printer-demo__checkbox-row" for="${id}">
+        <label class="c-printer-demo__checkbox-row" for="${id}">
           <input id="${id}" type="checkbox" data-field-control="${field}" />
           <span>${meta.checkboxLabel}</span>
         </label>
-        <div class="umpire-demo__field-reason" data-field-reason="${field}"></div>
+        <div class="c-umpire-demo__field-reason" data-field-reason="${field}"></div>
       </div>
     `
   }
 
   if (meta.kind === 'number') {
     return `
-      <div class="umpire-demo__field" data-field-shell="${field}">
-        <div class="umpire-demo__field-header">
-          <div class="umpire-demo__field-label">
-            <label class="printer-demo__field-title" for="${id}">${meta.label}</label>
-            <span class="umpire-demo__required-pill" data-field-required="${field}" hidden>required</span>
+      <div class="c-umpire-demo__field" data-field-shell="${field}">
+        <div class="c-umpire-demo__field-header">
+          <div class="c-umpire-demo__field-label">
+            <label class="c-printer-demo__field-title" for="${id}">${meta.label}</label>
+            <span class="c-umpire-demo__required-pill" data-field-required="${field}" hidden>required</span>
           </div>
-          <div class="umpire-demo__status umpire-demo__status--enabled" data-field-status="${field}">
-            <span class="umpire-demo__status-dot"></span>
-            <span class="umpire-demo__status-text" data-field-status-text="${field}">enabled</span>
+          <div class="c-umpire-demo__status c-umpire-demo__status is-enabled" data-field-status="${field}">
+            <span class="c-umpire-demo__status-dot"></span>
+            <span class="c-umpire-demo__status-text" data-field-status-text="${field}">enabled</span>
           </div>
         </div>
         <input
           id="${id}"
-          class="umpire-demo__input"
+          class="c-umpire-demo__input"
           type="number"
           min="1"
           max="99"
           inputmode="numeric"
           data-field-control="${field}"
         />
-        <div class="umpire-demo__field-reason" data-field-reason="${field}"></div>
+        <div class="c-umpire-demo__field-reason" data-field-reason="${field}"></div>
       </div>
     `
   }
 
   return `
-    <div class="umpire-demo__field" data-field-shell="${field}">
-      <div class="umpire-demo__field-header">
-        <div class="umpire-demo__field-label">
-          <label class="printer-demo__field-title" for="${id}">${meta.label}</label>
-          <span class="umpire-demo__required-pill" data-field-required="${field}" hidden>required</span>
+    <div class="c-umpire-demo__field" data-field-shell="${field}">
+      <div class="c-umpire-demo__field-header">
+        <div class="c-umpire-demo__field-label">
+          <label class="c-printer-demo__field-title" for="${id}">${meta.label}</label>
+          <span class="c-umpire-demo__required-pill" data-field-required="${field}" hidden>required</span>
         </div>
-        <div class="umpire-demo__status umpire-demo__status--enabled" data-field-status="${field}">
-          <span class="umpire-demo__status-dot"></span>
-          <span class="umpire-demo__status-text" data-field-status-text="${field}">enabled</span>
+        <div class="c-umpire-demo__status c-umpire-demo__status is-enabled" data-field-status="${field}">
+          <span class="c-umpire-demo__status-dot"></span>
+          <span class="c-umpire-demo__status-text" data-field-status-text="${field}">enabled</span>
         </div>
       </div>
-      <select id="${id}" class="umpire-demo__input" data-field-control="${field}"></select>
-      <div class="umpire-demo__field-reason" data-field-reason="${field}"></div>
+      <select id="${id}" class="c-umpire-demo__input" data-field-control="${field}"></select>
+      <div class="c-umpire-demo__field-reason" data-field-reason="${field}"></div>
     </div>
   `
 }

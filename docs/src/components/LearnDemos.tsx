@@ -36,12 +36,12 @@ function StatusPill({ enabled, text }: { enabled: boolean; text?: string }) {
   return (
     <span
       className={cls(
-        'umpire-demo__status',
-        enabled ? 'umpire-demo__status--enabled' : 'umpire-demo__status--disabled',
+        'c-umpire-demo__status',
+        enabled ? 'c-umpire-demo__status is-enabled' : 'c-umpire-demo__status is-disabled',
       )}
     >
-      <span className="umpire-demo__status-dot" />
-      <span className="umpire-demo__status-text">{text ?? (enabled ? 'enabled' : 'disabled')}</span>
+      <span className="c-umpire-demo__status-dot" />
+      <span className="c-umpire-demo__status-text">{text ?? (enabled ? 'enabled' : 'disabled')}</span>
     </span>
   )
 }
@@ -62,20 +62,20 @@ function FieldCard({
   return (
     <div
       className={cls(
-        'umpire-demo__field',
-        !availability.enabled && 'umpire-demo__field--disabled',
+        'c-umpire-demo__field',
+        !availability.enabled && 'c-umpire-demo__field is-disabled',
       )}
     >
-      <div className="umpire-demo__field-header">
-        <div className="umpire-demo__field-label">
+      <div className="c-umpire-demo__field-header">
+        <div className="c-umpire-demo__field-label">
           <span>{label}</span>
-          {availability.required && <span className="umpire-demo__required-pill">required</span>}
+          {availability.required && <span className="c-umpire-demo__required-pill">required</span>}
         </div>
         <StatusPill enabled={availability.enabled} />
       </div>
 
       {children}
-      <div className="umpire-demo__field-reason">{message ?? ''}</div>
+      <div className="c-umpire-demo__field-reason">{message ?? ''}</div>
     </div>
   )
 }
@@ -93,7 +93,7 @@ function ToggleGroup<T extends string>({
 }) {
   return (
     <div
-      className="umpire-demo__plan-toggle"
+      className="c-umpire-demo__plan-toggle"
       aria-label={ariaLabel}
       style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
     >
@@ -103,8 +103,8 @@ function ToggleGroup<T extends string>({
           type="button"
           aria-pressed={value === option.value}
           className={cls(
-            'umpire-demo__plan-option',
-            value === option.value && 'umpire-demo__plan-option--active',
+            'c-umpire-demo__plan-option',
+            value === option.value && 'c-umpire-demo__plan-option is-active',
           )}
           onClick={() => onChange(option.value)}
         >
@@ -136,10 +136,10 @@ export function RequiresDemo() {
   const availability = requiresUmp.check(values)
 
   return (
-    <div className="learn-demo__row">
+    <div className="c-learn-demo__row">
       <FieldCard label="Password" availability={availability.password}>
         <input
-          className="umpire-demo__input"
+          className="c-umpire-demo__input"
           type="password"
           aria-label="Password"
           placeholder="Enter a password"
@@ -153,7 +153,7 @@ export function RequiresDemo() {
 
       <FieldCard label="Confirm password" availability={availability.confirmPassword}>
         <input
-          className="umpire-demo__input"
+          className="c-umpire-demo__input"
           type="password"
           aria-label="Confirm password"
           placeholder="Repeats the first field"
@@ -192,7 +192,7 @@ export function EnabledWhenDemo() {
   const availability = enabledWhenUmp.check({ companyName }, { plan })
 
   return (
-    <div className="learn-demo__stack">
+    <div className="c-learn-demo__stack">
       <ToggleGroup
         value={plan}
         options={planOptions}
@@ -200,10 +200,10 @@ export function EnabledWhenDemo() {
         onChange={setPlan}
       />
 
-      <div className="learn-demo__row">
+      <div className="c-learn-demo__row">
         <FieldCard label="Company name" availability={availability.companyName}>
           <input
-            className="umpire-demo__input"
+            className="c-umpire-demo__input"
             type="text"
             aria-label="Company name"
             placeholder="Acme Logistics"
@@ -240,16 +240,16 @@ export function DisablesDemo() {
   })
 
   return (
-    <div className="learn-demo__row">
-      <div className="umpire-demo__field">
-        <div className="umpire-demo__field-header">
-          <div className="umpire-demo__field-label">
+    <div className="c-learn-demo__row">
+      <div className="c-umpire-demo__field">
+        <div className="c-umpire-demo__field-header">
+          <div className="c-umpire-demo__field-label">
             <span>Banner mode</span>
           </div>
           <StatusPill enabled={bannerMode} text={bannerMode ? 'active' : 'idle'} />
         </div>
 
-        <label className="learn-demo__toggle">
+        <label className="c-learn-demo__toggle">
           <input
             type="checkbox"
             checked={bannerMode}
@@ -261,7 +261,7 @@ export function DisablesDemo() {
 
       <FieldCard label="Paper size" availability={availability.paperSize}>
         <select
-          className="umpire-demo__input learn-demo__select"
+          className="c-umpire-demo__input c-learn-demo__select"
           aria-label="Paper size"
           value={paperSize}
           disabled={!availability.paperSize.enabled}
@@ -313,7 +313,7 @@ export function OneOfDemo() {
   const availability = oneOfUmp.check(values, { handling })
 
   return (
-    <div className="learn-demo__stack">
+    <div className="c-learn-demo__stack">
       <ToggleGroup
         value={handling}
         options={handlingOptions}
@@ -321,10 +321,10 @@ export function OneOfDemo() {
         onChange={setHandling}
       />
 
-      <div className="learn-demo__row">
+      <div className="c-learn-demo__row">
         <FieldCard label="Standard rate" availability={availability.standardRate}>
           <input
-            className="umpire-demo__input"
+            className="c-umpire-demo__input"
             type="text"
             aria-label="Standard rate"
             placeholder="$12.00"
@@ -339,7 +339,7 @@ export function OneOfDemo() {
 
         <FieldCard label="Express rate" availability={availability.expressRate}>
           <input
-            className="umpire-demo__input"
+            className="c-umpire-demo__input"
             type="text"
             aria-label="Express rate"
             placeholder="$24.00"
@@ -354,7 +354,7 @@ export function OneOfDemo() {
 
         <FieldCard label="Pickup location" availability={availability.pickupLocation}>
           <input
-            className="umpire-demo__input"
+            className="c-umpire-demo__input"
             type="text"
             aria-label="Pickup location"
             placeholder="Front desk"
@@ -390,10 +390,10 @@ export function CheckDemo() {
   const availability = checkUmp.check({ email, submit: undefined })
 
   return (
-    <div className="learn-demo__row">
+    <div className="c-learn-demo__row">
       <FieldCard label="Email" availability={availability.email}>
         <input
-          className="umpire-demo__input"
+          className="c-umpire-demo__input"
           type="email"
           aria-label="Email"
           placeholder="user@example.com"
@@ -405,7 +405,7 @@ export function CheckDemo() {
       <FieldCard label="Submit" availability={availability.submit}>
         <button
           type="button"
-          className="learn-demo__submit"
+          className="c-learn-demo__submit"
           disabled={!availability.submit.enabled}
         >
           Continue
@@ -446,10 +446,10 @@ export function AnyOfDemo() {
     : availability.submit.reasons.join(' or ')
 
   return (
-    <div className="learn-demo__row">
+    <div className="c-learn-demo__row">
       <FieldCard label="Phone" availability={availability.phone}>
         <input
-          className="umpire-demo__input"
+          className="c-umpire-demo__input"
           type="tel"
           aria-label="Phone"
           placeholder="5551234567"
@@ -463,7 +463,7 @@ export function AnyOfDemo() {
 
       <FieldCard label="Email" availability={availability.email}>
         <input
-          className="umpire-demo__input"
+          className="c-umpire-demo__input"
           type="email"
           aria-label="Email"
           placeholder="user@example.com"
@@ -482,7 +482,7 @@ export function AnyOfDemo() {
       >
         <button
           type="button"
-          className="learn-demo__submit"
+          className="c-learn-demo__submit"
           disabled={!availability.submit.enabled}
         >
           Request link
@@ -533,11 +533,11 @@ export function EitherOfDemo() {
   }
 
   return (
-    <div className="learn-demo__stack">
-      <div className="learn-demo__row">
+    <div className="c-learn-demo__stack">
+      <div className="c-learn-demo__row">
         <FieldCard label="Username" availability={availability.username}>
           <input
-            className="umpire-demo__input"
+            className="c-umpire-demo__input"
             type="text"
             aria-label="Username"
             placeholder="alice"
@@ -548,7 +548,7 @@ export function EitherOfDemo() {
 
         <FieldCard label="Password" availability={availability.password}>
           <input
-            className="umpire-demo__input"
+            className="c-umpire-demo__input"
             type="password"
             aria-label="Password"
             placeholder="••••••••"
@@ -559,7 +559,7 @@ export function EitherOfDemo() {
 
         <FieldCard label="Backup token" availability={availability.token}>
           <input
-            className="umpire-demo__input"
+            className="c-umpire-demo__input"
             type="text"
             aria-label="Backup token"
             placeholder="ABC-123"
@@ -571,7 +571,7 @@ export function EitherOfDemo() {
         <FieldCard label="Submit" availability={availability.submit}>
           <button
             type="button"
-            className="learn-demo__submit"
+            className="c-learn-demo__submit"
             disabled={!availability.submit.enabled}
           >
             Sign in
@@ -647,16 +647,16 @@ export function PlayDemo() {
   }
 
   return (
-    <div className="learn-demo__stack">
+    <div className="c-learn-demo__stack">
       {fouls.length > 0 && (
-        <div className="umpire-demo__fouls">
-          <div className="umpire-demo__fouls-copy">
-            <div className="umpire-demo__fouls-kicker">Foul calls</div>
-            <div className="umpire-demo__fouls-list">
+        <div className="c-umpire-demo__fouls">
+          <div className="c-umpire-demo__fouls-copy">
+            <div className="c-umpire-demo__fouls-kicker">Foul calls</div>
+            <div className="c-umpire-demo__fouls-list">
               {fouls.map((foul) => (
-                <div key={foul.field} className="umpire-demo__foul">
-                  <span className="umpire-demo__foul-field">{playFieldLabels[foul.field]}</span>
-                  <span className="umpire-demo__foul-reason">{foul.reason}</span>
+                <div key={foul.field} className="c-umpire-demo__foul">
+                  <span className="c-umpire-demo__foul-field">{playFieldLabels[foul.field]}</span>
+                  <span className="c-umpire-demo__foul-reason">{foul.reason}</span>
                 </div>
               ))}
             </div>
@@ -664,7 +664,7 @@ export function PlayDemo() {
 
           <button
             type="button"
-            className="umpire-demo__reset-button"
+            className="c-umpire-demo__reset-button"
             onClick={applyResets}
           >
             Apply resets
@@ -679,10 +679,10 @@ export function PlayDemo() {
         onChange={setPlan}
       />
 
-      <div className="learn-demo__row">
+      <div className="c-learn-demo__row">
         <FieldCard label="Company name" availability={availability.companyName}>
           <input
-            className="umpire-demo__input"
+            className="c-umpire-demo__input"
             type="text"
             aria-label="Company name"
             placeholder="Acme Logistics"
@@ -694,7 +694,7 @@ export function PlayDemo() {
 
         <FieldCard label="Company size" availability={availability.companySize}>
           <input
-            className="umpire-demo__input"
+            className="c-umpire-demo__input"
             type="text"
             aria-label="Company size"
             placeholder="50 seats"

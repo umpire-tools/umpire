@@ -1,4 +1,4 @@
-.minesweeper-demo {
+.c-minesweeper-demo {
   --minesweeper-demo-board-frame: #9b9b9b;
   --minesweeper-demo-board-shadow: #6f6f6f;
   --minesweeper-demo-board-highlight: #dedede;
@@ -14,45 +14,45 @@
 }
 
 
-.sl-markdown-content .minesweeper-demo__status-bar > div + div,
-.sl-markdown-content .minesweeper-demo__controls div + button,
-.sl-markdown-content .minesweeper-demo__controls .minesweeper-demo__status,
-.sl-markdown-content .minesweeper-demo__controls .minesweeper-demo__counter,
-.sl-markdown-content .minesweeper-demo-board .minesweeper-demo-board__shell + .minesweeper-demo-board__panel {
+.sl-markdown-content .c-minesweeper-demo__status-bar > div + div,
+.sl-markdown-content .c-minesweeper-demo__controls div + button,
+.sl-markdown-content .c-minesweeper-demo__controls .c-minesweeper-demo__status,
+.sl-markdown-content .c-minesweeper-demo__controls .c-minesweeper-demo__counter,
+.sl-markdown-content .c-minesweeper-demo-board .c-minesweeper-demo-board__shell + .c-minesweeper-demo-board__panel {
   margin-top: 0;
 }
 
 
 
-.minesweeper-demo--compact {
+.c-minesweeper-demo--compact {
   --umpire-demo-root-padding: 0.8rem;
   --umpire-demo-root-radius: 1rem;
   width: fit-content;
   margin: 0;
 }
 
-.minesweeper-demo__layout {
+.c-minesweeper-demo__layout {
   align-items: start;
 }
 
-.minesweeper-demo__panel--board {
+.c-minesweeper-demo__panel--board {
   min-width: 0;
 }
 
-.minesweeper-demo__panel-body {
+.c-minesweeper-demo__panel-body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
   padding-top: 0;
 }
 
-.minesweeper-demo__status-bar {
+.c-minesweeper-demo__status-bar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.75rem;
 }
 
-.minesweeper-demo__face {
+.c-minesweeper-demo__face {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -66,43 +66,43 @@
   line-height: 1;
 }
 
-.minesweeper-demo__status-copy {
+.c-minesweeper-demo__status-copy {
   min-width: 0;
 }
 
-.minesweeper-demo__status-label,
-.minesweeper-demo__counter-label,
-.minesweeper-demo__inspector-label {
+.c-minesweeper-demo__status-label,
+.c-minesweeper-demo__counter-label,
+.c-minesweeper-demo__inspector-label {
   display: block;
   font-size: 0.66rem;
   letter-spacing: var(--umpire-demo-tracking-wide);
 }
 
-.minesweeper-demo__status-subtitle,
-.minesweeper-demo__inspector-value {
+.c-minesweeper-demo__status-subtitle,
+.c-minesweeper-demo__inspector-value {
   display: block;
   margin-top: 0.22rem;
   color: var(--umpire-demo-text);
   font-size: 0.92rem;
 }
 
-.minesweeper-demo__status,
-.minesweeper-demo__counter {
+.c-minesweeper-demo__status,
+.c-minesweeper-demo__counter {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
 }
-.minesweeper-demo__status {
+.c-minesweeper-demo__status {
   top: -0.25rem;
   position: relative;
   text-align: center;
   flex: 3;
 }
-.minesweeper-demo__counter {
+.c-minesweeper-demo__counter {
   text-align: right;
 }
 
-.minesweeper-demo__counter-value {
+.c-minesweeper-demo__counter-value {
   margin-top: 0.16rem;
   font-family: var(--umpire-demo-font-mono);
   font-size: 1.35rem;
@@ -110,11 +110,11 @@
   color: var(--umpire-demo-yellow);
 }
 
-.minesweeper-demo__counter-value--negative {
+.c-minesweeper-demo__counter-value--negative {
   color: var(--umpire-demo-red);
 }
 
-.minesweeper-demo__controls {
+.c-minesweeper-demo__controls {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
@@ -122,7 +122,7 @@
   justify-content: space-between;
 }
 
-.minesweeper-demo__mode-toggle {
+.c-minesweeper-demo__mode-toggle {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.35rem;
@@ -132,8 +132,8 @@
   background: var(--umpire-demo-white-3);
 }
 
-.minesweeper-demo__mode-button,
-.minesweeper-demo__new-game {
+.c-minesweeper-demo__mode-button,
+.c-minesweeper-demo__new-game {
   border: 0;
   border-radius: var(--umpire-demo-radius-pill);
   padding: 0.72rem 1rem;
@@ -146,12 +146,12 @@
   transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
-.minesweeper-demo__mode-button {
+.c-minesweeper-demo__mode-button {
   background: transparent;
   color: var(--umpire-demo-text-dim);
 }
 
-.minesweeper-demo__mode-button--active {
+.c-minesweeper-demo__mode-button.is-active {
   background: var(--umpire-demo-yellow-16);
   color: var(--umpire-demo-yellow);
   box-shadow:
@@ -159,33 +159,33 @@
     0 0 18px rgba(254, 208, 35, 0.1);
 }
 
-.minesweeper-demo__new-game {
+.c-minesweeper-demo__new-game {
   border: 1px solid rgba(107, 254, 156, 0.26);
   background: rgba(107, 254, 156, 0.1);
   color: var(--umpire-demo-green);
 }
 
-.minesweeper-demo__new-game:hover,
-.minesweeper-demo__mode-button:hover {
+.c-minesweeper-demo__new-game:hover,
+.c-minesweeper-demo__mode-button:hover {
   transform: translateY(-1px);
 }
 
-.minesweeper-demo-board {
+.c-minesweeper-demo-board {
   display: flex;
   flex-direction: 'row';
 }
 
-.minesweeper-demo-board__panel {
+.c-minesweeper-demo-board__panel {
   flex-shrink: 1;
   padding-top: 0;
 }
 
-.minesweeper-demo__panel--inspector {
+.c-minesweeper-demo__panel--inspector {
   min-width: 0;
   overflow: hidden;
 }
 
-.minesweeper-demo-board__shell {
+.c-minesweeper-demo-board__shell {
   flex-shrink: 0;
   align-self: start;
   overflow: auto;
@@ -200,7 +200,7 @@
     inset -2px -2px 0 var(--minesweeper-demo-board-shadow);
 }
 
-.minesweeper-demo__grid {
+.c-minesweeper-demo__grid {
   display: grid;
   gap: 1px;
   width: max-content;
@@ -209,7 +209,7 @@
   touch-action: manipulation;
 }
 
-.minesweeper-demo__cell {
+.c-minesweeper-demo__cell {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -229,7 +229,7 @@
   cursor: pointer;
 }
 
-.minesweeper-demo__cell--hidden {
+.c-minesweeper-demo__cell.is-hidden {
   border-top-color: var(--minesweeper-demo-cell-face-light);
   border-left-color: var(--minesweeper-demo-cell-face-light);
   border-right-color: var(--minesweeper-demo-cell-face-dark);
@@ -238,57 +238,57 @@
     linear-gradient(135deg, var(--minesweeper-demo-cell-face-light), var(--minesweeper-demo-cell-face));
 }
 
-.minesweeper-demo__cell--revealed {
+.c-minesweeper-demo__cell.is-revealed {
   border-color: var(--minesweeper-demo-cell-revealed-border);
   background: var(--minesweeper-demo-cell-revealed);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
   cursor: default;
 }
 
-.minesweeper-demo__cell--mine {
+.c-minesweeper-demo__cell--mine {
   background: rgba(255, 113, 108, 0.28);
   color: var(--umpire-demo-red);
 }
 
-.minesweeper-demo__cell--disabled {
+.c-minesweeper-demo__cell.is-disabled {
   opacity: 0.6;
 }
 
-.minesweeper-demo__cell--flagged {
+.c-minesweeper-demo__cell.is-flagged {
   color: var(--umpire-demo-red);
   opacity: 1;
 }
 
-.minesweeper-demo__flag,
-.minesweeper-demo__mine,
-.minesweeper-demo__number {
+.c-minesweeper-demo__flag,
+.c-minesweeper-demo__mine,
+.c-minesweeper-demo__number {
   pointer-events: none;
 }
 
-.minesweeper-demo__flag {
+.c-minesweeper-demo__flag {
   text-shadow: 0 0 12px var(--umpire-demo-yellow-18);
 }
 
-.minesweeper-demo__mine {
+.c-minesweeper-demo__mine {
   text-shadow: 0 0 12px rgba(255, 113, 108, 0.18);
 }
 
-.minesweeper-demo__number--1 { color: #0000ff; }
-.minesweeper-demo__number--2 { color: #008000; }
-.minesweeper-demo__number--3 { color: #ff0000; }
-.minesweeper-demo__number--4 { color: #000080; }
-.minesweeper-demo__number--5 { color: #800000; }
-.minesweeper-demo__number--6 { color: #008080; }
-.minesweeper-demo__number--7 { color: #000000; }
-.minesweeper-demo__number--8 { color: #808080; }
+.c-minesweeper-demo__number--1 { color: #0000ff; }
+.c-minesweeper-demo__number--2 { color: #008000; }
+.c-minesweeper-demo__number--3 { color: #ff0000; }
+.c-minesweeper-demo__number--4 { color: #000080; }
+.c-minesweeper-demo__number--5 { color: #800000; }
+.c-minesweeper-demo__number--6 { color: #008080; }
+.c-minesweeper-demo__number--7 { color: #000000; }
+.c-minesweeper-demo__number--8 { color: #808080; }
 
-.minesweeper-demo__inspector-body {
+.c-minesweeper-demo__inspector-body {
   display: flex;
   flex-direction: column;
   padding-left: 1rem;
 }
 
-.minesweeper-demo__inspector-meta {
+.c-minesweeper-demo__inspector-meta {
   display: grid;
   gap: 0.6rem;
   padding: 0.8rem 0.85rem;
@@ -297,14 +297,14 @@
   background: var(--umpire-demo-white-2);
 }
 
-.minesweeper-demo__inspector-row {
+.c-minesweeper-demo__inspector-row {
   display: flex;
   justify-content: space-between;
   gap: 0.75rem;
   align-items: baseline;
 }
 
-.minesweeper-demo__inspector-value {
+.c-minesweeper-demo__inspector-value {
   margin-top: 0;
   font-family: var(--umpire-demo-font-mono);
   font-size: 0.84rem;
@@ -312,37 +312,37 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .minesweeper-demo__cell--hidden:not(.minesweeper-demo__cell--disabled):hover {
+  .c-minesweeper-demo__cell.is-hidden:not(.c-minesweeper-demo__cell.is-disabled):hover {
     transform: translate(-1px, -1px);
   }
 
-  .minesweeper-demo__new-game:hover,
-  .minesweeper-demo__mode-button:hover {
+  .c-minesweeper-demo__new-game:hover,
+  .c-minesweeper-demo__mode-button:hover {
     filter: brightness(1.05);
   }
 }
 
 @media (max-width: 960px) {
-  .minesweeper-demo:not(.minesweeper-demo--compact) {
+  .c-minesweeper-demo:not(.c-minesweeper-demo--compact) {
     --umpire-demo-layout-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 640px) {
-  .minesweeper-demo__status-bar {
+  .c-minesweeper-demo__status-bar {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .minesweeper-demo__controls {
+  .c-minesweeper-demo__controls {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .minesweeper-demo__mode-toggle {
+  .c-minesweeper-demo__mode-toggle {
     width: 100%;
   }
 
-  .minesweeper-demo__new-game {
+  .c-minesweeper-demo__new-game {
     width: 100%;
   }
 }
