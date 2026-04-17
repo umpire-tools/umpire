@@ -14,6 +14,7 @@ export {
   requiresJson,
   requiresExpr,
 } from './builders.js'
+export { compileExpr, getExprFieldRefs } from './expr.js'
 export { fromJson } from './parse.js'
 export { getJsonDef } from './json-def.js'
 export { toJson } from './serialize.js'
