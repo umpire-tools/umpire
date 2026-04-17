@@ -196,30 +196,30 @@ export function createValidatorDefFromMetadata(
     : { ...spec, error }
 }
 
-export function createNamedValidatorFromSpec(spec: JsonValidatorSpec): NamedCheck<any> {
+export function createNamedValidatorFromSpec(spec: JsonValidatorSpec): NamedCheck<unknown> {
   switch (spec.op) {
     case 'email':
-      return namedValidators.email()
+      return namedValidators.email() as NamedCheck<unknown>
     case 'url':
-      return namedValidators.url()
+      return namedValidators.url() as NamedCheck<unknown>
     case 'matches':
-      return namedValidators.matches(spec.pattern)
+      return namedValidators.matches(spec.pattern) as NamedCheck<unknown>
     case 'minLength':
-      return namedValidators.minLength(spec.value)
+      return namedValidators.minLength(spec.value) as NamedCheck<unknown>
     case 'maxLength':
-      return namedValidators.maxLength(spec.value)
+      return namedValidators.maxLength(spec.value) as NamedCheck<unknown>
     case 'min':
-      return namedValidators.min(spec.value)
+      return namedValidators.min(spec.value) as NamedCheck<unknown>
     case 'max':
-      return namedValidators.max(spec.value)
+      return namedValidators.max(spec.value) as NamedCheck<unknown>
     case 'range':
-      return namedValidators.range(spec.min, spec.max)
+      return namedValidators.range(spec.min, spec.max) as NamedCheck<unknown>
     case 'integer':
-      return namedValidators.integer()
+      return namedValidators.integer() as NamedCheck<unknown>
   }
 }
 
-export const createNamedValidatorFromRule: (rule: JsonCheckRule) => NamedCheck<any> = createNamedValidatorFromSpec
+export const createNamedValidatorFromRule: (rule: JsonCheckRule) => NamedCheck<unknown> = createNamedValidatorFromSpec
 
 export function assertValidValidatorSpec(rule: JsonValidatorSpec): void {
   switch (rule.op) {
