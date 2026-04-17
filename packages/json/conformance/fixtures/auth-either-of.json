@@ -35,13 +35,19 @@
             {
               "type": "enabledWhen",
               "field": "submit",
-              "when": { "op": "present", "field": "email" },
+              "when": {
+                "op": "present",
+                "field": "email"
+              },
               "reason": "Enter your email"
             },
             {
               "type": "enabledWhen",
               "field": "submit",
-              "when": { "op": "present", "field": "password" },
+              "when": {
+                "op": "present",
+                "field": "password"
+              },
               "reason": "Enter your password"
             }
           ],
@@ -49,13 +55,19 @@
             {
               "type": "enabledWhen",
               "field": "submit",
-              "when": { "op": "cond", "condition": "ssoAvailable" },
+              "when": {
+                "op": "cond",
+                "condition": "ssoAvailable"
+              },
               "reason": "SSO is not available for this account"
             },
             {
               "type": "enabledWhen",
               "field": "submit",
-              "when": { "op": "present", "field": "email" },
+              "when": {
+                "op": "present",
+                "field": "email"
+              },
               "reason": "Enter your email"
             }
           ],
@@ -63,13 +75,19 @@
             {
               "type": "enabledWhen",
               "field": "submit",
-              "when": { "op": "cond", "condition": "magicLinkEnabled" },
+              "when": {
+                "op": "cond",
+                "condition": "magicLinkEnabled"
+              },
               "reason": "Magic link is not enabled for this tenant"
             },
             {
               "type": "enabledWhen",
               "field": "submit",
-              "when": { "op": "present", "field": "email" },
+              "when": {
+                "op": "present",
+                "field": "email"
+              },
               "reason": "Enter your email"
             }
           ]
@@ -89,10 +107,38 @@
         "magicLinkEnabled": false
       },
       "expectedAvailability": {
-        "email": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "ssoToken": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "submit": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "email": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "password": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "ssoToken": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "submit": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        }
       }
     },
     {
@@ -106,10 +152,38 @@
         "magicLinkEnabled": false
       },
       "expectedAvailability": {
-        "email": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "ssoToken": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "submit": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "email": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "password": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "ssoToken": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "submit": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        }
       }
     },
     {
@@ -122,10 +196,38 @@
         "magicLinkEnabled": true
       },
       "expectedAvailability": {
-        "email": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "ssoToken": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "submit": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "email": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "password": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "ssoToken": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "submit": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        }
       }
     },
     {
@@ -140,10 +242,38 @@
         "magicLinkEnabled": true
       },
       "expectedAvailability": {
-        "email": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "ssoToken": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "submit": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "email": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "password": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "ssoToken": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "submit": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        }
       }
     },
     {
@@ -154,10 +284,45 @@
         "magicLinkEnabled": false
       },
       "expectedAvailability": {
-        "email": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "ssoToken": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "submit": { "enabled": false, "fair": true, "required": false, "reason": "Enter your email", "reasons": ["Enter your email", "Enter your password", "SSO is not available for this account", "Enter your email", "Magic link is not enabled for this tenant", "Enter your email"] }
+        "email": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "password": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "ssoToken": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "submit": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Enter your email",
+          "reasons": [
+            "Enter your email",
+            "Enter your password",
+            "SSO is not available for this account",
+            "Enter your email",
+            "Magic link is not enabled for this tenant",
+            "Enter your email"
+          ],
+          "satisfied": false
+        }
       }
     },
     {
@@ -170,10 +335,42 @@
         "magicLinkEnabled": false
       },
       "expectedAvailability": {
-        "email": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "ssoToken": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "submit": { "enabled": false, "fair": true, "required": false, "reason": "Enter your password", "reasons": ["Enter your password", "SSO is not available for this account", "Magic link is not enabled for this tenant"] }
+        "email": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "password": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "ssoToken": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "submit": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Enter your password",
+          "reasons": [
+            "Enter your password",
+            "SSO is not available for this account",
+            "Magic link is not enabled for this tenant"
+          ],
+          "satisfied": false
+        }
       }
     }
   ]

@@ -22,7 +22,9 @@
       {
         "type": "disables",
         "source": "rainDelay",
-        "targets": ["starterWarmup"]
+        "targets": [
+          "starterWarmup"
+        ]
       },
       {
         "type": "requires",
@@ -46,10 +48,44 @@
         "bullpenPhone": "call the lefty"
       },
       "expectedAvailability": {
-        "rainDelay": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "starterWarmup": { "enabled": false, "fair": true, "required": false, "reason": "overridden by rainDelay", "reasons": ["overridden by rainDelay"] },
-        "moundVisitPlan": { "enabled": false, "fair": true, "required": false, "reason": "requires starterWarmup", "reasons": ["requires starterWarmup"] },
-        "bullpenPhone": { "enabled": false, "fair": true, "required": false, "reason": "requires moundVisitPlan", "reasons": ["requires moundVisitPlan"] }
+        "rainDelay": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "starterWarmup": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "overridden by rainDelay",
+          "reasons": [
+            "overridden by rainDelay"
+          ],
+          "satisfied": true
+        },
+        "moundVisitPlan": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "requires starterWarmup",
+          "reasons": [
+            "requires starterWarmup"
+          ],
+          "satisfied": true
+        },
+        "bullpenPhone": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "requires moundVisitPlan",
+          "reasons": [
+            "requires moundVisitPlan"
+          ],
+          "satisfied": true
+        }
       }
     },
     {
@@ -60,10 +96,38 @@
         "bullpenPhone": "call the lefty"
       },
       "expectedAvailability": {
-        "rainDelay": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "starterWarmup": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "moundVisitPlan": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "bullpenPhone": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "rainDelay": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "starterWarmup": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "moundVisitPlan": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "bullpenPhone": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        }
       }
     }
   ]

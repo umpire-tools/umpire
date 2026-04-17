@@ -17,6 +17,7 @@ type JsonFixtureValue =
 
 type ExpectedFieldStatus = {
   enabled: boolean
+  satisfied: boolean
   fair: boolean
   required: boolean
   reason: string | null

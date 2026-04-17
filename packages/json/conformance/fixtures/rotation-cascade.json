@@ -54,12 +54,41 @@
         "bullpenPhone": "call the bridge arm"
       },
       "conditions": {
-        "availablePitchers": ["Holmes"]
+        "availablePitchers": [
+          "Holmes"
+        ]
       },
       "expectedAvailability": {
-        "startingPitcher": { "enabled": true, "fair": false, "required": true, "reason": "Starting pitcher is not available tonight", "reasons": ["Starting pitcher is not available tonight"] },
-        "catcherPlan": { "enabled": false, "fair": true, "required": false, "reason": "requires startingPitcher", "reasons": ["requires startingPitcher"] },
-        "bullpenPhone": { "enabled": false, "fair": true, "required": false, "reason": "requires catcherPlan", "reasons": ["requires catcherPlan"] }
+        "startingPitcher": {
+          "enabled": true,
+          "fair": false,
+          "required": true,
+          "reason": "Starting pitcher is not available tonight",
+          "reasons": [
+            "Starting pitcher is not available tonight"
+          ],
+          "satisfied": true
+        },
+        "catcherPlan": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "requires startingPitcher",
+          "reasons": [
+            "requires startingPitcher"
+          ],
+          "satisfied": true
+        },
+        "bullpenPhone": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "requires catcherPlan",
+          "reasons": [
+            "requires catcherPlan"
+          ],
+          "satisfied": true
+        }
       }
     },
     {
@@ -70,12 +99,36 @@
         "bullpenPhone": "call the bridge arm"
       },
       "conditions": {
-        "availablePitchers": ["Cole", "Holmes"]
+        "availablePitchers": [
+          "Cole",
+          "Holmes"
+        ]
       },
       "expectedAvailability": {
-        "startingPitcher": { "enabled": true, "fair": true, "required": true, "reason": null, "reasons": [] },
-        "catcherPlan": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "bullpenPhone": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "startingPitcher": {
+          "enabled": true,
+          "fair": true,
+          "required": true,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "catcherPlan": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "bullpenPhone": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        }
       }
     }
   ]

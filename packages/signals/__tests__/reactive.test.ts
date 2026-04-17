@@ -170,6 +170,7 @@ describe('reactiveUmp', () => {
 
     const email = reactive.field('email')
     expect(email.enabled).toBe(true)
+    expect(email.satisfied).toBe(false)
     expect(email.fair).toBe(true)
     expect(email.required).toBe(true)
     expect(email.reason).toBeNull()
@@ -189,6 +190,12 @@ describe('reactiveUmp', () => {
 
     // Email should be enabled
     expect(reactive.field('email').enabled).toBe(true)
+
+    expect(reactive.field('email').satisfied).toBe(false)
+
+    reactive.set('email', 'test@example.com')
+
+    expect(reactive.field('email').satisfied).toBe(true)
   })
 
   test('field(name) returns the same object on repeated calls', () => {

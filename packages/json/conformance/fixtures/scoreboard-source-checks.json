@@ -5,11 +5,17 @@
   "schema": {
     "version": 1,
     "fields": {
-      "scorerEmail": { "isEmpty": "string" },
-      "password": { "isEmpty": "string" },
+      "scorerEmail": {
+        "isEmpty": "string"
+      },
+      "password": {
+        "isEmpty": "string"
+      },
       "submit": {},
       "replayBoard": {},
-      "scoutingNote": { "isEmpty": "string" }
+      "scoutingNote": {
+        "isEmpty": "string"
+      }
     },
     "rules": [
       {
@@ -20,7 +26,9 @@
           {
             "op": "check",
             "field": "scorerEmail",
-            "check": { "op": "email" }
+            "check": {
+              "op": "email"
+            }
           }
         ],
         "reason": "Need a valid scorer email and password before submit"
@@ -31,7 +39,9 @@
         "when": {
           "op": "check",
           "field": "scorerEmail",
-          "check": { "op": "email" }
+          "check": {
+            "op": "email"
+          }
         },
         "reason": "Replay board needs a valid scorer email"
       },
@@ -40,9 +50,14 @@
         "when": {
           "op": "check",
           "field": "scoutingNote",
-          "check": { "op": "minLength", "value": 5 }
+          "check": {
+            "op": "minLength",
+            "value": 5
+          }
         },
-        "targets": ["replayBoard"],
+        "targets": [
+          "replayBoard"
+        ],
         "reason": "Replay board locks once a scouting note is posted"
       }
     ]
@@ -58,11 +73,46 @@
         "scoutingNote": "tag"
       },
       "expectedAvailability": {
-        "scorerEmail": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "submit": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "replayBoard": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "scoutingNote": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "scorerEmail": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "password": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "submit": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "replayBoard": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "scoutingNote": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        }
       }
     },
     {
@@ -75,11 +125,50 @@
         "scoutingNote": "tag"
       },
       "expectedAvailability": {
-        "scorerEmail": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "submit": { "enabled": false, "fair": true, "required": false, "reason": "Need a valid scorer email and password before submit", "reasons": ["Need a valid scorer email and password before submit"] },
-        "replayBoard": { "enabled": false, "fair": true, "required": false, "reason": "Replay board needs a valid scorer email", "reasons": ["Replay board needs a valid scorer email"] },
-        "scoutingNote": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "scorerEmail": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "password": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "submit": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Need a valid scorer email and password before submit",
+          "reasons": [
+            "Need a valid scorer email and password before submit"
+          ],
+          "satisfied": true
+        },
+        "replayBoard": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Replay board needs a valid scorer email",
+          "reasons": [
+            "Replay board needs a valid scorer email"
+          ],
+          "satisfied": true
+        },
+        "scoutingNote": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        }
       }
     },
     {
@@ -92,11 +181,48 @@
         "scoutingNote": "posted"
       },
       "expectedAvailability": {
-        "scorerEmail": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "password": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "submit": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "replayBoard": { "enabled": false, "fair": true, "required": false, "reason": "Replay board locks once a scouting note is posted", "reasons": ["Replay board locks once a scouting note is posted"] },
-        "scoutingNote": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "scorerEmail": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "password": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "submit": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "replayBoard": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Replay board locks once a scouting note is posted",
+          "reasons": [
+            "Replay board locks once a scouting note is posted"
+          ],
+          "satisfied": true
+        },
+        "scoutingNote": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        }
       }
     }
   ]

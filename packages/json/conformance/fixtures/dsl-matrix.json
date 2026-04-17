@@ -16,14 +16,31 @@
       }
     },
     "fields": {
-      "inning": { "isEmpty": "number" },
-      "outs": { "isEmpty": "number" },
-      "pitchType": { "isEmpty": "string" },
-      "sprayCard": { "isEmpty": "string" },
-      "bullpenReady": { "isEmpty": "boolean" },
-      "walkSignal": { "isEmpty": "boolean" },
-      "benchBat": { "isEmpty": "string" },
-      "starter": { "required": true, "isEmpty": "string" },
+      "inning": {
+        "isEmpty": "number"
+      },
+      "outs": {
+        "isEmpty": "number"
+      },
+      "pitchType": {
+        "isEmpty": "string"
+      },
+      "sprayCard": {
+        "isEmpty": "string"
+      },
+      "bullpenReady": {
+        "isEmpty": "boolean"
+      },
+      "walkSignal": {
+        "isEmpty": "boolean"
+      },
+      "benchBat": {
+        "isEmpty": "string"
+      },
+      "starter": {
+        "required": true,
+        "isEmpty": "string"
+      },
       "eqGate": {},
       "neqGate": {},
       "gtGate": {},
@@ -46,38 +63,214 @@
       "dugoutTablet": {}
     },
     "rules": [
-      { "type": "enabledWhen", "field": "eqGate", "when": { "op": "eq", "field": "pitchType", "value": "slider" }, "reason": "Needs a slider call" },
-      { "type": "enabledWhen", "field": "neqGate", "when": { "op": "neq", "field": "pitchType", "value": "fastball" }, "reason": "Cannot be straight heat" },
-      { "type": "enabledWhen", "field": "gtGate", "when": { "op": "gt", "field": "inning", "value": 6 }, "reason": "Seventh inning or later" },
-      { "type": "enabledWhen", "field": "gteGate", "when": { "op": "gte", "field": "outs", "value": 2 }, "reason": "Need two outs" },
-      { "type": "enabledWhen", "field": "ltGate", "when": { "op": "lt", "field": "inning", "value": 9 }, "reason": "Must be before the ninth" },
-      { "type": "enabledWhen", "field": "lteGate", "when": { "op": "lte", "field": "outs", "value": 1 }, "reason": "Need one out or fewer" },
-      { "type": "enabledWhen", "field": "presentGate", "when": { "op": "present", "field": "sprayCard" }, "reason": "Spray card must be present" },
-      { "type": "enabledWhen", "field": "absentGate", "when": { "op": "absent", "field": "sprayCard" }, "reason": "Spray card must be absent" },
-      { "type": "enabledWhen", "field": "truthyGate", "when": { "op": "truthy", "field": "bullpenReady" }, "reason": "Bullpen must be ready" },
-      { "type": "enabledWhen", "field": "falsyGate", "when": { "op": "falsy", "field": "walkSignal" }, "reason": "Walk signal must be off" },
-      { "type": "enabledWhen", "field": "inGate", "when": { "op": "in", "field": "benchBat", "values": ["Soto", "Judge"] }, "reason": "Need one of the middle-order bats" },
-      { "type": "enabledWhen", "field": "notInGate", "when": { "op": "notIn", "field": "benchBat", "values": ["Cabrera", "Volpe"] }, "reason": "Bench bat is already committed elsewhere" },
-      { "type": "enabledWhen", "field": "condGate", "when": { "op": "cond", "condition": "isPlayoffs" }, "reason": "Only active in October" },
-      { "type": "enabledWhen", "field": "condEqGate", "when": { "op": "condEq", "condition": "weatherBand", "value": "cold" }, "reason": "Only for cold-weather prep" },
-      { "type": "enabledWhen", "field": "condInGate", "when": { "op": "condIn", "condition": "weatherBand", "values": ["cold", "windy"] }, "reason": "Only for cold or windy prep" },
-      { "type": "enabledWhen", "field": "fieldInCondGate", "when": { "op": "fieldInCond", "field": "starter", "condition": "availableStarters" }, "reason": "Starter must be on tonight's card" },
-      { "type": "enabledWhen", "field": "notGate", "when": { "op": "not", "expr": { "op": "cond", "condition": "isPlayoffs" } }, "reason": "Only active outside October" },
+      {
+        "type": "enabledWhen",
+        "field": "eqGate",
+        "when": {
+          "op": "eq",
+          "field": "pitchType",
+          "value": "slider"
+        },
+        "reason": "Needs a slider call"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "neqGate",
+        "when": {
+          "op": "neq",
+          "field": "pitchType",
+          "value": "fastball"
+        },
+        "reason": "Cannot be straight heat"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "gtGate",
+        "when": {
+          "op": "gt",
+          "field": "inning",
+          "value": 6
+        },
+        "reason": "Seventh inning or later"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "gteGate",
+        "when": {
+          "op": "gte",
+          "field": "outs",
+          "value": 2
+        },
+        "reason": "Need two outs"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "ltGate",
+        "when": {
+          "op": "lt",
+          "field": "inning",
+          "value": 9
+        },
+        "reason": "Must be before the ninth"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "lteGate",
+        "when": {
+          "op": "lte",
+          "field": "outs",
+          "value": 1
+        },
+        "reason": "Need one out or fewer"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "presentGate",
+        "when": {
+          "op": "present",
+          "field": "sprayCard"
+        },
+        "reason": "Spray card must be present"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "absentGate",
+        "when": {
+          "op": "absent",
+          "field": "sprayCard"
+        },
+        "reason": "Spray card must be absent"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "truthyGate",
+        "when": {
+          "op": "truthy",
+          "field": "bullpenReady"
+        },
+        "reason": "Bullpen must be ready"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "falsyGate",
+        "when": {
+          "op": "falsy",
+          "field": "walkSignal"
+        },
+        "reason": "Walk signal must be off"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "inGate",
+        "when": {
+          "op": "in",
+          "field": "benchBat",
+          "values": [
+            "Soto",
+            "Judge"
+          ]
+        },
+        "reason": "Need one of the middle-order bats"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "notInGate",
+        "when": {
+          "op": "notIn",
+          "field": "benchBat",
+          "values": [
+            "Cabrera",
+            "Volpe"
+          ]
+        },
+        "reason": "Bench bat is already committed elsewhere"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "condGate",
+        "when": {
+          "op": "cond",
+          "condition": "isPlayoffs"
+        },
+        "reason": "Only active in October"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "condEqGate",
+        "when": {
+          "op": "condEq",
+          "condition": "weatherBand",
+          "value": "cold"
+        },
+        "reason": "Only for cold-weather prep"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "condInGate",
+        "when": {
+          "op": "condIn",
+          "condition": "weatherBand",
+          "values": [
+            "cold",
+            "windy"
+          ]
+        },
+        "reason": "Only for cold or windy prep"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "fieldInCondGate",
+        "when": {
+          "op": "fieldInCond",
+          "field": "starter",
+          "condition": "availableStarters"
+        },
+        "reason": "Starter must be on tonight's card"
+      },
+      {
+        "type": "enabledWhen",
+        "field": "notGate",
+        "when": {
+          "op": "not",
+          "expr": {
+            "op": "cond",
+            "condition": "isPlayoffs"
+          }
+        },
+        "reason": "Only active outside October"
+      },
       {
         "type": "enabledWhen",
         "field": "comboGate",
         "when": {
           "op": "and",
           "exprs": [
-            { "op": "eq", "field": "pitchType", "value": "slider" },
+            {
+              "op": "eq",
+              "field": "pitchType",
+              "value": "slider"
+            },
             {
               "op": "or",
               "exprs": [
-                { "op": "cond", "condition": "isPlayoffs" },
-                { "op": "gt", "field": "inning", "value": 7 }
+                {
+                  "op": "cond",
+                  "condition": "isPlayoffs"
+                },
+                {
+                  "op": "gt",
+                  "field": "inning",
+                  "value": 7
+                }
               ]
             },
-            { "op": "not", "expr": { "op": "truthy", "field": "walkSignal" } }
+            {
+              "op": "not",
+              "expr": {
+                "op": "truthy",
+                "field": "walkSignal"
+              }
+            }
           ]
         },
         "reason": "Complex scouting combo failed"
@@ -88,8 +281,15 @@
         "when": {
           "op": "and",
           "exprs": [
-            { "op": "present", "field": "sprayCard" },
-            { "op": "fieldInCond", "field": "starter", "condition": "availableStarters" }
+            {
+              "op": "present",
+              "field": "sprayCard"
+            },
+            {
+              "op": "fieldInCond",
+              "field": "starter",
+              "condition": "availableStarters"
+            }
           ]
         },
         "reason": "Bullpen cart waits for the card and an available starter"
@@ -99,11 +299,20 @@
         "when": {
           "op": "or",
           "exprs": [
-            { "op": "condEq", "condition": "weatherBand", "value": "windy" },
-            { "op": "truthy", "field": "walkSignal" }
+            {
+              "op": "condEq",
+              "condition": "weatherBand",
+              "value": "windy"
+            },
+            {
+              "op": "truthy",
+              "field": "walkSignal"
+            }
           ]
         },
-        "targets": ["dugoutTablet"],
+        "targets": [
+          "dugoutTablet"
+        ],
         "reason": "Review board locked during windy or intentional-walk moments"
       }
     ]
@@ -124,37 +333,242 @@
       "conditions": {
         "isPlayoffs": true,
         "weatherBand": "cold",
-        "availableStarters": ["Cole", "Holmes"]
+        "availableStarters": [
+          "Cole",
+          "Holmes"
+        ]
       },
       "expectedAvailability": {
-        "inning": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "outs": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "pitchType": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "sprayCard": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "bullpenReady": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "walkSignal": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "benchBat": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "starter": { "enabled": true, "fair": true, "required": true, "reason": null, "reasons": [] },
-        "eqGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "neqGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "gtGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "gteGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "ltGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "lteGate": { "enabled": false, "fair": true, "required": false, "reason": "Need one out or fewer", "reasons": ["Need one out or fewer"] },
-        "presentGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "absentGate": { "enabled": false, "fair": true, "required": false, "reason": "Spray card must be absent", "reasons": ["Spray card must be absent"] },
-        "truthyGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "falsyGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "inGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "notInGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "condGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "condEqGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "condInGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "fieldInCondGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "notGate": { "enabled": false, "fair": true, "required": false, "reason": "Only active outside October", "reasons": ["Only active outside October"] },
-        "comboGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "bullpenCart": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "dugoutTablet": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "inning": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "outs": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "pitchType": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "sprayCard": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "bullpenReady": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "walkSignal": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "benchBat": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "starter": {
+          "enabled": true,
+          "fair": true,
+          "required": true,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "eqGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "neqGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "gtGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "gteGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "ltGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "lteGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Need one out or fewer",
+          "reasons": [
+            "Need one out or fewer"
+          ],
+          "satisfied": false
+        },
+        "presentGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "absentGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Spray card must be absent",
+          "reasons": [
+            "Spray card must be absent"
+          ],
+          "satisfied": false
+        },
+        "truthyGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "falsyGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "inGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "notInGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "condGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "condEqGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "condInGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "fieldInCondGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "notGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Only active outside October",
+          "reasons": [
+            "Only active outside October"
+          ],
+          "satisfied": false
+        },
+        "comboGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "bullpenCart": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "dugoutTablet": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        }
       }
     },
     {
@@ -171,37 +585,265 @@
       "conditions": {
         "isPlayoffs": false,
         "weatherBand": "windy",
-        "availableStarters": ["Holmes"]
+        "availableStarters": [
+          "Holmes"
+        ]
       },
       "expectedAvailability": {
-        "inning": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "outs": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "pitchType": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "sprayCard": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "bullpenReady": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "walkSignal": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "benchBat": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "starter": { "enabled": true, "fair": true, "required": true, "reason": null, "reasons": [] },
-        "eqGate": { "enabled": false, "fair": true, "required": false, "reason": "Needs a slider call", "reasons": ["Needs a slider call"] },
-        "neqGate": { "enabled": false, "fair": true, "required": false, "reason": "Cannot be straight heat", "reasons": ["Cannot be straight heat"] },
-        "gtGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "gteGate": { "enabled": false, "fair": true, "required": false, "reason": "Need two outs", "reasons": ["Need two outs"] },
-        "ltGate": { "enabled": false, "fair": true, "required": false, "reason": "Must be before the ninth", "reasons": ["Must be before the ninth"] },
-        "lteGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "presentGate": { "enabled": false, "fair": true, "required": false, "reason": "Spray card must be present", "reasons": ["Spray card must be present"] },
-        "absentGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "truthyGate": { "enabled": false, "fair": true, "required": false, "reason": "Bullpen must be ready", "reasons": ["Bullpen must be ready"] },
-        "falsyGate": { "enabled": false, "fair": true, "required": false, "reason": "Walk signal must be off", "reasons": ["Walk signal must be off"] },
-        "inGate": { "enabled": false, "fair": true, "required": false, "reason": "Need one of the middle-order bats", "reasons": ["Need one of the middle-order bats"] },
-        "notInGate": { "enabled": false, "fair": true, "required": false, "reason": "Bench bat is already committed elsewhere", "reasons": ["Bench bat is already committed elsewhere"] },
-        "condGate": { "enabled": false, "fair": true, "required": false, "reason": "Only active in October", "reasons": ["Only active in October"] },
-        "condEqGate": { "enabled": false, "fair": true, "required": false, "reason": "Only for cold-weather prep", "reasons": ["Only for cold-weather prep"] },
-        "condInGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "fieldInCondGate": { "enabled": false, "fair": true, "required": false, "reason": "Starter must be on tonight's card", "reasons": ["Starter must be on tonight's card"] },
-        "notGate": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "comboGate": { "enabled": false, "fair": true, "required": false, "reason": "Complex scouting combo failed", "reasons": ["Complex scouting combo failed"] },
-        "bullpenCart": { "enabled": false, "fair": true, "required": false, "reason": "Bullpen cart waits for the card and an available starter", "reasons": ["Bullpen cart waits for the card and an available starter"] },
-        "dugoutTablet": { "enabled": false, "fair": true, "required": false, "reason": "Review board locked during windy or intentional-walk moments", "reasons": ["Review board locked during windy or intentional-walk moments"] }
+        "inning": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "outs": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "pitchType": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "sprayCard": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "bullpenReady": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "walkSignal": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "benchBat": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "starter": {
+          "enabled": true,
+          "fair": true,
+          "required": true,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "eqGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Needs a slider call",
+          "reasons": [
+            "Needs a slider call"
+          ],
+          "satisfied": false
+        },
+        "neqGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Cannot be straight heat",
+          "reasons": [
+            "Cannot be straight heat"
+          ],
+          "satisfied": false
+        },
+        "gtGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "gteGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Need two outs",
+          "reasons": [
+            "Need two outs"
+          ],
+          "satisfied": false
+        },
+        "ltGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Must be before the ninth",
+          "reasons": [
+            "Must be before the ninth"
+          ],
+          "satisfied": false
+        },
+        "lteGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "presentGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Spray card must be present",
+          "reasons": [
+            "Spray card must be present"
+          ],
+          "satisfied": false
+        },
+        "absentGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "truthyGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Bullpen must be ready",
+          "reasons": [
+            "Bullpen must be ready"
+          ],
+          "satisfied": false
+        },
+        "falsyGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Walk signal must be off",
+          "reasons": [
+            "Walk signal must be off"
+          ],
+          "satisfied": false
+        },
+        "inGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Need one of the middle-order bats",
+          "reasons": [
+            "Need one of the middle-order bats"
+          ],
+          "satisfied": false
+        },
+        "notInGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Bench bat is already committed elsewhere",
+          "reasons": [
+            "Bench bat is already committed elsewhere"
+          ],
+          "satisfied": false
+        },
+        "condGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Only active in October",
+          "reasons": [
+            "Only active in October"
+          ],
+          "satisfied": false
+        },
+        "condEqGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Only for cold-weather prep",
+          "reasons": [
+            "Only for cold-weather prep"
+          ],
+          "satisfied": false
+        },
+        "condInGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "fieldInCondGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Starter must be on tonight's card",
+          "reasons": [
+            "Starter must be on tonight's card"
+          ],
+          "satisfied": false
+        },
+        "notGate": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "comboGate": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Complex scouting combo failed",
+          "reasons": [
+            "Complex scouting combo failed"
+          ],
+          "satisfied": false
+        },
+        "bullpenCart": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Bullpen cart waits for the card and an available starter",
+          "reasons": [
+            "Bullpen cart waits for the card and an available starter"
+          ],
+          "satisfied": false
+        },
+        "dugoutTablet": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "Review board locked during windy or intentional-walk moments",
+          "reasons": [
+            "Review board locked during windy or intentional-walk moments"
+          ],
+          "satisfied": false
+        }
       }
     }
   ]

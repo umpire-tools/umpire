@@ -19,12 +19,16 @@
       {
         "type": "disables",
         "source": "rainDelay",
-        "targets": ["catcherSignal"]
+        "targets": [
+          "catcherSignal"
+        ]
       },
       {
         "type": "disables",
         "source": "catcherSignal",
-        "targets": ["bullpenPhone"]
+        "targets": [
+          "bullpenPhone"
+        ]
       }
     ]
   },
@@ -36,9 +40,34 @@
         "catcherSignal": "wave from the third-base box"
       },
       "expectedAvailability": {
-        "rainDelay": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "catcherSignal": { "enabled": false, "fair": true, "required": false, "reason": "overridden by rainDelay", "reasons": ["overridden by rainDelay"] },
-        "bullpenPhone": { "enabled": false, "fair": true, "required": false, "reason": "overridden by catcherSignal", "reasons": ["overridden by catcherSignal"] }
+        "rainDelay": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "catcherSignal": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "overridden by rainDelay",
+          "reasons": [
+            "overridden by rainDelay"
+          ],
+          "satisfied": true
+        },
+        "bullpenPhone": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "overridden by catcherSignal",
+          "reasons": [
+            "overridden by catcherSignal"
+          ],
+          "satisfied": false
+        }
       }
     },
     {
@@ -47,9 +76,32 @@
         "rainDelay": "storm cell over center field"
       },
       "expectedAvailability": {
-        "rainDelay": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "catcherSignal": { "enabled": false, "fair": true, "required": false, "reason": "overridden by rainDelay", "reasons": ["overridden by rainDelay"] },
-        "bullpenPhone": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "rainDelay": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "catcherSignal": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "overridden by rainDelay",
+          "reasons": [
+            "overridden by rainDelay"
+          ],
+          "satisfied": false
+        },
+        "bullpenPhone": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        }
       }
     },
     {
@@ -58,9 +110,32 @@
         "catcherSignal": "wave from the third-base box"
       },
       "expectedAvailability": {
-        "rainDelay": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "catcherSignal": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "bullpenPhone": { "enabled": false, "fair": true, "required": false, "reason": "overridden by catcherSignal", "reasons": ["overridden by catcherSignal"] }
+        "rainDelay": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "catcherSignal": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "bullpenPhone": {
+          "enabled": false,
+          "fair": true,
+          "required": false,
+          "reason": "overridden by catcherSignal",
+          "reasons": [
+            "overridden by catcherSignal"
+          ],
+          "satisfied": false
+        }
       }
     }
   ]

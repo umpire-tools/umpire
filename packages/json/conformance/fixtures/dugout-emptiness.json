@@ -61,11 +61,46 @@
         "shiftOn": null
       },
       "expectedAvailability": {
-        "scoutingNote": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "benchBats": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "pitcherCard": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "inning": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "shiftOn": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
+        "scoutingNote": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "benchBats": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "pitcherCard": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "inning": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
+        "shiftOn": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        },
         "pregameChecklistReady": {
           "enabled": false,
           "fair": true,
@@ -77,7 +112,8 @@
             "requires pitcherCard",
             "requires inning",
             "requires shiftOn"
-          ]
+          ],
+          "satisfied": false
         }
       }
     },
@@ -85,18 +121,64 @@
       "id": "false-and-numbers-can-still-be-present",
       "values": {
         "scoutingNote": "Attack away early",
-        "benchBats": ["Verdugo"],
-        "pitcherCard": { "firstPitch": "four-seam" },
+        "benchBats": [
+          "Verdugo"
+        ],
+        "pitcherCard": {
+          "firstPitch": "four-seam"
+        },
         "inning": 1,
         "shiftOn": false
       },
       "expectedAvailability": {
-        "scoutingNote": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "benchBats": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "pitcherCard": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "inning": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "shiftOn": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] },
-        "pregameChecklistReady": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "scoutingNote": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "benchBats": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "pitcherCard": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "inning": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "shiftOn": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        },
+        "pregameChecklistReady": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": false
+        }
       }
     }
   ]

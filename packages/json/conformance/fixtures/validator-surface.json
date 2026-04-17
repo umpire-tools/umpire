@@ -18,7 +18,10 @@
       {
         "type": "enabledWhen",
         "field": "email",
-        "when": { "op": "cond", "condition": "emailEnabled" },
+        "when": {
+          "op": "cond",
+          "condition": "emailEnabled"
+        },
         "reason": "Email entry is disabled"
       }
     ],
@@ -44,7 +47,10 @@
           "fair": true,
           "required": false,
           "reason": "Email entry is disabled",
-          "reasons": ["Email entry is disabled"]
+          "reasons": [
+            "Email entry is disabled"
+          ],
+          "satisfied": true
         }
       }
     },
@@ -62,7 +68,8 @@
           "fair": true,
           "required": false,
           "reason": null,
-          "reasons": []
+          "reasons": [],
+          "satisfied": false
         }
       }
     },
@@ -82,7 +89,8 @@
           "reason": null,
           "reasons": [],
           "valid": false,
-          "error": "Enter a valid email address"
+          "error": "Enter a valid email address",
+          "satisfied": true
         }
       }
     },
@@ -101,7 +109,8 @@
           "required": false,
           "reason": null,
           "reasons": [],
-          "valid": true
+          "valid": true,
+          "satisfied": true
         }
       }
     }

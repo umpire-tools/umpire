@@ -100,14 +100,24 @@
         "planId": "pro"
       },
       "conditions": {
-        "activePlans": ["pro", "starter"],
+        "activePlans": [
+          "pro",
+          "starter"
+        ],
         "billingReady": true,
         "allowLegacyPlan": false,
         "betaPlans": [],
         "betaEnabled": false
       },
       "expectedAvailability": {
-        "planId": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "planId": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        }
       }
     },
     {
@@ -116,14 +126,24 @@
         "planId": "legacy-gold"
       },
       "conditions": {
-        "activePlans": ["pro", "starter"],
+        "activePlans": [
+          "pro",
+          "starter"
+        ],
         "billingReady": false,
         "allowLegacyPlan": true,
         "betaPlans": [],
         "betaEnabled": false
       },
       "expectedAvailability": {
-        "planId": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "planId": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        }
       }
     },
     {
@@ -132,14 +152,25 @@
         "planId": "beta-x"
       },
       "conditions": {
-        "activePlans": ["pro"],
+        "activePlans": [
+          "pro"
+        ],
         "billingReady": false,
         "allowLegacyPlan": false,
-        "betaPlans": ["beta-x"],
+        "betaPlans": [
+          "beta-x"
+        ],
         "betaEnabled": true
       },
       "expectedAvailability": {
-        "planId": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "planId": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        }
       }
     },
     {
@@ -148,14 +179,25 @@
         "planId": "starter"
       },
       "conditions": {
-        "activePlans": ["starter"],
+        "activePlans": [
+          "starter"
+        ],
         "billingReady": true,
         "allowLegacyPlan": false,
-        "betaPlans": ["starter"],
+        "betaPlans": [
+          "starter"
+        ],
         "betaEnabled": true
       },
       "expectedAvailability": {
-        "planId": { "enabled": true, "fair": true, "required": false, "reason": null, "reasons": [] }
+        "planId": {
+          "enabled": true,
+          "fair": true,
+          "required": false,
+          "reason": null,
+          "reasons": [],
+          "satisfied": true
+        }
       }
     },
     {
@@ -164,7 +206,9 @@
         "planId": "pro"
       },
       "conditions": {
-        "activePlans": ["pro"],
+        "activePlans": [
+          "pro"
+        ],
         "billingReady": false,
         "allowLegacyPlan": false,
         "betaPlans": [],
@@ -181,7 +225,8 @@
             "Legacy plans are not allowed",
             "Selected plan is not in beta",
             "Beta access is disabled"
-          ]
+          ],
+          "satisfied": true
         }
       }
     }
