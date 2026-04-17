@@ -6,8 +6,9 @@ import type { JsonRule, UmpireJsonSchema } from '@umpire/json'
 import { useUmpire } from '@umpire/react'
 import '../styles/components/_components.config-driven-demo.css'
 
-// The "seeded" JSON the demo opens with. Small, branchy, shows three rule
-// types. Lifted verbatim from the plan so the narrative and the demo match.
+// The schema the demo loads with. Two `enabledWhen` branches (accountType →
+// company fields, country → state) plus a portable `email` validator —
+// enough to exercise the rule, validator, and schema-rejection paths.
 const seedSchema: UmpireJsonSchema = {
   version: 1,
   fields: {
@@ -52,9 +53,10 @@ type FieldMeta = {
   options?: Array<{ value: string; label: string }>
 }
 
-// Renderer-side metadata. The point of the page: **the renderer owns this
-// map, the umpire owns behavior.** Adding a new field to the JSON falls back
-// to the "text" default without touching this file — see `metaFor()`.
+// Labels, placeholders, and input types live on the renderer side. Umpire
+// owns behavior (enabled / required / valid) and this map owns presentation.
+// Fields that aren't listed here fall through `metaFor()` to a plain text
+// input, so adding a field to the schema doesn't require editing this file.
 const fieldMeta: Record<string, FieldMeta> = {
   accountType: {
     label: 'Account type',
@@ -84,7 +86,11 @@ function metaFor(field: string): FieldMeta {
   return fieldMeta[field] ?? { label: field, placeholder: `Enter ${field}` }
 }
 
-// ── Mutations: the three "try this" single-click edits ──────────────────────
+// ── Mutations: one-click schema edits wired to the prompt buttons ──────────
+//
+// Each mutation is idempotent: `apply()` produces the mutated schema and
+// `isApplied()` reports whether the current schema already reflects it, so
+// the same button can be disabled once its effect is visible.
 
 type Mutation = {
   id: string
@@ -459,7 +465,7 @@ function LiveFormInner({ ump, fieldOrder }: LiveFormInnerProps) {
   )
 }
 
-// ── Umpire's Call — the "which rules fired?" strip ──────────────────────────
+// ── Umpire's Call: per-field trace derived from the current check() result ─
 
 type UmpireCallProps = {
   check: ReturnType<Umpire<Record<string, FieldDef>, Record<string, unknown>>['check']>
