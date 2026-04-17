@@ -124,6 +124,40 @@ describe('fromStore', () => {
     us.destroy()
   })
 
+  it('works without a conditions selector for typed conditions', () => {
+    type Ctx = { requireInvite: boolean }
+
+    const conditionsFields = {
+      username: {},
+      inviteCode: {},
+    } as const
+
+    type CFields = typeof conditionsFields
+
+    const conditionsRules = [
+      enabledWhen<CFields, Ctx>('inviteCode', (_values, ctx) => {
+        return ctx.requireInvite
+      }),
+    ]
+
+    const store = createStore<{ username: string; inviteCode: string }>(() => ({
+      username: '',
+      inviteCode: '',
+    }))
+
+    const ump = umpire<CFields, Ctx>({ fields: conditionsFields, rules: conditionsRules })
+    const us = fromStore(ump, store, {
+      select: (state) => ({
+        username: state.username,
+        inviteCode: state.inviteCode,
+      }),
+    })
+
+    expect(us.field('inviteCode').enabled).toBe(false)
+
+    us.destroy()
+  })
+
   it('subscribe notifies on availability changes', () => {
     const store = createFormStore()
     const ump = umpire({ fields, rules })

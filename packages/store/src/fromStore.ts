@@ -39,9 +39,9 @@ export function fromStore<
   options: FromStoreOptions<S, F, C>,
 ): UmpireStore<F> {
   const { select, conditions } = options
-  const readConditions = (state: S): C => (
-    conditions ? conditions(state) : (undefined as unknown as C)
-  )
+  const readConditions = (state: S): C | undefined => {
+    return conditions ? conditions(state) : undefined
+  }
 
   const initialState = store.getState()
   const initialValues = select(initialState)
