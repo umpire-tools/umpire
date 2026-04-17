@@ -1172,7 +1172,10 @@ export function requires<
       dependencies.flatMap((dependency) => getSourceFields(dependency)),
     ),
     evaluate(values, conditions, _prev, fields, availability) {
-      const reasons = dependencies.flatMap((dependency) => {
+      let reason: string | null = null
+      const reasons: string[] = []
+
+      for (const dependency of dependencies) {
         const passed =
           typeof dependency === 'string'
             ? isSatisfied(values[dependency], fields?.[dependency]) &&
@@ -1181,7 +1184,7 @@ export function requires<
             : dependency(values, conditions)
 
         if (passed) {
-          return []
+          continue
         }
 
         const fallback =
@@ -1189,12 +1192,18 @@ export function requires<
             ? `requires ${dependency}`
             : `required condition not met`
 
-        return [resolveReason(options?.reason, values, conditions, fallback)]
-      })
+        const resolvedReason = resolveReason(options?.reason, values, conditions, fallback)
+
+        if (reason === null) {
+          reason = resolvedReason
+        }
+
+        reasons.push(resolvedReason)
+      }
 
       return createResultMap([target], () => ({
         enabled: reasons.length === 0,
-        reason: reasons[0] ?? null,
+        reason,
         reasons: reasons.length === 0 ? undefined : reasons,
       }))
     },

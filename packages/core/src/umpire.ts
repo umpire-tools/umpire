@@ -1,4 +1,9 @@
-import { evaluate, evaluateRuleForField, indexRulesByTarget } from './evaluator.js'
+import {
+  evaluate,
+  evaluateRuleForField,
+  indexRulesByTarget,
+  indexRulesByTargetPhase,
+} from './evaluator.js'
 import {
   getFieldBuilderDef,
   getFieldBuilderName,
@@ -109,23 +114,18 @@ function buildFieldEdgeLookup<F extends Record<string, FieldDef>>(
   graph: UmpireGraph,
   fieldNames: Array<keyof F & string>,
 ) {
-  const incomingByField = Object.fromEntries(
-    fieldNames.map((field) => [
-      field,
-      graph.edges
-        .filter((edge) => edge.to === field)
-        .map((edge) => ({ field: edge.from, type: edge.type })),
-    ]),
-  ) as Record<keyof F & string, Array<{ field: string; type: string }>>
+  const incomingByField = {} as Record<keyof F & string, Array<{ field: string; type: string }>>
+  const outgoingByField = {} as Record<keyof F & string, Array<{ field: string; type: string }>>
 
-  const outgoingByField = Object.fromEntries(
-    fieldNames.map((field) => [
-      field,
-      graph.edges
-        .filter((edge) => edge.from === field)
-        .map((edge) => ({ field: edge.to, type: edge.type })),
-    ]),
-  ) as Record<keyof F & string, Array<{ field: string; type: string }>>
+  for (const field of fieldNames) {
+    incomingByField[field] = []
+    outgoingByField[field] = []
+  }
+
+  for (const edge of graph.edges) {
+    incomingByField[edge.to as keyof F & string].push({ field: edge.from, type: edge.type })
+    outgoingByField[edge.from as keyof F & string].push({ field: edge.to, type: edge.type })
+  }
 
   return {
     incomingByField,
@@ -881,6 +881,7 @@ export function umpire<
   detectCycles(graph)
   const topoOrder = topologicalSort(graph, fieldNames)
   const rulesByTarget = indexRulesByTarget(rules)
+  const rulesByTargetPhase = indexRulesByTargetPhase(rulesByTarget)
   const exportedGraph = exportGraph(graph)
   const { incomingByField, outgoingByField } = buildFieldEdgeLookup(exportedGraph, fieldNames)
 
@@ -904,6 +905,7 @@ export function umpire<
       createEmptyConditions(conditions),
       prev,
       rulesByTarget,
+      rulesByTargetPhase,
     )
   }
 

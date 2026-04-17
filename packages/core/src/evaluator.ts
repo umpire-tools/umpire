@@ -6,10 +6,23 @@ import { getInternalRuleMetadata, isFairRule, isGateRule, resolveReason } from '
 import { isSatisfied } from './satisfaction.js'
 import type { AvailabilityMap, FieldDef, FieldValues, Rule, RuleEvaluation } from './types.js'
 
+type RulePhaseBuckets<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+> = {
+  gateRules: Rule<F, C>[]
+  fairRules: Rule<F, C>[]
+}
+
+const EMPTY_RULE_PHASE_BUCKETS = {
+  gateRules: [],
+  fairRules: [],
+} as const
+
 function partitionRulesByPhase<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
->(rules: Rule<F, C>[]) {
+>(rules: Rule<F, C>[]): RulePhaseBuckets<F, C> {
   const gateRules: Rule<F, C>[] = []
   const fairRules: Rule<F, C>[] = []
 
@@ -28,6 +41,19 @@ function partitionRulesByPhase<
     gateRules,
     fairRules,
   }
+}
+
+export function indexRulesByTargetPhase<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(rulesByTarget: Map<string, Rule<F, C>[]>): Map<string, RulePhaseBuckets<F, C>> {
+  const rulesByTargetPhase = new Map<string, RulePhaseBuckets<F, C>>()
+
+  for (const [field, rules] of rulesByTarget) {
+    rulesByTargetPhase.set(field, partitionRulesByPhase(rules))
+  }
+
+  return rulesByTargetPhase
 }
 
 export function indexRulesByTarget<
@@ -136,14 +162,16 @@ export function evaluate<
   conditions: C,
   prev?: FieldValues<F>,
   rulesByTarget?: Map<string, Rule<F, C>[]>,
+  rulesByTargetPhase?: Map<string, RulePhaseBuckets<F, C>>,
 ): AvailabilityMap<F> {
   const availability = {} as AvailabilityMap<F>
   const baseRuleCache = new Map<Rule<F, C>, Map<string, RuleEvaluation>>()
   const resolvedRulesByTarget = rulesByTarget ?? indexRulesByTarget(rules)
+  const resolvedRulesByTargetPhase = rulesByTargetPhase ?? indexRulesByTargetPhase(resolvedRulesByTarget)
 
   for (const field of topoOrder) {
-    const fieldRules = resolvedRulesByTarget.get(field) ?? []
-    const { gateRules, fairRules } = partitionRulesByPhase(fieldRules)
+    const { gateRules, fairRules } =
+      resolvedRulesByTargetPhase.get(field) ?? EMPTY_RULE_PHASE_BUCKETS
     const reasons: string[] = []
     let enabled = true
     let fair = true
