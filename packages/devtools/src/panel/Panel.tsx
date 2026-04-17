@@ -14,6 +14,7 @@ import { FoulLog } from './tabs/FoulLog.js'
 import { FieldMatrix } from './tabs/FieldMatrix.js'
 import { GraphTab } from './tabs/GraphTab.js'
 import { fontFamily, scrollPaneStyle, sectionHeadingStyle, tabStyle, theme } from './theme.js'
+import { ReadsTab } from './tabs/ReadsTab.js'
 
 type Props = {
   options: Required<MountOptions>
@@ -67,6 +68,10 @@ function resolveTabs(entry: RegistryEntry | null): PanelTab[] {
 
   if (!entry) {
     return tabs
+  }
+
+  if (entry.reads) {
+    tabs.push({ id: 'reads', label: 'reads' })
   }
 
   for (const extension of entry.extensions) {
@@ -353,6 +358,10 @@ function PanelBody({
         selectedField={selectedField}
       />
     )
+  }
+
+  if (tab === 'reads') {
+    return <ReadsTab inspection={entry.reads} />
   }
 
   const extension = entry.extensions.find((candidate) => candidate.id === tab) ?? null

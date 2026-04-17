@@ -124,6 +124,9 @@ export type RegistryEntry = {
   extensions: ResolvedDevtoolsExtension[]
   foulLog: DevtoolsFoulEvent[]
   id: string
+  optionExtensions?: unknown
+  optionReadInput?: unknown
+  optionReads?: unknown
   previous: AnySnapshot | null
   reads: AnyReadInspection | null
   renderIndex: number

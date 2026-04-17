@@ -88,58 +88,6 @@ function resolveReadsInspection<
   return reads.inspect(input) as AnyReadInspection
 }
 
-function join(values: string[]) {
-  return values.length > 0 ? values.join(', ') : 'none'
-}
-
-function readInspectionToExtension(
-  inspection: AnyReadInspection,
-): ResolvedDevtoolsExtension {
-  const sections: ResolvedDevtoolsExtension['view']['sections'] = []
-
-  if (inspection.bridges.length > 0) {
-    sections.push({
-      kind: 'badges',
-      title: 'Bridges',
-      badges: inspection.bridges.map((bridge) => ({
-        value: `${bridge.read} -> ${bridge.field} (${bridge.type})`,
-      })),
-    })
-  }
-
-  if (inspection.graph.nodes.length > 0) {
-    sections.push({
-      kind: 'items',
-      title: 'Reads',
-      items: inspection.graph.nodes.map((readId) => {
-        const node = inspection.nodes[readId]
-
-        return {
-          id: readId,
-          title: readId,
-          badge: {
-            tone: 'fair',
-            value: node.value,
-          },
-          rows: [
-            { label: 'fields', value: join(node.dependsOnFields) },
-            { label: 'reads', value: join(node.dependsOnReads) },
-          ],
-        }
-      }),
-    })
-  }
-
-  return {
-    id: 'reads',
-    label: 'reads',
-    view: {
-      empty: 'No reads available in this inspection.',
-      sections,
-    },
-  }
-}
-
 function resolveExtensions<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -151,16 +99,10 @@ function resolveExtensions<
   conditions: C | undefined,
   previous: Snapshot<C> | null,
   scorecard: ScorecardResult<F, C>,
-  readsInspection: AnyReadInspection | null,
   options?: RegisterOptions<F, C, ReadInput, Reads>,
 ): ResolvedDevtoolsExtension[] {
   const resolved: ResolvedDevtoolsExtension[] = []
   const seen = new Set<string>(RESERVED_EXTENSION_IDS)
-
-  if (readsInspection) {
-    resolved.push(readInspectionToExtension(readsInspection))
-    seen.add('reads')
-  }
 
   for (const extension of options?.extensions ?? []) {
     if (seen.has(extension.id)) {
@@ -228,6 +170,19 @@ export const register: RegisterFn = <
   }
 
   const existing = registry.get(id)
+
+  if (
+    existing &&
+    existing.ump === ump &&
+    existing.snapshot.values === values &&
+    existing.snapshot.conditions === conditions &&
+    existing.optionReads === options?.reads &&
+    existing.optionReadInput === options?.readInput &&
+    existing.optionExtensions === options?.extensions
+  ) {
+    return
+  }
+
   const previous = (existing?.snapshot as Snapshot<C> | null) ?? null
   const currentSnapshot: Snapshot<C> = {
     values,
@@ -247,11 +202,13 @@ export const register: RegisterFn = <
       conditions,
       previous,
       scorecard,
-      readsInspection,
       options,
     ) as RegistryEntry['extensions'],
     foulLog: [],
     id,
+    optionExtensions: options?.extensions,
+    optionReadInput: options?.readInput,
+    optionReads: options?.reads,
     previous: previous as RegistryEntry['previous'],
     reads: readsInspection,
     renderIndex,

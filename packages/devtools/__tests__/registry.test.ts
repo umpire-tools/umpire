@@ -135,29 +135,7 @@ describe('registry', () => {
     )
 
     expect(snapshot().get('demo')?.reads).toEqual(inspection)
-    expect(snapshot().get('demo')?.extensions).toEqual([{
-      id: 'reads',
-      label: 'reads',
-      view: {
-        empty: 'No reads available in this inspection.',
-        sections: [{
-          items: [{
-            badge: {
-              tone: 'fair',
-              value: 'ready',
-            },
-            id: 'status',
-            rows: [
-              { label: 'fields', value: 'gate' },
-              { label: 'reads', value: 'none' },
-            ],
-            title: 'status',
-          }],
-          kind: 'items',
-          title: 'Reads',
-        }],
-      },
-    }])
+    expect(snapshot().get('demo')?.extensions).toEqual([])
   })
 
   it('uses readInput overrides when resolving read tables', () => {
@@ -196,7 +174,7 @@ describe('registry', () => {
 
     expect(inspect).toHaveBeenCalledWith({ externalGate: 'override' })
     expect(snapshot().get('demo')?.reads?.values).toEqual({ status: 'override' })
-    expect(snapshot().get('demo')?.extensions[0]?.id).toBe('reads')
+    expect(snapshot().get('demo')?.extensions).toEqual([])
   })
 
   it('uses form values as the default read table input', () => {
@@ -237,7 +215,7 @@ describe('registry', () => {
       target: 'kept',
     })
     expect(snapshot().get('demo')?.reads?.values).toEqual({ status: 'open' })
-    expect(snapshot().get('demo')?.extensions[0]?.id).toBe('reads')
+    expect(snapshot().get('demo')?.extensions).toEqual([])
   })
 
   it('ignores invalid reads options that are neither inspections nor read tables', () => {
@@ -256,6 +234,28 @@ describe('registry', () => {
 
     expect(snapshot().get('demo')?.reads).toBeNull()
     expect(snapshot().get('demo')?.extensions).toEqual([])
+  })
+
+  it('skips duplicate register calls with identical references', () => {
+    const listener = mock()
+    subscribe(listener)
+
+    const values = {
+      gate: 'open',
+      target: 'kept',
+    }
+    const conditions = { flow: 'signup' }
+
+    register('demo', demoUmp, values, conditions)
+
+    const firstVersion = getRegistryVersion()
+    const firstRenderIndex = snapshot().get('demo')?.renderIndex
+
+    register('demo', demoUmp, values, conditions)
+
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(getRegistryVersion()).toBe(firstVersion)
+    expect(snapshot().get('demo')?.renderIndex).toBe(firstRenderIndex)
   })
 
   it('stores resolved custom extensions from register options', () => {

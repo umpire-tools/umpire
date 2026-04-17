@@ -1,4 +1,5 @@
 import { eitherOf, enabledWhen, umpire } from '@umpire/core'
+import type { ReadTableInspection } from '@umpire/reads'
 import { mount, register, unregister, unmount } from '../src/index.js'
 import { resetRegistry } from '../src/registry.js'
 
@@ -115,6 +116,52 @@ describe('Panel', () => {
     expect(text).toContain('Summary')
     expect(text).toContain('blocked')
     expect(text).toContain('2')
+  })
+
+  it('renders reads in the dedicated reads tab', async () => {
+    const inspection: ReadTableInspection<Record<string, unknown>, Record<string, unknown>> = {
+      bridges: [],
+      graph: {
+        edges: [],
+        nodes: ['status'],
+      },
+      nodes: {
+        status: {
+          dependsOnFields: ['email'],
+          dependsOnReads: [],
+          id: 'status',
+          value: 'ok',
+        },
+      },
+      values: {
+        status: 'ok',
+      },
+    }
+
+    register(
+      'signup',
+      demoUmp,
+      { email: 'alex@example.com' },
+      undefined,
+      { reads: inspection },
+    )
+
+    mount({ defaultTab: 'reads' })
+
+    const host = document.getElementById('umpire-devtools')
+    const root = host?.shadowRoot
+    const toggle = root?.querySelector('button[aria-expanded="false"]')
+
+    expect(toggle).not.toBeNull()
+
+    toggle?.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }))
+    await flushUi()
+
+    const text = root?.textContent ?? ''
+
+    expect(text).toContain('reads')
+    expect(text).toContain('status')
+    expect(text).toContain('ok')
   })
 
   it('renders named eitherOf branches in the challenge drawer', async () => {
