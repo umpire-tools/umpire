@@ -10,31 +10,11 @@
 
 ## Build And Test
 
-**Always run commands from the repo root, through Yarn.** Never invoke `turbo`, `bun`, or `npm` directly — tests depend on Yarn workspace resolution and per-package `bunfig.toml` preloads; bypassing Yarn skips both.
+Canonical commands and single-package iteration workflows live in [`CONTRIBUTING.md`](./CONTRIBUTING.md). Check there first.
 
-| Task                     | Command                                |
-| ------------------------ | -------------------------------------- |
-| Build everything         | `yarn build`                           |
-| Run all tests            | `yarn test`                            |
-| Run one package's tests  | `yarn workspace @umpire/<pkg> test`    |
-| Typecheck                | `yarn typecheck`                       |
-| Docs dev server          | `yarn docs`                            |
-| Docs build               | `yarn docs:build`                      |
+Quick reference (root): `yarn test`, `yarn build`, `yarn typecheck`.
 
-### Never
-
-- `turbo run test` or any bare `turbo` invocation — use `yarn test`, which wraps turbo with the correct config.
-- `bun test` inside a package — use `yarn workspace @umpire/<pkg> test`; it shells to `bun test` with the right preload.
-- `npm` for any reason — this repo is Yarn 4 with `nodeLinker: node-modules`. No `npm install`, no `npx`.
-
-### Implementation notes
-
-- `yarn test` → `turbo run test` → per-package `bun test`. Each package's `bunfig.toml` preloads `test/preload-workspace-aliases.ts`, which mocks `@umpire/*` subpaths so sibling packages don't need building first.
-- When adding a new exported `@umpire/*` subpath used before build, add a matching `mock.module(...)` entry to `test/preload-workspace-aliases.ts`.
-- Most packages build with `tsc`; `@umpire/devtools` builds with `tsdown`.
-- Bun 1.2+ is required for tests. Yarn 4 is pinned via `packageManager`.
-- For docs edits, `cd docs && yarn build` is the practical end-to-end check (`docs/` is not part of the root Yarn workspaces).
-- `yarn turbo run test --filter=@umpire/<pkg>` only helps when you want dep-aware ordering; the `test` task has no `dependsOn`, so for tests it's equivalent to `yarn workspace`. Prefer the workspace form.
+**Never** invoke `turbo`, `bun`, or `npm` directly — use the Yarn wrappers. Tests depend on Yarn workspace resolution and per-package `bunfig.toml` preloads; bypassing Yarn skips both.
 
 ## Architecture
 
@@ -66,7 +46,7 @@ Changesets workflow with `.changeset/config.json`:
 - ESM-only, `verbatimModuleSyntax`, `import type` and `export type`, and `.js` extensions in TypeScript import paths.
 - Keep `@umpire/core` free of runtime dependencies.
 - Package-level `AGENTS.md` files are intentionally short; keep them high-signal and keep their `.claude/rules/*` compatibility files pointing at the same content.
-- Commit messages use an emoji prefix plus a descriptive summary.
+- Workflow details (commit conventions, changesets, single-package iteration) live in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## Slop Scanner
 
