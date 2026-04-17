@@ -11,6 +11,8 @@ function join(values: string[]) {
   return values.length > 0 ? values.join(', ') : 'none'
 }
 
+const MAX_READ_ITEMS = 200
+
 export function ReadsTab({ inspection }: Props) {
   const [showAllReads, setShowAllReads] = useState(false)
 
@@ -32,7 +34,6 @@ export function ReadsTab({ inspection }: Props) {
     )
   }
 
-  const MAX_READ_ITEMS = 200
   const allReadIds = inspection.graph.nodes
   const visibleReadIds = showAllReads ? allReadIds : allReadIds.slice(0, MAX_READ_ITEMS)
   const hiddenCount = allReadIds.length - visibleReadIds.length
@@ -87,7 +88,7 @@ export function ReadsTab({ inspection }: Props) {
         )
       })}
 
-      {hiddenCount > 0 && (
+      {allReadIds.length > MAX_READ_ITEMS && (
         <div
           style={{
             borderTop: `1px solid ${theme.border}`,
