@@ -1,0 +1,418 @@
+/* Config-driven UI demo — JSON editor + live renderer + Umpire's call strip. */
+
+.c-config-demo {
+  --umpire-demo-border: var(--umpire-demo-green-14);
+  --umpire-demo-layout-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  --umpire-demo-fields-gap: 0.75rem;
+  --umpire-demo-field-gap: 0.32rem;
+  --umpire-demo-field-padding: 0.72rem 0.78rem 0.78rem;
+  --umpire-demo-field-radius: 0.75rem;
+  --umpire-demo-field-disabled-opacity: 0.6;
+  --umpire-demo-input-radius: 0.62rem;
+  --umpire-demo-input-padding: 0.6rem 0.72rem;
+  --umpire-demo-input-bg: rgba(255, 255, 255, 0.045);
+  --umpire-demo-label-color: var(--umpire-demo-text-muted, #9da09b);
+  --umpire-demo-status-gap: 0.32rem;
+  --umpire-demo-status-padding: 0.22rem 0.5rem;
+  --umpire-demo-status-font-size: 0.6rem;
+  --umpire-demo-status-dot-size: 0.4rem;
+  --umpire-demo-status-dot-glow: 0 0 6px currentColor;
+  --umpire-demo-fouls-padding: 0.75rem 0.9rem;
+  --umpire-demo-fouls-border-color: var(--umpire-demo-yellow-18);
+  --umpire-demo-fouls-radius: 0.85rem;
+  --umpire-demo-fouls-bg:
+    linear-gradient(90deg, rgba(254, 208, 35, 0.1), rgba(254, 208, 35, 0.04)),
+    rgba(18, 18, 18, 0.92);
+  --umpire-demo-fouls-copy-display: flex;
+  --umpire-demo-fouls-copy-direction: column;
+  --umpire-demo-fouls-copy-gap: 0.2rem;
+  --umpire-demo-fouls-kicker-font-size: 0.62rem;
+  --umpire-demo-fouls-kicker-letter-spacing: var(--umpire-demo-tracking-wider);
+  --umpire-demo-fouls-kicker-color: rgba(254, 208, 35, 0.85);
+  --umpire-demo-fouls-list-direction: column;
+  --umpire-demo-fouls-list-wrap: nowrap;
+  --umpire-demo-fouls-list-gap: 0.2rem;
+  --umpire-demo-fouls-list-margin-top: 0.25rem;
+  --umpire-demo-foul-wrap: wrap;
+  --umpire-demo-foul-gap: 0.35rem;
+  --umpire-demo-foul-font-size: 0.78rem;
+  --umpire-demo-foul-field-font-size: 0.7rem;
+  --umpire-demo-foul-field-font-weight: 700;
+  --umpire-demo-foul-field-color: #fff3b8;
+  --umpire-demo-foul-reason-font-size: 0.78rem;
+  --umpire-demo-foul-reason-color: rgba(255, 243, 184, 0.82);
+  --umpire-demo-reset-button-padding: 0.44rem 0.78rem;
+  --umpire-demo-reset-button-border-color: rgba(254, 208, 35, 0.34);
+  --umpire-demo-reset-button-bg: var(--umpire-demo-yellow-16);
+  --umpire-demo-reset-button-color: #fff1a8;
+  --umpire-demo-reset-button-font-size: 0.66rem;
+  --umpire-demo-reset-button-font-weight: 700;
+  --umpire-demo-reset-button-letter-spacing: var(--umpire-demo-tracking);
+  --umpire-demo-reset-button-hover-bg: var(--umpire-demo-yellow-24);
+  --umpire-demo-reset-button-hover-transform: translateY(-1px);
+  --umpire-demo-reset-button-hover-shadow: none;
+}
+
+/* ── Prompts (three try-this buttons + reset) ───────────────────────────── */
+
+.c-config-demo__prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(107, 254, 156, 0.18);
+  border-radius: var(--umpire-demo-radius-lg);
+  background:
+    linear-gradient(180deg, rgba(107, 254, 156, 0.06), transparent 70%),
+    rgba(16, 16, 16, 0.85);
+}
+
+.c-config-demo__prompts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.c-config-demo__reset {
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--umpire-demo-radius-pill);
+  padding: 0.35rem 0.75rem;
+  background: transparent;
+  color: var(--umpire-demo-text-dim, rgba(245, 247, 244, 0.6));
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: var(--umpire-demo-tracking);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.18s ease, border-color 0.18s ease;
+}
+
+.c-config-demo__reset:hover:not(:disabled) {
+  color: var(--umpire-demo-text);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.c-config-demo__reset:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.c-config-demo__prompts-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.c-config-demo__prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 0.6rem 0.75rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--umpire-demo-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.c-config-demo__prompt:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateY(-1px);
+}
+
+.c-config-demo__prompt:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.c-config-demo__prompt.is-applied {
+  opacity: 0.8;
+}
+
+.c-config-demo__prompt--add {
+  border-color: rgba(107, 254, 156, 0.22);
+  background:
+    linear-gradient(135deg, rgba(107, 254, 156, 0.08), transparent 60%),
+    rgba(255, 255, 255, 0.03);
+}
+
+.c-config-demo__prompt--add:hover:not(:disabled) {
+  border-color: rgba(107, 254, 156, 0.45);
+}
+
+.c-config-demo__prompt--swap {
+  border-color: rgba(107, 165, 254, 0.22);
+  background:
+    linear-gradient(135deg, rgba(107, 165, 254, 0.08), transparent 60%),
+    rgba(255, 255, 255, 0.03);
+}
+
+.c-config-demo__prompt--swap:hover:not(:disabled) {
+  border-color: rgba(107, 165, 254, 0.45);
+}
+
+.c-config-demo__prompt--break {
+  border-color: rgba(255, 113, 108, 0.22);
+  background:
+    linear-gradient(135deg, rgba(255, 113, 108, 0.08), transparent 60%),
+    rgba(255, 255, 255, 0.03);
+}
+
+.c-config-demo__prompt--break:hover:not(:disabled) {
+  border-color: rgba(255, 113, 108, 0.45);
+}
+
+.c-config-demo__prompt-label {
+  font-family: var(--umpire-demo-font-heading);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.c-config-demo__prompt-blurb {
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: var(--umpire-demo-text-muted, rgba(245, 247, 244, 0.55));
+}
+
+/* ── Layout panes ───────────────────────────────────────────────────────── */
+
+.c-config-demo__layout {
+  align-items: stretch;
+}
+
+.c-config-demo__panel--json,
+.c-config-demo__panel--form {
+  display: flex;
+  flex-direction: column;
+}
+
+.c-config-demo__panel-body--json {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.c-config-demo__editor {
+  flex: 1;
+  min-height: 22rem;
+  width: 100%;
+  padding: 0.9rem 0.95rem;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 18%),
+    rgba(10, 10, 10, 0.85);
+  color: var(--umpire-demo-text);
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  white-space: pre;
+  tab-size: 2;
+}
+
+.c-config-demo__editor:focus {
+  box-shadow: inset 0 0 0 1px rgba(107, 254, 156, 0.28);
+}
+
+.c-config-demo__applied {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.55rem 0.8rem 0.7rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(10, 10, 10, 0.6);
+}
+
+.c-config-demo__applied-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid currentColor;
+  border-radius: var(--umpire-demo-radius-pill);
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: var(--umpire-demo-tracking);
+  text-transform: uppercase;
+  opacity: 0.82;
+}
+
+.c-config-demo__applied-pill--add   { color: var(--umpire-demo-green); }
+.c-config-demo__applied-pill--swap  { color: #8fb8ff; }
+.c-config-demo__applied-pill--break { color: var(--umpire-demo-red); }
+
+/* ── Form pane ──────────────────────────────────────────────────────────── */
+
+.c-config-demo__panel-body--form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.c-config-demo__required {
+  margin-left: 0.25rem;
+  color: rgba(107, 254, 156, 0.72);
+}
+
+.c-config-demo__field-note {
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.c-config-demo__field-note--disabled {
+  color: rgba(245, 247, 244, 0.5);
+}
+
+.c-config-demo__field-note--invalid {
+  color: rgba(255, 113, 108, 0.9);
+}
+
+/* ── Umpire's call (rule trace strip) ───────────────────────────────────── */
+
+.c-config-demo__call {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem 0.85rem 0.85rem;
+  border: 1px dashed rgba(107, 254, 156, 0.18);
+  border-radius: var(--umpire-demo-radius-md);
+  background:
+    linear-gradient(180deg, rgba(107, 254, 156, 0.03), transparent 60%),
+    rgba(10, 10, 10, 0.55);
+}
+
+.c-config-demo__call-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.c-config-demo__call-hint {
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.6rem;
+  color: rgba(245, 247, 244, 0.4);
+  letter-spacing: 0.04em;
+}
+
+.c-config-demo__call-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.c-config-demo__call-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'field   verdict'
+    'copy    copy';
+  align-items: baseline;
+  gap: 0.2rem 0.6rem;
+  padding: 0.42rem 0.55rem;
+  border-radius: 0.4rem;
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.c-config-demo__call-row--in-play {
+  background: rgba(107, 254, 156, 0.05);
+  color: rgba(245, 247, 244, 0.78);
+}
+
+.c-config-demo__call-row--out {
+  background: rgba(255, 113, 108, 0.05);
+  color: rgba(255, 204, 200, 0.78);
+}
+
+.c-config-demo__call-row--foul {
+  background: rgba(255, 170, 90, 0.06);
+  color: rgba(255, 225, 195, 0.84);
+}
+
+.c-config-demo__call-row--invalid {
+  background: rgba(254, 208, 35, 0.06);
+  color: rgba(255, 240, 184, 0.84);
+}
+
+.c-config-demo__call-field {
+  grid-area: field;
+  font-weight: 700;
+  color: var(--umpire-demo-text);
+}
+
+.c-config-demo__call-verdict {
+  grid-area: verdict;
+  font-size: 0.58rem;
+  letter-spacing: var(--umpire-demo-tracking);
+  text-transform: uppercase;
+  opacity: 0.72;
+  white-space: nowrap;
+}
+
+.c-config-demo__call-copy {
+  grid-area: copy;
+  min-width: 0;
+  color: inherit;
+  opacity: 0.82;
+  overflow-wrap: break-word;
+}
+
+/* ── Schema-rejected pane ───────────────────────────────────────────────── */
+
+.c-config-demo__panel-body--error {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.c-config-demo__error-lead {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: rgba(245, 247, 244, 0.82);
+}
+
+.c-config-demo__error-pre {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(255, 113, 108, 0.25);
+  border-radius: var(--umpire-demo-radius-sm);
+  background: rgba(255, 113, 108, 0.08);
+  color: rgba(255, 204, 200, 0.95);
+  font-family: var(--umpire-demo-font-mono);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 50rem) {
+  .c-config-demo__prompts-list {
+    grid-template-columns: 1fr;
+  }
+
+  .c-config-demo__editor {
+    min-height: 16rem;
+  }
+}

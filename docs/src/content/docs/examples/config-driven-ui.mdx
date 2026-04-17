@@ -1,0 +1,150 @@
+---
+title: Config-Driven UI, With Behavior
+description: Config-driven UI gets you most of the way there. Umpire is the behavior layer that keeps the config portable when the rules get real.
+---
+
+import ConfigDrivenDemo from '../../../components/ConfigDrivenDemo.tsx'
+
+Config-driven UI keeps coming back because it solves a real problem. *"Here&rsquo;s a generic component; drive it with a config object."* You have five forms that are 90% the same and you want them to stay 90% the same forever. A config object is how you keep the component from drifting into five separate code paths, and it genuinely works for that.
+
+The ceiling shows up when behavior varies across forms &mdash; conditional required fields, cross-field constraints, cascading resets. At that point, the config needs a way to express those rules, and the options in most libraries mean reaching for something the JSON can no longer carry on its own. Umpire&rsquo;s answer is to keep that layer declarative too: **behavior as data.**
+
+## The pattern you&rsquo;ve seen
+
+The shape is nearly identical across every take. A `fields` array. A generic renderer that maps each entry to an input. Maybe a `visibleWhen` or `dependencies` block for simple conditionality. Representative prior art:
+
+- Ketan Khairnar &mdash; [Configuration-Driven React Components](https://www.ketankhairnar.com/blog/configuration-driven-react-components/) &mdash; the post that prompted this page. A clear walk through the pattern and an honest read on where it reaches its limits.
+- [react-jsonschema-form](https://rjsf-team.github.io/react-jsonschema-form/) &mdash; the canonical config-driven form library. `dependencies` and `ui:widget` carry you far; this is the library most teams have met first.
+- [Formily](https://formilyjs.org/) &mdash; schema-driven forms with explicit reactions. Worth studying for how it models the reactive layer that behavior eventually demands.
+- Kent C. Dodds &mdash; [Inversion of Control](https://kentcdodds.com/blog/inversion-of-control) &mdash; foundational piece on component design and where the config boundary should sit.
+
+## Where it breaks
+
+Three situations tend to be where the declarative vibe cracks:
+
+- **Conditional requireds.** `state` only matters when `country === 'US'`. The config needs a way to express that without the renderer growing a special case per form.
+- **Cross-field validation.** `endDate` must come after `startDate`. The predicate isn&rsquo;t local to either field.
+- **Cascading resets.** Platform flips from Intel to AMD. Motherboard stale. RAM stale. Case stale. One field changed; three had to fall.
+
+Each one needs a rule that references other field values. The usual path is to reach for a function in the config &mdash; a `visibleWhen: (state) => …` or a `validate: (value, form) => …`. That works at runtime, but it means the config is no longer portable: it can&rsquo;t round-trip through JSON, it can&rsquo;t be authored outside engineering, and it can&rsquo;t cross a runtime boundary.
+
+## The missing layer
+
+Umpire declares behavior as data. Rules are a graph. The component asks Umpire *"is this field in play? required? foul?"* and doesn&rsquo;t need to know why.
+
+1. **Rules are data.** `requires`, `enabledWhen`, `fairWhen`, `disables`, `oneOf`, `eitherOf`, `anyOf` &mdash; all declarative. Predicates over field values and conditions, expressed without closures over component state.
+2. **The renderer stays generic.** One `fields.map()` loop reads `enabled`, `required`, `fair`, and `reason` off the availability map. No per-field branches. No `if (field === 'state')`.
+3. **`@umpire/json` round-trips.** Rules, fields, conditions, and portable validators all serialize. What can&rsquo;t serialize lands in `excluded` instead of disappearing silently.
+4. **Framework-agnostic.** Same schema. React, Solid, signals, Vue through stores &mdash; the behavior layer doesn&rsquo;t care.
+
+Config-driven UI&rsquo;s original promise was *one generic renderer, many forms.* Umpire&rsquo;s job is to keep that promise intact when the forms start having opinions about each other.
+
+## Same config, with behavior
+
+A typical config-driven config captures labels and placeholders:
+
+```json
+{
+  "fields": [
+    { "key": "email",       "label": "Email",         "type": "email" },
+    { "key": "companyName", "label": "Company",       "type": "text" },
+    { "key": "state",       "label": "State",         "type": "text" }
+  ]
+}
+```
+
+When behavior shows up, most libraries grow a function slot &mdash; `visibleWhen: (state) => …` &mdash; and the config is no longer portable. The Umpire-augmented version adds `rules` and `validators` that stay serializable:
+
+```json
+{
+  "version": 1,
+  "fields": {
+    "accountType": { "required": true, "isEmpty": "string" },
+    "email":       { "required": true, "isEmpty": "string" },
+    "companyName": { "required": true, "isEmpty": "string" },
+    "state":       { "required": true, "isEmpty": "string" }
+  },
+  "rules": [
+    { "type": "enabledWhen", "field": "companyName",
+      "when": { "op": "eq", "field": "accountType", "value": "business" },
+      "reason": "Business accounts only" },
+    { "type": "enabledWhen", "field": "state",
+      "when": { "op": "eq", "field": "country", "value": "US" },
+      "reason": "US addresses only" }
+  ],
+  "validators": {
+    "email": { "op": "email", "error": "Enter a valid email address" }
+  }
+}
+```
+
+No closures. No escape hatches. The right-hand side stays data all the way down.
+
+## Edit the config
+
+Below: a textarea on the left, the live form on the right, and Umpire&rsquo;s call on the bottom. The component code is the same component code regardless of what you type. Start with the seed, then press the *try this* buttons &mdash; each one mutates the JSON and the form responds.
+
+<ConfigDrivenDemo client:load />
+
+The three prompts each demonstrate one claim:
+
+- **Add a rule** &mdash; a new `billingEmail` field and an `enabledWhen` rule tying it to `accountType === 'business'`. The renderer picks up the field without any component edits or new case statements.
+- **Swap a validator** &mdash; the portable `email` validator becomes a `matches` regex. Email rejects anything outside `@umpire.co`. The field&rsquo;s value carries through; only the verdict changes.
+- **Break it** &mdash; an unknown expression op (`eqIgnoreCase`) goes in. `validateSchema()` rejects the schema before any umpire is built. The form panel switches to the error state, and the textarea shows you exactly what it found.
+
+## Three lines to hydrate
+
+```ts
+import { umpire } from '@umpire/core'
+import { fromJson } from '@umpire/json'
+
+const { fields, rules, validators } = fromJson(schema)
+const ump = umpire({ fields, rules, validators })
+```
+
+`fromJson()` calls `validateSchema()` first; if the schema is malformed or references unknown ops, it throws before any rules compile. The resulting `ump` is the same shape you&rsquo;d get from hand-written TypeScript &mdash; a generic renderer doesn&rsquo;t need to know the rules were authored in JSON.
+
+## The renderer stays thin
+
+```tsx
+{fieldOrder.map((field) => {
+  const meta = metaFor(field)          // label, placeholder — renderer concern
+  const av   = availability[field]     // enabled, required, valid, reason, error
+
+  return (
+    <Field key={field} label={meta.label} required={av.required} disabled={!av.enabled}>
+      <Input
+        {...meta}
+        disabled={!av.enabled}
+        onChange={(value) => setField(field, value)}
+      />
+      {!av.enabled && <Reason>{av.reason}</Reason>}
+      {av.valid === false && <Error>{av.error}</Error>}
+    </Field>
+  )
+})}
+```
+
+Labels, placeholders, and types stay on the renderer side. The rest &mdash; *"should this be in play? required? valid?"* &mdash; comes from Umpire. Rules can change without the component being aware.
+
+## What you still write in code
+
+- **Umpire doesn&rsquo;t render.** You still own the field &rarr; input map, the layout, the theming, and the copy.
+- **Arbitrary predicates don&rsquo;t serialize.** Stay inside `namedValidators.*` and the portable op set when the config is authored outside engineering. Custom functions still work at runtime &mdash; they land in `excluded` on the way to JSON.
+- **`play()` recommends; you decide.** Stale values after a condition change get flagged as fouls with suggested resets, but the form state is still yours to update.
+
+## When this is overkill
+
+- A single form with two fields and a checkbox. Ship a hand-rolled component.
+- A one-off admin page you&rsquo;ll delete in a quarter.
+- A single renderer with no interdependent fields anywhere. `visibleWhen: true` would do the job.
+
+Config-driven plus Umpire pays off when you have **three or more similar surfaces**, **non-engineers authoring configs**, or **behavior that needs to survive a runtime boundary** (CMS-authored forms, server-rendered previews, a native port). That&rsquo;s where *rules as data* starts earning its keep.
+
+## See also
+
+- [Quick Start](/umpire/learn/) &mdash; ten-minute walk through the rule primitives.
+- [`@umpire/json`](/umpire/adapters/json/) &mdash; the portable schema in full, including `excluded` and `conditions`.
+- [DSL & Portable Builders](/umpire/adapters/json/dsl/) &mdash; the `expr.*` vocabulary and round-trip guarantees.
+- [Availability vs Validation](/umpire/concepts/availability/) &mdash; the mental model behind `enabled`, `required`, `fair`.
+- [PC Builder](/umpire/examples/pc-builder/) &mdash; a cascade-heavy example in the same declarative spirit.

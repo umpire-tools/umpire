@@ -18,6 +18,7 @@
     "@preact/signals-core": "^1.0.0",
     "@umpire/core": "portal:../packages/core",
     "@umpire/devtools": "portal:../packages/devtools",
+    "@umpire/json": "portal:../packages/json",
     "@umpire/react": "portal:../packages/react",
     "@umpire/reads": "portal:../packages/reads",
     "@umpire/signals": "portal:../packages/signals",
@@ -35,6 +36,7 @@
     "@umpire/core": "portal:../packages/core",
     "@umpire/reads": "portal:../packages/reads",
     "@umpire/devtools": "portal:../packages/devtools",
+    "@umpire/json": "portal:../packages/json",
     "@umpire/store": "portal:../packages/store",
     "vite": "^6.4.1"
   },

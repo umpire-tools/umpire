@@ -149,6 +149,7 @@ export default defineConfig({
             { label: 'Freight Quote', slug: 'examples/freight-quote' },
             { label: 'Login + Captcha', slug: 'examples/captcha' },
             { label: 'Signup Form + Zod', slug: 'examples/signup' },
+            { label: 'Config-Driven UI', slug: 'examples/config-driven-ui' },
           ],
         },
       ],

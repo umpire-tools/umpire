@@ -192,3 +192,4 @@ See [DSL & Portable Builders](/umpire/adapters/json/dsl/) for the full authoring
 - [DSL & Portable Builders](/umpire/adapters/json/dsl/) — `expr.*`, portable builders, round-trip guarantees, and conformance
 - [Composing with Validation](/umpire/concepts/validation/) — where `check()` fits conceptually
 - [check() helper](/umpire/api/rules/check/) — validator shapes in core
+- [Config-Driven UI, With Behavior](/umpire/examples/config-driven-ui/) — live-edit a JSON schema and watch a generic renderer respond
