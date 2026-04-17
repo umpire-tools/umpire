@@ -10,13 +10,11 @@
 
 ## Build And Test
 
-- Use Yarn 4 with `nodeLinker: node-modules`. Never use `npm` in this repo.
-- Bun 1.2+ is required for repo test commands; `yarn test` shells out to `bun test`.
-- Workspace package tests preload `test/preload-workspace-aliases.ts`; add matching `mock.module(...)` entries there for new exported `@umpire/*` subpaths used before build.
-- Root commands: `yarn build`, `yarn test`, `yarn typecheck`, `yarn docs`, `yarn docs:build`.
-- Most packages build with `tsc`; `@umpire/devtools` builds with `tsdown`.
-- Prefer `yarn turbo run test --filter=@umpire/<package>` for a single package.
-- For docs edits, `cd docs && yarn build` is the practical end-to-end check.
+Canonical commands and single-package iteration workflows live in [`CONTRIBUTING.md`](./CONTRIBUTING.md). Check there first.
+
+Quick reference (root): `yarn test`, `yarn build`, `yarn typecheck`.
+
+**Never** invoke `turbo`, `bun`, or `npm` directly — use the Yarn wrappers. Tests depend on Yarn workspace resolution and per-package `bunfig.toml` preloads; bypassing Yarn skips both.
 
 ## Architecture
 
@@ -48,7 +46,7 @@ Changesets workflow with `.changeset/config.json`:
 - ESM-only, `verbatimModuleSyntax`, `import type` and `export type`, and `.js` extensions in TypeScript import paths.
 - Keep `@umpire/core` free of runtime dependencies.
 - Package-level `AGENTS.md` files are intentionally short; keep them high-signal and keep their `.claude/rules/*` compatibility files pointing at the same content.
-- Commit messages use an emoji prefix plus a descriptive summary.
+- Workflow details (commit conventions, changesets, single-package iteration) live in [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
 ## Slop Scanner
 
