@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { umpire } from '@umpire/core'
+import { strike, umpire } from '@umpire/core'
 import type { FieldDef, InputValues, Umpire } from '@umpire/core'
 import { fromJson } from '@umpire/json'
 import type { JsonRule, UmpireJsonSchema } from '@umpire/json'
@@ -352,13 +352,7 @@ function LiveFormInner({ ump, fieldOrder }: LiveFormInnerProps) {
   }
 
   function applyResets() {
-    setValues((current) => {
-      const next = { ...current }
-      for (const foul of fouls) {
-        next[foul.field as string] = foul.suggestedValue as string
-      }
-      return next
-    })
+    setValues((current) => strike(current, fouls))
   }
 
   const allRequired = fieldOrder.filter((field) => check[field]?.required)

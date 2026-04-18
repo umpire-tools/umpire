@@ -1,6 +1,6 @@
 /** @jsxImportSource preact */
 import { useRef } from 'preact/hooks'
-import { enabledWhen, oneOf, requires, umpire } from '@umpire/core'
+import { enabledWhen, oneOf, requires, strike, umpire } from '@umpire/core'
 import { register } from '@umpire/devtools/slim'
 import { reactiveUmp, type ReactiveUmpire, type SignalProtocol } from '@umpire/signals'
 import { computed, effect, signal } from '@preact/signals'
@@ -510,8 +510,9 @@ export default function FreightQuoteDemo() {
                 type="button"
                 class="c-umpire-demo__reset-button"
                 onClick={() => {
-                  for (const foul of fouls) {
-                    reactive.set(foul.field, foul.suggestedValue)
+                  const next = strike(reactive.values, fouls)
+                  if (next !== reactive.values) {
+                    reactive.update(next)
                   }
                 }}
               >

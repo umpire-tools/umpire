@@ -9,6 +9,7 @@ import {
   enabledWhen,
   oneOf,
   requires,
+  strike,
   umpire,
 } from '@umpire/core'
 import { snapshotValue } from '@umpire/core/snapshot'
@@ -635,15 +636,7 @@ export function PlayDemo() {
   }
 
   function applyResets() {
-    setValues((current) => {
-      const next = { ...current }
-
-      for (const foul of fouls) {
-        next[foul.field] = foul.suggestedValue
-      }
-
-      return next
-    })
+    setValues((current) => strike(current, fouls))
   }
 
   return (

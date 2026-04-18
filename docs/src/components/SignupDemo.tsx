@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { z } from 'zod'
-import { check, disables, eitherOf, enabledWhen, fairWhen, requires, umpire } from '@umpire/core'
+import { check, disables, eitherOf, enabledWhen, fairWhen, requires, strike, umpire } from '@umpire/core'
 // useUmpireWithDevtools powers the named instance in the optional panel on this page.
 // Swap back to: import { useUmpire } from '@umpire/react'  (remove leading id arg)
 import { useUmpireWithDevtools } from '@umpire/devtools/react'
@@ -219,13 +219,7 @@ export default function SignupDemo() {
 
   function applyResets() {
     setSubmissionIssues([])
-    setValues((current) => {
-      const next = { ...current }
-      for (const foul of fouls) {
-        ;(next as Record<string, unknown>)[foul.field] = foul.suggestedValue
-      }
-      return next
-    })
+    setValues((current) => strike(current, fouls))
   }
 
   function submit() {

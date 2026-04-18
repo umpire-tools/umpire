@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { enabledWhen, requires, umpire } from '@umpire/core'
+import { enabledWhen, requires, strike, umpire } from '@umpire/core'
 import { useUmpire } from '@umpire/react'
 
 // -- Field definitions --
@@ -87,13 +87,7 @@ export default function ReactAdapterDemo() {
   // fouls are reset recommendations — when a field had a value but becomes disabled,
   // umpire suggests clearing it. applyResets acts on those suggestions.
   function applyResets() {
-    setValues((current) => {
-      const next = { ...current }
-      for (const foul of fouls) {
-        next[foul.field] = foul.suggestedValue
-      }
-      return next
-    })
+    setValues((current) => strike(current, fouls))
   }
 
   return (

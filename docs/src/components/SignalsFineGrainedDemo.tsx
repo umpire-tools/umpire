@@ -1,6 +1,6 @@
 /** @jsxImportSource preact */
 import { useRef } from 'preact/hooks'
-import { enabledWhen, requires, umpire } from '@umpire/core'
+import { enabledWhen, requires, strike, umpire } from '@umpire/core'
 import { reactiveUmp, type ReactiveUmpire, type SignalProtocol } from '@umpire/signals'
 import { computed, effect, signal } from '@preact/signals'
 import '../styles/components/_components.signals-demo.css'
@@ -257,8 +257,9 @@ export default function SignalsFineGrainedDemo() {
                 type="button"
                 class="c-umpire-demo__reset-button"
                 onClick={() => {
-                  for (const foul of fouls) {
-                    reactive.set(foul.field, foul.suggestedValue ?? '')
+                  const next = strike(reactive.values, fouls)
+                  if (next !== reactive.values) {
+                    reactive.update(next)
                   }
                 }}
               >

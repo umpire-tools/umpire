@@ -1,5 +1,5 @@
 import { createStore } from 'zustand/vanilla'
-import { disables, enabledWhen, requires, umpire } from '@umpire/core'
+import { disables, enabledWhen, requires, strike, umpire } from '@umpire/core'
 import { fromStore, type UmpireStore } from '@umpire/zustand'
 
 // ---------------------------------------------------------------------------
@@ -486,14 +486,28 @@ export function mount(root: HTMLElement) {
   }
 
   resetButton?.addEventListener('click', () => {
-    const patch: Partial<PrintState> = {}
-    for (const foul of umpStore.fouls) {
-      ;(patch as Record<string, unknown>)[foul.field] = coerceSuggestedValue(
-        foul.field,
-        foul.suggestedValue,
-      )
-    }
-    store.setState(patch)
+    const current = store.getState()
+    const next = strike(toInputValues(current), umpStore.fouls.map((foul) => ({
+      ...foul,
+      suggestedValue: coerceSuggestedValue(foul.field, foul.suggestedValue),
+    })))
+
+    store.setState({
+      printer: (next.printer as PrinterType | undefined) ?? current.printer,
+      copies: typeof next.copies === 'string' ? next.copies : current.copies,
+      colorMode: typeof next.colorMode === 'string' ? next.colorMode : current.colorMode,
+      duplex: next.duplex === true,
+      paperSize: typeof next.paperSize === 'string' ? next.paperSize : current.paperSize,
+      orientation: typeof next.orientation === 'string' ? next.orientation : current.orientation,
+      fitToPage: next.fitToPage === true,
+      quality: typeof next.quality === 'string' ? next.quality : current.quality,
+      bannerMode: next.bannerMode === true,
+      paperType: typeof next.paperType === 'string' ? next.paperType : current.paperType,
+      collate: next.collate === true,
+      staple: next.staple === true,
+      holePunch: next.holePunch === true,
+      pageRange: typeof next.pageRange === 'string' ? next.pageRange : current.pageRange,
+    })
   })
 
   const unsubscribeStore = store.subscribe((state) => {

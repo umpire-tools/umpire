@@ -46,6 +46,7 @@ export { isEmptyArray, isEmptyObject, isEmptyPresent, isEmptyString } from './em
 export { field } from './field.js'
 export { foulMap } from './foul-map.js'
 export { isSatisfied } from './satisfaction.js'
+export { strike } from './strike.js'
 export { isNamedCheck } from './validation.js'
 export {
   defineRule,

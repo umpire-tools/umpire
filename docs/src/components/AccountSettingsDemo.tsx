@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useStore } from 'zustand'
 import { createStore } from 'zustand/vanilla'
-import { enabledWhen, requires, umpire } from '@umpire/core'
+import { enabledWhen, requires, strike, umpire } from '@umpire/core'
 import { fromStore } from '@umpire/zustand'
 
 const fields = {
@@ -341,21 +341,27 @@ export default function AccountSettingsDemo() {
     }
 
     model.store.setState((current) => {
+      const currentValues = selectValues(current)
+      const nextValues = strike(currentValues, fouls)
+
+      if (nextValues === currentValues) {
+        return current
+      }
+
+      const nextTeamSize = String(nextValues.teamSize ?? '')
+      const nextTeamDomain = String(nextValues.teamDomain ?? '')
+
+      if (nextTeamSize === current.team.size && nextTeamDomain === current.team.domain) {
+        return current
+      }
+
       const next = {
         ...current,
         team: {
           ...current.team,
+          size: nextTeamSize,
+          domain: nextTeamDomain,
         },
-      }
-
-      for (const foul of fouls) {
-        if (foul.field === 'teamSize') {
-          next.team.size = String(foul.suggestedValue ?? '')
-        }
-
-        if (foul.field === 'teamDomain') {
-          next.team.domain = String(foul.suggestedValue ?? '')
-        }
       }
 
       return next

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { DateRange, Month } from '@daywatch/cal'
 import { useCalendar } from '@daywatch/cal-react'
-import { disables, enabledWhen, oneOf, requires, umpire } from '@umpire/core'
+import { disables, enabledWhen, oneOf, requires, strike, umpire } from '@umpire/core'
 // Swap back to `@umpire/react` and remove the leading devtools id from the
 // hook call below if you want the plain React adapter again.
 import { useUmpireWithDevtools as useUmpire } from '@umpire/devtools/react'
@@ -498,20 +498,7 @@ export default function CalendarDemo() {
   }
 
   function applyResets() {
-    setValues((current) => {
-      const next = { ...current }
-      let changed = false
-
-      for (const foul of fouls) {
-        const suggestedValue = foul.suggestedValue as CalendarValues[typeof foul.field]
-        if (!Object.is(next[foul.field], suggestedValue)) {
-          ;(next as Record<string, unknown>)[foul.field] = suggestedValue
-          changed = true
-        }
-      }
-
-      return changed ? next : current
-    })
+    setValues((current) => strike(current, fouls))
   }
 
   const explicitDates = toStringList(values.dates)

@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { requires, umpire, type Snapshot } from '@umpire/core'
+import { requires, strike, umpire, type Snapshot } from '@umpire/core'
 import { register } from '@umpire/devtools/slim'
 import { createReads, enabledWhenRead, fairWhenRead, ReadInputType } from '@umpire/reads'
 import { createCoach } from '../lib/createCoach'
@@ -846,17 +846,13 @@ export default function PcBuilderDemo() {
   }
 
   function applyResets() {
-    const resetTargets = fouls.filter((foul) => !Object.is(values[foul.field], foul.suggestedValue))
+    const nextValues = strike(values, fouls) as PcValues
 
-    if (resetTargets.length === 0) {
+    if (nextValues === values) {
       return
     }
 
-    const nextValues = { ...values }
-
-    for (const foul of resetTargets) {
-      nextValues[foul.field] = foul.suggestedValue as PcValues[typeof foul.field]
-    }
+    const firstResetFoul = fouls.find((foul) => !Object.is(values[foul.field], foul.suggestedValue))
 
     setLastTransition({
       before: { values },
@@ -866,7 +862,9 @@ export default function PcBuilderDemo() {
       sawTransitiveCascade: hasLiveTransitiveCascade,
       sawAppliedResets: true,
     }))
-    setCurrentStep(getStepIndexForField(resetTargets[0].field as PcField))
+    if (firstResetFoul) {
+      setCurrentStep(getStepIndexForField(firstResetFoul.field as PcField))
+    }
   }
 
   function stepFouls(step: StepDefinition) {

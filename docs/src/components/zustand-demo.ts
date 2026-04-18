@@ -5,7 +5,7 @@
  * small DOM helpers that prove the whole thing works framework-free.
  */
 import { createStore } from 'zustand/vanilla'
-import { enabledWhen, requires, umpire } from '@umpire/core'
+import { enabledWhen, requires, strike, umpire } from '@umpire/core'
 import { fromStore, type UmpireStore } from '@umpire/zustand'
 
 // ---------------------------------------------------------------------------
@@ -140,11 +140,17 @@ export function mount(root: HTMLElement) {
   // -- Wire apply resets button --
   $('.c-umpire-demo__reset-button', root)?.addEventListener('click', () => {
     const fouls = umpStore.fouls
-    const patch: Partial<DemoState> = {}
-    for (const foul of fouls) {
-      (patch as Record<string, unknown>)[foul.field] = foul.suggestedValue
-    }
-    store.setState(patch)
+    const current = store.getState()
+    const nextValues = strike(
+      {
+        email: current.email,
+        password: current.password,
+        companyName: current.companyName,
+        companySize: current.companySize,
+      },
+      fouls,
+    )
+    store.setState(nextValues)
   })
 
   // -- Subscribe to store changes → update the left panel --
