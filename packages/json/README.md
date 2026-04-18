@@ -5,7 +5,7 @@ Portable schema parsing and serialization for [@umpire/core](https://www.npmjs.c
 `@umpire/dsl` now owns the pure expression layer (`Expr`, `expr.*`, `compileExpr()`, `getExprFieldRefs()`).
 `@umpire/json` owns the JSON-aware additions: `expr.check()`, `namedValidators.*()`, and portable JSON rule builders.
 
-[Docs](https://sdougbrown.github.io/umpire/adapters/json/) · [Quick Start](https://sdougbrown.github.io/umpire/learn/)
+[Docs](https://sdougbrown.github.io/umpire/extensions/json/) · [Quick Start](https://sdougbrown.github.io/umpire/learn/)
 
 ## Install
 
@@ -117,6 +117,6 @@ When present, `excluded.key` gives an exclusion a stable identity so later seria
 
 ## Docs
 
-- [@umpire/json docs](https://sdougbrown.github.io/umpire/adapters/json/)
+- [@umpire/json docs](https://sdougbrown.github.io/umpire/extensions/json/)
 - [Composing with Validation](https://sdougbrown.github.io/umpire/concepts/validation/)
 - [check() helper](https://sdougbrown.github.io/umpire/api/rules/check/)
