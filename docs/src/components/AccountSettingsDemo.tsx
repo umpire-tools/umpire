@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useStore } from 'zustand'
-import { createStore } from 'zustand/vanilla'
+import { create } from 'zustand'
 import { enabledWhen, requires, strike, umpire } from '@umpire/core'
 import { fromStore } from '@umpire/zustand'
 
@@ -27,7 +26,6 @@ type DemoState = {
   }
 }
 
-type DemoModel = ReturnType<typeof createDemoModel>
 type DemoField = keyof typeof fields
 
 const fieldLabels: Record<DemoField, string> = {
@@ -58,63 +56,29 @@ function selectValues(state: DemoState) {
   }
 }
 
-function createDemoModel() {
-  const store = createStore<DemoState>(() => ({
-    profile: {
-      email: 'alex@example.com',
-      displayName: 'Alex Rivera',
-    },
-    billing: {
-      plan: 'personal',
-    },
-    team: {
-      size: '5',
-      domain: 'stadiumops.dev',
-    },
-  }))
+const useStore = create<DemoState>(() => ({
+  profile: {
+    email: 'alex@example.com',
+    displayName: 'Alex Rivera',
+  },
+  billing: {
+    plan: 'personal',
+  },
+  team: {
+    size: '5',
+    domain: 'stadiumops.dev',
+  },
+}))
 
-  const umpStore = fromStore(accountUmp, store, {
-    select: selectValues,
-    conditions: (state) => ({
-      plan: state.billing.plan,
-    }),
-  })
+const umpStore = fromStore(accountUmp, useStore, {
+  select: selectValues,
+  conditions: (state) => ({
+    plan: state.billing.plan,
+  }),
+})
 
-  return {
-    store,
-    umpStore,
-  }
-}
-
-function useDemoModel() {
-  const modelRef = useRef<DemoModel | null>(null)
-
-  if (!modelRef.current) {
-    modelRef.current = createDemoModel()
-  }
-
-  useEffect(() => {
-    return () => {
-      modelRef.current?.umpStore.destroy()
-    }
-  }, [])
-
-  return modelRef.current
-}
-
-function useUmpireSnapshot(model: DemoModel) {
-  // Subscribing to the base store triggers re-renders when state changes.
-  // umpStore caches availability and fouls against the same store, so
-  // reading them here always reflects the latest values.
-  useStore(model.store)
-  return {
-    availability: model.umpStore.getAvailability(),
-    fouls: model.umpStore.fouls,
-  }
-}
-
-function patchProfile(store: DemoModel['store'], patch: Partial<DemoState['profile']>) {
-  store.setState((state) => ({
+function patchProfile(patch: Partial<DemoState['profile']>) {
+  useStore.setState((state) => ({
     ...state,
     profile: {
       ...state.profile,
@@ -123,8 +87,8 @@ function patchProfile(store: DemoModel['store'], patch: Partial<DemoState['profi
   }))
 }
 
-function patchBilling(store: DemoModel['store'], patch: Partial<DemoState['billing']>) {
-  store.setState((state) => ({
+function patchBilling(patch: Partial<DemoState['billing']>) {
+  useStore.setState((state) => ({
     ...state,
     billing: {
       ...state.billing,
@@ -133,8 +97,8 @@ function patchBilling(store: DemoModel['store'], patch: Partial<DemoState['billi
   }))
 }
 
-function patchTeam(store: DemoModel['store'], patch: Partial<DemoState['team']>) {
-  store.setState((state) => ({
+function patchTeam(patch: Partial<DemoState['team']>) {
+  useStore.setState((state) => ({
     ...state,
     team: {
       ...state.team,
@@ -182,13 +146,11 @@ function FieldMeta({
 }
 
 function ProfileSection({
-  store,
   availability,
 }: {
-  store: DemoModel['store']
   availability: ReturnType<typeof accountUmp.check>
 }) {
-  const profile = useStore(store, (state) => state.profile)
+  const profile = useStore((state) => state.profile)
 
   return (
     <section className="c-account-settings-demo__section">
@@ -208,7 +170,7 @@ function ProfileSection({
           id="account-settings-email"
           className="c-umpire-demo__input"
           value={profile.email}
-          onChange={(event) => patchProfile(store, { email: event.currentTarget.value })}
+          onChange={(event) => patchProfile({ email: event.currentTarget.value })}
         />
         <FieldMeta
           enabled={availability.email.enabled}
@@ -223,7 +185,7 @@ function ProfileSection({
           id="account-settings-display-name"
           className="c-umpire-demo__input"
           value={profile.displayName}
-          onChange={(event) => patchProfile(store, { displayName: event.currentTarget.value })}
+          onChange={(event) => patchProfile({ displayName: event.currentTarget.value })}
         />
         <FieldMeta
           enabled={availability.displayName.enabled}
@@ -235,8 +197,8 @@ function ProfileSection({
   )
 }
 
-function PlanSection({ store }: { store: DemoModel['store'] }) {
-  const plan = useStore(store, (state) => state.billing.plan)
+function PlanSection() {
+  const plan = useStore((state) => state.billing.plan)
 
   return (
     <section className="c-account-settings-demo__section">
@@ -258,7 +220,7 @@ function PlanSection({ store }: { store: DemoModel['store'] }) {
               plan === option && 'c-umpire-demo__plan-option is-active',
             )}
             aria-pressed={plan === option}
-            onClick={() => patchBilling(store, { plan: option })}
+            onClick={() => patchBilling({ plan: option })}
           >
             {option}
           </button>
@@ -275,13 +237,11 @@ function PlanSection({ store }: { store: DemoModel['store'] }) {
 }
 
 function TeamSection({
-  store,
   availability,
 }: {
-  store: DemoModel['store']
   availability: ReturnType<typeof accountUmp.check>
 }) {
-  const team = useStore(store, (state) => state.team)
+  const team = useStore((state) => state.team)
 
   return (
     <section className="c-account-settings-demo__section">
@@ -302,7 +262,7 @@ function TeamSection({
           className="c-umpire-demo__input"
           value={team.size}
           disabled={!availability.teamSize.enabled}
-          onChange={(event) => patchTeam(store, { size: event.currentTarget.value })}
+          onChange={(event) => patchTeam({ size: event.currentTarget.value })}
         />
         <FieldMeta
           enabled={availability.teamSize.enabled}
@@ -318,7 +278,7 @@ function TeamSection({
           className="c-umpire-demo__input"
           value={team.domain}
           disabled={!availability.teamDomain.enabled}
-          onChange={(event) => patchTeam(store, { domain: event.currentTarget.value })}
+          onChange={(event) => patchTeam({ domain: event.currentTarget.value })}
         />
         <FieldMeta
           enabled={availability.teamDomain.enabled}
@@ -331,16 +291,16 @@ function TeamSection({
 }
 
 export default function AccountSettingsDemo() {
-  const model = useDemoModel()
-  const state = useStore(model.store, (snapshot) => snapshot)
-  const { availability, fouls } = useUmpireSnapshot(model)
+  const state = useStore((snapshot) => snapshot)
+  const availability = umpStore.getAvailability()
+  const fouls = umpStore.fouls
 
   function applyResets() {
     if (fouls.length === 0) {
       return
     }
 
-    model.store.setState((current) => {
+    useStore.setState((current) => {
       const currentValues = selectValues(current)
       const nextValues = strike(currentValues, fouls)
 
@@ -369,7 +329,7 @@ export default function AccountSettingsDemo() {
   }
 
   const selectedValues = selectValues(state)
-  const teamSizeRead = model.umpStore.field('teamSize')
+  const teamSizeRead = umpStore.field('teamSize')
 
   return (
     <div className="c-account-settings-demo c-umpire-demo">
@@ -409,9 +369,9 @@ export default function AccountSettingsDemo() {
             </div>
 
             <div className="c-account-settings-demo__section-stack">
-              <ProfileSection store={model.store} availability={availability} />
-              <PlanSection store={model.store} />
-              <TeamSection store={model.store} availability={availability} />
+              <ProfileSection availability={availability} />
+              <PlanSection />
+              <TeamSection availability={availability} />
             </div>
           </div>
         </section>
