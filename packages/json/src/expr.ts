@@ -33,10 +33,6 @@ export function getExprFieldRefs(expression: JsonExpr): string[] {
     return [expression.field]
   }
 
-  if (!containsCheck(expression)) {
-    return getDslExprFieldRefs(expression)
-  }
-
   if (expression.op === 'and' || expression.op === 'or') {
     return [...new Set(expression.exprs.flatMap((entry) => getExprFieldRefs(entry)))]
   }
@@ -48,20 +44,12 @@ export function getExprFieldRefs(expression: JsonExpr): string[] {
   return getDslExprFieldRefs(expression)
 }
 
-function containsCheck(expression: JsonExpr): boolean {
-  if (expression.op === 'check') {
-    return true
-  }
-
-  if (expression.op === 'and' || expression.op === 'or') {
-    return expression.exprs.some((entry) => containsCheck(entry))
-  }
-
-  if (expression.op === 'not') {
-    return containsCheck(expression.expr)
-  }
-
-  return false
+type CompiledNode<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+> = {
+  predicate: ExprPredicate<F, C>
+  fieldRefs: Set<string>
 }
 
 function compileCheckExpr<
@@ -95,40 +83,68 @@ export function compileExpr<
   expression: JsonExpr,
   options: CompileExprOptions,
 ): ExprPredicate<F, C> {
-  let predicate: ExprPredicate<F, C>
+  const compiled = compileInner<F, C>(expression, options)
 
+  if (compiled.fieldRefs.size === 1) {
+    compiled.predicate._checkField = [...compiled.fieldRefs][0] as keyof F & string
+  }
+
+  return compiled.predicate
+}
+
+function compileInner<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  expression: JsonExpr,
+  options: CompileExprOptions,
+): CompiledNode<F, C> {
   if (expression.op === 'check') {
-    predicate = compileCheckExpr<F, C>(expression, options)
-  } else if (!containsCheck(expression)) {
-    predicate = compileDslExpr<F, C>(expression as Expr, options)
-  } else if (expression.op === 'and') {
+    return {
+      predicate: compileCheckExpr<F, C>(expression, options),
+      fieldRefs: new Set([expression.field]),
+    }
+  }
+
+  if (expression.op === 'and') {
     if (!Array.isArray(expression.exprs)) {
       throw new Error('[@umpire/json] "and" expression requires an exprs array')
     }
 
-    const predicates = expression.exprs.map((entry) => compileExpr<F, C>(entry, options))
-    predicate = (((values: FieldValues<F>, conditions: C) =>
-      predicates.every((entry) => entry(values, conditions))) as ExprPredicate<F, C>)
-  } else if (expression.op === 'or') {
+    const compiledEntries = expression.exprs.map((entry) => compileInner<F, C>(entry, options))
+    const predicates = compiledEntries.map((entry) => entry.predicate)
+    return {
+      predicate: (((values: FieldValues<F>, conditions: C) =>
+        predicates.every((entry) => entry(values, conditions))) as ExprPredicate<F, C>),
+      fieldRefs: new Set(compiledEntries.flatMap((entry) => [...entry.fieldRefs])),
+    }
+  }
+
+  if (expression.op === 'or') {
     if (!Array.isArray(expression.exprs)) {
       throw new Error('[@umpire/json] "or" expression requires an exprs array')
     }
 
-    const predicates = expression.exprs.map((entry) => compileExpr<F, C>(entry, options))
-    predicate = (((values: FieldValues<F>, conditions: C) =>
-      predicates.some((entry) => entry(values, conditions))) as ExprPredicate<F, C>)
-  } else if (expression.op === 'not') {
-    const inner = compileExpr<F, C>(expression.expr, options)
-    predicate = (((values: FieldValues<F>, conditions: C) => !inner(values, conditions)) as ExprPredicate<F, C>)
-  } else {
-    predicate = compileDslExpr<F, C>(expression as Expr, options)
+    const compiledEntries = expression.exprs.map((entry) => compileInner<F, C>(entry, options))
+    const predicates = compiledEntries.map((entry) => entry.predicate)
+    return {
+      predicate: (((values: FieldValues<F>, conditions: C) =>
+        predicates.some((entry) => entry(values, conditions))) as ExprPredicate<F, C>),
+      fieldRefs: new Set(compiledEntries.flatMap((entry) => [...entry.fieldRefs])),
+    }
   }
 
-  const fieldRefs = getExprFieldRefs(expression)
-
-  if (fieldRefs.length === 1) {
-    predicate._checkField = fieldRefs[0] as keyof F & string
+  if (expression.op === 'not') {
+    const inner = compileInner<F, C>(expression.expr, options)
+    return {
+      predicate: (((values: FieldValues<F>, conditions: C) =>
+        !inner.predicate(values, conditions)) as ExprPredicate<F, C>),
+      fieldRefs: inner.fieldRefs,
+    }
   }
 
-  return predicate
+  return {
+    predicate: compileDslExpr<F, C>(expression as Expr, options),
+    fieldRefs: new Set(getDslExprFieldRefs(expression as Expr)),
+  }
 }

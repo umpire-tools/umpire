@@ -66,6 +66,26 @@ describe('json expr bridge', () => {
     expect(predicate({ email: 'invalid', accountType: 'business' }, {})).toBe(false)
   })
 
+  test('compileExpr handles deeply nested trees with mixed check and non-check nodes', () => {
+    let expression = { op: 'check', field: 'email', check: { op: 'email' } } as const
+
+    for (let i = 0; i < 200; i++) {
+      expression = {
+        op: 'and',
+        exprs: [
+          expression,
+          { op: 'eq', field: 'accountType', value: 'business' },
+        ],
+      }
+    }
+
+    const predicate = compileExpr(expression, { fieldNames })
+
+    expect(predicate({ email: 'alex@example.com', accountType: 'business' }, {})).toBe(true)
+    expect(predicate({ email: 'invalid', accountType: 'business' }, {})).toBe(false)
+    expect(getExprFieldRefs(expression)).toEqual(['email', 'accountType'])
+  })
+
   test('throws on unknown fields in check expressions', () => {
     expect(() =>
       compileExpr(
