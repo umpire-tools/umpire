@@ -39,7 +39,14 @@ const freightUmp = umpire<typeof fields, FreightConditions>({
     oneOf('handlingMode', {
       fragile: ['blankets', 'crateType'],
       climate: ['tempRange', 'humidity'],
-    }, { activeBranch: (v) => v.handlingMode === 'none' ? null : v.handlingMode as string | null }),
+    }, {
+      activeBranch: (v) => {
+        if (v.handlingMode === 'fragile' || v.handlingMode === 'climate') {
+          return v.handlingMode
+        }
+        return null
+      },
+    }),
     enabledWhen('discountOverride', (_v, c) => c.isAdmin, { reason: 'Admin only' }),
     enabledWhen('priceHold', (_v, c) => c.isAdmin, { reason: 'Admin only' }),
     enabledWhen('serviceLevel', (_v, c) => !c.promoActive, { reason: 'Locked by FREIGHT50 promo' }),

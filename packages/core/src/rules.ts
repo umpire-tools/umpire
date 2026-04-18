@@ -169,8 +169,12 @@ type EitherOfBranches<
 type OneOfOptions<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
+  BranchName extends string = string,
 > = RuleOptions<F, C> & {
-  activeBranch?: string | ((values: FieldValues<F>, conditions: C) => string | null | undefined)
+  activeBranch?: BranchName | ((
+    values: FieldValues<F>,
+    conditions: C,
+  ) => BranchName | null | undefined)
 }
 
 export type InternalPredicate<
@@ -917,12 +921,13 @@ function warnAmbiguousOneOf(groupName: string, branchNames: string[]): void {
 export function resolveOneOfState<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
+  BranchName extends string = string,
 >(
   groupName: string,
   branches: OneOfBranches<F>,
   values: FieldValues<F>,
   prev: FieldValues<F> | undefined,
-  activeBranch: OneOfOptions<F, C>['activeBranch'],
+  activeBranch: OneOfOptions<F, C, BranchName>['activeBranch'],
   fields?: F,
   conditions?: C,
 ): OneOfResolution {
@@ -1221,10 +1226,11 @@ export function requires<
 export function oneOf<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
+  B extends OneOfBranchesInput<F> = OneOfBranchesInput<F>,
 >(
   groupName: string,
-  branches: OneOfBranchesInput<F>,
-  options?: OneOfOptions<F, C>,
+  branches: B,
+  options?: OneOfOptions<F, C, keyof B & string>,
 ): Rule<F, C> {
   const resolvedBranches = normalizeBranches(branches)
   const seenFields = new Set<string>()
