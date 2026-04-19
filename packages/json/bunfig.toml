@@ -1,3 +1,2 @@
 [test]
-preload = ["../../test/preload-workspace-aliases.ts"]
 coverageSkipTestFiles = true
