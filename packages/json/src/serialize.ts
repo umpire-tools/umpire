@@ -6,7 +6,7 @@ import {
   type RuleInspection,
   type ValidationMap,
 } from '@umpire/core'
-import { cloneJson } from '@umpire/core/json'
+import { deepClone } from '@umpire/dsl/clone'
 import { isRecord } from '@umpire/core/guards'
 
 import {
@@ -259,7 +259,7 @@ function serializeValidator(field: string, entry: unknown): SerializeValidatorRe
 
   if (carried) {
     return {
-      validator: cloneJson(carried),
+          validator: deepClone(carried),
       excluded: [],
       coverageKeys: [coverageKey],
     }
@@ -589,7 +589,7 @@ function serializeInspection(
         rules: [{
           type: 'oneOf',
           group: inspection.groupName,
-          branches: cloneJson(inspection.branches),
+          branches: deepClone(inspection.branches),
         }],
         excluded: [],
         coverageKeys: [createKey('rule', 'oneOf', inspection.groupName)],
@@ -700,7 +700,7 @@ function serializeRule<
   const jsonDef = getJsonDef<JsonRule>(rule)
   if (jsonDef) {
     return {
-      rules: [cloneJson(jsonDef)],
+      rules: [deepClone(jsonDef)],
       excluded: [],
       coverageKeys: createCoverageKeys(jsonDef),
     }
@@ -778,7 +778,7 @@ export function toJson<
 
   const conditions = config.conditions ?? meta?.conditions
   const excluded = mergeExcluded(
-    meta?.excluded ? cloneJson(meta.excluded) : [],
+    meta?.excluded ? deepClone(meta.excluded) : [],
     generatedExcluded,
     coverageKeys,
   )
@@ -787,7 +787,7 @@ export function toJson<
     fields,
     rules,
     ...(Object.keys(validators).length > 0 ? { validators } : {}),
-    ...(conditions ? { conditions: cloneJson(conditions) } : {}),
+    ...(conditions ? { conditions: deepClone(conditions) } : {}),
     ...(excluded.length > 0 ? { excluded } : {}),
   }
 

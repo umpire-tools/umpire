@@ -19,10 +19,6 @@
     "./guards": {
       "types": "./dist/guards.d.ts",
       "import": "./dist/guards.js"
-    },
-    "./json": {
-      "types": "./dist/json.d.ts",
-      "import": "./dist/json.js"
     }
   },
   "scripts": {

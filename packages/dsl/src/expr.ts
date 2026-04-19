@@ -1,5 +1,5 @@
 import type { FieldDef } from '@umpire/core'
-import { cloneJson } from '@umpire/core/json'
+import { deepClone } from './clone.js'
 
 import type { ExprBuilder } from './types.js'
 
@@ -35,10 +35,10 @@ export const expr: ExprBuilder<Record<string, FieldDef>, Record<string, unknown>
     return { op: 'falsy', field }
   },
   in(field, values) {
-    return { op: 'in', field, values: cloneJson(values) }
+    return { op: 'in', field, values: deepClone(values) }
   },
   notIn(field, values) {
-    return { op: 'notIn', field, values: cloneJson(values) }
+    return { op: 'notIn', field, values: deepClone(values) }
   },
   cond(condition) {
     return { op: 'cond', condition }
@@ -47,18 +47,18 @@ export const expr: ExprBuilder<Record<string, FieldDef>, Record<string, unknown>
     return { op: 'condEq', condition, value }
   },
   condIn(condition, values) {
-    return { op: 'condIn', condition, values: cloneJson(values) }
+    return { op: 'condIn', condition, values: deepClone(values) }
   },
   fieldInCond(field, condition) {
     return { op: 'fieldInCond', field, condition }
   },
   and(...exprs) {
-    return { op: 'and', exprs: cloneJson(exprs) }
+    return { op: 'and', exprs: deepClone(exprs) }
   },
   or(...exprs) {
-    return { op: 'or', exprs: cloneJson(exprs) }
+    return { op: 'or', exprs: deepClone(exprs) }
   },
   not(expression) {
-    return { op: 'not', expr: cloneJson(expression) }
+    return { op: 'not', expr: deepClone(expression) }
   },
 }
