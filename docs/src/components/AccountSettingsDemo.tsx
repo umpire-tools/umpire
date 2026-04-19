@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import { create } from 'zustand'
 import { enabledWhen, requires, strike, umpire } from '@umpire/core'
 import { fromStore } from '@umpire/zustand'
@@ -291,7 +290,7 @@ function TeamSection({
 }
 
 export default function AccountSettingsDemo() {
-  const state = useStore((snapshot) => snapshot)
+  const state = useStore()
   const availability = umpStore.getAvailability()
   const fouls = umpStore.fouls
 
