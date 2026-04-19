@@ -6,11 +6,7 @@ const require = createRequire(import.meta.url)
 if (process.env.BUN_DISABLE_WORKSPACE_MOCKS !== 'true') {
   // Keep exported subpaths in sync with this file. Package tests and coverage runs
   // preload these source aliases before sibling workspaces are built.
-  mock.module('@umpire/core', () => ({
-    ...require('../packages/core/src/index.js'),
-    ...require('../packages/core/src/snapshot.js'),
-    ...require('../packages/core/src/guards.js'),
-  }))
+  mock.module('@umpire/core', () => require('../packages/core/src/index.js'))
   mock.module('@umpire/core/snapshot', () => ({
     ...require('../packages/core/src/snapshot.js'),
   }))
@@ -27,10 +23,7 @@ if (process.env.BUN_DISABLE_WORKSPACE_MOCKS !== 'true') {
   )
   mock.module('@umpire/testing', () => require('../packages/testing/src/index.js'))
   mock.module('@umpire/zod', () => require('../packages/zod/src/index.js'))
-  mock.module('@umpire/dsl', () => ({
-    ...require('../packages/dsl/src/index.js'),
-    ...require('../packages/dsl/src/clone.js'),
-  }))
+  mock.module('@umpire/dsl', () => require('../packages/dsl/src/index.js'))
   mock.module('@umpire/dsl/clone', () => ({
     ...require('../packages/dsl/src/clone.js'),
   }))
