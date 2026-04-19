@@ -147,7 +147,7 @@ function fromSolidStore<
 ```tsx
 import { createContext, useContext } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import { enabledWhen, umpire } from '@umpire/core'
+import { enabledWhen, type FieldsOf, umpire } from '@umpire/core'
 import { fromSolidStore, type SolidStoreUmpire } from '@umpire/solid'
 
 const eventUmp = umpire({
@@ -162,22 +162,22 @@ const eventUmp = umpire({
   ],
 })
 
-type EventFields = FieldsOf<typeof eventUmp>
+type EventForm = SolidStoreUmpire<FieldsOf<typeof eventUmp>>
+type EventValues = ReturnType<typeof eventUmp.init>
 
 const EventFormContext = createContext<{
-  values: { allDay: boolean; startTime: string; endTime: string }
-  set: SolidStoreUmpire<EventFields>['set']
-  form: SolidStoreUmpire<EventFields>
+  values: EventValues
+  set: EventForm['set']
+  form: EventForm
 }>()
 
 function EventFormProvider(props: { children: JSX.Element }) {
-  const [values, setValues] = createStore({
-    allDay: false,
+  const [values, setValues] = createStore(eventUmp.init({
     startTime: '09:00',
     endTime: '10:00',
-  })
+  }))
 
-  function setEventValue<K extends keyof typeof values>(name: K, value: (typeof values)[K]) {
+  const setEventValue: EventForm['set'] = (name, value) => {
     setValues(name, value)
   }
 
