@@ -11,8 +11,12 @@ if (process.env.BUN_DISABLE_WORKSPACE_MOCKS !== 'true') {
     ...require('../packages/core/src/snapshot.js'),
     ...require('../packages/core/src/guards.js'),
   }))
-  mock.module('@umpire/core/snapshot', () => require('../packages/core/src/snapshot.js'))
-  mock.module('@umpire/core/guards', () => require('../packages/core/src/guards.js'))
+  mock.module('@umpire/core/snapshot', () => ({
+    ...require('../packages/core/src/snapshot.js'),
+  }))
+  mock.module('@umpire/core/guards', () => ({
+    ...require('../packages/core/src/guards.js'),
+  }))
   mock.module('@umpire/store', () => require('../packages/store/src/index.js'))
   mock.module('@umpire/reads', () => require('../packages/reads/src/index.js'))
   mock.module('@umpire/react', () => require('../packages/react/src/index.js'))
@@ -27,7 +31,9 @@ if (process.env.BUN_DISABLE_WORKSPACE_MOCKS !== 'true') {
     ...require('../packages/dsl/src/index.js'),
     ...require('../packages/dsl/src/clone.js'),
   }))
-  mock.module('@umpire/dsl/clone', () => require('../packages/dsl/src/clone.js'))
+  mock.module('@umpire/dsl/clone', () => ({
+    ...require('../packages/dsl/src/clone.js'),
+  }))
   mock.module('@umpire/json', () => require('../packages/json/src/index.js'))
   mock.module('@umpire/devtools', () => require('../packages/devtools/src/index.js'))
   mock.module('@umpire/devtools/slim', () => require('../packages/devtools/src/slim.js'))
