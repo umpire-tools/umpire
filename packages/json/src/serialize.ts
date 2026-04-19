@@ -2,11 +2,11 @@ import {
   getNamedCheckMetadata,
   inspectRule,
   type FieldDef,
-  type JsonPrimitive,
   type Rule,
   type RuleInspection,
   type ValidationMap,
 } from '@umpire/core'
+import { cloneJson } from '@umpire/core/json'
 import { isRecord } from '@umpire/core/guards'
 
 import {
@@ -14,6 +14,7 @@ import {
   createValidatorSpecFromMetadata,
   createValidatorDefFromMetadata,
 } from './check-ops.js'
+import { isJsonPrimitive } from './json-values.js'
 import { getJsonDef } from './json-def.js'
 import type {
   ExcludedRule,
@@ -52,24 +53,6 @@ type SerializeValidatorResult = {
   validator?: JsonValidatorDef
   excluded: ExcludedRule[]
   coverageKeys: string[]
-}
-
-function cloneJson<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value.map((entry) => cloneJson(entry)) as T
-  }
-
-  if (typeof value === 'object' && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, cloneJson(entry)]),
-    ) as T
-  }
-
-  return value
-}
-
-function isJsonPrimitive(value: unknown): value is JsonPrimitive {
-  return value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
 }
 
 function createExcluded(

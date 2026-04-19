@@ -8,13 +8,10 @@ import type {
 } from './schema.js'
 import { assertValidCheckRule, assertValidValidatorSpec } from './check-ops.js'
 import { compileExpr } from './expr.js'
+import { isJsonPrimitive } from './json-values.js'
 import { isJsonIsEmptyStrategy } from './strategies.js'
 
 type JsonRuleConstraint = 'enabled' | 'fair'
-
-function isJsonPrimitive(value: unknown): boolean {
-  return value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-}
 
 function validateFieldDef(field: string, definition: JsonFieldDef) {
   if (!isPlainRecord(definition)) {

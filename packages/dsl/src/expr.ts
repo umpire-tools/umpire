@@ -1,20 +1,7 @@
 import type { FieldDef } from '@umpire/core'
+import { cloneJson } from '@umpire/core/json'
 
 import type { ExprBuilder } from './types.js'
-
-function cloneJson<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value.map((entry) => cloneJson(entry)) as T
-  }
-
-  if (typeof value === 'object' && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, cloneJson(entry)]),
-    ) as T
-  }
-
-  return value
-}
 
 export const expr: ExprBuilder<Record<string, FieldDef>, Record<string, unknown>> = {
   eq(field, value) {

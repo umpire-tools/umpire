@@ -1,4 +1,4 @@
-import type { FieldDef, FieldValues } from '@umpire/core'
+import { isEmptyPresent, type FieldDef, type FieldValues } from '@umpire/core'
 
 import type { Expr } from './types.js'
 
@@ -119,13 +119,13 @@ function compileInner<
       assertField(expression.field, expression.op, options.fieldNames)
       return (values) => {
         const value = values[expression.field as keyof F & string]
-        return value !== null && value !== undefined
+        return !isEmptyPresent(value)
       }
     case 'absent':
       assertField(expression.field, expression.op, options.fieldNames)
       return (values) => {
         const value = values[expression.field as keyof F & string]
-        return value === null || value === undefined
+        return isEmptyPresent(value)
       }
     case 'truthy':
       assertField(expression.field, expression.op, options.fieldNames)

@@ -19,6 +19,7 @@ import {
   defaultValidatorMessage,
 } from './check-ops.js'
 import { compileExpr } from './expr.js'
+import type { JsonFairPredicate } from './fair-predicate.js'
 import { attachJsonDef } from './json-def.js'
 import type {
   ExcludedRule,
@@ -65,26 +66,17 @@ export function parseJsonSchema(raw: unknown): JsonSchemaParseResult {
   }
 }
 
-type NamedFairPredicate<C extends Record<string, unknown>> = ((
-  value: unknown,
-  values: FieldValues<ParsedFields>,
-  conditions: C,
-) => boolean) & {
-  _checkField?: string
-  _namedCheck?: ReturnType<typeof getNamedCheckMetadata>
-}
-
 function compileFairExpr<C extends Record<string, unknown>>(
   rule: Extract<JsonRule, { type: 'fairWhen' }>,
   schema: UmpireJsonSchema,
-): NamedFairPredicate<C> {
+): JsonFairPredicate<FieldValues<ParsedFields>, C> {
   const predicate = compileExpr<ParsedFields, C>(rule.when, {
     fieldNames: new Set(Object.keys(schema.fields)),
     conditions: schema.conditions,
   })
 
   const fairPredicate = ((_: unknown, values: FieldValues<ParsedFields>, conditions: C) =>
-    predicate(values, conditions)) as NamedFairPredicate<C>
+    predicate(values, conditions)) as JsonFairPredicate<FieldValues<ParsedFields>, C>
 
   fairPredicate._checkField = predicate._checkField
   fairPredicate._namedCheck = predicate._namedCheck
@@ -109,7 +101,10 @@ function parseFieldDefs(fields: UmpireJsonSchema['fields']): ParsedFields {
 function parseCheckRule<C extends Record<string, unknown>>(rule: JsonCheckRule): Rule<ParsedFields, C> {
   const validator = createNamedValidatorFromRule(rule)
   const metadata = getNamedCheckMetadata(validator)
-  const predicate = ((value: unknown) => validator.validate(value as never)) as NamedFairPredicate<C>
+  const predicate = ((value: unknown) => validator.validate(value as never)) as JsonFairPredicate<
+    FieldValues<ParsedFields>,
+    C
+  >
 
   predicate._checkField = rule.field
   predicate._namedCheck = metadata
