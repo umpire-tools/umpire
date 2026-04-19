@@ -7,6 +7,7 @@ import {
   type RuleInspection,
   type ValidationMap,
 } from '@umpire/core'
+import { isRecord } from '@umpire/core/guards'
 
 import {
   createCheckRuleFromMetadata,
@@ -89,10 +90,6 @@ function createKey(...parts: string[]): string {
 
 function createFieldSlotKey(field: string, slot: 'default' | 'isEmpty' | 'validator'): string {
   return createKey('field', field, slot)
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }
 
 function isValidationEntryObject(value: unknown): value is { validator: unknown; error?: unknown } {

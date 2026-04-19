@@ -8,6 +8,7 @@ import type {
   ValidationResult,
   ValidationValidator,
 } from './types.js'
+import { isRecord } from './guards.js'
 
 export type NormalizedValidationEntry<T = unknown> = {
   validate: (value: NonNullable<T>) => ValidationOutcome
@@ -25,10 +26,6 @@ type SupportedValidator<T = unknown> = FieldValidator<T> | ValidationValidator<T
 type ValidationEntryObject<T = unknown> = {
   validator: ValidationValidator<T>
   error?: string
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }
 
 function isSafeParseValidator<T = unknown>(validator: unknown): validator is SafeParseValidator<T> {

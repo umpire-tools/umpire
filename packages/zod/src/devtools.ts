@@ -1,83 +1,15 @@
 import type {
   AvailabilityMap,
   FieldDef,
-  InputValues,
-  ScorecardResult,
-  Snapshot,
-  Umpire,
 } from '@umpire/core'
+import type {
+  DevtoolsExtension,
+  DevtoolsExtensionInspectContext,
+  DevtoolsExtensionSection,
+} from '@umpire/devtools'
 import { deriveErrors, zodErrors } from './derive-errors.js'
 import type { NormalizedFieldError } from './derive-errors.js'
-
-type ZodIssueLike = {
-  path: readonly (string | number)[]
-  message: string
-}
-
-type ZodErrorLike = {
-  issues: readonly ZodIssueLike[]
-}
-
-type ZodSafeParseResultLike =
-  | { success: true }
-  | { success: false; error: ZodErrorLike }
-
-type ValidationExtensionTone = 'accent' | 'enabled' | 'disabled' | 'fair' | 'muted'
-
-type ValidationExtensionRow = {
-  label: string
-  value: unknown
-}
-
-type ValidationExtensionBadge = {
-  tone?: ValidationExtensionTone
-  value: unknown
-}
-
-type ValidationExtensionSection =
-  | {
-      kind: 'badges'
-      title?: string
-      badges: ValidationExtensionBadge[]
-    }
-  | {
-      kind: 'rows'
-      title?: string
-      rows: ValidationExtensionRow[]
-    }
-  | {
-      kind: 'items'
-      title?: string
-      items: Array<{
-        id: string
-        title: string
-        badge?: ValidationExtensionBadge
-        body?: string
-        rows?: ValidationExtensionRow[]
-      }>
-    }
-
-type ValidationExtensionView = {
-  empty?: string
-  sections: ValidationExtensionSection[]
-}
-
-type ValidationExtensionInspectContext<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown>,
-> = {
-  conditions?: C
-  previous: Snapshot<C> | null
-  scorecard: ScorecardResult<F, C>
-  ump: Umpire<F, C>
-  values: InputValues
-}
-
-type ValidationExtension<F extends Record<string, FieldDef>, C extends Record<string, unknown>> = {
-  id: string
-  label?: string
-  inspect(context: ValidationExtensionInspectContext<F, C>): ValidationExtensionView | null
-}
+import type { ZodSafeParseResultLike } from './zod-types.js'
 
 type ZodValidationInspection<
   F extends Record<string, FieldDef>,
@@ -98,7 +30,7 @@ type ZodValidationResolveOptions<
   id?: string
   label?: string
   resolve(
-    context: ValidationExtensionInspectContext<F, C>,
+    context: DevtoolsExtensionInspectContext<F, C>,
   ): ZodValidationInspection<F, C> | null
 }
 
@@ -152,7 +84,7 @@ export function zodValidationExtension<
   C extends Record<string, unknown> = Record<string, unknown>,
 >(
   options: ZodValidationExtensionOptions<F, C>,
-): ValidationExtension<F, C> {
+): DevtoolsExtension<F, C> {
   const {
     id = 'validation',
     label = 'validation',
@@ -177,7 +109,7 @@ export function zodValidationExtension<
       const enabledFieldCount = Object.values(availability).filter((field) => field.enabled).length
       const derivedErrorCount = Object.keys(derivedErrorMap).length
       const { suppressedIssues, unknownIssues } = sectionRows(availability, normalizedErrors)
-      const sections: ValidationExtensionSection[] = [{
+      const sections: DevtoolsExtensionSection[] = [{
         kind: 'badges',
         title: 'Summary',
         badges: [
