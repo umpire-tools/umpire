@@ -126,7 +126,7 @@ Use `fromSolidStore()` when the form lives in shared Solid state and child compo
 
 ```ts
 import type { Accessor } from 'solid-js'
-import type { FieldDef, FieldValues, Umpire } from '@umpire/core'
+import type { FieldDef, FieldValues, FieldsOf, Umpire } from '@umpire/core'
 import { fromSolidStore } from '@umpire/solid'
 
 function fromSolidStore<
@@ -162,7 +162,7 @@ const eventUmp = umpire({
   ],
 })
 
-type EventFields = typeof eventUmp extends Umpire<infer F, any> ? F : never
+type EventFields = FieldsOf<typeof eventUmp>
 
 const EventFormContext = createContext<{
   values: { allDay: boolean; startTime: string; endTime: string }

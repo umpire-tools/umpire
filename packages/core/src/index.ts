@@ -33,6 +33,7 @@ export type {
   ValidationValidator,
   ValidationEntry,
   ValidationMap,
+  FieldsOf,
 } from './types.js'
 export type { FieldBuilder, FieldInput, FieldRef, NormalizeField, NormalizeFields } from './field.js'
 export type {
