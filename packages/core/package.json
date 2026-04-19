@@ -15,6 +15,10 @@
       "types": "./dist/snapshot.d.ts",
       "browser": "./dist/snapshot.js",
       "import": "./dist/snapshot.js"
+    },
+    "./guards": {
+      "types": "./dist/guards.d.ts",
+      "import": "./dist/guards.js"
     }
   },
   "scripts": {

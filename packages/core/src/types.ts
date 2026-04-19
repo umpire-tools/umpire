@@ -70,8 +70,6 @@ export type FieldStatus = {
   error?: string
 }
 
-export type FieldAvailability = FieldStatus
-
 export type AvailabilityMap<F extends Record<string, FieldDef>> = {
   [K in keyof F]: FieldStatus
 }

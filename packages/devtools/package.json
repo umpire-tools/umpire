@@ -38,10 +38,14 @@
     "@umpire/reads": "workspace:^"
   },
   "peerDependencies": {
-    "preact": ">=10"
+    "preact": ">=10",
+    "react": "^18.0.0 || ^19.0.0"
   },
   "peerDependenciesMeta": {
     "preact": {
+      "optional": true
+    },
+    "react": {
       "optional": true
     }
   },

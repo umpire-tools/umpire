@@ -1,6 +1,6 @@
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
+import { isRecord } from '@umpire/core/guards'
+
+export { isRecord }
 
 export function isZodObjectSchema(value: unknown): boolean {
   return isRecord(value) && ('_def' in value || '_zod' in value)

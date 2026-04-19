@@ -3,7 +3,13 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "composite": true
+    "composite": true,
+    "paths": {
+      "@umpire/core": ["../core/src/index.ts"],
+      "@umpire/core/*": ["../core/src/*"],
+      "@umpire/dsl": ["../dsl/src/index.ts"],
+      "@umpire/dsl/*": ["../dsl/src/*"]
+    }
   },
   "include": ["src"],
   "references": [{ "path": "../core" }, { "path": "../dsl" }]

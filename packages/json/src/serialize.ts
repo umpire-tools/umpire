@@ -2,17 +2,19 @@ import {
   getNamedCheckMetadata,
   inspectRule,
   type FieldDef,
-  type JsonPrimitive,
   type Rule,
   type RuleInspection,
   type ValidationMap,
 } from '@umpire/core'
+import { deepClone } from '@umpire/dsl/clone'
+import { isRecord } from '@umpire/core/guards'
 
 import {
   createCheckRuleFromMetadata,
   createValidatorSpecFromMetadata,
   createValidatorDefFromMetadata,
 } from './check-ops.js'
+import { isJsonPrimitive } from './json-values.js'
 import { getJsonDef } from './json-def.js'
 import type {
   ExcludedRule,
@@ -53,24 +55,6 @@ type SerializeValidatorResult = {
   coverageKeys: string[]
 }
 
-function cloneJson<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value.map((entry) => cloneJson(entry)) as T
-  }
-
-  if (typeof value === 'object' && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, cloneJson(entry)]),
-    ) as T
-  }
-
-  return value
-}
-
-function isJsonPrimitive(value: unknown): value is JsonPrimitive {
-  return value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-}
-
 function createExcluded(
   type: string,
   description: string,
@@ -89,10 +73,6 @@ function createKey(...parts: string[]): string {
 
 function createFieldSlotKey(field: string, slot: 'default' | 'isEmpty' | 'validator'): string {
   return createKey('field', field, slot)
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }
 
 function isValidationEntryObject(value: unknown): value is { validator: unknown; error?: unknown } {
@@ -279,7 +259,7 @@ function serializeValidator(field: string, entry: unknown): SerializeValidatorRe
 
   if (carried) {
     return {
-      validator: cloneJson(carried),
+          validator: deepClone(carried),
       excluded: [],
       coverageKeys: [coverageKey],
     }
@@ -609,7 +589,7 @@ function serializeInspection(
         rules: [{
           type: 'oneOf',
           group: inspection.groupName,
-          branches: cloneJson(inspection.branches),
+          branches: deepClone(inspection.branches),
         }],
         excluded: [],
         coverageKeys: [createKey('rule', 'oneOf', inspection.groupName)],
@@ -720,7 +700,7 @@ function serializeRule<
   const jsonDef = getJsonDef<JsonRule>(rule)
   if (jsonDef) {
     return {
-      rules: [cloneJson(jsonDef)],
+      rules: [deepClone(jsonDef)],
       excluded: [],
       coverageKeys: createCoverageKeys(jsonDef),
     }
@@ -798,7 +778,7 @@ export function toJson<
 
   const conditions = config.conditions ?? meta?.conditions
   const excluded = mergeExcluded(
-    meta?.excluded ? cloneJson(meta.excluded) : [],
+    meta?.excluded ? deepClone(meta.excluded) : [],
     generatedExcluded,
     coverageKeys,
   )
@@ -807,7 +787,7 @@ export function toJson<
     fields,
     rules,
     ...(Object.keys(validators).length > 0 ? { validators } : {}),
-    ...(conditions ? { conditions: cloneJson(conditions) } : {}),
+    ...(conditions ? { conditions: deepClone(conditions) } : {}),
     ...(excluded.length > 0 ? { excluded } : {}),
   }
 

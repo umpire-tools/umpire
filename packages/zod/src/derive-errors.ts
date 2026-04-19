@@ -1,17 +1,9 @@
 import type { AvailabilityMap, FieldDef } from '@umpire/core'
+import type { ZodErrorLike } from './zod-types.js'
 
 export type NormalizedFieldError = {
   field: string
   message: string
-}
-
-type ZodIssueLike = {
-  path: readonly (string | number)[]
-  message: string
-}
-
-type ZodErrorLike = {
-  issues: readonly ZodIssueLike[]
 }
 
 export function deriveErrors<F extends Record<string, FieldDef>>(

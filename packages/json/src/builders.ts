@@ -13,12 +13,13 @@ import {
   type FieldDef,
   type FieldValues,
   type NamedCheck,
-  type NamedCheckMetadata,
   type Rule,
 } from '@umpire/core'
+import { deepClone } from '@umpire/dsl/clone'
 
 import { createValidatorSpecFromMetadata } from './check-ops.js'
 import { compileExpr, getExprFieldRefs } from './expr.js'
+import type { JsonFairPredicate } from './fair-predicate.js'
 import { attachJsonDef, getJsonDef } from './json-def.js'
 import type { JsonExpr, JsonRequiresDependency, JsonRule } from './schema.js'
 
@@ -26,37 +27,11 @@ type PortableRuleOptions = {
   reason?: string
 }
 
-type FairPredicate<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown>,
-> = ((
-  value: unknown,
-  values: FieldValues<F>,
-  conditions: C,
-) => boolean) & {
-  _checkField?: keyof F & string
-  _namedCheck?: NamedCheckMetadata
-}
-
 export type JsonExprBuilder<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 > = ExprBuilder<F, C> & {
   check: (field: keyof F & string, validator: NamedCheck<unknown>) => JsonExpr
-}
-
-function cloneJson<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value.map((entry) => cloneJson(entry)) as T
-  }
-
-  if (typeof value === 'object' && value !== null) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, cloneJson(entry)]),
-    ) as T
-  }
-
-  return value
 }
 
 function isPortableRuleOptions(value: unknown): value is PortableRuleOptions {
@@ -73,7 +48,7 @@ function createPortableCheckExpr(field: string, validator: NamedCheck<unknown>):
   return {
     op: 'check',
     field,
-    check: cloneJson(spec),
+    check: deepClone(spec),
   }
 }
 
@@ -90,10 +65,10 @@ function compilePortableExpr<
 function compilePortableFairExpr<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
->(expression: JsonExpr): FairPredicate<F, C> {
+>(expression: JsonExpr): JsonFairPredicate<FieldValues<F>, C, keyof F & string> {
   const predicate = compilePortableExpr<F, C>(expression)
   const fairPredicate = ((_: unknown, values: FieldValues<F>, conditions: C) =>
-    predicate(values, conditions)) as FairPredicate<F, C>
+    predicate(values, conditions)) as JsonFairPredicate<FieldValues<F>, C, keyof F & string>
 
   fairPredicate._checkField = predicate._checkField
   fairPredicate._namedCheck = predicate._namedCheck
@@ -111,7 +86,7 @@ function getRequiredJsonDef(
     throw new Error(`[@umpire/json] ${caller} requires every inner rule to carry JSON metadata`)
   }
 
-  return cloneJson(jsonDef)
+  return deepClone(jsonDef)
 }
 
 export const expr: JsonExprBuilder<Record<string, FieldDef>, Record<string, unknown>> = {
@@ -130,7 +105,7 @@ export function enabledWhenExpr<
   const jsonRule: Extract<JsonRule, { type: 'enabledWhen' }> = {
     type: 'enabledWhen',
     field,
-    when: cloneJson(when),
+    when: deepClone(when),
     ...(options?.reason ? { reason: options.reason } : {}),
   }
 
@@ -151,7 +126,7 @@ export function requiresExpr<
   const jsonRule: Extract<JsonRule, { type: 'requires'; when: JsonExpr }> = {
     type: 'requires',
     field,
-    when: cloneJson(when),
+    when: deepClone(when),
     ...(options?.reason ? { reason: options.reason } : {}),
   }
 
@@ -189,14 +164,14 @@ export function requiresJson<
       : {
           type: 'requires',
           field,
-          when: cloneJson(sources[0]),
+          when: deepClone(sources[0]),
           ...(options?.reason ? { reason: options.reason } : {}),
         }
     : {
         type: 'requires',
         field,
         dependencies: sources.map((source) => (
-          typeof source === 'string' ? source : cloneJson(source)
+          typeof source === 'string' ? source : deepClone(source)
         )),
         ...(options?.reason ? { reason: options.reason } : {}),
       }
@@ -223,7 +198,7 @@ export function disablesExpr<
 ): Rule<F, C> {
   const jsonRule: Extract<JsonRule, { type: 'disables'; when: JsonExpr }> = {
     type: 'disables',
-    when: cloneJson(when),
+    when: deepClone(when),
     targets: [...targets],
     ...(options?.reason ? { reason: options.reason } : {}),
   }
@@ -245,7 +220,7 @@ export function fairWhenExpr<
   const jsonRule: Extract<JsonRule, { type: 'fairWhen' }> = {
     type: 'fairWhen',
     field,
-    when: cloneJson(when),
+    when: deepClone(when),
     ...(options?.reason ? { reason: options.reason } : {}),
   }
 

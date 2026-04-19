@@ -91,46 +91,44 @@ export function reactiveUmp<
   const conditionSignals: ReactiveConditionSignals<C> = options?.conditions ?? {}
 
   // --- 3. Lazy proxy for fine-grained predicate tracking ---
-  function createValuesProxy(): InputValues {
-    return new Proxy({} as InputValues, {
+  function createSignalMapProxy<T extends object>(
+    keys: () => string[],
+    has: (key: string) => boolean,
+    get: (key: string) => unknown,
+  ): T {
+    return new Proxy({} as T, {
       get(_target, prop) {
         if (typeof prop !== 'string') return undefined
-        const sig = fieldSignals.get(prop)
-        return sig ? sig.get() : undefined
+        return get(prop)
       },
       has(_target, prop) {
         if (typeof prop !== 'string') return false
-        return fieldSignals.has(prop)
+        return has(prop)
       },
       ownKeys() {
-        return fieldNames as string[]
+        return keys()
       },
       getOwnPropertyDescriptor(_target, prop) {
-        if (typeof prop !== 'string' || !fieldSignals.has(prop)) return undefined
+        if (typeof prop !== 'string' || !has(prop)) return undefined
         return { configurable: true, enumerable: true, writable: true }
       },
     })
   }
 
+  function createValuesProxy(): InputValues {
+    return createSignalMapProxy<InputValues>(
+      () => fieldNames as string[],
+      (key) => fieldSignals.has(key),
+      (key) => fieldSignals.get(key)?.get(),
+    )
+  }
+
   function createConditionsProxy(): C {
-    return new Proxy({} as C, {
-      get(_target, prop) {
-        if (typeof prop !== 'string') return undefined
-        const sig = conditionSignals[prop as keyof C & string]
-        return sig ? sig.get() : undefined
-      },
-      has(_target, prop) {
-        if (typeof prop !== 'string') return false
-        return prop in conditionSignals
-      },
-      ownKeys() {
-        return Object.keys(conditionSignals)
-      },
-      getOwnPropertyDescriptor(_target, prop) {
-        if (typeof prop !== 'string' || !(prop in conditionSignals)) return undefined
-        return { configurable: true, enumerable: true, writable: true }
-      },
-    })
+    return createSignalMapProxy<C>(
+      () => Object.keys(conditionSignals),
+      (key) => key in conditionSignals,
+      (key) => conditionSignals[key as keyof C & string]?.get(),
+    )
   }
 
   const valuesProxy = createValuesProxy()

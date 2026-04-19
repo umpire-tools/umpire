@@ -1,3 +1,4 @@
+import { isPlainRecord } from '@umpire/core/guards'
 import type { AnySnapshot } from '../../types.js'
 import { formatValue } from '../format.js'
 import { fontFamily, scrollPaneStyle, sectionHeadingStyle, theme } from '../theme.js'
@@ -5,10 +6,6 @@ import { fontFamily, scrollPaneStyle, sectionHeadingStyle, theme } from '../them
 type Props = {
   current: AnySnapshot
   previous: AnySnapshot | null
-}
-
-function isRecordValue(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function ConditionsValue({ value }: { value: unknown }) {
@@ -20,7 +17,7 @@ function ConditionsValue({ value }: { value: unknown }) {
     )
   }
 
-  if (!isRecordValue(value)) {
+  if (!isPlainRecord(value)) {
     return (
       <code style={{ color: theme.fg, fontFamily, fontSize: 11 }}>
         {formatValue(value, 120)}

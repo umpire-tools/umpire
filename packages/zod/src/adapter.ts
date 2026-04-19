@@ -4,31 +4,16 @@ import type {
   InputValues,
   ValidationMap,
 } from '@umpire/core'
+import { isRecord } from '@umpire/core/guards'
 import type { z } from 'zod'
 import { deriveErrors, zodErrors, type NormalizedFieldError } from './derive-errors.js'
 import { deriveSchema, type DeriveSchemaOptions } from './derive-schema.js'
-import { assertFieldSchemas, isRecord } from './schema-guards.js'
+import { assertFieldSchemas } from './schema-guards.js'
+import type { ZodSafeParseResultLike, ZodSchemaLike, ZodErrorLike } from './zod-types.js'
 
 type FieldSchemas<F extends Record<string, FieldDef>> = Partial<
   Record<keyof F & string, z.ZodTypeAny>
 >
-
-type ZodIssueLike = {
-  path: readonly (string | number)[]
-  message: string
-}
-
-type ZodErrorLike = {
-  issues: readonly ZodIssueLike[]
-}
-
-type ZodSafeParseResultLike =
-  | { success: true }
-  | { success: false; error: ZodErrorLike }
-
-type ZodSchemaLike = {
-  safeParse(value: unknown): ZodSafeParseResultLike
-}
 
 export type CreateZodAdapterOptions<F extends Record<string, FieldDef>> = {
   schemas: FieldSchemas<F>

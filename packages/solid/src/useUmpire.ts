@@ -7,7 +7,7 @@ import type {
   Snapshot,
   Umpire,
 } from '@umpire/core'
-import { snapshotRecord } from './snapshot.js'
+import { snapshotValue } from '@umpire/core/snapshot'
 
 export function useUmpire<
   F extends Record<string, FieldDef>,
@@ -25,8 +25,8 @@ export function useUmpire<
   let previousSnapshot: Snapshot<C> | undefined
 
   createComputed(() => {
-    const currentValues = snapshotRecord(values())
-    const currentConditions = snapshotRecord(conditions?.())
+    const currentValues = snapshotValue(values())
+    const currentConditions = snapshotValue(conditions?.())
     const nextCheck = ump.check(currentValues, currentConditions, previousSnapshot?.values)
     const nextFouls = previousSnapshot
       ? ump.play(previousSnapshot, { values: currentValues, conditions: currentConditions })

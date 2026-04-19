@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./clone": {
+      "types": "./dist/clone.d.ts",
+      "import": "./dist/clone.js"
     }
   },
   "scripts": {

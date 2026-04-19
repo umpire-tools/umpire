@@ -4,6 +4,7 @@ import {
   indexRulesByTarget,
   indexRulesByTargetPhase,
 } from './evaluator.js'
+import { isEmptyPresent } from './emptiness.js'
 import {
   getFieldBuilderDef,
   getFieldBuilderName,
@@ -50,8 +51,10 @@ import type {
   ValidationMap,
 } from './types.js'
 
+const EMPTY_CONDITIONS = Object.freeze({}) as Record<string, unknown>
+
 function createEmptyConditions<C extends Record<string, unknown>>(conditions: C | undefined): C {
-  return (conditions ?? ({} as C)) as C
+  return (conditions ?? EMPTY_CONDITIONS) as C
 }
 
 type NormalizedValidationMap<F extends Record<string, FieldDef>> = Partial<{
@@ -71,10 +74,6 @@ function getChangedFields<
   }
 
   return fieldNames.filter((field) => !Object.is(before.values[field], after.values[field]))
-}
-
-function isPresent(value: unknown) {
-  return value !== null && value !== undefined
 }
 
 function normalizeValidators<F extends Record<string, FieldDef>>(
@@ -1019,17 +1018,12 @@ export function umpire<
     const values = {} as FieldValues<NormalizeFields<FInput>>
 
     for (const field of fieldNames) {
-      values[field] = fields[field].default as FieldValues<NormalizeFields<FInput>>[typeof field]
-    }
-
-    if (!overrides) {
-      return values
-    }
-
-    for (const field of fieldNames) {
-      if (field in overrides) {
+      if (overrides && field in overrides) {
         values[field] = overrides[field] as FieldValues<NormalizeFields<FInput>>[typeof field]
+        continue
       }
+
+      values[field] = fields[field].default as FieldValues<NormalizeFields<FInput>>[typeof field]
     }
 
     return values
@@ -1145,7 +1139,7 @@ export function umpire<
       fieldNames.map((field) => {
         const availability = check[field]
         const value = typedValues[field]
-        const present = isPresent(value)
+        const present = !isEmptyPresent(value)
         const scorecardField: ScorecardResult<NormalizeFields<FInput>, C>['fields'][typeof field] = {
           field,
           value,

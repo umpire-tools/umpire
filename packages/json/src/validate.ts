@@ -1,3 +1,4 @@
+import { isPlainRecord } from '@umpire/core/guards'
 import type {
   ExcludedRule,
   UmpireJsonSchema,
@@ -7,20 +8,13 @@ import type {
 } from './schema.js'
 import { assertValidCheckRule, assertValidValidatorSpec } from './check-ops.js'
 import { compileExpr } from './expr.js'
+import { isJsonPrimitive } from './json-values.js'
 import { isJsonIsEmptyStrategy } from './strategies.js'
 
 type JsonRuleConstraint = 'enabled' | 'fair'
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function isJsonPrimitive(value: unknown): boolean {
-  return value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-}
-
 function validateFieldDef(field: string, definition: JsonFieldDef) {
-  if (!isRecord(definition)) {
+  if (!isPlainRecord(definition)) {
     throw new Error(`[@umpire/json] Field "${field}" definition must be an object`)
   }
 
@@ -69,7 +63,7 @@ function validateValidator(field: string, validator: JsonValidatorDef, fieldName
     throw new Error(`[@umpire/json] Validator references unknown field "${field}"`)
   }
 
-  if (!isRecord(validator)) {
+  if (!isPlainRecord(validator)) {
     throw new Error(`[@umpire/json] Validator for field "${field}" must be an object`)
   }
 
@@ -258,7 +252,7 @@ function validateRule(
 }
 
 export function validateSchema(schema: unknown): asserts schema is UmpireJsonSchema {
-  if (!isRecord(schema)) {
+  if (!isPlainRecord(schema)) {
     throw new Error('[@umpire/json] Schema must be an object')
   }
 
@@ -270,7 +264,7 @@ export function validateSchema(schema: unknown): asserts schema is UmpireJsonSch
     throw new Error(`[@umpire/json] Unsupported schema version "${String(schema.version)}"`)
   }
 
-  if (!isRecord(schema.fields)) {
+  if (!isPlainRecord(schema.fields)) {
     throw new Error('[@umpire/json] Schema must include a "fields" object')
   }
 
@@ -278,11 +272,11 @@ export function validateSchema(schema: unknown): asserts schema is UmpireJsonSch
     throw new Error('[@umpire/json] Schema must include a "rules" array')
   }
 
-  if (schema.validators !== undefined && !isRecord(schema.validators)) {
+  if (schema.validators !== undefined && !isPlainRecord(schema.validators)) {
     throw new Error('[@umpire/json] Schema "validators" must be an object when provided')
   }
 
-  if (schema.conditions !== undefined && !isRecord(schema.conditions)) {
+  if (schema.conditions !== undefined && !isPlainRecord(schema.conditions)) {
     throw new Error('[@umpire/json] Schema "conditions" must be an object when provided')
   }
 
