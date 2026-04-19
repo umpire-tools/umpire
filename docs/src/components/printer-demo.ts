@@ -98,6 +98,10 @@ type FieldGroupKey = 'general' | 'printerSpecific' | 'paper' | 'finishing'
 type Option = { value: string; label: string }
 type AvailabilityMap = ReturnType<typeof printerUmp.check>
 
+function buildRecord<K extends PropertyKey, V>(entries: readonly (readonly [K, V])[]) {
+  return Object.fromEntries(entries) as Record<K, V>
+}
+
 const fieldOrder = [
   'printer',
   'copies',
@@ -401,18 +405,20 @@ const printerUmp = umpire({
   ],
 })
 
-const printerAvailability = {} as Record<PrinterType, AvailabilityMap>
-for (const printer of printers) {
-  printerAvailability[printer] = printerUmp.check(
-    toInputValues({
-      ...initialState,
-      printer,
-      copies: '1',
-      bannerMode: false,
-      collate: false,
-    }),
-  )
-}
+const printerAvailability = buildRecord(
+  printers.map((printer) => [
+    printer,
+    printerUmp.check(
+      toInputValues({
+        ...initialState,
+        printer,
+        copies: '1',
+        bannerMode: false,
+        collate: false,
+      }),
+    ),
+  ] as const),
+)
 
 const printerScopedFields = new Set<PrintField>()
 for (const field of fieldOrder) {
@@ -422,23 +428,25 @@ for (const field of fieldOrder) {
   }
 }
 
-const selectOptionsByPrinter = {} as Record<PrinterType, Record<DynamicSelectField, Option[]>>
-for (const printer of printers) {
-  selectOptionsByPrinter[printer] = {
-    paperSize: paperSizesByPrinter[printer].map((value) => ({
-      value,
-      label: paperSizeLabels[value] ?? value,
-    })),
-    colorMode: printerAvailability[printer].colorMode.enabled ? colorModeOptions : [],
-    quality: printerAvailability[printer].quality.enabled
-      ? qualityByPrinter[printer].map((value) => ({
-          value,
-          label: qualityLabels[value] ?? value,
-        }))
-      : [],
-    paperType: printerAvailability[printer].paperType.enabled ? paperTypeOptions : [],
-  }
-}
+const selectOptionsByPrinter = buildRecord(
+  printers.map((printer) => [
+    printer,
+    {
+      paperSize: paperSizesByPrinter[printer].map((value) => ({
+        value,
+        label: paperSizeLabels[value] ?? value,
+      })),
+      colorMode: printerAvailability[printer].colorMode.enabled ? colorModeOptions : [],
+      quality: printerAvailability[printer].quality.enabled
+        ? qualityByPrinter[printer].map((value) => ({
+            value,
+            label: qualityLabels[value] ?? value,
+          }))
+        : [],
+      paperType: printerAvailability[printer].paperType.enabled ? paperTypeOptions : [],
+    },
+  ] as const),
+)
 
 // ---------------------------------------------------------------------------
 // Mount
@@ -474,14 +482,14 @@ export function mount(root: HTMLElement) {
   for (const field of selectFields) {
     const select = $(`[data-field-control="${field}"]`, root) as HTMLSelectElement | null
     select?.addEventListener('change', () => {
-      store.setState({ [field]: select.value } as Pick<PrintState, typeof field>)
+      setStateField(store, field, select.value)
     })
   }
 
   for (const field of checkboxFields) {
     const input = $(`[data-field-control="${field}"]`, root) as HTMLInputElement | null
     input?.addEventListener('change', () => {
-      store.setState({ [field]: input.checked } as Pick<PrintState, typeof field>)
+      setStateField(store, field, input.checked)
     })
   }
 
@@ -681,11 +689,22 @@ function syncControlValue(
   control.value = typeof nextValue === 'string' ? nextValue : ''
 }
 
+function setStateField<K extends Exclude<PrintField, 'printer'>>(
+  store: { setState: (patch: Pick<PrintState, K>) => void },
+  field: K,
+  value: PrintState[K],
+) {
+  const patch = { [field]: value } satisfies Pick<PrintState, K>
+  store.setState(patch)
+}
+
 function buildPrinterTransitionPatch(
   state: PrintState,
   nextPrinter: PrinterType,
 ): Partial<PrintState> {
-  const patch: Partial<PrintState> = { printer: nextPrinter }
+  const patch: Partial<Pick<PrintState, DynamicSelectField>> & Pick<PrintState, 'printer'> = {
+    printer: nextPrinter,
+  }
 
   for (const field of dynamicSelectFields) {
     if (!isFieldVisibleForPrinter(field, nextPrinter)) {
@@ -694,7 +713,7 @@ function buildPrinterTransitionPatch(
 
     const nextValue = normalizeVisibleSelectValue(field, nextPrinter, state[field])
     if (nextValue !== state[field]) {
-      ;(patch as Record<string, unknown>)[field] = nextValue
+      patch[field] = nextValue
     }
   }
 

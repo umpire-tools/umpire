@@ -224,12 +224,16 @@ function toStringList(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 }
 
+function isExceptBetweenValue(value: unknown): value is ExceptBetweenValue {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
 function toExceptBetween(value: unknown): ExceptBetweenValue {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!isExceptBetweenValue(value)) {
     return {}
   }
 
-  const { start, end } = value as ExceptBetweenValue
+  const { start, end } = value
   return { start, end }
 }
 
@@ -306,11 +310,11 @@ function buildPreviewRange(
   }
 
   if (availability.fromDate.enabled && values.fromDate) {
-    range.fromDate = values.fromDate as string
+    range.fromDate = values.fromDate
   }
 
   if (availability.toDate.enabled && values.toDate) {
-    range.toDate = values.toDate as string
+    range.toDate = values.toDate
   }
 
   if (availability.fixedBetween.enabled && values.fixedBetween) {
@@ -384,7 +388,8 @@ export default function CalendarDemo() {
   }
 
   function updateStringField(field: StringField, nextValue: string) {
-    updateField(field, (nextValue || undefined) as CalendarValues[typeof field])
+    const nextValueOrUndefined = nextValue || undefined
+    updateField(field, nextValueOrUndefined)
 
     if ((field === 'fromDate' || field === 'toDate') && nextValue) {
       setFocusDate(nextValue)
@@ -394,7 +399,7 @@ export default function CalendarDemo() {
   function updateNumberField(field: NumberField, nextValue: string) {
     const trimmed = nextValue.trim()
     const parsed = trimmed ? Number(trimmed) : undefined
-    updateField(field, parsed as CalendarValues[typeof field])
+    updateField(field, parsed)
   }
 
   function toggleNumberList(field: NumberListField, item: number) {
@@ -405,7 +410,7 @@ export default function CalendarDemo() {
         ? current.filter((value) => value !== item)
         : [...current, item].sort((left, right) => left - right)
 
-      return (next.length > 0 ? next : undefined) as CalendarValues[typeof field]
+      return next.length > 0 ? next : undefined
     })
   }
 
@@ -435,7 +440,7 @@ export default function CalendarDemo() {
         return currentValue
       }
 
-      return [...current, parsed].sort((left, right) => left - right) as CalendarValues[typeof field]
+      return [...current, parsed].sort((left, right) => left - right)
     })
 
     reset()
@@ -455,7 +460,7 @@ export default function CalendarDemo() {
         return currentValue
       }
 
-      return [...current, trimmed] as CalendarValues[typeof field]
+      return [...current, trimmed]
     })
 
     if (field === 'dates') {
@@ -469,7 +474,7 @@ export default function CalendarDemo() {
     updateFieldWith(field, (currentValue) => {
       const current = toNumberList(currentValue)
       const next = current.filter((value) => value !== item)
-      return (next.length > 0 ? next : undefined) as CalendarValues[typeof field]
+      return next.length > 0 ? next : undefined
     })
   }
 
@@ -477,7 +482,7 @@ export default function CalendarDemo() {
     updateFieldWith(field, (currentValue) => {
       const current = toStringList(currentValue)
       const next = current.filter((value) => value !== item)
-      return (next.length > 0 ? next : undefined) as CalendarValues[typeof field]
+      return next.length > 0 ? next : undefined
     })
   }
 
@@ -489,7 +494,7 @@ export default function CalendarDemo() {
         [part]: nextValue || undefined,
       }
 
-      return (next.start || next.end ? next : undefined) as CalendarValues['exceptBetween']
+      return next.start || next.end ? next : undefined
     })
 
     if (nextValue) {
@@ -568,7 +573,8 @@ export default function CalendarDemo() {
               week.days.map((day) => {
                 const isActive = activeDates.has(day.date)
                 const isExcluded = hasExceptions && activeBaseDates.has(day.date) && !isActive
-                const isOutOfBounds = isOutsideBounds(day.date, values.fromDate as string | undefined, values.toDate as string | undefined)
+                const { fromDate, toDate } = values
+                const isOutOfBounds = isOutsideBounds(day.date, fromDate, toDate)
                 return (
                   <div
                     key={day.date}
