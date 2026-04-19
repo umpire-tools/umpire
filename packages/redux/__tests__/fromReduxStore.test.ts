@@ -1,4 +1,5 @@
 import { legacy_createStore } from 'redux'
+import { configureStore, createSlice } from '@reduxjs/toolkit'
 import { enabledWhen, requires, umpire } from '@umpire/core'
 import { fromReduxStore } from '../src/index.js'
 
@@ -87,6 +88,46 @@ describe('fromReduxStore', () => {
     })
 
     store.dispatch({ type: 'patch', payload: { password: '' } })
+
+    expect(us.field('confirmPassword').enabled).toBe(false)
+    expect(us.fouls.some((foul) => foul.field === 'confirmPassword')).toBe(true)
+
+    us.destroy()
+  })
+
+  it('works with Redux Toolkit configureStore and createSlice reducers', () => {
+    const formSlice = createSlice({
+      name: 'form',
+      initialState: defaultState,
+      reducers: {
+        patch(state, action: { payload: Partial<FormState> }) {
+          return { ...state, ...action.payload }
+        },
+      },
+    })
+
+    const store = configureStore({
+      reducer: formSlice.reducer,
+      preloadedState: {
+        ...defaultState,
+        username: 'alice',
+        password: 'secret',
+        confirmPassword: 'secret',
+      },
+    })
+    const ump = umpire({ fields, rules })
+    const us = fromReduxStore(ump, store, {
+      select: (state) => ({
+        username: state.username,
+        password: state.password,
+        confirmPassword: state.confirmPassword,
+        inviteCode: state.inviteCode,
+      }),
+    })
+
+    expect(us.field('confirmPassword').enabled).toBe(true)
+
+    store.dispatch(formSlice.actions.patch({ password: '' }))
 
     expect(us.field('confirmPassword').enabled).toBe(false)
     expect(us.fouls.some((foul) => foul.field === 'confirmPassword')).toBe(true)
