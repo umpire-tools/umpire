@@ -1,4 +1,5 @@
 import { enabledWhen, requires, umpire } from '@umpire/core'
+import { createReads, enabledWhenRead, fairWhenRead } from '../../reads/src/index.js'
 import { monkeyTest } from '../src/index.js'
 
 const createAvailability = (fieldNames: string[], resolve: (field: string) => { enabled: boolean; fair: boolean }) =>
@@ -42,6 +43,35 @@ describe('monkeyTest', () => {
     })
 
     expect(monkeyTest(ump)).toEqual({
+      passed: true,
+      violations: [],
+      samplesChecked: 512,
+    })
+  })
+
+  test('passes a stable umpire with reads-backed rules', () => {
+    const reads = createReads({
+      motherboardFair: ({ input }) => !input.motherboard || input.cpu === input.motherboard,
+      canSubmit: ({ input }) => Boolean(input.cpu) && Boolean(input.motherboard),
+    })
+
+    const ump = umpire({
+      fields: {
+        cpu: {},
+        motherboard: {},
+        submit: {},
+      },
+      rules: [
+        fairWhenRead('motherboard', 'motherboardFair', reads, {
+          reason: 'Selected motherboard no longer matches the CPU socket',
+        }),
+        enabledWhenRead('submit', 'canSubmit', reads, {
+          reason: 'Pick a CPU and motherboard first',
+        }),
+      ],
+    })
+
+    expect(monkeyTest(ump, { samples: 12, seed: 7 })).toEqual({
       passed: true,
       violations: [],
       samplesChecked: 512,
