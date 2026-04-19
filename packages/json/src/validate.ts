@@ -262,6 +262,10 @@ export function validateSchema(schema: unknown): asserts schema is UmpireJsonSch
     throw new Error('[@umpire/json] Schema must be an object')
   }
 
+  if (schema.version === undefined) {
+    throw new Error('[@umpire/json] Schema must include a "version" field')
+  }
+
   if (schema.version !== 1) {
     throw new Error(`[@umpire/json] Unsupported schema version "${String(schema.version)}"`)
   }

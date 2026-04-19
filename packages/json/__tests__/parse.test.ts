@@ -207,6 +207,7 @@ describe('parseJsonSchema', () => {
     [{ version: 1, fields: {}, rules: [], validators: 'nope' }, '[@umpire/json] Schema "validators" must be an object when provided'],
     [{ version: 1, fields: {}, rules: [], validators: [] }, '[@umpire/json] Schema "validators" must be an object when provided'],
     [{ version: 2, fields: {}, rules: [] }, '[@umpire/json] Unsupported schema version "2"'],
+    [{ fields: {}, rules: [] }, '[@umpire/json] Schema must include a "version" field'],
   ])('returns boundary errors for malformed raw schemas: %j', (raw, message) => {
     expect(parseJsonSchema(raw)).toEqual({
       ok: false,
