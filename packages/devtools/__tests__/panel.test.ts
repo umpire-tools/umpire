@@ -1,5 +1,5 @@
 import { eitherOf, enabledWhen, umpire } from '@umpire/core'
-import type { ReadTableInspection } from '@umpire/reads'
+import { createReads, enabledWhenRead } from '@umpire/reads'
 import { mount, register, unregister, unmount } from '../src/index.js'
 import { resetRegistry } from '../src/registry.js'
 
@@ -119,31 +119,29 @@ describe('Panel', () => {
   })
 
   it('renders reads in the dedicated reads tab', async () => {
-    const inspection: ReadTableInspection<Record<string, unknown>, Record<string, unknown>> = {
-      bridges: [],
-      graph: {
-        edges: [],
-        nodes: ['status'],
+    const reads = createReads({
+      status: ({ input }) => (input.email ? 'ok' : 'missing'),
+      summary: ({ read }) => `status:${read('status')}`,
+    })
+
+    const readsUmp = umpire({
+      fields: {
+        email: { default: '' },
+        submit: { default: '' },
       },
-      nodes: {
-        status: {
-          dependsOnFields: ['email'],
-          dependsOnReads: [],
-          id: 'status',
-          value: 'ok',
-        },
-      },
-      values: {
-        status: 'ok',
-      },
-    }
+      rules: [
+        enabledWhenRead('submit', 'status', reads, {
+          reason: 'status bridge',
+        }),
+      ],
+    })
 
     register(
       'signup',
-      demoUmp,
+      readsUmp,
       { email: 'alex@example.com' },
       undefined,
-      { reads: inspection },
+      { reads },
     )
 
     mount({ defaultTab: 'reads' })
@@ -160,8 +158,10 @@ describe('Panel', () => {
     const text = root?.textContent ?? ''
 
     expect(text).toContain('reads')
+    expect(text).toContain('status -> submit (enabledWhen)')
     expect(text).toContain('status')
-    expect(text).toContain('ok')
+    expect(text).toContain('summary')
+    expect(text).toContain('status:ok')
   })
 
   it('renders named eitherOf branches in the challenge drawer', async () => {

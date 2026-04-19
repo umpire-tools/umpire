@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, mock, test } from 'bun:test'
 import { enabledWhen, umpire } from '@umpire/core'
+import { createReads, enabledWhenRead } from '@umpire/reads'
 import type { ReadTableInspection } from '@umpire/reads'
 import {
   getRegistryVersion,
@@ -136,6 +137,64 @@ describe('registry', () => {
 
     expect(snapshot().get('demo')?.reads).toEqual(inspection)
     expect(snapshot().get('demo')?.extensions).toEqual([])
+  })
+
+  it('inspects a live reads table and records its bridges', () => {
+    const reads = createReads({
+      status: ({ input }) => (input.gate ? 'open' : 'closed'),
+      summary: ({ read }) => `${read('status')}::${read('status')}`,
+    })
+
+    const bridgedUmp = umpire({
+      fields: {
+        gate: { default: '' },
+        target: { default: '' },
+      },
+      rules: [
+        enabledWhenRead('target', 'status', reads, {
+          reason: 'status bridge',
+        }),
+      ],
+    })
+
+    register(
+      'demo',
+      bridgedUmp,
+      {
+        gate: 'open',
+        target: 'kept',
+      },
+      undefined,
+      {
+        reads,
+      },
+    )
+
+    const readsInspection = snapshot().get('demo')?.reads
+
+    expect(readsInspection?.bridges).toEqual([
+      { field: 'target', read: 'status', type: 'enabledWhen' },
+    ])
+    expect(readsInspection?.graph.nodes).toEqual(['status', 'summary'])
+    expect(readsInspection?.graph.edges).toEqual([
+      { from: 'gate', to: 'status', type: 'field' },
+      { from: 'status', to: 'summary', type: 'read' },
+      { from: 'status', to: 'target', type: 'bridge' },
+    ])
+    expect(readsInspection?.nodes.status).toEqual(expect.objectContaining({
+      dependsOnFields: ['gate'],
+      dependsOnReads: [],
+      value: 'open',
+    }))
+    expect(readsInspection?.nodes.summary).toEqual(expect.objectContaining({
+      dependsOnFields: [],
+      dependsOnReads: ['status'],
+      value: 'open::open',
+    }))
+    expect(readsInspection?.values).toEqual({
+      status: 'open',
+      summary: 'open::open',
+    })
   })
 
   it('uses readInput overrides when resolving read tables', () => {
