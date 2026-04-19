@@ -4,7 +4,7 @@ import type { SignalProtocol } from '../protocol.js'
 // This file only compiles/runs when the consumer has it installed.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — types unavailable unless solid-js is installed
-import { createSignal, createMemo, createEffect, createRoot, onCleanup, batch } from 'solid-js'
+import { createSignal, createMemo, createEffect, createRoot, onCleanup, batch } from 'solid-js/dist/solid.js'
 
 export const solidAdapter: SignalProtocol = {
   signal<T>(initial: T) {

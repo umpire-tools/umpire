@@ -4,7 +4,7 @@ import type { SignalProtocol } from '../protocol.js'
 // This file only compiles/runs when the consumer has it installed.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — types unavailable unless signal-polyfill is installed
-import { Signal } from 'signal-polyfill'
+import { Signal } from 'signal-polyfill/dist/index.js'
 
 export const tc39Adapter: SignalProtocol = {
   signal(initial) {

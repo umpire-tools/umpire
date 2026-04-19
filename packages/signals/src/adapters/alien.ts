@@ -4,7 +4,7 @@ import type { SignalProtocol } from '../protocol.js'
 // This file only compiles/runs when the consumer has it installed.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — types unavailable unless alien-signals is installed
-import { signal, computed, effect, startBatch, endBatch } from 'alien-signals'
+import { signal, computed, effect, startBatch, endBatch } from 'alien-signals/esm'
 
 export const alienAdapter: SignalProtocol = {
   signal(initial) {
