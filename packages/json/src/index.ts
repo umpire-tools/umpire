@@ -15,7 +15,7 @@ export {
   requiresExpr,
 } from './builders.js'
 export { compileExpr, getExprFieldRefs } from './expr.js'
-export { fromJson } from './parse.js'
+export { fromJson, fromJsonSafe, parseJsonSchema } from './parse.js'
 export { getJsonDef } from './json-def.js'
 export { toJson } from './serialize.js'
 export { hydrateIsEmptyStrategy } from './strategies.js'
@@ -37,4 +37,11 @@ export type {
   UmpireJsonSchema,
 } from './schema.js'
 export type { JsonExprBuilder, PortableRuleOptions } from './builders.js'
+export type {
+  FromJsonSafeResult,
+  JsonSchemaParseResult,
+  ParsedFields,
+  ParsedRules,
+  ParsedValidators,
+} from './parse.js'
 export type { ToJsonConfig } from './serialize.js'

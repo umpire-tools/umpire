@@ -348,4 +348,50 @@ describe('validateSchema', () => {
       validateSchema(schema as unknown as UmpireJsonSchema),
     ).toThrow(expectedMessage)
   })
+
+  test('accepts nested anyOf/eitherOf composites with matching targets and constraints', () => {
+    expect(() =>
+      validateSchema({
+        version: 1,
+        fields: {
+          submit: {},
+          email: {},
+          password: {},
+          ssoToken: {},
+        },
+        rules: [
+          {
+            type: 'anyOf',
+            rules: [
+              {
+                type: 'eitherOf',
+                group: 'auth',
+                branches: {
+                  password: [
+                    {
+                      type: 'enabledWhen',
+                      field: 'submit',
+                      when: { op: 'present', field: 'email' },
+                    },
+                  ],
+                  sso: [
+                    {
+                      type: 'enabledWhen',
+                      field: 'submit',
+                      when: { op: 'present', field: 'ssoToken' },
+                    },
+                  ],
+                },
+              },
+              {
+                type: 'enabledWhen',
+                field: 'submit',
+                when: { op: 'present', field: 'password' },
+              },
+            ],
+          },
+        ],
+      }),
+    ).not.toThrow()
+  })
 })

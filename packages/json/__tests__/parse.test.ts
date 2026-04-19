@@ -1,6 +1,6 @@
 import { umpire } from '@umpire/core'
 
-import { fromJson, getJsonDef, toJson, validateSchema } from '../src/index.js'
+import { fromJson, fromJsonSafe, getJsonDef, parseJsonSchema, toJson, validateSchema } from '../src/index.js'
 import type { UmpireJsonSchema } from '../src/index.js'
 
 describe('fromJson', () => {
@@ -153,6 +153,218 @@ describe('fromJson', () => {
     const parsed = fromJson(schema)
 
     expect(toJson(parsed)).toEqual(schema)
+  })
+})
+
+describe('parseJsonSchema', () => {
+  test('returns ok for a valid raw schema object', () => {
+    const raw: unknown = {
+      version: 1,
+      fields: {
+        email: { isEmpty: 'string' },
+      },
+      rules: [],
+      validators: {
+        email: { op: 'email', error: 'Must be a valid email address' },
+      },
+    }
+
+    const parsed = parseJsonSchema(raw)
+
+    expect(parsed.ok).toBe(true)
+
+    if (!parsed.ok) {
+      throw new Error('Expected parseJsonSchema to succeed')
+    }
+
+    expect(parsed.schema).toEqual(raw)
+  })
+
+  test('returns errors for invalid schema input', () => {
+    const parsed = parseJsonSchema({
+      version: 1,
+      fields: {},
+      rules: [
+        {
+          type: 'requires',
+          field: 'missing',
+          dependency: 'alsoMissing',
+        },
+      ],
+    })
+
+    expect(parsed).toEqual({
+      ok: false,
+      errors: ['[@umpire/json] Rule "requires" references unknown field "missing"'],
+    })
+  })
+
+  test.each([
+    [null, '[@umpire/json] Schema must be an object'],
+    [{ version: 1 }, '[@umpire/json] Schema must include a "fields" object'],
+    [{ version: 1, fields: [], rules: [] }, '[@umpire/json] Schema must include a "fields" object'],
+    [{ version: 1, fields: {}, rules: null }, '[@umpire/json] Schema must include a "rules" array'],
+    [{ version: 1, fields: {}, rules: [], validators: 'nope' }, '[@umpire/json] Schema "validators" must be an object when provided'],
+    [{ version: 1, fields: {}, rules: [], validators: [] }, '[@umpire/json] Schema "validators" must be an object when provided'],
+    [{ version: 2, fields: {}, rules: [] }, '[@umpire/json] Unsupported schema version "2"'],
+    [{ fields: {}, rules: [] }, '[@umpire/json] Schema must include a "version" field'],
+  ])('returns boundary errors for malformed raw schemas: %j', (raw, message) => {
+    expect(parseJsonSchema(raw)).toEqual({
+      ok: false,
+      errors: [message],
+    })
+  })
+})
+
+describe('fromJsonSafe', () => {
+  test('returns hydrated config when given a valid raw schema object', () => {
+    const raw: unknown = {
+      version: 1,
+      fields: {
+        email: { isEmpty: 'string' },
+      },
+      rules: [],
+      validators: {
+        email: { op: 'email', error: 'Must be a valid email address' },
+      },
+    }
+
+    const parsed = fromJsonSafe(raw)
+
+    expect(parsed.ok).toBe(true)
+
+    if (!parsed.ok) {
+      throw new Error('Expected fromJsonSafe to succeed')
+    }
+
+    const runtime = umpire({ fields: parsed.fields, rules: parsed.rules, validators: parsed.validators })
+    expect(runtime.check({ email: 'invalid' }).email.valid).toBe(false)
+    expect(parsed.schema).toEqual(raw)
+  })
+
+  test('returns errors for invalid schema input', () => {
+    const parsed = fromJsonSafe({
+      version: 1,
+      fields: {},
+      rules: [
+        {
+          type: 'requires',
+          field: 'missing',
+          dependency: 'alsoMissing',
+        },
+      ],
+    })
+
+    expect(parsed).toEqual({
+      ok: false,
+      errors: ['[@umpire/json] Rule "requires" references unknown field "missing"'],
+    })
+  })
+
+  test.each([
+    [
+      {
+        version: 1,
+        fields: [],
+        rules: [],
+      },
+      '[@umpire/json] Schema must include a "fields" object',
+    ],
+    [
+      {
+        version: 1,
+        fields: { email: null },
+        rules: [],
+      },
+      '[@umpire/json] Field "email" definition must be an object',
+    ],
+    [
+      {
+        version: 1,
+        fields: { email: {} },
+        rules: [],
+        validators: { email: null },
+      },
+      '[@umpire/json] Validator for field "email" must be an object',
+    ],
+    [
+      {
+        version: 1,
+        fields: {},
+        rules: [],
+        validators: [],
+      },
+      '[@umpire/json] Schema "validators" must be an object when provided',
+    ],
+    [
+      {
+        version: 1,
+        fields: {},
+        rules: [],
+        conditions: [],
+      },
+      '[@umpire/json] Schema "conditions" must be an object when provided',
+    ],
+    [
+      {
+        version: 1,
+        fields: {},
+        rules: [],
+        excluded: {},
+      },
+      '[@umpire/json] Schema "excluded" must be an array when provided',
+    ],
+  ])('returns boundary errors for malformed schema sections: %j', (raw, message) => {
+    expect(fromJsonSafe(raw)).toEqual({
+      ok: false,
+      errors: [message],
+    })
+  })
+
+  test('matches fromJson output shape and behavior for valid schemas', () => {
+    const schema: UmpireJsonSchema = {
+      version: 1,
+      fields: {
+        accountType: { isEmpty: 'string' },
+        companyName: { isEmpty: 'string' },
+        email: { isEmpty: 'string' },
+      },
+      rules: [
+        {
+          type: 'enabledWhen',
+          field: 'companyName',
+          when: { op: 'eq', field: 'accountType', value: 'business' },
+          reason: 'Business accounts only',
+        },
+      ],
+      validators: {
+        email: { op: 'email', error: 'Must be a valid email address' },
+      },
+    }
+
+    const safe = fromJsonSafe(schema)
+    const typed = fromJson(schema)
+
+    expect(safe.ok).toBe(true)
+
+    if (!safe.ok) {
+      throw new Error('Expected fromJsonSafe to succeed')
+    }
+
+    const safeRuntime = umpire({ fields: safe.fields, rules: safe.rules, validators: safe.validators })
+    const typedRuntime = umpire(typed)
+
+    const values = {
+      accountType: 'business',
+      companyName: '',
+      email: 'invalid',
+    }
+
+    expect(Object.keys(safe.fields)).toEqual(Object.keys(typed.fields))
+    expect(toJson({ fields: safe.fields, rules: safe.rules, validators: safe.validators })).toEqual(
+      toJson(typed),
+    )
+    expect(safeRuntime.check(values)).toEqual(typedRuntime.check(values))
   })
 })
 

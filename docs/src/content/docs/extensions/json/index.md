@@ -13,9 +13,86 @@ It defines what can be expressed in a language-neutral schema, serializes TypeSc
 yarn add @umpire/core @umpire/json
 ```
 
+## Parsing from untrusted input
+
+When a schema arrives from user input, `localStorage`, an API response, or any other source you don't control, you need to validate it before hydrating it. Two APIs cover this — choose based on how much you want to separate those two steps.
+
+### `fromJsonSafe(raw)`
+
+The one-call path. `fromJsonSafe()` validates and hydrates in a single step. It never throws — the return type is a discriminated union:
+
+```ts
+import { fromJsonSafe } from '@umpire/json'
+
+const result = fromJsonSafe(raw)
+
+if (!result.ok) {
+  // result.errors: string[]
+  console.error(result.errors)
+  return
+}
+
+// result.ok === true
+const { schema, fields, rules, validators } = result
+```
+
+The success branch includes `schema` — the validated `UmpireJsonSchema` — alongside the hydrated `fields`, `rules`, and `validators`. That means you can round-trip back through `toJson(result)` later without re-validating.
+
+**Return type:**
+
+```ts
+type FromJsonSafeResult<C> =
+  | { ok: true; schema: UmpireJsonSchema; fields: ParsedFields; rules: ParsedRules<C>; validators: ParsedValidators }
+  | { ok: false; errors: string[] }
+```
+
+The generic `C` is the conditions type and defaults to `Record<string, unknown>`. Pass it explicitly when your schema uses typed conditions:
+
+```ts
+type MyConditions = { isAdmin: boolean; plan: string }
+
+const result = fromJsonSafe<MyConditions>(raw)
+```
+
+### `parseJsonSchema(raw)`
+
+The two-step path. `parseJsonSchema()` validates only — it returns the typed `UmpireJsonSchema` if the input is valid, or an errors array if it isn't. Hydration happens separately, in a subsequent `fromJson()` call.
+
+Use this when you need to inspect or store the validated schema before deciding whether to hydrate it:
+
+```ts
+import { parseJsonSchema, fromJson } from '@umpire/json'
+
+const parsed = parseJsonSchema(raw)
+
+if (!parsed.ok) {
+  // parsed.errors: string[]
+  console.error(parsed.errors)
+  return
+}
+
+// parsed.schema is UmpireJsonSchema — fully typed, safe to inspect
+const { fields, rules, validators } = fromJson(parsed.schema)
+```
+
+**Return type:**
+
+```ts
+type JsonSchemaParseResult =
+  | { ok: true; schema: UmpireJsonSchema }
+  | { ok: false; errors: string[] }
+```
+
+Like `fromJsonSafe()`, it never throws.
+
+### Which to use
+
+- Default to `fromJsonSafe()`. It's one call and its success branch already holds everything you need to run `umpire()` and to round-trip with `toJson()`.
+- Reach for `parseJsonSchema()` when you want to hold or examine the validated schema before hydrating — for example, to diff two versions of a schema, log it, or store it separately.
+
 ## `fromJson(schema)`
 
-`fromJson()` parses a portable schema and returns `{ fields, rules, validators }` you can pass straight into `umpire()`:
+`fromJson()` parses a trusted `UmpireJsonSchema` — one that has already been validated — and returns `{ fields, rules, validators }` you can pass straight into `umpire()`:
 
 ```ts
 import { umpire } from '@umpire/core'
@@ -25,6 +102,8 @@ const { fields, rules, validators } = fromJson(schema)
 
 const ump = umpire({ fields, rules, validators })
 ```
+
+Unlike `fromJsonSafe()` and `parseJsonSchema()`, `fromJson()` throws if the schema is invalid. It's the right call when you already hold a `UmpireJsonSchema` — for example, the `parsed.schema` you get back from `parseJsonSchema()`.
 
 The result is composable. Hydrate most of a form from JSON and add a few hand-written rules for app-specific logic in the same `umpire()` call — the two sets coexist without conflict.
 

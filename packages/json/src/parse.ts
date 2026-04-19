@@ -31,12 +31,38 @@ import type {
 import { hydrateIsEmptyStrategy } from './strategies.js'
 import { validateSchema } from './validate.js'
 
-type ParsedFields = Record<string, FieldDef>
-type ParsedRules<C extends Record<string, unknown>> = Rule<ParsedFields, C>[]
-type ParsedValidators = ValidationMap<ParsedFields>
+export type ParsedFields = Record<string, FieldDef>
+export type ParsedRules<C extends Record<string, unknown>> = Rule<ParsedFields, C>[]
+export type ParsedValidators = ValidationMap<ParsedFields>
 type ParsedSchemaMeta = {
   conditions?: Record<string, JsonConditionDef>
   excluded?: ExcludedRule[]
+}
+
+export type JsonSchemaParseResult =
+  | { ok: true; schema: UmpireJsonSchema }
+  | { ok: false; errors: string[] }
+
+export type FromJsonSafeResult<C extends Record<string, unknown> = Record<string, unknown>> =
+  | {
+      ok: true
+      schema: UmpireJsonSchema
+      fields: ParsedFields
+      rules: ParsedRules<C>
+      validators: ParsedValidators
+    }
+  | { ok: false; errors: string[] }
+
+export function parseJsonSchema(raw: unknown): JsonSchemaParseResult {
+  try {
+    validateSchema(raw)
+    return { ok: true, schema: raw }
+  } catch (error) {
+    return {
+      ok: false,
+      errors: [error instanceof Error ? error.message : String(error)],
+    }
+  }
 }
 
 type NamedFairPredicate<C extends Record<string, unknown>> = ((
@@ -67,7 +93,7 @@ function compileFairExpr<C extends Record<string, unknown>>(
 }
 
 function parseFieldDefs(fields: UmpireJsonSchema['fields']): ParsedFields {
-  const parsed: ParsedFields = {}
+  const parsed: ParsedFields = Object.create(null) as ParsedFields
 
   for (const [field, definition] of Object.entries(fields)) {
     parsed[field] = {
@@ -107,7 +133,7 @@ function parseValidatorDef(definition: JsonValidatorDef) {
 }
 
 function parseValidators(validators: UmpireJsonSchema['validators']): ParsedValidators {
-  const parsed = {} as ParsedValidators
+  const parsed = Object.create(null) as ParsedValidators
 
   for (const [field, definition] of Object.entries(validators ?? {})) {
     parsed[field] = parseValidatorDef(definition)
@@ -172,7 +198,7 @@ function parseRule<C extends Record<string, unknown>>(
         reason: rule.reason,
       }), rule)
     case 'eitherOf': {
-      const parsedBranches: Record<string, Array<Rule<ParsedFields, C>>> = {}
+      const parsedBranches = Object.create(null) as Record<string, Array<Rule<ParsedFields, C>>>
 
       for (const [branchName, branchRules] of Object.entries(rule.branches)) {
         parsedBranches[branchName] = branchRules.map((innerRule) => parseRule<C>(innerRule, schema))
@@ -200,6 +226,16 @@ export function fromJson<C extends Record<string, unknown> = Record<string, unkn
 } {
   validateSchema(schema)
 
+  return hydrateValidatedSchema<C>(schema)
+}
+
+function hydrateValidatedSchema<C extends Record<string, unknown> = Record<string, unknown>>(
+  schema: UmpireJsonSchema,
+): {
+  fields: ParsedFields
+  rules: ParsedRules<C>
+  validators: ParsedValidators
+} {
   const meta: ParsedSchemaMeta = {
     conditions: schema.conditions,
     excluded: schema.excluded,
@@ -210,6 +246,26 @@ export function fromJson<C extends Record<string, unknown> = Record<string, unkn
   const validators = parseValidators(schema.validators)
 
   return {
+    fields,
+    rules,
+    validators,
+  }
+}
+
+export function fromJsonSafe<C extends Record<string, unknown> = Record<string, unknown>>(
+  raw: unknown,
+): FromJsonSafeResult<C> {
+  const parsedSchema = parseJsonSchema(raw)
+
+  if (!parsedSchema.ok) {
+    return parsedSchema
+  }
+
+  const { fields, rules, validators } = hydrateValidatedSchema<C>(parsedSchema.schema)
+
+  return {
+    ok: true,
+    schema: parsedSchema.schema,
     fields,
     rules,
     validators,

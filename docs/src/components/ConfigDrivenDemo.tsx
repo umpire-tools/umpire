@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { strike, umpire } from '@umpire/core'
 import type { FieldDef, InputValues, Umpire } from '@umpire/core'
-import { fromJson } from '@umpire/json'
+import { fromJsonSafe } from '@umpire/json'
 import type { JsonRule, UmpireJsonSchema } from '@umpire/json'
 import { useUmpire } from '@umpire/react'
 import '../styles/components/_components.config-driven-demo.css'
@@ -163,8 +163,7 @@ const mutations: Mutation[] = [
           if (rule.type === 'enabledWhen' && rule.field === 'state') {
             return {
               ...rule,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              when: { op: 'eqIgnoreCase', field: 'country', value: 'US' } as any,
+              when: { op: 'eqIgnoreCase', field: 'country', value: 'US' } as unknown as typeof rule.when,
             }
           }
           return rule
@@ -175,8 +174,7 @@ const mutations: Mutation[] = [
       return schema.rules.some((rule) =>
         rule.type === 'enabledWhen' &&
         rule.field === 'state' &&
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (rule.when as any)?.op === 'eqIgnoreCase',
+        (rule.when as { op?: unknown })?.op === 'eqIgnoreCase',
       )
     },
   },
@@ -196,16 +194,15 @@ function parseAttempt(text: string): ParseAttempt {
     return { status: 'error', error: `JSON parse error: ${(error as Error).message}` }
   }
 
-  try {
-    // `fromJson()` calls validateSchema() internally and throws on failure.
-    const schema = raw as UmpireJsonSchema
-    const { fields, rules, validators } = fromJson(schema)
-    const ump = umpire({ fields, rules, validators })
-    const fieldOrder = Object.keys(schema.fields)
-    return { status: 'ok', schema, ump, fieldOrder }
-  } catch (error) {
-    return { status: 'error', error: (error as Error).message }
+  const parsed = fromJsonSafe(raw)
+
+  if (!parsed.ok) {
+    return { status: 'error', error: parsed.errors.join('\n') }
   }
+
+  const ump = umpire({ fields: parsed.fields, rules: parsed.rules, validators: parsed.validators })
+  const fieldOrder = Object.keys(parsed.schema.fields)
+  return { status: 'ok', schema: parsed.schema, ump, fieldOrder }
 }
 
 function cls(...parts: Array<string | false | null | undefined>): string {

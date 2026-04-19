@@ -4,10 +4,13 @@ import {
   disables,
   eitherOf,
   enabledWhen,
+  fairWhen,
   isEmptyObject,
   isEmptyString,
   oneOf,
   requires,
+  type FieldDef,
+  type Rule,
 } from '@umpire/core'
 
 import { fromJson, hydrateIsEmptyStrategy, namedValidators, toJson } from '../src/index.js'
@@ -443,6 +446,131 @@ describe('toJson', () => {
           type: 'eitherOf',
           description: 'eitherOf() contains inner rules that cannot be serialized one-to-one into JSON',
           key: 'rule:eitherOf:auth',
+        }),
+      ]),
+    )
+  })
+
+  test('serializes disables() predicate sources when they map to portable validators', () => {
+    const fields = {
+      email: {},
+      submit: {},
+    }
+
+    const result = toJson({
+      fields,
+      rules: [disables(check('email', namedValidators.email()), ['submit'])],
+    })
+
+    expect(result.rules).toEqual([
+      {
+        type: 'disables',
+        when: {
+          op: 'check',
+          field: 'email',
+          check: { op: 'email' },
+        },
+        targets: ['submit'],
+      },
+    ])
+  })
+
+  test('serializes fairWhen() checks against other fields as check expressions', () => {
+    const fields = {
+      email: {},
+      submit: {},
+    }
+
+    const result = toJson({
+      fields,
+      rules: [fairWhen('submit', check('email', namedValidators.email()))],
+    })
+
+    expect(result.rules).toEqual([
+      {
+        type: 'fairWhen',
+        field: 'submit',
+        when: {
+          op: 'check',
+          field: 'email',
+          check: { op: 'email' },
+        },
+      },
+    ])
+  })
+
+  test('excludes dynamic reason callbacks across rule kinds', () => {
+    const fields = {
+      email: {},
+      submit: {},
+      mode: {},
+    }
+
+    const result = toJson({
+      fields,
+      rules: [
+        enabledWhen('submit', check('email', namedValidators.email()), { reason: () => 'dynamic' }),
+        requires('submit', 'email', { reason: () => 'dynamic' }),
+        fairWhen('email', namedValidators.email(), { reason: () => 'dynamic' }),
+        disables('mode', ['submit'], { reason: () => 'dynamic' }),
+      ],
+    })
+
+    expect(result.rules).toEqual([])
+    expect(result.excluded).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'enabledWhen' }),
+        expect.objectContaining({ type: 'requires' }),
+        expect.objectContaining({ type: 'fairWhen' }),
+        expect.objectContaining({ type: 'disables' }),
+      ]),
+    )
+  })
+
+  test('excludes oneOf overrides and non-serializable anyOf branches', () => {
+    const fields = {
+      email: {},
+      submit: {},
+      mode: {},
+    }
+
+    const result = toJson({
+      fields,
+      rules: [
+        oneOf('modeSelect', { email: ['email'], submit: ['submit'] }, { activeBranch: 'email' }),
+        anyOf(enabledWhen('submit', (values) => values.mode === 'open')),
+      ],
+    })
+
+    expect(result.rules).toEqual([])
+    expect(result.excluded).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'oneOf' }),
+        expect.objectContaining({ type: 'anyOf' }),
+      ]),
+    )
+  })
+
+  test('excludes rules that cannot be inspected', () => {
+    const fields = {
+      email: {},
+    }
+
+    const opaqueRule = {
+      type: 'opaqueRule',
+      targets: ['email'],
+      sources: [],
+      evaluate: () => ({ enabled: true }),
+    } as unknown as Rule<Record<string, FieldDef>, Record<string, unknown>>
+
+    const result = toJson({ fields, rules: [opaqueRule] })
+
+    expect(result.rules).toEqual([])
+    expect(result.excluded).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'opaqueRule',
+          description: 'Rule "opaqueRule" could not be inspected for JSON serialization',
         }),
       ]),
     )

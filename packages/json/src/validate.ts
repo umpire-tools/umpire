@@ -11,11 +11,19 @@ import { isJsonIsEmptyStrategy } from './strategies.js'
 
 type JsonRuleConstraint = 'enabled' | 'fair'
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 function isJsonPrimitive(value: unknown): boolean {
   return value === null || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
 }
 
 function validateFieldDef(field: string, definition: JsonFieldDef) {
+  if (!isRecord(definition)) {
+    throw new Error(`[@umpire/json] Field "${field}" definition must be an object`)
+  }
+
   if (definition.default !== undefined && !isJsonPrimitive(definition.default)) {
     throw new Error(`[@umpire/json] Field "${field}" has a non-serializable default value`)
   }
@@ -59,6 +67,10 @@ function assertField(field: string, fieldNames: Set<string>, context: string) {
 function validateValidator(field: string, validator: JsonValidatorDef, fieldNames: Set<string>) {
   if (!fieldNames.has(field)) {
     throw new Error(`[@umpire/json] Validator references unknown field "${field}"`)
+  }
+
+  if (!isRecord(validator)) {
+    throw new Error(`[@umpire/json] Validator for field "${field}" must be an object`)
   }
 
   assertValidValidatorSpec(validator)
@@ -245,26 +257,56 @@ function validateRule(
   }
 }
 
-export function validateSchema(schema: UmpireJsonSchema): void {
+export function validateSchema(schema: unknown): asserts schema is UmpireJsonSchema {
+  if (!isRecord(schema)) {
+    throw new Error('[@umpire/json] Schema must be an object')
+  }
+
+  if (schema.version === undefined) {
+    throw new Error('[@umpire/json] Schema must include a "version" field')
+  }
+
   if (schema.version !== 1) {
     throw new Error(`[@umpire/json] Unsupported schema version "${String(schema.version)}"`)
   }
 
-  const fieldNames = new Set(Object.keys(schema.fields ?? {}))
+  if (!isRecord(schema.fields)) {
+    throw new Error('[@umpire/json] Schema must include a "fields" object')
+  }
 
-  for (const [field, definition] of Object.entries(schema.fields ?? {})) {
+  if (!Array.isArray(schema.rules)) {
+    throw new Error('[@umpire/json] Schema must include a "rules" array')
+  }
+
+  if (schema.validators !== undefined && !isRecord(schema.validators)) {
+    throw new Error('[@umpire/json] Schema "validators" must be an object when provided')
+  }
+
+  if (schema.conditions !== undefined && !isRecord(schema.conditions)) {
+    throw new Error('[@umpire/json] Schema "conditions" must be an object when provided')
+  }
+
+  if (schema.excluded !== undefined && !Array.isArray(schema.excluded)) {
+    throw new Error('[@umpire/json] Schema "excluded" must be an array when provided')
+  }
+
+  const typedSchema = schema as unknown as UmpireJsonSchema
+
+  const fieldNames = new Set(Object.keys(typedSchema.fields))
+
+  for (const [field, definition] of Object.entries(typedSchema.fields)) {
     validateFieldDef(field, definition)
   }
 
-  for (const rule of schema.rules ?? []) {
-    validateRule(rule, fieldNames, schema.conditions)
+  for (const rule of typedSchema.rules) {
+    validateRule(rule, fieldNames, typedSchema.conditions)
   }
 
-  for (const [field, validator] of Object.entries(schema.validators ?? {})) {
+  for (const [field, validator] of Object.entries(typedSchema.validators ?? {})) {
     validateValidator(field, validator, fieldNames)
   }
 
-  for (const rule of schema.excluded ?? []) {
+  for (const rule of typedSchema.excluded ?? []) {
     validateExcludedRule(rule)
   }
 }
