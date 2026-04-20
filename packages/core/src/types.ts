@@ -263,4 +263,4 @@ export interface Umpire<
   graph(): UmpireGraph
 }
 
-export type FieldsOf<U> = U extends Umpire<infer F, any> ? F : never
+export type FieldsOf<U> = U extends Umpire<infer F> ? F : never

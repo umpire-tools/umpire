@@ -144,6 +144,8 @@ describe('edge cases', () => {
           delta: {},
         },
         rules: [
+          // intentionally disabled because we're breaking this on purpose haha
+          // eslint-disable-next-line @umpire/no-contradicting-rules
           disables<TestFields>('beta', ['delta']),
           requires<TestFields>('delta', 'beta'),
         ],
