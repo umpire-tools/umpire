@@ -64,6 +64,7 @@ describe('react hooks', () => {
     act(() => {
       root.unmount()
     })
+    root = undefined
 
     expect(unregisterSpy).toHaveBeenCalledTimes(1)
   })
