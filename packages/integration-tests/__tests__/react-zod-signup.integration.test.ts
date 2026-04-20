@@ -62,7 +62,7 @@ describe('react + zod signup flow', () => {
 
     expect(result.current.check.password.enabled).toBe(false)
     expect(result.current.check.confirmPassword.enabled).toBe(false)
-    expect(result.current.fouls.map((foul) => foul.field)).toEqual(['password', 'confirmPassword'])
+    expect(result.current.fouls.map((foul) => foul.field).sort()).toEqual(['confirmPassword', 'password'])
 
     const parsed = validation.run(result.current.check, {
       email: 'filter@example.com',

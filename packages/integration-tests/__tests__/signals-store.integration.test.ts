@@ -77,9 +77,15 @@ describe('signals + store integration', () => {
 
     expect(umpStore.field('confirmPassword').enabled).toBe(false)
     expect(reactive.field('confirmPassword').enabled).toBe(false)
+    const beforeTeardownValues = reactive.values
 
     unsubscribe()
     umpStore.destroy()
     reactive.dispose()
+
+    store.setState({ password: 'post-teardown', confirmPassword: '' })
+
+    expect(reactive.values).toEqual(beforeTeardownValues)
+    expect(reactive.field('confirmPassword').enabled).toBe(false)
   })
 })
