@@ -21,12 +21,14 @@ function extractBranches(
     exclude?: string[]
     branchNames?: Record<string, string>
     forceRequired?: boolean
-  } = {},
+  } = {}
 ): ExtractedBranches {
   const discriminator: string =
     'discriminator' in schema
-      ? (schema as any).discriminator
-      : (schema as any)._zod.def.discriminator
+      ? schema.discriminator
+      : // i've explored the alternative and it's a big mess, this is just a compat thing
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (schema as any)._zod.def.discriminator
   const excludeSet = new Set([discriminator, ...(options.exclude ?? [])])
 
   const branches: Record<string, string[]> = {}
@@ -37,12 +39,14 @@ function extractBranches(
 
   for (const variant of schema.options) {
     const shape = variant.shape
+    // zod uses `any` internally here so we're just cheating like them
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const literalField = shape[discriminator] as any
     const rawValue: string = literalField._def?.value ?? literalField.value
     if (rawValue == null) {
       throw new Error(
         `[@umpire/zod] Could not extract literal value from discriminator field "${discriminator}". ` +
-          `Expected a ZodLiteral with ._def.value (v3) or .value (v4).`,
+          `Expected a ZodLiteral with ._def.value (v3) or .value (v4).`
       )
     }
     const branchName = options.branchNames?.[rawValue] ?? rawValue
@@ -74,7 +78,7 @@ export function deriveOneOf<
   C extends Record<string, unknown> = Record<string, unknown>,
 >(
   schema: z.ZodDiscriminatedUnion<string, DiscriminatedUnionOption[]>,
-  options: DeriveOptions,
+  options: DeriveOptions
 ): Rule<F, C> {
   const { discriminator, branches } = extractBranches(schema, options)
   const branchNames = options.branchNames
@@ -94,7 +98,7 @@ export function deriveDiscriminatedFields<
   T extends z.ZodDiscriminatedUnion<string, DiscriminatedUnionOption[]>,
 >(
   schema: T,
-  options: DeriveOptions & { required?: boolean },
+  options: DeriveOptions & { required?: boolean }
 ): {
   fields: Record<string, FieldDef>
   rule: Rule<Record<string, FieldDef>, Record<string, unknown>>

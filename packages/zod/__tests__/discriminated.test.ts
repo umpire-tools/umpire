@@ -79,7 +79,7 @@ describe('deriveDiscriminatedFields', () => {
     })
 
     expect(Object.keys(fields).sort()).toEqual(
-      ['accountNumber', 'cardNumber', 'cvv', 'method', 'routingNumber'].sort(),
+      ['accountNumber', 'cardNumber', 'cvv', 'method', 'routingNumber'].sort()
     )
     expect(fields.method.required).toBe(true)
   })
@@ -234,9 +234,9 @@ describe('deriveDiscriminatedFields', () => {
       }),
     ])
 
-    expect(() =>
-      deriveDiscriminatedFields(schema, { groupName: 'overlap' }),
-    ).toThrow('field "shared" appears in multiple branches')
+    expect(() => deriveDiscriminatedFields(schema, { groupName: 'overlap' })).toThrow(
+      'field "shared" appears in multiple branches'
+    )
   })
 })
 
@@ -265,6 +265,8 @@ describe('zod v4 compatibility', () => {
     }
 
     // deriveDiscriminatedFields exercises extractBranches internally
+    // it's not worth the effort to fully type this mock, so using `any` escape hatch
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { fields, rule } = deriveDiscriminatedFields(v4LikeSchema as any, {
       groupName: 'v4test',
     })
@@ -313,6 +315,8 @@ describe('zod v4 compatibility', () => {
       ],
     }
 
+    // it's not worth the effort to fully type this mock, so using `any` escape hatch
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { fields } = deriveDiscriminatedFields(v3LikeSchema as any, {
       groupName: 'v3test',
     })
