@@ -1,26 +1,7 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": ["../../tsconfig.base.json", "../../tsconfig.paths.json"],
   "compilerOptions": {
-    "types": ["bun-types"],
-    "paths": {
-      "@umpire/core": ["../core/src/index.ts"],
-      "@umpire/core/*": ["../core/src/*"],
-      "@umpire/devtools": ["../devtools/src/index.ts"],
-      "@umpire/devtools/*": ["../devtools/src/*"],
-      "@umpire/json": ["../json/src/index.ts"],
-      "@umpire/json/*": ["../json/src/*"],
-      "@umpire/react": ["../react/src/index.ts"],
-      "@umpire/react/*": ["../react/src/*"],
-      "@umpire/reads": ["../reads/src/index.ts"],
-      "@umpire/reads/*": ["../reads/src/*"],
-      "@umpire/signals": ["../signals/src/index.ts"],
-      "@umpire/signals/preact": ["../signals/src/adapters/preact.ts"],
-      "@umpire/signals/*": ["../signals/src/*"],
-      "@umpire/store": ["../store/src/index.ts"],
-      "@umpire/store/*": ["../store/src/*"],
-      "@umpire/zod": ["../zod/src/index.ts"],
-      "@umpire/zod/*": ["../zod/src/*"]
-    }
+    "types": ["bun-types"]
   },
   "include": ["__tests__", "happydom.ts"]
 }

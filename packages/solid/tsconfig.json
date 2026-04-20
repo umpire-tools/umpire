@@ -6,15 +6,6 @@
     "composite": true,
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
-    "paths": {
-      "@umpire/core": ["../core/src/index.ts"],
-      "@umpire/core/*": ["../core/src/*"],
-      "@umpire/signals": ["../signals/src/index.ts"],
-      "@umpire/signals/*": ["../signals/src/*"],
-      "@umpire/signals/solid": ["../signals/src/adapters/solid.ts"],
-      "@umpire/store": ["../store/src/index.ts"],
-      "@umpire/store/*": ["../store/src/*"]
-    }
   },
   "include": ["src"],
   "references": [{ "path": "../core" }, { "path": "../signals" }]

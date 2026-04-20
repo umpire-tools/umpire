@@ -4,10 +4,6 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "composite": true,
-    "paths": {
-      "@umpire/core": ["../core/src/index.ts"],
-      "@umpire/core/*": ["../core/src/*"]
-    }
   },
   "include": ["src"],
   "references": [{ "path": "../core" }]
