@@ -7,7 +7,6 @@
     "jsx": "react-jsx",
     "paths": {
       "@umpire/core": ["../core/src/index.ts"],
-      "@umpire/core/snapshot": ["../core/src/snapshot.ts"],
       "@umpire/core/*": ["../core/src/*"]
     }
   },

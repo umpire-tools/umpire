@@ -1,7 +1,5 @@
 import { isRecord } from '@umpire/core/guards'
 
-export { isRecord }
-
 export function isZodObjectSchema(value: unknown): boolean {
   return isRecord(value) && ('_def' in value || '_zod' in value)
 }
