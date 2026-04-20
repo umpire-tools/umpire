@@ -8,6 +8,13 @@
     "test": {},
     "typecheck": {
       "dependsOn": ["^build"]
+    },
+    "//#lint": {
+      "dependsOn": ["@umpire/eslint-plugin#build"],
+      "inputs": ["packages/**/*.{ts,tsx,js}", "docs/src/**/*.{ts,js}", "eslint.config.js"]
+    },
+    "//#format:check": {
+      "inputs": ["packages/**/*.{ts,tsx,js}", "scripts/**/*.{ts,mjs}", "test/**/*.ts", ".prettierrc", ".prettierignore"]
     }
   }
 }
