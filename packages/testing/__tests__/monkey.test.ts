@@ -1,5 +1,5 @@
 import { enabledWhen, requires, umpire } from '@umpire/core'
-import { createReads, enabledWhenRead, fairWhenRead } from '../../reads/src/index.js'
+import { createReads, enabledWhenRead, fairWhenRead } from '@umpire/reads'
 import { monkeyTest } from '../src/index.js'
 
 const createAvailability = (fieldNames: string[], resolve: (field: string) => { enabled: boolean; fair: boolean }) =>
@@ -71,7 +71,7 @@ describe('monkeyTest', () => {
       ],
     })
 
-    expect(monkeyTest(ump, { samples: 12, seed: 7 })).toEqual({
+    expect(monkeyTest(ump)).toEqual({
       passed: true,
       violations: [],
       samplesChecked: 512,

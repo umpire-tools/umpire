@@ -5,7 +5,13 @@
     "rootDir": "./src",
     "composite": true,
     "declaration": true,
-    "declarationDir": "./dist"
+    "declarationDir": "./dist",
+    "paths": {
+      "@umpire/core": ["../core/src/index.ts"],
+      "@umpire/core/*": ["../core/src/*"],
+      "@umpire/reads": ["../reads/src/index.ts"],
+      "@umpire/reads/*": ["../reads/src/*"]
+    }
   },
   "include": ["src"],
   "references": [{ "path": "../core" }]
