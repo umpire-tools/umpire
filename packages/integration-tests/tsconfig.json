@@ -14,6 +14,7 @@
       "@umpire/reads": ["../reads/src/index.ts"],
       "@umpire/reads/*": ["../reads/src/*"],
       "@umpire/signals": ["../signals/src/index.ts"],
+      "@umpire/signals/preact": ["../signals/src/adapters/preact.ts"],
       "@umpire/signals/*": ["../signals/src/*"],
       "@umpire/store": ["../store/src/index.ts"],
       "@umpire/store/*": ["../store/src/*"],
