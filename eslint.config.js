@@ -21,6 +21,13 @@ export default tseslint.config(
       ],
     },
   },
+  // complexity doesn't map well to component render functions
+  {
+    files: ['packages/**/*.tsx'],
+    rules: {
+      complexity: 'off',
+    },
+  },
   // type-tests declare values solely to assert types — unused vars are expected
   {
     files: ['packages/*/type-tests/**/*.ts'],
