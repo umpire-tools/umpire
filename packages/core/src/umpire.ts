@@ -68,10 +68,7 @@ type NormalizedValidationMap<F extends Record<string, FieldDef>> = Partial<{
   [K in keyof F & string]: NormalizedValidationEntry
 }>
 
-function getChangedFields<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown>,
->(
+function getChangedFields<F extends Record<string, FieldDef>>(
   fieldNames: Array<keyof F & string>,
   before: { values: FieldValues<F> } | undefined,
   after: { values: FieldValues<F> },
@@ -1241,7 +1238,7 @@ export function umpire<
       values: InputValues
       conditions?: C
     },
-    options: ScorecardOptions<NormalizeFields<FInput>, C> = {},
+    options: ScorecardOptions<C> = {},
   ): ScorecardResult<NormalizeFields<FInput>, C> {
     const { before, includeChallenge = false } = options
     const typedValues = snapshot.values as FieldValues<NormalizeFields<FInput>>

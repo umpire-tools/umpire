@@ -281,7 +281,7 @@ describe('portable JSON builders', () => {
   })
 
   test('anyOfJson requires JSON-backed inner rules', () => {
-    const fields = {
+    const _fields = {
       warmupNotice: {},
       pitchType: {},
     }
@@ -289,14 +289,14 @@ describe('portable JSON builders', () => {
     type Conditions = Record<string, unknown>
 
     const { expr, enabledWhenExpr } = createJsonRules<
-      typeof fields,
+      typeof _fields,
       Conditions
     >()
 
     expect(() =>
       anyOfJson(
         enabledWhenExpr('warmupNotice', expr.eq('pitchType', 'slider')),
-        enabledWhen<typeof fields>('warmupNotice', () => true),
+        enabledWhen<typeof _fields>('warmupNotice', () => true),
       ),
     ).toThrow('anyOfJson() requires every inner rule to carry JSON metadata')
   })
@@ -681,18 +681,18 @@ describe('portable JSON builders', () => {
   })
 
   test('eitherOfJson requires every inner rule to carry JSON metadata', () => {
-    const fields = {
+    const _fields = {
       submit: {},
       email: {},
     }
 
-    const { expr, enabledWhenExpr } = createJsonRules<typeof fields>()
+    const { expr, enabledWhenExpr } = createJsonRules<typeof _fields>()
 
     expect(() =>
       eitherOfJson('authPath', {
         password: [
           enabledWhenExpr('submit', expr.present('email')),
-          enabledWhen<typeof fields>('submit', () => true),
+          enabledWhen<typeof _fields>('submit', () => true),
         ],
       }),
     ).toThrow('eitherOfJson() requires every inner rule to carry JSON metadata')

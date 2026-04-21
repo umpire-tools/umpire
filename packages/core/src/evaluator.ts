@@ -2,12 +2,7 @@ import {
   appendCompositeFailureReasons,
   combineCompositeResults,
 } from './composite.js'
-import {
-  getInternalRuleMetadata,
-  isFairRule,
-  isGateRule,
-  resolveReason,
-} from './rules.js'
+import { getInternalRuleMetadata, isFairRule, isGateRule } from './rules.js'
 import { isSatisfied } from './satisfaction.js'
 import type {
   AvailabilityMap,

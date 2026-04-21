@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, mock, spyOn, test } from 'bun:test'
+import { afterEach, describe, expect, it, mock, spyOn } from 'bun:test'
 import { mount, unmount } from '../src/index.js'
 import { resetRegistry } from '../src/registry.js'
 

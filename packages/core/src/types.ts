@@ -204,10 +204,7 @@ export type ScorecardTransition<
   cascadingFields: Array<keyof F & string>
 }
 
-export type ScorecardOptions<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown>,
-> = {
+export type ScorecardOptions<C extends Record<string, unknown>> = {
   before?: Snapshot<C>
   includeChallenge?: boolean
 }
@@ -258,7 +255,7 @@ export interface Umpire<
   init(overrides?: InputValues): FieldValues<F>
   scorecard(
     snapshot: Snapshot<C>,
-    options?: ScorecardOptions<F, C>,
+    options?: ScorecardOptions<C>,
   ): ScorecardResult<F, C>
   challenge(
     field: keyof F & string,

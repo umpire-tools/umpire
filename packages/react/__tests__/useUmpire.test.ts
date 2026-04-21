@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { umpire, enabledWhen, requires, oneOf } from '@umpire/core'
+import { umpire, enabledWhen, oneOf } from '@umpire/core'
 import type { FieldDef } from '@umpire/core'
 import { useUmpire } from '../src/useUmpire.js'
 

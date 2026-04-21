@@ -8,10 +8,7 @@ import { deriveErrors, zodErrors } from './derive-errors.js'
 import type { NormalizedFieldError } from './derive-errors.js'
 import type { ZodSafeParseResultLike } from './zod-types.js'
 
-type ZodValidationInspection<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown> = Record<string, unknown>,
-> = {
+type ZodValidationInspection<F extends Record<string, FieldDef>> = {
   availability?: AvailabilityMap<F>
   result: ZodSafeParseResultLike
   schemaFields?: readonly (keyof F & string)[] | readonly string[]
@@ -28,22 +25,19 @@ type ZodValidationResolveOptions<
   label?: string
   resolve(
     context: DevtoolsExtensionInspectContext<F, C>,
-  ): ZodValidationInspection<F, C> | null
+  ): ZodValidationInspection<F> | null
 }
 
-type ZodValidationStaticOptions<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown> = Record<string, unknown>,
-> = {
+type ZodValidationStaticOptions<F extends Record<string, FieldDef>> = {
   availability: AvailabilityMap<F>
   id?: string
   label?: string
-} & ZodValidationInspection<F, C>
+} & ZodValidationInspection<F>
 
 export type ZodValidationExtensionOptions<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
-> = ZodValidationResolveOptions<F, C> | ZodValidationStaticOptions<F, C>
+> = ZodValidationResolveOptions<F, C> | ZodValidationStaticOptions<F>
 
 function issueFieldLabel(field: string) {
   return field === '' ? '(form)' : field

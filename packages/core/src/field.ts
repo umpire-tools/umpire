@@ -29,7 +29,7 @@ type FairPredicate<
   C extends Record<string, unknown>,
 > = (value: NonNullable<V>, values: FieldValues<F>, conditions: C) => boolean
 
-type FieldSelector<F extends Record<string, FieldDef>, V = unknown> =
+export type FieldSelector<F extends Record<string, FieldDef>> =
   | (keyof F & string)
   | { readonly __umpfield: keyof F & string }
   | { readonly __umpfield: string }
@@ -204,8 +204,8 @@ export function getFieldBuilderName(value: unknown): string | undefined {
   return typeof name === 'string' ? name : undefined
 }
 
-export function getFieldNameOrThrow<F extends Record<string, FieldDef>, V>(
-  field: FieldSelector<F, V>,
+export function getFieldNameOrThrow<F extends Record<string, FieldDef>>(
+  field: FieldSelector<F>,
 ): keyof F & string {
   if (typeof field === 'string') {
     return field

@@ -12,11 +12,7 @@ export type StoreApi<S> = {
   subscribe(listener: (state: S, prevState: S) => void): () => void
 }
 
-export type FromStoreOptions<
-  S,
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown>,
-> = {
+export type FromStoreOptions<S, C extends Record<string, unknown>> = {
   select: (state: S) => InputValues
   conditions?: (state: S) => C
 }
@@ -36,7 +32,7 @@ export function fromStore<
 >(
   ump: Umpire<F, C>,
   store: StoreApi<S>,
-  options: FromStoreOptions<S, F, C>,
+  options: FromStoreOptions<S, C>,
 ): UmpireStore<F> {
   const { select, conditions } = options
   const readConditions = (state: S): C | undefined => {

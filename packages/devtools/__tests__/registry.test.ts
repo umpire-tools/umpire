@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, mock, test } from 'bun:test'
+import { afterEach, describe, expect, it, mock } from 'bun:test'
 import { enabledWhen, umpire } from '@umpire/core'
 import { createReads, enabledWhenRead } from '@umpire/reads'
 import type { ReadTableInspection } from '@umpire/reads'

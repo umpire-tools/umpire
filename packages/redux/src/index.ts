@@ -18,7 +18,7 @@ export function fromReduxStore<
 >(
   ump: Umpire<F, C>,
   store: ReduxStoreApi<S>,
-  options: FromStoreOptions<S, F, C>,
+  options: FromStoreOptions<S, C>,
 ): UmpireStore<F> {
   const previousState = trackPreviousState(store.getState())
 

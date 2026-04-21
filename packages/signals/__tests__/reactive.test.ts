@@ -1,4 +1,4 @@
-import { describe, expect, it, spyOn, test } from 'bun:test'
+import { describe, expect, spyOn, test } from 'bun:test'
 import { umpire, enabledWhen, requires, disables } from '@umpire/core'
 import type { FieldDef } from '@umpire/core'
 import type { SignalProtocol } from '../src/protocol.js'

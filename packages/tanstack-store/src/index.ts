@@ -36,7 +36,7 @@ export function fromTanStackStore<
 >(
   ump: Umpire<F, C>,
   store: TanStackStoreApi<S>,
-  options: FromStoreOptions<S, F, C>,
+  options: FromStoreOptions<S, C>,
 ): UmpireStore<F> {
   const previousState = trackPreviousState(store.state)
 

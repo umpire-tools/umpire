@@ -4,7 +4,6 @@ import type {
   AnyScorecard,
   DevtoolsTab,
   MountOptions,
-  ResolvedDevtoolsExtension,
   RegistryEntry,
 } from '../types.js'
 import { ChallengeDrawer } from './ChallengeDrawer.js'

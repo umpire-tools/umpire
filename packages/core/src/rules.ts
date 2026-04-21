@@ -3,7 +3,7 @@ import {
   getCompositeTargetEvaluation,
 } from './composite.js'
 import { shouldWarnInDev } from './dev.js'
-import { getFieldBuilderName, getFieldNameOrThrow } from './field.js'
+import { getFieldNameOrThrow, type FieldSelector } from './field.js'
 import { isSatisfied } from './satisfaction.js'
 import {
   isNamedCheck as isNamedCheckValidator,
@@ -132,11 +132,6 @@ type RuleOptions<
     | RuleTraceAttachment<FieldValues<F>, C>[]
 }
 
-type FieldSelector<F extends Record<string, FieldDef>, V = unknown> =
-  | (keyof F & string)
-  | { readonly __umpfield: keyof F & string }
-  | { readonly __umpfield: string }
-
 type Source<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -145,8 +140,7 @@ type Source<
 type SourceInput<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-  V = unknown,
-> = FieldSelector<F, V> | Predicate<F, C>
+> = FieldSelector<F> | Predicate<F, C>
 
 type FairPredicate<
   V,
@@ -375,8 +369,7 @@ export function getSourceField<
 function normalizeSource<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-  V = unknown,
->(source: SourceInput<F, C, V>): Source<F, C> {
+>(source: SourceInput<F, C>): Source<F, C> {
   if (typeof source === 'function') {
     return source
   }
@@ -1076,9 +1069,8 @@ export function resolveOneOfState<
 export function enabledWhen<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
-  V = unknown,
 >(
-  field: FieldSelector<F, V>,
+  field: FieldSelector<F>,
   predicate: Predicate<F, C>,
   options?: RuleOptions<F, C>,
 ): Rule<F, C> {
@@ -1119,7 +1111,7 @@ export function fairWhen<
   C extends Record<string, unknown> = Record<string, unknown>,
   V = unknown,
 >(
-  field: FieldSelector<F, V>,
+  field: FieldSelector<F>,
   predicate: FairPredicate<V, F, C>,
   options?: RuleOptions<F, C>,
 ): Rule<F, C> {
@@ -1169,9 +1161,8 @@ export function fairWhen<
 export function disables<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
-  V = unknown,
 >(
-  source: SourceInput<F, C, V>,
+  source: SourceInput<F, C>,
   targets: Array<FieldSelector<F>>,
   options?: RuleOptions<F, C>,
 ): Rule<F, C> {
@@ -1210,9 +1201,8 @@ export function disables<
 export function requires<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
-  V = unknown,
 >(
-  field: FieldSelector<F, V>,
+  field: FieldSelector<F>,
   ...deps: Array<SourceInput<F, C> | RuleOptions<F, C>>
 ): Rule<F, C> {
   const target = getFieldNameOrThrow(field)
@@ -1496,7 +1486,7 @@ export function check<
   C extends Record<string, unknown> = Record<string, unknown>,
   V = unknown,
 >(
-  field: FieldSelector<F, V>,
+  field: FieldSelector<F>,
   validator: FieldValidator<NonNullable<V>>,
 ): Predicate<F, C> {
   const target = getFieldNameOrThrow(field)

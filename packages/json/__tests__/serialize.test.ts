@@ -13,12 +13,7 @@ import {
   type Rule,
 } from '@umpire/core'
 
-import {
-  fromJson,
-  hydrateIsEmptyStrategy,
-  namedValidators,
-  toJson,
-} from '../src/index.js'
+import { fromJson, namedValidators, toJson } from '../src/index.js'
 import type { UmpireJsonSchema } from '../src/index.js'
 
 describe('toJson', () => {

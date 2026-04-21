@@ -18,7 +18,7 @@ export function fromPiniaStore<
 >(
   ump: Umpire<F, C>,
   store: PiniaStoreApi<S>,
-  options: FromStoreOptions<S, F, C>,
+  options: FromStoreOptions<S, C>,
 ): UmpireStore<F> {
   const previousState = trackPreviousState(store.$state)
 
