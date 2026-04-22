@@ -342,6 +342,49 @@ describe('evaluate', () => {
     })
   })
 
+  test('keeps fair rules out of the gate phase when a field is already disabled', () => {
+    const fields: TestFields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+      delta: {},
+    }
+    const rules = [
+      enabledWhen<TestFields, TestConditions>('gamma', () => false, {
+        reason: 'gate closed',
+      }),
+      defineRule<TestFields, TestConditions>({
+        type: 'socketFair',
+        targets: ['gamma'],
+        sources: ['alpha'],
+        constraint: 'fair',
+        evaluate: () =>
+          new Map([
+            [
+              'gamma',
+              {
+                enabled: false,
+                fair: false,
+                reason: 'fairness-only failure',
+              },
+            ],
+          ]),
+      }),
+    ]
+    const topoOrder = createOrder(fields, rules)
+
+    expect(
+      evaluate(fields, rules, topoOrder, {}, {} as TestConditions).gamma,
+    ).toEqual({
+      enabled: false,
+      satisfied: false,
+      fair: true,
+      required: false,
+      reason: 'gate closed',
+      reasons: ['gate closed'],
+    })
+  })
+
   test('defaults to an enabled result when a targeted rule omits a field evaluation', () => {
     const fields: TestFields = {
       alpha: {},

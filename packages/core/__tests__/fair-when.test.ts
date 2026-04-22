@@ -329,4 +329,16 @@ describe('field()', () => {
       'Named field builder required when passing a field() value to a rule',
     )
   })
+
+  test('stores the declared name on named builders only', () => {
+    const named = field<string>('cpu')
+    const unnamed = field<string>()
+
+    expect(named.__umpfield).toBe('cpu')
+    expect(
+      Object.getOwnPropertyDescriptor(named, '__umpfield')?.enumerable,
+    ).toBe(false)
+    expect('__umpfield' in unnamed).toBe(false)
+    expect((unnamed as { __umpfield?: string }).__umpfield).toBeUndefined()
+  })
 })

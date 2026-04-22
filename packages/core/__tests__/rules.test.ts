@@ -10,6 +10,7 @@ import {
   eitherOf,
   enabledWhen,
   fairWhen,
+  getGraphSourceInfo,
   getNamedCheckMetadata,
   inspectPredicate,
   inspectRule,
@@ -808,6 +809,26 @@ describe('check', () => {
     })
   })
 
+  test('returns copied metadata from a predicate with attached named check metadata', () => {
+    const predicate = check<TestFields, TestConditions>(
+      'alpha',
+      (value) => value === 'ok',
+    )
+    const metadata = { __check: 'custom', params: { value: 2 } }
+
+    predicate._namedCheck = metadata
+
+    const copied = getNamedCheckMetadata(predicate)
+
+    expect(copied).toEqual(metadata)
+    expect(copied).not.toBe(metadata)
+  })
+
+  test('returns undefined for values without named check metadata', () => {
+    expect(getNamedCheckMetadata((_values: unknown) => true)).toBeUndefined()
+    expect(getNamedCheckMetadata({})).toBeUndefined()
+  })
+
   test('supports zod-like safeParse validators', () => {
     const predicate = check<TestFields, TestConditions>('alpha', {
       safeParse: (value: unknown) => ({ success: value === 'ok' }),
@@ -854,6 +875,41 @@ describe('check', () => {
       field: 'beta',
     })
     expect(inspectPredicate((_values: unknown) => true)).toBeUndefined()
+  })
+
+  test('inspectPredicate includes both field and named check metadata when present', () => {
+    const predicate = check<TestFields, TestConditions>('alpha', {
+      __check: 'required',
+      validate: (value: string) => value.length > 0,
+    })
+
+    expect(inspectPredicate(predicate)).toEqual({
+      field: 'alpha',
+      namedCheck: { __check: 'required' },
+    })
+  })
+
+  test('inspectPredicate handles nullish and metadata-only inputs', () => {
+    const predicate = check<TestFields, TestConditions>('alpha', () => true)
+    delete predicate._checkField
+    predicate._namedCheck = { __check: 'required' }
+
+    expect(inspectPredicate(null)).toBeUndefined()
+    expect(inspectPredicate(undefined)).toBeUndefined()
+    expect(inspectPredicate(predicate)).toEqual({
+      namedCheck: { __check: 'required' },
+    })
+  })
+
+  test('returns copied named check metadata without params', () => {
+    const predicate = check<TestFields, TestConditions>('alpha', {
+      __check: 'required',
+      validate: () => true,
+    })
+
+    expect(getNamedCheckMetadata(predicate)).toEqual({
+      __check: 'required',
+    })
   })
 
   test('returns false for unsupported validators', () => {
@@ -999,6 +1055,209 @@ describe('inspectRule', () => {
     })
   })
 
+  test('describes fair rules with custom fair constraint and graph sources', () => {
+    const fairRule = fairWhen<TestFields, TestConditions>(
+      'alpha',
+      check('beta', (value) => value === 'ok'),
+    )
+    const customFair = defineRule<TestFields, TestConditions>({
+      type: 'customFair',
+      constraint: 'fair',
+      targets: ['alpha'],
+      sources: ['beta'],
+      evaluate: () =>
+        new Map([['alpha', { enabled: true, fair: true, reason: null }]]),
+    })
+
+    expect(inspectRule(fairRule)).toEqual({
+      kind: 'fairWhen',
+      target: 'alpha',
+      predicate: { field: 'beta' },
+      hasDynamicReason: false,
+    })
+    expect(getGraphSourceInfo(fairRule)).toEqual({
+      ordering: [],
+      informational: ['beta'],
+    })
+    expect(getGraphSourceInfo(customFair)).toEqual({
+      ordering: [],
+      informational: ['beta'],
+    })
+  })
+
+  test('describes dynamic reasons and explicit active branches', () => {
+    const enabledRule = enabledWhen<TestFields, TestConditions>(
+      'alpha',
+      () => false,
+      {
+        reason: (_values, conditions) =>
+          conditions.allow ? 'allowed' : 'denied',
+      },
+    )
+    const choiceRule = oneOf<TestFields, TestConditions>(
+      'mode',
+      {
+        first: ['alpha'],
+        second: ['beta'],
+      },
+      { activeBranch: 'second' },
+    )
+
+    expect(inspectRule(enabledRule)).toEqual({
+      kind: 'enabledWhen',
+      target: 'alpha',
+      reason: undefined,
+      hasDynamicReason: true,
+    })
+    expect(inspectRule(choiceRule)).toEqual({
+      kind: 'oneOf',
+      groupName: 'mode',
+      branches: {
+        first: ['alpha'],
+        second: ['beta'],
+      },
+      activeBranch: 'second',
+      hasDynamicActiveBranch: false,
+      hasDynamicReason: false,
+    })
+  })
+
+  test('collapses anyOf graph sources into ordering branches', () => {
+    const orderingRule = defineRule<TestFields, TestConditions>({
+      type: 'orderingRule',
+      targets: ['alpha'],
+      sources: ['beta'],
+      evaluate: () => new Map([['alpha', { enabled: true, reason: null }]]),
+    })
+    const anotherOrderingRule = defineRule<TestFields, TestConditions>({
+      type: 'anotherOrderingRule',
+      targets: ['alpha'],
+      sources: ['delta'],
+      evaluate: () => new Map([['alpha', { enabled: true, reason: null }]]),
+    })
+    const anyRule = anyOf<TestFields, TestConditions>(
+      orderingRule,
+      anotherOrderingRule,
+    )
+
+    expect(getGraphSourceInfo(anyRule)).toEqual({
+      ordering: ['beta', 'delta'],
+      informational: [],
+    })
+  })
+
+  test('deduplicates anyOf targets and sources in inspection and graphing', () => {
+    const left = defineRule<TestFields, TestConditions>({
+      type: 'left',
+      targets: ['alpha', 'alpha'],
+      sources: ['beta', 'beta'],
+      evaluate: () => new Map([['alpha', { enabled: true, reason: null }]]),
+    })
+    const right = defineRule<TestFields, TestConditions>({
+      type: 'right',
+      targets: ['alpha'],
+      sources: ['gamma'],
+      evaluate: () => new Map([['alpha', { enabled: true, reason: null }]]),
+    })
+    const rule = anyOf(left, right)
+
+    expect(inspectRule(rule)).toEqual({
+      kind: 'anyOf',
+      constraint: 'enabled',
+      rules: [
+        {
+          kind: 'custom',
+          type: 'left',
+          constraint: 'enabled',
+          targets: ['alpha'],
+          sources: ['beta'],
+        },
+        {
+          kind: 'custom',
+          type: 'right',
+          constraint: 'enabled',
+          targets: ['alpha'],
+          sources: ['gamma'],
+        },
+      ],
+    })
+    expect(rule.targets).toEqual(['alpha'])
+    expect(rule.sources).toEqual(['beta', 'gamma'])
+    expect(getGraphSourceInfo(rule)).toEqual({
+      ordering: ['beta', 'gamma'],
+      informational: [],
+    })
+  })
+
+  test('returns undefined when anyOf contains an uninspectable inner rule', () => {
+    const opaqueRule: Rule<TestFields, TestConditions> = {
+      type: 'opaque',
+      targets: ['alpha'],
+      sources: ['beta'],
+      evaluate: () => new Map([['alpha', { enabled: true, reason: null }]]),
+    }
+
+    expect(
+      inspectRule(anyOf<TestFields, TestConditions>(opaqueRule)),
+    ).toBeUndefined()
+  })
+
+  test('collapses eitherOf graph sources into informational branches', () => {
+    const fairRule = fairWhen<TestFields, TestConditions>(
+      'alpha',
+      check('beta', (value) => value === 'ok'),
+    )
+    const anotherFairRule = fairWhen<TestFields, TestConditions>(
+      'alpha',
+      check('delta', (value) => value === 'ok'),
+    )
+    const eitherRule = eitherOf<TestFields, TestConditions>('group', {
+      first: [fairRule],
+      second: [anotherFairRule],
+    })
+
+    expect(getGraphSourceInfo(eitherRule)).toEqual({
+      ordering: [],
+      informational: ['beta', 'delta'],
+    })
+  })
+
+  test('filters informational eitherOf sources that are already ordering sources', () => {
+    const orderingRule = defineRule<TestFields, TestConditions>({
+      type: 'orderingRule',
+      targets: ['alpha'],
+      sources: ['beta'],
+      evaluate: () => new Map([['alpha', { enabled: true, reason: null }]]),
+    })
+    const informationalRule = defineRule<TestFields, TestConditions>({
+      type: 'informationalRule',
+      targets: ['alpha'],
+      sources: ['beta', 'gamma'],
+      evaluate: () =>
+        new Map([['alpha', { enabled: true, fair: true, reason: null }]]),
+    })
+    const rule = {
+      type: 'eitherOf',
+      targets: ['alpha'],
+      sources: ['beta', 'gamma'],
+      evaluate: () => new Map(),
+      _umpire: {
+        kind: 'eitherOf' as const,
+        groupName: 'group',
+        constraint: 'enabled' as const,
+        branches: {
+          first: [orderingRule],
+          second: [informationalRule],
+        },
+      },
+    } as Rule<TestFields, TestConditions>
+
+    expect(getGraphSourceInfo(rule)).toEqual({
+      ordering: ['beta', 'gamma'],
+      informational: [],
+    })
+  })
+
   test('returns undefined when eitherOf contains an uninspectable inner rule', () => {
     const opaqueRule: Rule<TestFields, TestConditions> = {
       type: 'opaque',
@@ -1032,5 +1291,7 @@ describe('createRules', () => {
       'requires',
     ])
     expect(factories.enabledWhen('alpha', () => true).type).toBe('enabledWhen')
+    expect(factories.anyOf).toBe(anyOf)
+    expect(factories.eitherOf).toBe(eitherOf)
   })
 })

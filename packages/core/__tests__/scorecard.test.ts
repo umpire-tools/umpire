@@ -134,4 +134,34 @@ describe('scorecard', () => {
       }),
     )
   })
+
+  test('includes validation results only for enabled, satisfied fields', () => {
+    const ump = umpire({
+      fields: {
+        username: field<string>().required(),
+        bio: field<string>().required(),
+      },
+      validators: {
+        username: {
+          validator: (value: string) => value.length >= 3,
+          error: 'Username is too short',
+        },
+      },
+      rules: [],
+    })
+
+    const card = ump.scorecard({
+      values: {
+        username: 'ok',
+        bio: '',
+      },
+    })
+
+    expect(card.fields.username).toMatchObject({
+      valid: false,
+      error: 'Username is too short',
+    })
+    expect(card.fields.bio.valid).toBeUndefined()
+    expect(card.fields.bio.error).toBeUndefined()
+  })
 })

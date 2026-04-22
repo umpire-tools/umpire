@@ -141,6 +141,21 @@ describe('oneOf resolution', () => {
     expect(result.beta.enabled).toBe(true)
   })
 
+  test('throws when an explicit activeBranch does not exist', () => {
+    expect(() =>
+      oneOf<TestFields>(
+        'strategy',
+        {
+          first: ['alpha'],
+          second: ['beta'],
+        },
+        {
+          activeBranch: 'missing',
+        },
+      ),
+    ).toThrow('Unknown active branch "missing" for oneOf("strategy")')
+  })
+
   test('enables all branches when activeBranch returns null', () => {
     const ump = umpire<TestFields>({
       fields: { alpha: {}, beta: {}, gamma: {}, mode: {} },
