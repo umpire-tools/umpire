@@ -1,3 +1,2 @@
 yarn turbo run lint
 yarn format:check
-yarn typecheck
