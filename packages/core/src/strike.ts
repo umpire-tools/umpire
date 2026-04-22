@@ -4,6 +4,7 @@ export function strike<F extends Record<string, FieldDef>>(
   values: FieldValues<F>,
   fouls: readonly Foul<F>[],
 ): FieldValues<F> {
+  // Stryker disable next-line ConditionalExpression,BlockStatement: equivalent mutant — `next ?? values` handles empty fouls identically
   if (fouls.length === 0) {
     return values
   }
