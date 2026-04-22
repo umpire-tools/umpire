@@ -11,10 +11,14 @@ import {
   enabledWhen,
   fairWhen,
   getGraphSourceInfo,
+  getInternalRuleMetadata,
+  getInternalRuleOptions,
   getNamedCheckMetadata,
+  getRuleConstraint,
   inspectPredicate,
   inspectRule,
   oneOf,
+  resolveOneOfState,
   requires,
 } from '../src/rules.js'
 import type { Rule } from '../src/types.js'
@@ -83,6 +87,40 @@ describe('enabledWhen', () => {
   })
 })
 
+describe('fairWhen', () => {
+  test('returns correct type and source field metadata for check predicates', () => {
+    const rule = fairWhen<TestFields, TestConditions>(
+      'alpha',
+      check('beta', (value) => value === 'ok'),
+    )
+
+    expect(rule.type).toBe('fairWhen')
+    expect(rule.targets).toEqual(['alpha'])
+    expect(rule.sources).toEqual(['beta'])
+  })
+
+  test('uses default fairness failure reason when no options are provided', () => {
+    const rule = fairWhen<TestFields, TestConditions>(
+      'alpha',
+      (value) => value === 'ok',
+    )
+
+    expect(
+      rule.evaluate({ alpha: 'bad' }, { allow: true }).get('alpha'),
+    ).toEqual({
+      enabled: true,
+      fair: false,
+      reason: 'selection is no longer valid',
+    })
+  })
+
+  test('keeps sources empty when predicate has no check field metadata', () => {
+    const rule = fairWhen<TestFields, TestConditions>('alpha', () => true)
+
+    expect(rule.sources).toEqual([])
+  })
+})
+
 describe('disables', () => {
   test('with field name source uses source metadata and satisfaction semantics', () => {
     const rule = disables<TestFields, TestConditions>('beta', [
@@ -146,6 +184,20 @@ describe('disables', () => {
     ).toBe('overridden by beta')
   })
 
+  test('with non-check predicate source falls back to condition label in reason', () => {
+    const rule = disables<TestFields, TestConditions>(
+      (values) => values.beta === 'ok',
+      ['alpha'],
+    )
+
+    expect(rule.evaluate({ beta: 'ok' }, { allow: true }).get('alpha')).toEqual(
+      {
+        enabled: false,
+        reason: 'overridden by condition',
+      },
+    )
+  })
+
   test('requires named builders when passing builders to source or targets', () => {
     expect(() => disables(field<string>(), ['alpha'])).toThrow(
       'Named field builder required when passing a field() value to a rule',
@@ -204,6 +256,21 @@ describe('requires', () => {
     })
   })
 
+  test('detects options when the last arg only has trace', () => {
+    const rule = requires<TestFields, TestConditions>('alpha', 'beta', {
+      trace: true,
+    })
+
+    expect(rule.sources).toEqual(['beta'])
+    expect(
+      rule.evaluate({ beta: undefined }, { allow: true }).get('alpha'),
+    ).toEqual({
+      enabled: false,
+      reason: 'requires beta',
+      reasons: ['requires beta'],
+    })
+  })
+
   test('supports predicate dependencies', () => {
     const rule = requires<TestFields, TestConditions>(
       'alpha',
@@ -217,6 +284,20 @@ describe('requires', () => {
     })
   })
 
+  test('keeps the first failing dependency reason and includes all reasons', () => {
+    const rule = requires<TestFields, TestConditions>('alpha', 'beta', 'gamma')
+
+    expect(
+      rule
+        .evaluate({ beta: undefined, gamma: undefined }, { allow: true })
+        .get('alpha'),
+    ).toEqual({
+      enabled: false,
+      reason: 'requires beta',
+      reasons: ['requires beta', 'requires gamma'],
+    })
+  })
+
   test('throws when no dependencies are provided', () => {
     expect(() =>
       requires<TestFields, TestConditions>('alpha', {
@@ -227,6 +308,14 @@ describe('requires', () => {
 
   test('requires named builders when passing builders as dependencies', () => {
     expect(() => requires('alpha', field<string>())).toThrow(
+      'Named field builder required when passing a field() value to a rule',
+    )
+  })
+
+  test('does not treat null as options and keeps dependency validation behavior', () => {
+    expect(() =>
+      requires<TestFields, TestConditions>('alpha', 'beta', null as never),
+    ).toThrow(
       'Named field builder required when passing a field() value to a rule',
     )
   })
@@ -462,6 +551,58 @@ describe('oneOf', () => {
       warn.mockRestore()
     }
   })
+
+  test('warn message includes group and first branch when ambiguity is resolved by fallback', () => {
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
+
+    try {
+      const rule = oneOf<TestFields, TestConditions>('strategy', {
+        first: ['alpha'],
+        second: ['beta'],
+      })
+
+      rule.evaluate({ alpha: 'set', beta: 'set' }, { allow: true })
+
+      expect(warn).toHaveBeenCalledWith(
+        '[@umpire/core] oneOf("strategy") is ambiguous; falling back to the first satisfied branch (first).',
+      )
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  test('activeBranch function can return null to leave all branches enabled', () => {
+    const rule = oneOf<TestFields, TestConditions>(
+      'strategy',
+      {
+        first: ['alpha'],
+        second: ['beta'],
+      },
+      { activeBranch: () => null },
+    )
+
+    expect(
+      rule.evaluate({ alpha: 'set', beta: 'set' }, { allow: true }),
+    ).toEqual(
+      new Map([
+        ['alpha', { enabled: true, reason: null }],
+        ['beta', { enabled: true, reason: null }],
+      ]),
+    )
+  })
+
+  test('resolveOneOfState handles undefined previous values safely', () => {
+    const resolution = resolveOneOfState<TestFields, TestConditions>(
+      'strategy',
+      { first: ['alpha'], second: ['beta'] },
+      { alpha: 'set', beta: 'set' },
+      undefined,
+      undefined,
+    )
+
+    expect(resolution.activeBranch).toBe('first')
+    expect(resolution.method).toBe('fallback: first branch')
+  })
 })
 
 describe('anyOf', () => {
@@ -505,6 +646,31 @@ describe('anyOf', () => {
     expect(() => anyOf(left, right)).not.toThrow()
   })
 
+  test('accepts matching anyOf targets when later rules use a different order', () => {
+    const left = defineRule<TestFields, TestConditions>({
+      type: 'left',
+      targets: ['alpha', 'beta'],
+      sources: [],
+      evaluate: () =>
+        new Map([
+          ['alpha', { enabled: true, reason: null }],
+          ['beta', { enabled: true, reason: null }],
+        ]),
+    })
+    const right = defineRule<TestFields, TestConditions>({
+      type: 'right',
+      targets: ['beta', 'alpha'],
+      sources: [],
+      evaluate: () =>
+        new Map([
+          ['alpha', { enabled: true, reason: null }],
+          ['beta', { enabled: true, reason: null }],
+        ]),
+    })
+
+    expect(() => anyOf(left, right)).not.toThrow()
+  })
+
   test('rejects anyOf rules when one target differs in a matching-length list', () => {
     const left = defineRule<TestFields, TestConditions>({
       type: 'left',
@@ -528,6 +694,36 @@ describe('anyOf', () => {
     })
 
     expect(() => anyOf(left, right)).toThrow('must target the same fields')
+  })
+
+  test('rejects anyOf rules when target list lengths differ', () => {
+    const left = defineRule<TestFields, TestConditions>({
+      type: 'left',
+      targets: ['alpha', 'beta'],
+      sources: [],
+      evaluate: () =>
+        new Map([
+          ['alpha', { enabled: true, reason: null }],
+          ['beta', { enabled: true, reason: null }],
+        ]),
+    })
+    const right = defineRule<TestFields, TestConditions>({
+      type: 'right',
+      targets: ['alpha'],
+      sources: [],
+      evaluate: () => new Map([['alpha', { enabled: true, reason: null }]]),
+    })
+
+    expect(() => anyOf(left, right)).toThrow('must target the same fields')
+  })
+
+  test('sets type to anyOf for exported rule metadata', () => {
+    const rule = anyOf<TestFields, TestConditions>(
+      enabledWhen('alpha', () => true),
+      enabledWhen('alpha', () => false),
+    )
+
+    expect(rule.type).toBe('anyOf')
   })
 
   test('passes if any inner rule passes', () => {
@@ -722,6 +918,52 @@ describe('eitherOf', () => {
       reasons: ['socket mismatch', 'override missing'],
     })
   })
+
+  test('combines each branch with AND, then combines branches with OR', () => {
+    const rule = eitherOf<TestFields, TestConditions>('auth', {
+      sso: [
+        enabledWhen('alpha', () => true),
+        enabledWhen('alpha', () => false, {
+          reason: 'sso second check failed',
+        }),
+      ],
+      password: [enabledWhen('alpha', () => true)],
+    })
+
+    expect(rule.evaluate({}, { allow: true }).get('alpha')).toEqual({
+      enabled: true,
+      reason: null,
+    })
+  })
+
+  test('fails when each branch has at least one failing rule', () => {
+    const rule = eitherOf<TestFields, TestConditions>('auth', {
+      sso: [
+        enabledWhen('alpha', () => true),
+        enabledWhen('alpha', () => false, {
+          reason: 'sso second check failed',
+        }),
+      ],
+      password: [
+        enabledWhen('alpha', () => false, { reason: 'password failed' }),
+      ],
+    })
+
+    expect(rule.evaluate({}, { allow: true }).get('alpha')).toEqual({
+      enabled: false,
+      reason: 'sso second check failed',
+      reasons: ['sso second check failed', 'password failed'],
+    })
+  })
+
+  test('reports fair constraint for eitherOf with fair branches', () => {
+    const rule = eitherOf<TestFields, TestConditions>('compatibility', {
+      first: [fairWhen('alpha', () => true)],
+      second: [fairWhen('alpha', () => false)],
+    })
+
+    expect(getRuleConstraint(rule)).toBe('fair')
+  })
 })
 
 describe('defineRule', () => {
@@ -817,6 +1059,16 @@ describe('defineRule', () => {
       reasons: ['socket mismatch', 'delta override missing'],
     })
   })
+
+  test('defaults sources to an empty array when omitted', () => {
+    const rule = defineRule<TestFields, TestConditions>({
+      type: 'customEnabled',
+      targets: ['alpha'],
+      evaluate: () => new Map([['alpha', { enabled: true, reason: null }]]),
+    })
+
+    expect(rule.sources).toEqual([])
+  })
 })
 
 describe('check', () => {
@@ -888,6 +1140,15 @@ describe('check', () => {
   test('returns undefined for values without named check metadata', () => {
     expect(getNamedCheckMetadata((_values: unknown) => true)).toBeUndefined()
     expect(getNamedCheckMetadata({})).toBeUndefined()
+  })
+
+  test('returns named check metadata for validator objects directly', () => {
+    expect(
+      getNamedCheckMetadata({
+        __check: 'email',
+        validate: (value: unknown) => value === 'ok',
+      }),
+    ).toEqual({ __check: 'email' })
   })
 
   test('supports zod-like safeParse validators', () => {
@@ -962,6 +1223,28 @@ describe('check', () => {
     })
   })
 
+  test('inspectPredicate ignores non-string _checkField metadata', () => {
+    expect(inspectPredicate({ _checkField: 42 })).toBeUndefined()
+  })
+
+  test('inspectPredicate does not access _checkField when property is absent', () => {
+    const value = new Proxy(
+      {},
+      {
+        get(_target, prop) {
+          if (prop === '_checkField') {
+            throw new Error('unexpected _checkField read')
+          }
+
+          return undefined
+        },
+      },
+    )
+
+    expect(() => inspectPredicate(value)).not.toThrow()
+    expect(inspectPredicate(value)).toBeUndefined()
+  })
+
   test('inspectPredicate does not fabricate field/namedCheck when one side is missing', () => {
     const fieldOnly = check<TestFields, TestConditions>('alpha', () => true)
     const metadataOnly = check<TestFields, TestConditions>('beta', () => true)
@@ -1001,9 +1284,74 @@ describe('check', () => {
 
     expect(predicate({ alpha: 'ok' }, { allow: true })).toBe(false)
   })
+
+  test('does not attach named check metadata for plain function validators', () => {
+    const predicate = check<TestFields, TestConditions>('alpha', () => true)
+
+    expect(Object.hasOwn(predicate as object, '_namedCheck')).toBe(false)
+  })
 })
 
 describe('inspectRule', () => {
+  test('describes disables rules including source and targets', () => {
+    const rule = disables<TestFields, TestConditions>('beta', [
+      'alpha',
+      'gamma',
+    ])
+
+    expect(inspectRule(rule)).toEqual({
+      kind: 'disables',
+      source: { kind: 'field', field: 'beta' },
+      targets: ['alpha', 'gamma'],
+      hasDynamicReason: false,
+    })
+  })
+
+  test('omits reason key when options only include trace', () => {
+    const rule = enabledWhen<TestFields, TestConditions>('alpha', () => true, {
+      trace: true,
+    })
+
+    const inspected = inspectRule(rule) as { reason?: unknown }
+
+    expect(inspected).toEqual({
+      kind: 'enabledWhen',
+      target: 'alpha',
+      hasDynamicReason: false,
+    })
+    expect(Object.hasOwn(inspected, 'reason')).toBe(false)
+  })
+
+  test('returns undefined for options when metadata is missing or has no options', () => {
+    const customRule = defineRule<TestFields, TestConditions>({
+      type: 'customEnabled',
+      targets: ['alpha'],
+      evaluate: () => new Map([['alpha', { enabled: true, reason: null }]]),
+    })
+
+    expect(getInternalRuleOptions(undefined)).toBeUndefined()
+    expect(
+      getInternalRuleOptions(getInternalRuleMetadata(customRule)),
+    ).toBeUndefined()
+    expect(
+      getInternalRuleOptions(
+        getInternalRuleMetadata(enabledWhen('alpha', () => true)),
+      ),
+    ).toBeUndefined()
+  })
+
+  test('returns options object when metadata includes options', () => {
+    const rule = enabledWhen<TestFields, TestConditions>('alpha', () => true, {
+      reason: 'need alpha',
+      trace: true,
+    })
+
+    expect(getInternalRuleOptions(getInternalRuleMetadata(rule))).toEqual({
+      reason: 'need alpha',
+      trace: true,
+    })
+  })
+
   test('describes built-in rule factories without exposing private metadata', () => {
     const namedPredicate = check<TestFields, TestConditions>('beta', {
       __check: 'email',
@@ -1137,6 +1485,20 @@ describe('inspectRule', () => {
         ],
       },
     })
+  })
+
+  test('returns undefined for unknown internal metadata kinds', () => {
+    const rule = {
+      type: 'mystery',
+      targets: ['alpha'],
+      sources: ['beta'],
+      evaluate: () => new Map([['alpha', { enabled: true, reason: null }]]),
+      _umpire: {
+        kind: 'mystery',
+      },
+    } as unknown as Rule<TestFields, TestConditions>
+
+    expect(inspectRule(rule)).toBeUndefined()
   })
 
   test('describes fair rules with custom fair constraint and graph sources', () => {
@@ -1276,6 +1638,39 @@ describe('inspectRule', () => {
     })
   })
 
+  test('filters informational anyOf sources that are already ordering sources', () => {
+    const rule = anyOf<TestFields, TestConditions>(
+      requires('alpha', 'beta'),
+      enabledWhen(
+        'alpha',
+        check('beta', (value) => value === 'ok'),
+      ),
+    )
+
+    expect(getGraphSourceInfo(rule)).toEqual({
+      ordering: ['beta'],
+      informational: [],
+    })
+  })
+
+  test('collects informational anyOf sources from check predicates', () => {
+    const rule = anyOf<TestFields, TestConditions>(
+      enabledWhen(
+        'alpha',
+        check('beta', (value) => value === 'ok'),
+      ),
+      enabledWhen(
+        'alpha',
+        check('gamma', (value) => value === 'ok'),
+      ),
+    )
+
+    expect(getGraphSourceInfo(rule)).toEqual({
+      ordering: [],
+      informational: ['beta', 'gamma'],
+    })
+  })
+
   test('deduplicates anyOf targets and sources in inspection and graphing', () => {
     const left = defineRule<TestFields, TestConditions>({
       type: 'left',
@@ -1367,6 +1762,23 @@ describe('inspectRule', () => {
     expect(getGraphSourceInfo(eitherRule)).toEqual({
       ordering: [],
       informational: ['beta', 'delta'],
+    })
+  })
+
+  test('filters informational eitherOf sources that already exist in ordering', () => {
+    const eitherRule = eitherOf<TestFields, TestConditions>('group', {
+      first: [requires('alpha', 'beta')],
+      second: [
+        enabledWhen(
+          'alpha',
+          check('beta', (value) => value === 'ok'),
+        ),
+      ],
+    })
+
+    expect(getGraphSourceInfo(eitherRule)).toEqual({
+      ordering: ['beta'],
+      informational: [],
     })
   })
 

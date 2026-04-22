@@ -52,7 +52,7 @@ export function buildGraph<
     type: string,
     ordering: boolean,
   ): void {
-    const edgeKey = `${from}:${to}:${type}:${ordering ? 'ordering' : 'informational'}`
+    const edgeKey = `${from}:${to}:${type}:${ordering}`
     if (seenEdges.has(edgeKey)) {
       return
     }
