@@ -125,12 +125,12 @@ export function buildGraph<
 export function detectCycles(graph: DependencyGraph): void {
   const visited = new Set<string>()
   const active = new Set<string>()
-  const stack: string[] = []
+  const path: string[] = []
 
   const visit = (node: string): string[] | null => {
     visited.add(node)
     active.add(node)
-    stack.push(node)
+    path.push(node)
 
     for (const next of graph.adjacency.get(node) ?? []) {
       if (!visited.has(next)) {
@@ -145,11 +145,11 @@ export function detectCycles(graph: DependencyGraph): void {
         continue
       }
 
-      const cycleStart = stack.indexOf(next)
-      return [...stack.slice(cycleStart), next]
+      const cycleStart = path.indexOf(next)
+      return path.slice(cycleStart).concat(next)
     }
 
-    stack.pop()
+    path.pop()
     active.delete(node)
     return null
   }

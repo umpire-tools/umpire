@@ -953,6 +953,13 @@ function warnAmbiguousOneOf(groupName: string, branchNames: string[]): void {
   )
 }
 
+const ONE_OF_METHOD = {
+  explicitActiveBranch: 'explicit activeBranch',
+  autoDetected: 'auto-detected',
+  autoDetectedFromPrev: 'auto-detected from prev',
+  fallbackFirstBranch: 'fallback: first branch',
+} as const
+
 export function resolveOneOfState<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -984,7 +991,7 @@ export function resolveOneOfState<
   if (typeof activeBranch === 'string') {
     return {
       activeBranch,
-      method: 'explicit activeBranch',
+      method: ONE_OF_METHOD.explicitActiveBranch,
       branches: branchStates,
     }
   }
@@ -994,7 +1001,7 @@ export function resolveOneOfState<
     if (resolvedBranch == null) {
       return {
         activeBranch: null,
-        method: 'explicit activeBranch',
+        method: ONE_OF_METHOD.explicitActiveBranch,
         branches: branchStates,
       }
     }
@@ -1005,7 +1012,7 @@ export function resolveOneOfState<
     }
     return {
       activeBranch: resolvedBranch,
-      method: 'explicit activeBranch',
+      method: ONE_OF_METHOD.explicitActiveBranch,
       branches: branchStates,
     }
   }
@@ -1017,7 +1024,7 @@ export function resolveOneOfState<
   if (satisfiedBranches.length === 0) {
     return {
       activeBranch: null,
-      method: 'auto-detected',
+      method: ONE_OF_METHOD.autoDetected,
       branches: branchStates,
     }
   }
@@ -1025,7 +1032,7 @@ export function resolveOneOfState<
   if (satisfiedBranches.length === 1) {
     return {
       activeBranch: satisfiedBranches[0],
-      method: 'auto-detected',
+      method: ONE_OF_METHOD.autoDetected,
       branches: branchStates,
     }
   }
@@ -1043,7 +1050,7 @@ export function resolveOneOfState<
     if (newlySatisfiedBranches.length === 1) {
       return {
         activeBranch: newlySatisfiedBranches[0],
-        method: 'auto-detected from prev',
+        method: ONE_OF_METHOD.autoDetectedFromPrev,
         branches: branchStates,
       }
     }
@@ -1052,7 +1059,7 @@ export function resolveOneOfState<
       warnAmbiguousOneOf(groupName, satisfiedBranches)
       return {
         activeBranch: satisfiedBranches[0],
-        method: 'fallback: first branch',
+        method: ONE_OF_METHOD.fallbackFirstBranch,
         branches: branchStates,
       }
     }
@@ -1061,7 +1068,7 @@ export function resolveOneOfState<
   warnAmbiguousOneOf(groupName, satisfiedBranches)
   return {
     activeBranch: satisfiedBranches[0],
-    method: 'fallback: first branch',
+    method: ONE_OF_METHOD.fallbackFirstBranch,
     branches: branchStates,
   }
 }

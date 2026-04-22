@@ -1206,6 +1206,30 @@ describe('inspectRule', () => {
     })
   })
 
+  test('describes oneOf rules without activeBranch options', () => {
+    const choiceRule = oneOf<TestFields, TestConditions>('mode', {
+      first: ['alpha'],
+      second: ['beta'],
+    })
+
+    const inspected = inspectRule(choiceRule)
+
+    expect(inspected).toEqual({
+      kind: 'oneOf',
+      groupName: 'mode',
+      branches: {
+        first: ['alpha'],
+        second: ['beta'],
+      },
+      activeBranch: undefined,
+      hasDynamicActiveBranch: false,
+      hasDynamicReason: false,
+    })
+    expect(
+      Object.hasOwn(inspected as { activeBranch?: unknown }, 'activeBranch'),
+    ).toBe(true)
+  })
+
   test('inspectRule omits namedCheck metadata for plain check() predicates', () => {
     const rule = enabledWhen<TestFields, TestConditions>(
       'alpha',

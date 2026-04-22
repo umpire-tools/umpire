@@ -243,6 +243,158 @@ describe('challenge', () => {
     ])
   })
 
+  test('reports explicit activeBranch oneOf resolution method', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        oneOf<TestFields>(
+          'subDayStrategy',
+          {
+            hourList: ['everyHour'],
+            interval: ['startTime', 'endTime', 'repeatEvery'],
+          },
+          { activeBranch: 'hourList' },
+        ),
+      ],
+    })
+
+    const challenge = ump.challenge('startTime', {
+      everyHour: 'yes',
+      startTime: '09:00',
+      endTime: '10:00',
+    })
+
+    expect(challenge.oneOfResolution).toEqual(
+      expect.objectContaining({
+        group: 'subDayStrategy',
+        activeBranch: 'hourList',
+        method: 'explicit activeBranch',
+      }),
+    )
+  })
+
+  test('reports fallback oneOf resolution method for ambiguous values', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        oneOf<TestFields>('subDayStrategy', {
+          hourList: ['everyHour'],
+          interval: ['startTime', 'endTime', 'repeatEvery'],
+        }),
+      ],
+    })
+
+    const challenge = ump.challenge('repeatEvery', {
+      everyHour: 'yes',
+      repeatEvery: '15m',
+    })
+
+    expect(challenge.oneOfResolution).toEqual(
+      expect.objectContaining({
+        group: 'subDayStrategy',
+        activeBranch: 'hourList',
+        method: 'fallback: first branch',
+      }),
+    )
+  })
+
+  test('reports auto-detected from prev oneOf resolution method', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        oneOf<TestFields>('subDayStrategy', {
+          hourList: ['everyHour'],
+          interval: ['startTime', 'endTime', 'repeatEvery'],
+        }),
+      ],
+    })
+
+    const challenge = ump.challenge(
+      'repeatEvery',
+      {
+        everyHour: 'yes',
+        startTime: '09:00',
+      },
+      undefined,
+      {
+        startTime: '09:00',
+      },
+    )
+
+    expect(challenge.oneOfResolution).toEqual(
+      expect.objectContaining({
+        group: 'subDayStrategy',
+        activeBranch: 'hourList',
+        method: 'auto-detected from prev',
+      }),
+    )
+  })
+
+  test('reports explicit oneOf method when activeBranch resolves to null', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        oneOf<TestFields>(
+          'subDayStrategy',
+          {
+            hourList: ['everyHour'],
+            interval: ['startTime', 'endTime', 'repeatEvery'],
+          },
+          { activeBranch: () => null },
+        ),
+      ],
+    })
+
+    const challenge = ump.challenge('startTime', {
+      everyHour: 'yes',
+      startTime: '09:00',
+    })
+
+    expect(challenge.oneOfResolution).toEqual(
+      expect.objectContaining({
+        group: 'subDayStrategy',
+        activeBranch: null,
+        method: 'explicit activeBranch',
+      }),
+    )
+  })
+
   test('nests inner results for anyOf rules', () => {
     const ump = umpire<TestFields>({
       fields: {
