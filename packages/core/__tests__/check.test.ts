@@ -5,7 +5,6 @@ import {
   defineRule,
   eitherOf,
   enabledWhen,
-  fairWhen,
   requires,
 } from '../src/rules.js'
 import type { AvailabilityMap, Rule } from '../src/types.js'
