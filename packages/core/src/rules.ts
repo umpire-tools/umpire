@@ -4,6 +4,7 @@ import {
 } from './composite.js'
 import { shouldWarnInDev } from './dev.js'
 import { getFieldNameOrThrow, type FieldSelector } from './field.js'
+import { isObjectLike } from './guards.js'
 import { isSatisfied } from './satisfaction.js'
 import {
   isNamedCheck as isNamedCheckValidator,
@@ -415,9 +416,7 @@ function cloneNamedCheckMetadata(
 function isNamedCheckMetadataCarrier(
   value: unknown,
 ): value is NamedCheckMetadataCarrier {
-  return (
-    (typeof value === 'function' || typeof value === 'object') && value !== null
-  )
+  return isObjectLike(value)
 }
 
 function hasNamedCheckMetadata(
@@ -441,10 +440,7 @@ export function getNamedCheckMetadata(
 }
 
 function getPredicateField(value: unknown): string | undefined {
-  if (
-    (typeof value !== 'function' && typeof value !== 'object') ||
-    value === null
-  ) {
+  if (!isObjectLike(value)) {
     return undefined
   }
 

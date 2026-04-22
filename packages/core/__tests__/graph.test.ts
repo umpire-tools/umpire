@@ -273,6 +273,42 @@ describe('graph utilities', () => {
     })
   })
 
+  test('initializes graph bookkeeping for unseen edge endpoints', () => {
+    const fields: TestFields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+      delta: {},
+      epsilon: {},
+    }
+
+    const graph = buildGraph(fields, [
+      defineRule<TestFields>({
+        type: 'externalSource',
+        targets: ['alpha'],
+        sources: ['zeta' as keyof TestFields & string],
+        evaluate: () => new Map([['alpha', { enabled: true, reason: null }]]),
+      }),
+      defineRule<TestFields>({
+        type: 'externalTarget',
+        targets: ['omega' as keyof TestFields & string],
+        sources: ['beta'],
+        evaluate: () => new Map([['omega', { enabled: true, reason: null }]]),
+      }),
+    ])
+
+    expect(graph.adjacency.get('zeta')).toEqual(['alpha'])
+    expect(graph.adjacency.get('omega')).toEqual([])
+    expect(graph.incomingCounts.get('zeta')).toBe(0)
+    expect(graph.incomingCounts.get('omega')).toBe(1)
+    expect(graph.edges).toEqual(
+      expect.arrayContaining([
+        { from: 'zeta', to: 'alpha', type: 'externalSource', ordering: true },
+        { from: 'beta', to: 'omega', type: 'externalTarget', ordering: true },
+      ]),
+    )
+  })
+
   test('unions eitherOf branch sources into ordering and informational edges', () => {
     const fields: TestFields = {
       alpha: {},

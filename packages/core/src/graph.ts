@@ -25,6 +25,16 @@ function uniqueNodes(fieldNames: string[]): string[] {
   return [...new Set(fieldNames)]
 }
 
+function getOrInit<K, V>(map: Map<K, V>, key: K, init: () => V): V {
+  if (map.has(key)) {
+    return map.get(key) as V
+  }
+
+  const value = init()
+  map.set(key, value)
+  return value
+}
+
 export function buildGraph<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -54,21 +64,10 @@ export function buildGraph<
       return
     }
 
-    if (!adjacency.has(from)) {
-      adjacency.set(from, [])
-    }
-    if (!adjacency.has(to)) {
-      adjacency.set(to, [])
-    }
-    if (!incomingCounts.has(from)) {
-      incomingCounts.set(from, 0)
-    }
-    if (!incomingCounts.has(to)) {
-      incomingCounts.set(to, 0)
-    }
-
-    adjacency.get(from)?.push(to)
-    incomingCounts.set(to, (incomingCounts.get(to) ?? 0) + 1)
+    getOrInit(adjacency, from, () => []).push(to)
+    getOrInit(adjacency, to, () => [])
+    getOrInit(incomingCounts, from, () => 0)
+    incomingCounts.set(to, getOrInit(incomingCounts, to, () => 0) + 1)
   }
 
   for (const node of nodes) {
