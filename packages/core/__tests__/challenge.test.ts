@@ -360,6 +360,43 @@ describe('challenge', () => {
     ])
   })
 
+  test('reports matched branches for eitherOf rules when a branch passes', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        eitherOf<TestFields>('auth', {
+          sso: [enabledWhen<TestFields>('submit', () => false)],
+          password: [
+            enabledWhen<TestFields>('submit', () => true, {
+              reason: 'Password flow is available',
+            }),
+          ],
+        }),
+      ],
+    })
+
+    expect(ump.challenge('submit', {})).toEqual(
+      expect.objectContaining({
+        directReasons: [
+          expect.objectContaining({
+            rule: 'eitherOf',
+            passed: true,
+            matchedBranches: ['password'],
+          }),
+        ],
+      }),
+    )
+  })
+
   test('follows nested requires chains inside eitherOf rules', () => {
     const ump = umpire<TestFields>({
       fields: {

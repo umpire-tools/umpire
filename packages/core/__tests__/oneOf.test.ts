@@ -69,6 +69,35 @@ describe('oneOf resolution', () => {
     expect(result.beta.enabled).toBe(true)
   })
 
+  test('warns and falls back when prev yields two newly satisfied branches', () => {
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
+
+    try {
+      const ump = umpire<TestFields>({
+        fields: { alpha: {}, beta: {}, gamma: {}, mode: {} },
+        rules: [
+          oneOf<TestFields>('strategy', {
+            first: ['alpha'],
+            second: ['beta'],
+          }),
+        ],
+      })
+
+      const result = ump.check({ alpha: 'set', beta: 'set' }, undefined, {
+        gamma: 'already set',
+      })
+
+      expect(result.alpha.enabled).toBe(true)
+      expect(result.beta).toMatchObject({
+        enabled: false,
+        reason: 'conflicts with first strategy',
+      })
+      expect(warn).toHaveBeenCalledTimes(1)
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
   test('falls back to the first satisfied branch and warns when prev is absent', () => {
     const warn = spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -139,6 +168,21 @@ describe('oneOf resolution', () => {
 
     expect(result.alpha.enabled).toBe(false)
     expect(result.beta.enabled).toBe(true)
+  })
+
+  test('throws when an explicit activeBranch does not exist', () => {
+    expect(() =>
+      oneOf<TestFields>(
+        'strategy',
+        {
+          first: ['alpha'],
+          second: ['beta'],
+        },
+        {
+          activeBranch: 'missing',
+        },
+      ),
+    ).toThrow('Unknown active branch "missing" for oneOf("strategy")')
   })
 
   test('enables all branches when activeBranch returns null', () => {

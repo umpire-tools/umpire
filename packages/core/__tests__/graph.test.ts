@@ -77,6 +77,26 @@ describe('graph utilities', () => {
     expect(() => detectCycles(graph)).toThrow('Cycle detected')
   })
 
+  test('detects the minimal cycle inside a longer chain', () => {
+    const fields: TestFields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+      delta: {},
+      epsilon: {},
+    }
+    const graph = buildGraph(fields, [
+      requires<TestFields>('alpha', 'beta'),
+      requires<TestFields>('beta', 'gamma'),
+      requires<TestFields>('gamma', 'delta'),
+      requires<TestFields>('delta', 'beta'),
+    ])
+
+    expect(() => detectCycles(graph)).toThrow(
+      '[@umpire/core] Cycle detected: beta → delta → gamma → beta',
+    )
+  })
+
   test('topological sort returns leaves first and keeps disconnected fields', () => {
     const fields: TestFields = {
       alpha: {},
@@ -151,6 +171,35 @@ describe('graph utilities', () => {
 
     const order = topologicalSort(graph, Object.keys(fields))
     expect(order.indexOf('beta')).toBeLessThan(order.indexOf('alpha'))
+  })
+
+  test('buildGraph seeds bookkeeping for every unique field and keeps ordering edges separate', () => {
+    const fields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+    }
+
+    const graph = buildGraph(fields, [
+      requires<typeof fields>('beta', 'alpha'),
+      enabledWhen<typeof fields>(
+        'beta',
+        check('alpha', (value) => value === 'ready'),
+      ),
+      requires<typeof fields>('beta', 'alpha'),
+    ])
+
+    expect(graph.nodes).toEqual(['alpha', 'beta', 'gamma'])
+    expect(graph.adjacency.get('alpha')).toEqual(['beta'])
+    expect(graph.adjacency.get('beta')).toEqual([])
+    expect(graph.adjacency.get('gamma')).toEqual([])
+    expect(graph.incomingCounts.get('alpha')).toBe(0)
+    expect(graph.incomingCounts.get('beta')).toBe(1)
+    expect(graph.incomingCounts.get('gamma')).toBe(0)
+    expect(graph.edges).toEqual([
+      { from: 'alpha', to: 'beta', type: 'requires', ordering: true },
+      { from: 'alpha', to: 'beta', type: 'enabledWhen', ordering: false },
+    ])
   })
 
   test('treats fair custom rule sources as informational edges', () => {
@@ -311,6 +360,22 @@ describe('graph utilities', () => {
         ['alpha', 'beta'],
       ),
     ).toThrow('Unable to produce topological order')
+  })
+
+  test('detectCycles and topologicalSort tolerate sparse adjacency maps', () => {
+    const graph = {
+      nodes: ['alpha', 'beta'],
+      edges: [],
+      adjacency: new Map<string, string[]>([['alpha', ['beta']]]),
+      incomingCounts: new Map<string, number>([
+        ['alpha', 0],
+        ['beta', 1],
+      ]),
+      deferredEdgeGroups: [],
+    }
+
+    expect(() => detectCycles(graph)).not.toThrow()
+    expect(topologicalSort(graph, ['alpha', 'beta'])).toEqual(['alpha', 'beta'])
   })
 
   test('exportGraph deduplicates repeated raw edges', () => {

@@ -6,6 +6,9 @@
       "outputs": ["dist/**"]
     },
     "test": {},
+    "test:mutation": {
+      "cache": false
+    },
     "typecheck": {
       "dependsOn": ["^build"]
     },

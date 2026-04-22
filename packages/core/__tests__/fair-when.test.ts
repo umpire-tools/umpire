@@ -79,6 +79,25 @@ describe('fairWhen', () => {
     expect(calls).toBe(0)
   })
 
+  test('fairWhen evaluate always reports enabled: true', () => {
+    const rule = fairWhen('motherboard', (value) => value === 'ok', {
+      reason: 'invalid motherboard',
+    })
+
+    expect(rule.evaluate({}, {}).get('motherboard')).toEqual({
+      enabled: true,
+      fair: true,
+      reason: null,
+    })
+    expect(rule.evaluate({ motherboard: 'ok' }, {}).get('motherboard')).toEqual(
+      {
+        enabled: true,
+        fair: true,
+        reason: null,
+      },
+    )
+  })
+
   test('play recommends clearing a value when it becomes fouled', () => {
     const ump = umpire({
       fields: {
@@ -328,5 +347,18 @@ describe('field()', () => {
     ).toThrow(
       'Named field builder required when passing a field() value to a rule',
     )
+  })
+
+  test('stores the declared name on named builders only', () => {
+    const named = field<string>('cpu')
+    const unnamed = field<string>()
+    const namedDescriptor = Object.getOwnPropertyDescriptor(named, '__umpfield')
+
+    expect(named.__umpfield).toBe('cpu')
+    expect(namedDescriptor?.enumerable).toBe(false)
+    expect(namedDescriptor?.writable).toBe(false)
+    expect(namedDescriptor?.configurable).toBe(false)
+    expect('__umpfield' in unnamed).toBe(false)
+    expect((unnamed as { __umpfield?: string }).__umpfield).toBeUndefined()
   })
 })

@@ -27,6 +27,7 @@
     "prepack": "node ../../scripts/materialize-agent-compat.mjs prepack",
     "postpack": "node ../../scripts/materialize-agent-compat.mjs postpack",
     "test": "bun test",
+    "test:mutation": "stryker run",
     "typecheck": "tsc -p tsconfig.typecheck.json"
   },
   "files": [
@@ -43,6 +44,7 @@
     "access": "public"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^9.6.1",
     "tsdown": "^0.21.7"
   }
 }

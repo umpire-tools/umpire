@@ -268,6 +268,52 @@ describe('edge cases', () => {
     )
   })
 
+  test('does not reject predicate-backed disables that preserve source metadata', () => {
+    expect(() =>
+      umpire<TestFields>({
+        fields: {
+          alpha: {},
+          beta: {},
+          gamma: {},
+          delta: {},
+        },
+        rules: [
+          disables(
+            check('beta', (value) => value === 'off'),
+            ['alpha'],
+          ),
+          requires<TestFields>('alpha', 'beta'),
+        ],
+      }),
+    ).not.toThrow()
+  })
+
+  test('does not reject dynamic oneOf branches with an activeBranch function', () => {
+    expect(() =>
+      umpire<TestFields>({
+        fields: {
+          alpha: {},
+          beta: {},
+          gamma: {},
+          delta: {},
+        },
+        rules: [
+          oneOf<TestFields>(
+            'strategy',
+            {
+              first: ['alpha'],
+              second: ['beta'],
+            },
+            {
+              activeBranch: (values) => (values.alpha ? 'first' : 'second'),
+            },
+          ),
+          requires<TestFields>('alpha', 'beta'),
+        ],
+      }),
+    ).not.toThrow()
+  })
+
   test('does not reject cross-branch requires() when oneOf() branch selection is dynamic', () => {
     expect(() =>
       umpire<TestFields, { mode: string }>({
@@ -278,6 +324,37 @@ describe('edge cases', () => {
           delta: {},
         },
         rules: [
+          oneOf<TestFields, { mode: string }>(
+            'strategy',
+            {
+              first: ['alpha'],
+              second: ['beta'],
+            },
+            {
+              activeBranch: (_values, conditions) =>
+                conditions.mode === 'all-open' ? null : 'first',
+            },
+          ),
+          requires<TestFields, { mode: string }>('alpha', 'beta'),
+        ],
+      }),
+    ).not.toThrow()
+  })
+
+  test('does not reject predicate-backed disables() or dynamic oneOf() at construction time', () => {
+    expect(() =>
+      umpire<TestFields, { mode: string }>({
+        fields: {
+          alpha: {},
+          beta: {},
+          gamma: {},
+          delta: {},
+        },
+        rules: [
+          disables<TestFields>(
+            check('beta', (value) => value === 'lock'),
+            ['alpha'],
+          ),
           oneOf<TestFields, { mode: string }>(
             'strategy',
             {

@@ -1,8 +1,74 @@
 import { describe, expect, spyOn, test } from 'bun:test'
 import { enabledWhen } from '../src/rules.js'
+import {
+  normalizeValidationEntry,
+  runFieldValidator,
+  runValidationEntry,
+} from '../src/validation.js'
 import { umpire } from '../src/umpire.js'
 
 describe('surface validation metadata', () => {
+  test('normalizes supported validation entries and rejects unsupported ones', () => {
+    expect(
+      normalizeValidationEntry((value: string) => value === 'ok'),
+    ).toMatchObject({
+      validate: expect.any(Function),
+    })
+    expect(
+      normalizeValidationEntry({
+        validator: {
+          safeParse: (value: unknown) => ({ success: value === 'ok' }),
+        },
+        error: 'Bad value',
+      }),
+    ).toMatchObject({
+      validate: expect.any(Function),
+      error: 'Bad value',
+    })
+    expect(normalizeValidationEntry({ validator: { nope: true } })).toBeNull()
+  })
+
+  test('runs field validators and normalized validation entries', () => {
+    expect(runFieldValidator((value: string) => value === 'ok', 'ok')).toBe(
+      true,
+    )
+    expect(
+      runFieldValidator(
+        { test: (value: string) => value.length > 0 },
+        42 as never,
+      ),
+    ).toBe(false)
+
+    expect(
+      runValidationEntry(
+        {
+          validate: (value: string) => value === 'ok',
+          error: 'Fallback',
+        },
+        'bad',
+      ),
+    ).toEqual({ valid: false, error: 'Fallback' })
+
+    expect(
+      runValidationEntry(
+        {
+          validate: () => ({ valid: false, error: undefined }),
+        },
+        'bad',
+      ),
+    ).toEqual({ valid: false })
+
+    expect(
+      runValidationEntry(
+        {
+          validate: () => ({ valid: false }),
+          error: 'Fallback',
+        },
+        'bad',
+      ),
+    ).toEqual({ valid: false, error: 'Fallback' })
+  })
+
   test.each([
     ['function', (value: string) => value === 'ok'],
     [
@@ -105,6 +171,29 @@ describe('surface validation metadata', () => {
     expect(ump.check({ username: 'alice' }).username).toMatchObject({
       valid: false,
       error: 'Username is taken',
+    })
+  })
+
+  test('ignores undefined validator entries while still validating configured fields', () => {
+    const ump = umpire({
+      fields: {
+        username: { required: true, isEmpty: (value: unknown) => !value },
+        email: { required: true, isEmpty: (value: unknown) => !value },
+      },
+      rules: [],
+      validators: {
+        username: undefined,
+        email: (value: string) => value.includes('@'),
+      },
+    })
+
+    expect(
+      ump.check({ username: 'alice', email: 'alice' }).username.valid,
+    ).toBe(undefined)
+    expect(
+      ump.check({ username: 'alice', email: 'alice' }).email,
+    ).toMatchObject({
+      valid: false,
     })
   })
 
@@ -295,5 +384,26 @@ describe('surface validation metadata', () => {
         } as never,
       }),
     ).toThrow('Invalid validator configured for field "alpha"')
+  })
+
+  test('rejects validation entry objects with non-string error metadata', () => {
+    expect(
+      normalizeValidationEntry({
+        validator: (value: string) => value.length > 0,
+        error: 123,
+      }),
+    ).toBeNull()
+  })
+
+  test('treats invalid object results as invalid and falls back to wrapped error', () => {
+    expect(
+      runValidationEntry(
+        {
+          validate: () => ({ valid: false, error: 123 }) as never,
+          error: 'Fallback',
+        },
+        'bad',
+      ),
+    ).toEqual({ valid: false, error: 'Fallback' })
   })
 })

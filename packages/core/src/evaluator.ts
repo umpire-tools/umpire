@@ -38,6 +38,7 @@ function partitionRulesByPhase<
       continue
     }
 
+    // Stryker disable next-line ConditionalExpression: equivalent mutant — isGateRule is !isFairRule, so every non-fair rule is a gate rule; the check can never be false at this point
     if (isGateRule(rule)) {
       gateRules.push(rule)
     }
@@ -100,6 +101,7 @@ export function evaluateRuleForField<
 ): RuleEvaluation {
   const metadata = getInternalRuleMetadata(rule)
 
+  // Stryker disable ConditionalExpression,BlockStatement,StringLiteral: equivalent mutant — anyOf/eitherOf implement their own evaluate() that mirrors these paths exactly; bypassing the metadata branch produces identical results; 'or'→'' is equivalent because '' falls through to the OR branch in combineCompositeResults
   if (metadata?.kind === 'anyOf') {
     const innerResults: RuleEvaluation[] = []
 
@@ -149,6 +151,7 @@ export function evaluateRuleForField<
 
     return combineCompositeResults(metadata.constraint, 'or', branchResults)
   }
+  // Stryker enable ConditionalExpression,BlockStatement,StringLiteral
 
   let evaluation = baseRuleCache.get(rule)
   if (!evaluation) {

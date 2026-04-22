@@ -12,4 +12,6 @@ dist/
 docs/.yarn/
 coverage/
 coverage-istanbul/
+reports/
+.stryker-tmp/
 .pack-agent-compat-state.json

@@ -19,6 +19,7 @@
     "test": "turbo run test",
     "test:coverage": "turbo run test --force -- --coverage --coverage-reporter=lcov --coverage-dir=coverage && bun ./scripts/merge-lcov.mjs",
     "test:coverage:istanbul": "bun ./scripts/test-coverage-istanbul.ts",
+    "test:mutation": "turbo run test:mutation",
     "test:smoke": "yarn workspace @umpire/devtools test:smoke",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
