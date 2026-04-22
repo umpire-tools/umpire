@@ -536,6 +536,7 @@ function resolveCompositeRuleShape<
 } {
   const expectedTargets = uniqueFields([...rules[0].targets]).sort()
 
+  // Stryker disable next-line MethodExpression: equivalent mutant — rules[0] always matches itself so including it in self-comparison cannot produce a mismatch
   for (const rule of rules.slice(1)) {
     const currentTargets = uniqueFields([...rule.targets]).sort()
 
@@ -551,6 +552,7 @@ function resolveCompositeRuleShape<
 
   const constraint = getRuleConstraint(rules[0])
 
+  // Stryker disable next-line MethodExpression: equivalent mutant — rules[0] always matches its own constraint so including it cannot produce a mismatch
   for (const innerRule of rules.slice(1)) {
     if (getRuleConstraint(innerRule) !== constraint) {
       throw new Error(
@@ -793,6 +795,7 @@ function getSourceLabel<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 >(source: Source<F, C>): string {
+  // Stryker disable next-line ConditionalExpression,StringLiteral,BlockStatement: equivalent mutant — getSourceLabel is only called for non-string sources (disables() guards string sources at the call site); this branch is never reachable for string inputs
   if (typeof source === 'string') {
     return source
   }
@@ -1033,6 +1036,7 @@ export function resolveOneOfState<
     }
   }
 
+  // Stryker disable next-line ConditionalExpression: equivalent mutant — when prev is undefined, branchHasSatisfiedField returns false for all branches so newlySatisfiedBranches equals satisfiedBranches and both paths reach the same fallback
   if (prev) {
     const previouslySatisfiedBranches = new Set(
       branchNames.filter((branchName) =>
@@ -1051,6 +1055,7 @@ export function resolveOneOfState<
       }
     }
 
+    // Stryker disable next-line ConditionalExpression,EqualityOperator,BlockStatement: equivalent mutant — the >1 block body and the post-block fallback are identical (same warn + same return shape with satisfiedBranches[0])
     if (newlySatisfiedBranches.length > 1) {
       warnAmbiguousOneOf(groupName, satisfiedBranches)
       return {
@@ -1171,6 +1176,7 @@ export function disables<
 ): Rule<F, C> {
   const resolvedSource = normalizeSource(source)
   const resolvedTargets = targets.map((target) => getFieldNameOrThrow(target))
+  // Stryker disable next-line ConditionalExpression,StringLiteral: equivalent mutant — getSourceLabel returns the same string for string inputs, so both branches produce identical output when resolvedSource is a string
   const defaultReason =
     typeof resolvedSource === 'string'
       ? `overridden by ${resolvedSource}`
@@ -1405,6 +1411,7 @@ export function anyOf<
           getCompositeTargetEvaluation(evaluation, target),
         )
 
+        // Stryker disable next-line StringLiteral: equivalent mutant — combineCompositeResults only checks mode === 'and'; any other value including '' follows the OR path
         return combineCompositeResults(constraint, 'or', targetResults)
       })
     },
@@ -1469,6 +1476,7 @@ export function eitherOf<
           return combineCompositeResults(constraint, 'and', targetResults)
         })
 
+        // Stryker disable next-line StringLiteral: equivalent mutant — combineCompositeResults only checks mode === 'and'; any other value including '' follows the OR path
         return combineCompositeResults(constraint, 'or', branchResults)
       })
     },

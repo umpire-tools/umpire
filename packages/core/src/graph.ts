@@ -124,6 +124,7 @@ export function buildGraph<
 export function detectCycles(graph: DependencyGraph): void {
   const visited = new Set<string>()
   const active = new Set<string>()
+  // Stryker disable next-line ArrayDeclaration: equivalent mutant — any prefix entry is before cycleStart and is excluded by path.slice(cycleStart)
   const path: string[] = []
 
   const visit = (node: string): string[] | null => {
@@ -154,6 +155,7 @@ export function detectCycles(graph: DependencyGraph): void {
   }
 
   for (const node of graph.nodes) {
+    // Stryker disable next-line ConditionalExpression,BlockStatement: equivalent mutant — re-walking an already-visited root only causes redundant DFS; active is always empty between outer iterations so no false cycle is produced
     if (visited.has(node)) {
       continue
     }
