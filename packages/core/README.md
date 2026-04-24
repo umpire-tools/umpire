@@ -78,6 +78,7 @@ const fouls = signupUmp.play(
 - `ump.init(overrides?)` returns default field values.
 - `ump.challenge(field, values, conditions?, prev?)` returns a debug trace for one field.
 - `ump.graph()` returns the structural dependency graph.
+- `ump.rules()` returns normalized runtime rule entries with `id`, `index`, and inspection metadata for debugging and test tooling.
 
 See the docs for full type details and behavior notes: https://sdougbrown.github.io/umpire/
 

@@ -124,3 +124,28 @@ scorecardAssert(ump.scorecard(after, { before }))
 ```
 
 Methods: `.changed()`, `.notChanged()`, `.cascaded()`, `.fouled()`, `.notFouled()`, `.onlyChanged()`, `.onlyFouled()`, `.check()`.
+
+## `trackCoverage(ump)`
+
+Instruments an umpire instance so scenario tests can report which field states
+and rule failures they exercised. Only calls made through `tracker.ump.check()`
+and `tracker.ump.scorecard()` contribute to coverage.
+
+```typescript
+import { trackCoverage } from '@umpire/testing'
+
+const tracker = trackCoverage(ump)
+
+tracker.ump.check({ cardType: 'visa', cardNumber: '4111' })
+tracker.ump.scorecard(after, { before })
+
+expect(tracker.report().fieldStates.cardNumber.seenEnabled).toBe(true)
+expect(tracker.report().uncoveredRules).toEqual([])
+```
+
+`report().fieldStates` records `seenEnabled`, `seenDisabled`, `seenFair`,
+`seenFoul`, `seenSatisfied`, and `seenUnsatisfied` for every field. The
+`uncoveredRules` list is based on `ump.rules()` and `challenge()` `ruleId`
+metadata from `@umpire/core`, so it can distinguish multiple same-type rules on
+the same target while still exposing the normalized rule `index`. Use
+`tracker.reset()` to clear observations between scenarios.

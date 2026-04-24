@@ -9,6 +9,7 @@ import {
   oneOf,
   requires,
 } from '../src/rules.js'
+import { field } from '../src/field.js'
 import { umpire } from '../src/umpire.js'
 
 type TestFields = {
@@ -27,6 +28,86 @@ type TestConditions = {
 }
 
 describe('challenge', () => {
+  test('exposes normalized runtime rules with inspections', () => {
+    const ump = umpire({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        requires('submit', 'email'),
+        fairWhen('password', (value) => value === 'secret'),
+      ],
+    })
+
+    expect(ump.rules()).toEqual([
+      {
+        index: 0,
+        id: expect.any(String),
+        inspection: expect.objectContaining({
+          kind: 'requires',
+          target: 'submit',
+        }),
+      },
+      {
+        index: 1,
+        id: expect.any(String),
+        inspection: expect.objectContaining({
+          kind: 'fairWhen',
+          target: 'password',
+        }),
+      },
+    ])
+  })
+
+  test('pins field-builder rules before explicit rules in normalized order', () => {
+    const ump = umpire({
+      fields: {
+        email: {},
+        password: {},
+        submit: field('submit').requires('email'),
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [requires('submit', 'password')],
+    })
+
+    expect(ump.rules()).toEqual([
+      {
+        index: 0,
+        id: expect.any(String),
+        inspection: expect.objectContaining({
+          kind: 'requires',
+          target: 'submit',
+          dependencies: [{ kind: 'field', field: 'email' }],
+        }),
+      },
+      {
+        index: 1,
+        id: expect.any(String),
+        inspection: expect.objectContaining({
+          kind: 'requires',
+          target: 'submit',
+          dependencies: [{ kind: 'field', field: 'password' }],
+        }),
+      },
+    ])
+
+    expect(ump.challenge('submit', {}).directReasons).toEqual([
+      expect.objectContaining({ ruleIndex: 0, ruleId: expect.any(String) }),
+      expect.objectContaining({ ruleIndex: 1, ruleId: expect.any(String) }),
+    ])
+  })
+
   test('includes all direct reasons, including passed rules', () => {
     const ump = umpire<TestFields, TestConditions>({
       fields: {
@@ -65,16 +146,22 @@ describe('challenge', () => {
     expect(challenge.directReasons).toEqual([
       expect.objectContaining({
         rule: 'enabledWhen',
+        ruleIndex: 0,
+        ruleId: expect.any(String),
         passed: false,
         reason: 'Complete the captcha to continue',
       }),
       expect.objectContaining({
         rule: 'requires',
+        ruleIndex: 1,
+        ruleId: expect.any(String),
         passed: false,
         reason: 'Enter a valid email address',
       }),
       expect.objectContaining({
         rule: 'enabledWhen',
+        ruleIndex: 2,
+        ruleId: expect.any(String),
         passed: true,
         reason: null,
       }),

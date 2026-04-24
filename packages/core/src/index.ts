@@ -17,6 +17,7 @@ export type {
   ChallengeDirectReason,
   ChallengeTraceAttachment,
   Rule,
+  RuleEntry,
   RuleTraceAttachment,
   RuleTraceAttachmentResult,
   RuleTraceDependency,

@@ -1,6 +1,9 @@
 import type {
+  ChallengeDirectReason,
   FieldDef,
   FieldStatus,
+  RuleEntry,
+  RuleInspection,
   ScorecardResult,
   Umpire,
 } from '@umpire/core'
@@ -333,6 +336,305 @@ export function scorecardAssert<
   }
 
   return chain
+}
+
+export type FieldStateCoverage = {
+  seenEnabled: boolean
+  seenDisabled: boolean
+  seenFair: boolean
+  seenFoul: boolean
+  seenSatisfied: boolean
+  seenUnsatisfied: boolean
+}
+
+export type RuleCoverage = {
+  index: number
+  id: string
+  description: string
+}
+
+export type CoverageReport<K extends string = string> = {
+  fieldStates: Record<K, FieldStateCoverage>
+  uncoveredRules: RuleCoverage[]
+}
+
+export type CoverageTracker<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+> = {
+  ump: Umpire<F, C>
+  report(): CoverageReport<keyof F & string>
+  reset(): void
+}
+
+function createEmptyFieldStateCoverage(): FieldStateCoverage {
+  return {
+    seenEnabled: false,
+    seenDisabled: false,
+    seenFair: false,
+    seenFoul: false,
+    seenSatisfied: false,
+    seenUnsatisfied: false,
+  }
+}
+
+function cloneFieldStateCoverage(
+  coverage: FieldStateCoverage,
+): FieldStateCoverage {
+  return { ...coverage }
+}
+
+function recordFieldStates<K extends string>(
+  accumulator: Record<K, FieldStateCoverage>,
+  result: Record<K, FieldStatus>,
+): void {
+  for (const [field, status] of Object.entries(result) as Array<
+    [K, FieldStatus]
+  >) {
+    const fieldCoverage = accumulator[field]
+
+    if (!fieldCoverage) {
+      continue
+    }
+
+    fieldCoverage.seenEnabled ||= status.enabled
+    fieldCoverage.seenDisabled ||= !status.enabled
+    fieldCoverage.seenFair ||= status.fair
+    fieldCoverage.seenFoul ||= !status.fair
+    fieldCoverage.seenSatisfied ||= status.satisfied
+    fieldCoverage.seenUnsatisfied ||= !status.satisfied
+  }
+}
+
+function describeOperand(operand: unknown): string {
+  if (typeof operand === 'string') {
+    return operand
+  }
+
+  if (
+    operand &&
+    typeof operand === 'object' &&
+    'field' in operand &&
+    typeof operand.field === 'string'
+  ) {
+    return operand.field
+  }
+
+  if (
+    operand &&
+    typeof operand === 'object' &&
+    'kind' in operand &&
+    typeof operand.kind === 'string'
+  ) {
+    return operand.kind
+  }
+
+  return 'predicate'
+}
+
+function describeRuleInspection(
+  inspection: RuleInspection<Record<string, FieldDef>, Record<string, unknown>>,
+): string {
+  if (inspection.kind === 'enabledWhen') {
+    return `enabledWhen(${inspection.target}, ...)`
+  }
+
+  if (inspection.kind === 'disables') {
+    return `disables(${describeOperand(inspection.source)}, ${inspection.targets.join(', ')})`
+  }
+
+  if (inspection.kind === 'fairWhen') {
+    return `fairWhen(${inspection.target}, ...)`
+  }
+
+  if (inspection.kind === 'requires') {
+    return `requires(${inspection.target}, ${inspection.dependencies.map(describeOperand).join(', ')})`
+  }
+
+  if (inspection.kind === 'oneOf') {
+    return `oneOf(${inspection.groupName})`
+  }
+
+  if (inspection.kind === 'anyOf') {
+    return `anyOf(${inspection.rules.length} rules)`
+  }
+
+  if (inspection.kind === 'eitherOf') {
+    return `eitherOf(${inspection.groupName})`
+  }
+
+  return `${inspection.type}(${inspection.targets.join(', ')})`
+}
+
+function describeRuleEntry<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(entry: RuleEntry<F, C>): string {
+  return entry.inspection
+    ? describeRuleInspection(
+        entry.inspection as RuleInspection<
+          Record<string, FieldDef>,
+          Record<string, unknown>
+        >,
+      )
+    : `uninspectable rule #${entry.index}`
+}
+
+type ChallengeReasonLike = ChallengeDirectReason & {
+  inner?: ChallengeReasonLike[]
+  branches?: Record<string, { inner?: ChallengeReasonLike[] }>
+}
+
+function collectCoveredRulesFromReason(
+  reason: ChallengeReasonLike,
+  coveredRuleIds: Set<string>,
+  assumeFailed = false,
+): void {
+  if ((assumeFailed || reason.passed === false) && reason.ruleId) {
+    coveredRuleIds.add(reason.ruleId)
+  }
+
+  for (const inner of reason.inner ?? []) {
+    collectCoveredRulesFromReason(inner, coveredRuleIds)
+  }
+
+  for (const branch of Object.values(reason.branches ?? {})) {
+    for (const inner of branch.inner ?? []) {
+      collectCoveredRulesFromReason(inner, coveredRuleIds)
+    }
+  }
+}
+
+function collectCoveredRulesFromChallenge(
+  challenge: ReturnType<AnyUmpire['challenge']>,
+  coveredRuleIds: Set<string>,
+): void {
+  for (const reason of challenge.directReasons) {
+    collectCoveredRulesFromReason(reason as ChallengeReasonLike, coveredRuleIds)
+  }
+
+  for (const dep of challenge.transitiveDeps) {
+    for (const reason of dep.causedBy) {
+      collectCoveredRulesFromReason(
+        reason as ChallengeReasonLike,
+        coveredRuleIds,
+        true,
+      )
+    }
+  }
+}
+
+function collectRuleCoverageFromCheck<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  ump: Umpire<F, C>,
+  result: Record<keyof F & string, FieldStatus>,
+  values: Record<string, unknown>,
+  conditions: C | undefined,
+  prev: Record<string, unknown> | undefined,
+  coveredRuleIds: Set<string>,
+): void {
+  for (const [field, status] of Object.entries(result) as Array<
+    [keyof F & string, FieldStatus]
+  >) {
+    if (status.enabled && status.fair) {
+      continue
+    }
+
+    collectCoveredRulesFromChallenge(
+      ump.challenge(field, values, conditions, prev),
+      coveredRuleIds,
+    )
+  }
+}
+
+export function trackCoverage<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(ump: Umpire<F, C>): CoverageTracker<F, C> {
+  type K = keyof F & string
+
+  const fieldNames = ump.graph().nodes as K[]
+  const rules = ump.rules()
+  const fieldStates = Object.fromEntries(
+    fieldNames.map((field) => [field, createEmptyFieldStateCoverage()]),
+  ) as Record<K, FieldStateCoverage>
+  const coveredRuleIds = new Set<string>()
+
+  const reset = () => {
+    for (const field of fieldNames) {
+      fieldStates[field] = createEmptyFieldStateCoverage()
+    }
+
+    coveredRuleIds.clear()
+  }
+
+  const trackedUmp: Umpire<F, C> = {
+    check(values, conditions, prev) {
+      const result = ump.check(values, conditions, prev)
+      recordFieldStates(fieldStates, result as Record<K, FieldStatus>)
+      collectRuleCoverageFromCheck(
+        ump,
+        result as Record<K, FieldStatus>,
+        values,
+        conditions,
+        prev,
+        coveredRuleIds,
+      )
+      return result
+    },
+    play(before, after) {
+      return ump.play(before, after)
+    },
+    init(overrides) {
+      return ump.init(overrides)
+    },
+    scorecard(snapshot, options) {
+      const result = ump.scorecard(snapshot, options)
+      recordFieldStates(fieldStates, result.check as Record<K, FieldStatus>)
+      collectRuleCoverageFromCheck(
+        ump,
+        result.check as Record<K, FieldStatus>,
+        snapshot.values,
+        snapshot.conditions,
+        options?.before?.values,
+        coveredRuleIds,
+      )
+      return result
+    },
+    challenge(field, values, conditions, prev) {
+      return ump.challenge(field, values, conditions, prev)
+    },
+    graph() {
+      return ump.graph()
+    },
+    rules() {
+      return ump.rules()
+    },
+  }
+
+  return {
+    ump: trackedUmp,
+    report() {
+      return {
+        fieldStates: Object.fromEntries(
+          fieldNames.map((field) => [
+            field,
+            cloneFieldStateCoverage(fieldStates[field]),
+          ]),
+        ) as Record<K, FieldStateCoverage>,
+        uncoveredRules: rules
+          .filter((entry) => !coveredRuleIds.has(entry.id))
+          .map((entry) => ({
+            index: entry.index,
+            id: entry.id,
+            description: describeRuleEntry(entry),
+          })),
+      }
+    },
+    reset,
+  }
 }
 
 const VALUE_PROBES = [null, undefined, '', 'a', 0, 1, true, false] as const

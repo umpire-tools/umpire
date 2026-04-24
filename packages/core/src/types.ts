@@ -1,3 +1,5 @@
+import type { RuleInspection } from './rules.js'
+
 export interface FieldDef<V = unknown> {
   required?: boolean
   default?: V
@@ -136,6 +138,8 @@ export type ChallengeDirectReason = {
   rule: string
   reason: string | null
   passed: boolean
+  ruleIndex?: number
+  ruleId?: string
   trace?: ChallengeTraceAttachment[]
   [key: string]: unknown
 }
@@ -242,6 +246,15 @@ export type Rule<
   ) => Map<string, RuleEvaluation>
 }
 
+export type RuleEntry<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+> = {
+  index: number
+  id: string
+  inspection: RuleInspection<F, C> | undefined
+}
+
 export interface Umpire<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
@@ -264,6 +277,7 @@ export interface Umpire<
     prev?: InputValues,
   ): ChallengeTrace
   graph(): UmpireGraph
+  rules(): RuleEntry<F, C>[]
 }
 
 export type FieldsOf<U> = U extends Umpire<infer F> ? F : never
