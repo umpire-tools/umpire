@@ -96,56 +96,145 @@ Each conditions entry is tested against every sampled value combination.
 
 ## `checkAssert(result)`
 
-Readable scenario assertions over `ump.check(values)` results.
+Takes the result of `ump.check(values)` and returns a fluent assertion chain. Each method accepts variadic field names and throws a plain `Error` listing every failing field if any assertion fails — no test runner integration needed.
 
 ```typescript
+import { fairWhen, requires, umpire } from '@umpire/core'
 import { checkAssert } from '@umpire/testing'
 
-checkAssert(ump.check({ gate: 'open' }))
-  .enabled('gate')
-  .optional('gate')
+const ump = umpire({
+  fields: {
+    email: { required: true },
+    password: { required: true },
+    referralCode: {},
+  },
+  rules: [
+    requires('referralCode', 'email'),
+    fairWhen('password', (val) => String(val).length >= 8, {
+      reason: 'Password must be at least 8 characters',
+    }),
+  ],
+})
+
+// No email — referralCode is disabled; short password is foul
+checkAssert(ump.check({ password: 'abc' }))
+  .disabled('referralCode')
+  .foul('password')
+  .unsatisfied('email')
+  .required('email', 'password')
 ```
 
 Methods: `.enabled()`, `.disabled()`, `.fair()`, `.foul()`, `.required()`, `.optional()`, `.satisfied()`, `.unsatisfied()`.
 
+All methods return `this` for chaining. Disabled fields always have `fair: true` in umpire, so `.foul()` only fires for enabled fields with values that fail a fairness predicate.
+
+For full documentation see the [Testing reference](https://umpire.dev/extensions/testing/#checkassertresult).
+
 ## `scorecardAssert(result)`
 
-Readable transition assertions over `ump.scorecard(snapshot, { before })` results.
+Takes the result of `ump.scorecard(snapshot, { before })` and returns a fluent assertion chain over the transition. Use it to verify what changed, what cascaded, and what earned a foul-reset recommendation.
 
 ```typescript
+import { requires, umpire } from '@umpire/core'
 import { scorecardAssert } from '@umpire/testing'
 
-scorecardAssert(ump.scorecard(after, { before }))
-  .changed('cardType')
+const ump = umpire({
+  fields: {
+    cardType: {},
+    cardNumber: {},
+    expiryDate: {},
+    billingZip: {},
+  },
+  rules: [
+    requires('cardNumber', 'cardType', { reason: 'Pick a card type first' }),
+    requires('expiryDate', 'cardNumber', {
+      reason: 'Enter a card number first',
+    }),
+  ],
+})
+
+// User clears cardType after the form was filled in
+const result = ump.scorecard(
+  {
+    values: {
+      cardType: null,
+      cardNumber: '4111111111111111',
+      expiryDate: '12/30',
+      billingZip: '10001',
+    },
+  },
+  {
+    before: {
+      values: {
+        cardType: 'visa',
+        cardNumber: '4111111111111111',
+        expiryDate: '12/30',
+        billingZip: '10001',
+      },
+    },
+  },
+)
+
+scorecardAssert(result)
+  .onlyChanged('cardType')
   .cascaded('cardNumber', 'expiryDate')
   .fouled('cardNumber', 'expiryDate')
+  .notFouled('billingZip')
   .check()
   .disabled('cardNumber', 'expiryDate')
+  .enabled('cardType', 'billingZip')
 ```
 
 Methods: `.changed()`, `.notChanged()`, `.cascaded()`, `.fouled()`, `.notFouled()`, `.onlyChanged()`, `.onlyFouled()`, `.check()`.
 
+`.check()` delegates to `checkAssert(result.check)` so you can make availability assertions on the same scorecard result without a separate `ump.check()` call.
+
+For full documentation see the [Testing reference](https://umpire.dev/extensions/testing/#scorecardassertresult).
+
 ## `trackCoverage(ump)`
 
-Instruments an umpire instance so scenario tests can report which field states
-and rule failures they exercised. Only calls made through `tracker.ump.check()`
-and `tracker.ump.scorecard()` contribute to coverage.
+Wraps an umpire instance and instruments it so your scenario tests can report which field states and rule failures they actually exercised. The tracker answers: did any test see `referralCode` while disabled? Did the `fairWhen(password, ...)` rule ever fire?
+
+Only calls through `tracker.ump` contribute to coverage — calling the original unwrapped umpire does not.
 
 ```typescript
+import { fairWhen, requires, umpire } from '@umpire/core'
 import { trackCoverage } from '@umpire/testing'
+
+const ump = umpire({
+  fields: {
+    email: { required: true },
+    password: { required: true },
+    referralCode: {},
+  },
+  rules: [
+    requires('referralCode', 'email'),
+    fairWhen('password', (val) => String(val).length >= 8, {
+      reason: 'Password must be at least 8 characters',
+    }),
+  ],
+})
 
 const tracker = trackCoverage(ump)
 
-tracker.ump.check({ cardType: 'visa', cardNumber: '4111' })
-tracker.ump.scorecard(after, { before })
+// Scenario 1: email present — referralCode unlocked, password valid
+tracker.ump.check({
+  email: 'user@example.com',
+  password: 'hunter2!',
+  referralCode: 'PROMO',
+})
 
-expect(tracker.report().fieldStates.cardNumber.seenEnabled).toBe(true)
-expect(tracker.report().uncoveredRules).toEqual([])
+// Scenario 2: no email — referralCode disabled, password foul
+tracker.ump.check({ email: null, password: 'abc' })
+
+const { fieldStates, uncoveredRules } = tracker.report()
+
+expect(fieldStates.referralCode.seenEnabled).toBe(true)
+expect(fieldStates.referralCode.seenDisabled).toBe(true)
+expect(fieldStates.password.seenFoul).toBe(true)
+expect(uncoveredRules).toEqual([])
 ```
 
-`report().fieldStates` records `seenEnabled`, `seenDisabled`, `seenFair`,
-`seenFoul`, `seenSatisfied`, and `seenUnsatisfied` for every field. The
-`uncoveredRules` list is based on `ump.rules()` and `challenge()` `ruleId`
-metadata from `@umpire/core`, so it can distinguish multiple same-type rules on
-the same target while still exposing the normalized rule `index`. Use
-`tracker.reset()` to clear observations between scenarios.
+`report().fieldStates` records `seenEnabled`, `seenDisabled`, `seenFair`, `seenFoul`, `seenSatisfied`, and `seenUnsatisfied` for every field. `report().uncoveredRules` lists rules that never produced a failure in any instrumented call, using `challenge()` `ruleId` metadata to distinguish multiple same-type rules on the same target. Call `tracker.reset()` to clear observations between scenarios without rebuilding the wrapped umpire.
+
+For full documentation see the [Testing reference](https://umpire.dev/extensions/testing/#trackcoverageump).
