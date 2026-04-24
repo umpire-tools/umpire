@@ -2,6 +2,7 @@ import {
   anyOf,
   eitherOf,
   fairWhen,
+  oneOf,
   requires,
   type Rule,
   umpire,
@@ -200,6 +201,35 @@ describe('trackCoverage', () => {
     )
 
     tracker.ump.check({ submit: true, expiry: '12/30' })
+
+    expect(tracker.report().uncoveredRules).toEqual([])
+  })
+
+  test('marks oneOf rules as covered when a branch is disabled', () => {
+    const tracker = trackCoverage(
+      umpire({
+        fields,
+        rules: [
+          oneOf(
+            'entry',
+            { card: ['cardNumber'], details: ['details'] },
+            {
+              activeBranch: 'card',
+            },
+          ),
+        ],
+      }),
+    )
+
+    expect(tracker.report().uncoveredRules).toEqual([
+      {
+        index: 0,
+        id: expect.any(String),
+        description: 'oneOf(entry)',
+      },
+    ])
+
+    tracker.ump.check({ details: 'open' })
 
     expect(tracker.report().uncoveredRules).toEqual([])
   })

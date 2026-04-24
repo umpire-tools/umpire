@@ -489,6 +489,8 @@ function describeRuleForField<
     return withRuleTrace(
       {
         rule: 'oneOf',
+        ruleIndex: ruleEntry?.index,
+        ruleId: ruleEntry?.id,
         passed: evaluation.enabled,
         reason: evaluation.reason,
         group: metadata.groupName,
