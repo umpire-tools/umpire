@@ -111,6 +111,21 @@ describe('scorecardAssert', () => {
       ).not.toThrow()
     })
 
+    test('passes for an enabled fair field with no foul recommendation', () => {
+      const result = ump.scorecard({
+        values: {
+          cardType: 'visa',
+          cardNumber: '4111111111111111',
+          expiryDate: '12/30',
+          billingZip: '10001',
+        },
+      })
+
+      expect(() =>
+        scorecardAssert(result).notFouled('billingZip'),
+      ).not.toThrow()
+    })
+
     test('throws with the foul reason when a field has a recommendation', () => {
       expect(() =>
         scorecardAssert(buildResult()).notFouled('cardNumber'),
@@ -134,6 +149,12 @@ describe('scorecardAssert', () => {
         'scorecardAssert: expected only changed fields to be ["cardType","billingZip"] — missing ["billingZip"]',
       )
     })
+
+    test('throws when the actual changed set has extra fields', () => {
+      expect(() => scorecardAssert(buildResult()).onlyChanged()).toThrow(
+        'scorecardAssert: expected only changed fields to be [] — unexpected ["cardType"]',
+      )
+    })
   })
 
   describe('.onlyFouled()', () => {
@@ -148,6 +169,18 @@ describe('scorecardAssert', () => {
         scorecardAssert(buildResult()).onlyFouled('cardNumber'),
       ).toThrow(
         'scorecardAssert: expected only fouled fields to be ["cardNumber"] — unexpected ["expiryDate"]',
+      )
+    })
+
+    test('throws when an expected fouled field is missing', () => {
+      expect(() =>
+        scorecardAssert(buildResult()).onlyFouled(
+          'cardNumber',
+          'expiryDate',
+          'billingZip',
+        ),
+      ).toThrow(
+        'scorecardAssert: expected only fouled fields to be ["cardNumber","expiryDate","billingZip"] — missing ["billingZip"]',
       )
     })
   })

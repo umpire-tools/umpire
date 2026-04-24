@@ -378,12 +378,6 @@ function createEmptyFieldStateCoverage(): FieldStateCoverage {
   }
 }
 
-function cloneFieldStateCoverage(
-  coverage: FieldStateCoverage,
-): FieldStateCoverage {
-  return { ...coverage }
-}
-
 function recordFieldStates<K extends string>(
   accumulator: Record<K, FieldStateCoverage>,
   result: Record<K, FieldStatus>,
@@ -463,7 +457,12 @@ function describeRuleInspection(
     return `eitherOf(${inspection.groupName})`
   }
 
-  return `${inspection.type}(${inspection.targets.join(', ')})`
+  if (inspection.kind === 'custom') {
+    return `${inspection.type}(${inspection.targets.join(', ')})`
+  }
+
+  const _exhaustive: never = inspection
+  return _exhaustive
 }
 
 function describeRuleEntry<
@@ -490,7 +489,7 @@ function collectCoveredRulesFromReason(
   coveredRuleIds: Set<string>,
   assumeFailed = false,
 ): void {
-  if ((assumeFailed || reason.passed === false) && reason.ruleId) {
+  if ((assumeFailed || !reason.passed) && reason.ruleId) {
     coveredRuleIds.add(reason.ruleId)
   }
 
@@ -619,10 +618,7 @@ export function trackCoverage<
     report() {
       return {
         fieldStates: Object.fromEntries(
-          fieldNames.map((field) => [
-            field,
-            cloneFieldStateCoverage(fieldStates[field]),
-          ]),
+          fieldNames.map((field) => [field, { ...fieldStates[field] }]),
         ) as Record<K, FieldStateCoverage>,
         uncoveredRules: rules
           .filter((entry) => !coveredRuleIds.has(entry.id))

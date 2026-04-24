@@ -26,6 +26,7 @@ import {
   getInternalRuleMetadata,
   getInternalRuleOptions,
   isFairRule,
+  cloneRuleInspection,
   inspectRule,
   type InternalRuleMetadata,
   getSourceField,
@@ -231,10 +232,16 @@ function didRulePass<
 function buildRuleEntries<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
->(rules: Rule<F, C>[]): Array<RuleEntry<F, C>> {
+>(
+  rules: Rule<F, C>[],
+): {
+  entries: Array<RuleEntry<F, C>>
+  entryByRule: Map<Rule<F, C>, RuleEntry<F, C>>
+} {
   const seenIds = new Map<string, number>()
+  const entryByRule = new Map<Rule<F, C>, RuleEntry<F, C>>()
 
-  return rules.map((rule, index) => {
+  const entries = rules.map((rule, index) => {
     const inspection = inspectRule(rule)
     const baseId = inspection
       ? [inspection.kind, rule.targets.join(','), rule.sources.join(',')].join(
@@ -245,12 +252,30 @@ function buildRuleEntries<
 
     seenIds.set(baseId, seenCount + 1)
 
-    return {
+    const entry = {
       index,
       id: seenCount === 0 ? baseId : `${baseId}#${seenCount + 1}`,
       inspection,
     }
+
+    entryByRule.set(rule, entry)
+    return entry
   })
+
+  return { entries, entryByRule }
+}
+
+function cloneRuleEntry<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(entry: RuleEntry<F, C>): RuleEntry<F, C> {
+  return {
+    ...entry,
+    inspection:
+      entry.inspection === undefined
+        ? undefined
+        : cloneRuleInspection(entry.inspection),
+  }
 }
 
 function normalizeConfig<
@@ -1066,11 +1091,8 @@ export function umpire<
   detectCycles(graph)
   const topoOrder = topologicalSort(graph, fieldNames)
   const rulesByTarget = indexRulesByTarget(rules)
-  const ruleEntries = buildRuleEntries(rules)
-  const ruleEntryByRule = new Map<
-    Rule<NormalizeFields<FInput>, C>,
-    RuleEntry<NormalizeFields<FInput>, C>
-  >(rules.map((rule, index) => [rule, ruleEntries[index]]))
+  const { entries: ruleEntries, entryByRule: ruleEntryByRule } =
+    buildRuleEntries(rules)
   const rulesByTargetPhase = indexRulesByTargetPhase(rulesByTarget)
   const exportedGraph = exportGraph(graph)
   const { incomingByField, outgoingByField } = buildFieldEdgeLookup(
@@ -1448,7 +1470,7 @@ export function umpire<
     },
 
     rules() {
-      return ruleEntries.map((entry) => ({ ...entry }))
+      return ruleEntries.map((entry) => cloneRuleEntry(entry))
     },
   }
 }

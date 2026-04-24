@@ -1,4 +1,4 @@
-import { fairWhen, requires, umpire } from '@umpire/core'
+import { enabledWhen, fairWhen, requires, umpire } from '@umpire/core'
 import { checkAssert } from '../src/index.js'
 
 const ump = umpire({
@@ -25,6 +25,18 @@ describe('checkAssert', () => {
       const result = ump.check({})
       expect(() => checkAssert(result).enabled('guarded')).toThrow(
         'checkAssert: expected "guarded" to be enabled — was disabled (reason: "requires gate")',
+      )
+    })
+
+    test('throws without reason metadata when a field is disabled silently', () => {
+      const silentUmp = umpire({
+        fields: { guarded: {} },
+        rules: [enabledWhen('guarded', () => false, { reason: () => '' })],
+      })
+      const result = silentUmp.check({})
+
+      expect(() => checkAssert(result).enabled('guarded')).toThrow(
+        'checkAssert: expected "guarded" to be enabled — was disabled',
       )
     })
 
@@ -90,6 +102,13 @@ describe('checkAssert', () => {
       const result = ump.check({ flagged: 'good' })
       expect(() => checkAssert(result).foul('flagged')).toThrow(
         'checkAssert: expected "flagged" to be foul — was fair (enabled: true)',
+      )
+    })
+
+    test('throws when a disabled field is fair', () => {
+      const result = ump.check({})
+      expect(() => checkAssert(result).foul('guarded')).toThrow(
+        'checkAssert: expected "guarded" to be foul — was fair (enabled: false)',
       )
     })
   })

@@ -78,6 +78,27 @@ describe('trackCoverage', () => {
     expect(tracker.report().uncoveredRules).toEqual([])
   })
 
+  test('records foul field states from scorecard calls', () => {
+    const tracker = trackCoverage(
+      umpire({
+        fields,
+        rules: [
+          fairWhen('cardNumber', (value) => value === '4111', {
+            reason: 'Use a test Visa number',
+          }),
+        ],
+      }),
+    )
+
+    const scorecard = tracker.ump.scorecard({
+      values: { cardNumber: '5555' },
+    })
+
+    expect(scorecard.check.cardNumber.fair).toBe(false)
+    expect(tracker.report().fieldStates.cardNumber.seenFoul).toBe(true)
+    expect(tracker.report().uncoveredRules).toEqual([])
+  })
+
   test('preserves return values and forwards conditions and prev', () => {
     type Conditions = { allowDetails?: boolean }
     const seen: Array<{
@@ -200,9 +221,30 @@ describe('trackCoverage', () => {
       }),
     )
 
-    tracker.ump.check({ submit: true, expiry: '12/30' })
+    const result = tracker.ump.check({ submit: true, expiry: '12/30' })
 
+    expect(result.submit.enabled).toBe(false)
+    expect(result.expiry.enabled).toBe(false)
     expect(tracker.report().uncoveredRules).toEqual([])
+  })
+
+  test('does not collect coverage from direct challenge calls', () => {
+    const tracker = trackCoverage(
+      umpire({
+        fields,
+        rules: [requires('details', 'mode')],
+      }),
+    )
+
+    tracker.ump.challenge('details', { details: 'open' })
+
+    expect(tracker.report().uncoveredRules).toEqual([
+      {
+        index: 0,
+        id: expect.any(String),
+        description: 'requires(details, mode)',
+      },
+    ])
   })
 
   test('marks oneOf rules as covered when a branch is disabled', () => {

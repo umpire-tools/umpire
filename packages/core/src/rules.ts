@@ -687,6 +687,13 @@ export function inspectRule<
   return undefined
 }
 
+export function cloneRuleInspection<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(inspection: RuleInspection<F, C>): RuleInspection<F, C> {
+  return structuredClone(inspection)
+}
+
 export function getInternalRuleOptions<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,

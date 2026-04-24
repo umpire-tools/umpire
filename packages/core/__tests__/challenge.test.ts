@@ -11,6 +11,7 @@ import {
 } from '../src/rules.js'
 import { field } from '../src/field.js'
 import { umpire } from '../src/umpire.js'
+import type { Rule } from '../src/types.js'
 
 type TestFields = {
   email: {}
@@ -105,6 +106,89 @@ describe('challenge', () => {
     expect(ump.challenge('submit', {}).directReasons).toEqual([
       expect.objectContaining({ ruleIndex: 0, ruleId: expect.any(String) }),
       expect.objectContaining({ ruleIndex: 1, ruleId: expect.any(String) }),
+    ])
+  })
+
+  test('exposes undefined inspection for uninspectable rules', () => {
+    const opaqueRule: Rule<TestFields> = {
+      type: 'opaque',
+      targets: ['submit'],
+      sources: [],
+      evaluate: () =>
+        new Map([['submit', { enabled: false, reason: 'Hidden rule' }]]),
+    }
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [opaqueRule],
+    })
+
+    expect(ump.rules()).toEqual([
+      {
+        index: 0,
+        id: 'uninspectable:0',
+        inspection: undefined,
+      },
+    ])
+  })
+
+  test('returns defensive copies of rule inspections', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        anyOf(requires('submit', 'email'), requires('submit', 'password')),
+      ],
+    })
+    const rules = ump.rules()
+    const inspection = rules[0]?.inspection
+
+    if (inspection?.kind === 'anyOf') {
+      inspection.rules.push({
+        kind: 'requires',
+        target: 'submit',
+        dependencies: [],
+        hasDynamicReason: false,
+      })
+    }
+
+    expect(ump.rules()[0]?.inspection).not.toEqual(inspection)
+  })
+
+  test('suffixes duplicate rule ids in normalized order', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [requires('submit', 'email'), requires('submit', 'email')],
+    })
+
+    expect(ump.rules().map((entry) => entry.id)).toEqual([
+      'requires:submit:email',
+      'requires:submit:email#2',
     ])
   })
 
