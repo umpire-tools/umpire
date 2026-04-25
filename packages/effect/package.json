@@ -1,0 +1,45 @@
+{
+  "name": "@umpire/effect",
+  "version": "0.1.0-alpha.0",
+  "description": "Effect Schema adapter and SubscriptionRef bridge for @umpire/core",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepack": "node ../../scripts/materialize-agent-compat.mjs prepack",
+    "postpack": "node ../../scripts/materialize-agent-compat.mjs postpack",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    "AGENTS.md",
+    ".claude"
+  ],
+  "dependencies": {
+    "@umpire/core": "workspace:*",
+    "@umpire/store": "workspace:*"
+  },
+  "peerDependencies": {
+    "effect": "^3.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdougbrown/umpire.git",
+    "directory": "packages/effect"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "effect": "^3.21.2"
+  }
+}

@@ -51,4 +51,7 @@ if (process.env.BUN_DISABLE_WORKSPACE_MOCKS !== 'true') {
   mock.module('@umpire/zustand', () =>
     require('../packages/zustand/src/index.js'),
   )
+  mock.module('@umpire/effect', () =>
+    require('../packages/effect/src/index.js'),
+  )
 }
