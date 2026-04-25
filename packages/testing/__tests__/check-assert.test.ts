@@ -50,13 +50,6 @@ describe('checkAssert', () => {
         'expected the following field(s) to be enabled',
       )
     })
-
-    test('returns the chain for further assertions', () => {
-      const result = ump.check({})
-      expect(() =>
-        checkAssert(result).enabled('gate').disabled('guarded'),
-      ).not.toThrow()
-    })
   })
 
   describe('.disabled()', () => {

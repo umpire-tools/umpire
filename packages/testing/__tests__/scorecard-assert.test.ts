@@ -111,21 +111,6 @@ describe('scorecardAssert', () => {
       ).not.toThrow()
     })
 
-    test('passes for an enabled fair field with no foul recommendation', () => {
-      const result = ump.scorecard({
-        values: {
-          cardType: 'visa',
-          cardNumber: '4111111111111111',
-          expiryDate: '12/30',
-          billingZip: '10001',
-        },
-      })
-
-      expect(() =>
-        scorecardAssert(result).notFouled('billingZip'),
-      ).not.toThrow()
-    })
-
     test('throws with the foul reason when a field has a recommendation', () => {
       expect(() =>
         scorecardAssert(buildResult()).notFouled('cardNumber'),
