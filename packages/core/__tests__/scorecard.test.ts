@@ -3,6 +3,41 @@ import { fairWhen, requires } from '../src/rules.js'
 import { umpire } from '../src/umpire.js'
 
 describe('scorecard', () => {
+  test('does not flag semantically equal setoid values as changed', () => {
+    class SemanticallyEqualValue {
+      constructor(private readonly value: string) {}
+
+      'fantasy-land/equals'(other: unknown) {
+        return (
+          other instanceof SemanticallyEqualValue && other.value === this.value
+        )
+      }
+    }
+
+    const ump = umpire({
+      fields: {
+        token: {},
+      },
+      rules: [],
+    })
+
+    const before = {
+      values: {
+        token: new SemanticallyEqualValue('shared'),
+      },
+    }
+    const after = {
+      values: {
+        token: new SemanticallyEqualValue('shared'),
+      },
+    }
+
+    const card = ump.scorecard(after, { before })
+
+    expect(card.transition.changedFields).not.toContain('token')
+    expect(card.fields.token.changed).toBe(false)
+  })
+
   test('exposes structural field and transition state from a compiled umpire', () => {
     const sharedRam = ['ddr5-kit']
     const ump = umpire({

@@ -1,4 +1,4 @@
-import { enabledWhen } from '../src/rules.js'
+import { enabledWhen, fairWhen } from '../src/rules.js'
 import { umpire } from '../src/umpire.js'
 
 type TestFields = {
@@ -12,6 +12,92 @@ type TestConditions = {
 }
 
 describe('play', () => {
+  test('does not recommend a reset when the current value matches the default by Setoid equality', () => {
+    class SemanticallyEqualValue {
+      constructor(private readonly value: string) {}
+
+      'fantasy-land/equals'(other: unknown) {
+        return (
+          other instanceof SemanticallyEqualValue && other.value === this.value
+        )
+      }
+    }
+
+    const ump = umpire<TestFields>({
+      fields: {
+        toggle: {},
+        dependent: { default: new SemanticallyEqualValue('shared') },
+        other: {},
+      },
+      rules: [
+        enabledWhen<TestFields, TestConditions>(
+          'dependent',
+          (values) => values.toggle === true,
+        ),
+      ],
+    })
+
+    const recommendations = ump.play(
+      {
+        values: {
+          toggle: true,
+          dependent: new SemanticallyEqualValue('shared'),
+        },
+      },
+      {
+        values: {
+          toggle: false,
+          dependent: new SemanticallyEqualValue('shared'),
+        },
+      },
+    )
+
+    expect(recommendations).toEqual([])
+  })
+
+  test('does not recommend a reset on foul transitions when current value matches default by Setoid equality', () => {
+    class SemanticallyEqualValue {
+      constructor(private readonly value: string) {}
+
+      'fantasy-land/equals'(other: unknown) {
+        return (
+          other instanceof SemanticallyEqualValue && other.value === this.value
+        )
+      }
+    }
+
+    const ump = umpire<TestFields>({
+      fields: {
+        toggle: {},
+        dependent: { default: new SemanticallyEqualValue('shared') },
+        other: {},
+      },
+      rules: [
+        fairWhen<TestFields, TestConditions>(
+          'dependent',
+          (_value, values) => values.toggle === true,
+        ),
+      ],
+    })
+
+    const recommendations = ump.play(
+      {
+        values: {
+          toggle: true,
+          dependent: new SemanticallyEqualValue('shared'),
+        },
+      },
+      {
+        values: {
+          toggle: false,
+          dependent: new SemanticallyEqualValue('shared'),
+        },
+      },
+    )
+
+    expect(recommendations).toEqual([])
+  })
+
   test('recommends a reset when a field transitions from enabled to disabled with a value', () => {
     const ump = umpire<TestFields>({
       fields: {

@@ -55,6 +55,7 @@ export {
   isEmptyPresent,
   isEmptyString,
 } from './emptiness.js'
+export { valuesEqual } from './equality.js'
 export { field } from './field.js'
 export { foulMap } from './foul-map.js'
 export { isSatisfied } from './satisfaction.js'
