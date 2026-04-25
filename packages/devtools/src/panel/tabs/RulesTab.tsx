@@ -101,9 +101,7 @@ export function RulesTab({ activeRuleIds, rules }: Props) {
             >
               <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
                 <span style={pillStyle(tone, true)}>{kind}</span>
-                {isActive && (
-                  <span style={pillStyle(tone, false)}>active</span>
-                )}
+                {isActive && <span style={pillStyle(tone, false)}>active</span>}
               </div>
               <span style={{ color: theme.fgMuted, fontSize: 10 }}>
                 #{entry.index}
@@ -112,9 +110,7 @@ export function RulesTab({ activeRuleIds, rules }: Props) {
             <div style={{ color: theme.fg, fontSize: 11 }}>
               {describeEntry(entry)}
             </div>
-            <div style={{ color: theme.fgMuted, fontSize: 10 }}>
-              {entry.id}
-            </div>
+            <div style={{ color: theme.fgMuted, fontSize: 10 }}>{entry.id}</div>
           </div>
         )
       })}

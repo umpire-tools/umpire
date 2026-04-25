@@ -283,9 +283,7 @@ export const register: RegisterFn = <
   const renderIndex = (existing?.renderIndex ?? 0) + 1
   const readsInspection = resolveReadsInspection(values, options)
   const rules: AnyRuleEntry[] =
-    existing?.ump === ump
-      ? existing.rules
-      : (ump.rules() as AnyRuleEntry[])
+    existing?.ump === ump ? existing.rules : (ump.rules() as AnyRuleEntry[])
   const { coverage, activeRuleIds } = buildCoverage(
     existing?.coverage,
     ump as Umpire<Record<string, FieldDef>, Record<string, unknown>>,

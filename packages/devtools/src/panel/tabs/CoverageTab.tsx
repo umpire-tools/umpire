@@ -1,5 +1,15 @@
-import type { AnyRuleEntry, DevtoolsCoverage, DevtoolsFieldCoverage } from '../../types.js'
-import { getRuleTone, pillStyle, scrollPaneStyle, sectionHeadingStyle, theme } from '../theme.js'
+import type {
+  AnyRuleEntry,
+  DevtoolsCoverage,
+  DevtoolsFieldCoverage,
+} from '../../types.js'
+import {
+  getRuleTone,
+  pillStyle,
+  scrollPaneStyle,
+  sectionHeadingStyle,
+  theme,
+} from '../theme.js'
 
 type Props = {
   coverage: DevtoolsCoverage
@@ -77,7 +87,11 @@ export function CoverageTab({ coverage, rules }: Props) {
         >
           <h3 style={sectionHeadingStyle()}>Rule Coverage</h3>
           <span style={{ color: theme.fgMuted, fontSize: 11 }}>
-            <span style={{ color: coveredCount === rules.length ? theme.enabled : theme.fg }}>
+            <span
+              style={{
+                color: coveredCount === rules.length ? theme.enabled : theme.fg,
+              }}
+            >
               {coveredCount}
             </span>
             {' / '}
@@ -166,7 +180,11 @@ export function CoverageTab({ coverage, rules }: Props) {
                   <tr key={field}>
                     <td style={fieldCellStyle}>
                       <div
-                        style={{ alignItems: 'center', display: 'flex', gap: 8 }}
+                        style={{
+                          alignItems: 'center',
+                          display: 'flex',
+                          gap: 8,
+                        }}
                       >
                         <span
                           style={{
