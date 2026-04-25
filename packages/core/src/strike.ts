@@ -1,4 +1,5 @@
 import type { FieldDef, FieldValues, Foul } from './types.js'
+import { isEqual } from './equality.js'
 
 export function strike<F extends Record<string, FieldDef>>(
   values: FieldValues<F>,
@@ -12,7 +13,7 @@ export function strike<F extends Record<string, FieldDef>>(
   let next: FieldValues<F> | undefined
 
   for (const foul of fouls) {
-    if (Object.is(values[foul.field], foul.suggestedValue)) {
+    if (isEqual(values[foul.field], foul.suggestedValue)) {
       continue
     }
 
