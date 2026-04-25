@@ -1861,9 +1861,20 @@ __metadata:
     "@umpire/reads": "workspace:^"
   peerDependencies:
     preact: ">=10"
+    react: ^18.0.0 || ^19.0.0
   peerDependenciesMeta:
     preact:
       optional: true
+    react:
+      optional: true
+  languageName: node
+  linkType: soft
+
+"@umpire/dsl@portal:../packages/dsl::locator=umpire-docs%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@umpire/dsl@portal:../packages/dsl::locator=umpire-docs%40workspace%3A."
+  dependencies:
+    "@umpire/core": "workspace:^"
   languageName: node
   linkType: soft
 
@@ -1872,6 +1883,7 @@ __metadata:
   resolution: "@umpire/json@portal:../packages/json::locator=umpire-docs%40workspace%3A."
   dependencies:
     "@umpire/core": "workspace:^"
+    "@umpire/dsl": "workspace:^"
   languageName: node
   linkType: soft
 
@@ -5812,6 +5824,7 @@ __metadata:
     "@types/react-dom": "npm:^19.2.3"
     "@umpire/core": "portal:../packages/core"
     "@umpire/devtools": "portal:../packages/devtools"
+    "@umpire/dsl": "portal:../packages/dsl"
     "@umpire/json": "portal:../packages/json"
     "@umpire/react": "portal:../packages/react"
     "@umpire/reads": "portal:../packages/reads"
