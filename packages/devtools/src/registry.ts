@@ -1,5 +1,7 @@
 import type {
+  ChallengeDirectReason,
   FieldDef,
+  FieldStatus,
   InputValues,
   ScorecardResult,
   Snapshot,
@@ -8,13 +10,91 @@ import type {
 import type { ReadTableInspection } from '@umpire/reads'
 import type {
   AnyReadInspection,
-  ResolvedDevtoolsExtension,
+  AnyRuleEntry,
   AnySnapshot,
+  DevtoolsCoverage,
+  DevtoolsFieldCoverage,
   DevtoolsFoulEvent,
   RegisterFn,
   RegisterOptions,
   RegistryEntry,
+  ResolvedDevtoolsExtension,
 } from './types.js'
+
+type AnyReason = ChallengeDirectReason & {
+  inner?: AnyReason[]
+  branches?: Record<string, { inner?: AnyReason[] }>
+}
+
+function collectFromReason(
+  reason: AnyReason,
+  ids: Set<string>,
+  assumeFailed = false,
+): void {
+  if ((assumeFailed || !reason.passed) && reason.ruleId) {
+    ids.add(reason.ruleId)
+  }
+  for (const inner of reason.inner ?? []) {
+    collectFromReason(inner, ids)
+  }
+  for (const branch of Object.values(reason.branches ?? {})) {
+    for (const inner of branch.inner ?? []) {
+      collectFromReason(inner, ids)
+    }
+  }
+}
+
+function mergeFieldCoverage(
+  existing: DevtoolsFieldCoverage | undefined,
+  status: FieldStatus,
+): DevtoolsFieldCoverage {
+  return {
+    seenDisabled: (existing?.seenDisabled ?? false) || !status.enabled,
+    seenEnabled: (existing?.seenEnabled ?? false) || status.enabled,
+    seenFair: (existing?.seenFair ?? false) || status.fair,
+    seenFoul: (existing?.seenFoul ?? false) || !status.fair,
+    seenSatisfied: (existing?.seenSatisfied ?? false) || status.satisfied,
+    seenUnsatisfied: (existing?.seenUnsatisfied ?? false) || !status.satisfied,
+  }
+}
+
+function buildCoverage(
+  existing: DevtoolsCoverage | undefined,
+  ump: Umpire<Record<string, FieldDef>, Record<string, unknown>>,
+  scorecard: ScorecardResult<Record<string, FieldDef>, Record<string, unknown>>,
+  values: InputValues,
+  conditions: Record<string, unknown> | undefined,
+  prevValues: InputValues | undefined,
+): { coverage: DevtoolsCoverage; activeRuleIds: Set<string> } {
+  const fieldStates: Record<string, DevtoolsFieldCoverage> = {
+    ...existing?.fieldStates,
+  }
+  const coveredRuleIds = new Set(existing?.coveredRuleIds)
+  const activeRuleIds = new Set<string>()
+
+  for (const [field, status] of Object.entries(
+    scorecard.check as Record<string, FieldStatus>,
+  )) {
+    fieldStates[field] = mergeFieldCoverage(fieldStates[field], status)
+
+    if (!status.enabled || !status.fair) {
+      const trace = ump.challenge(field, values, conditions, prevValues)
+
+      for (const reason of trace.directReasons) {
+        collectFromReason(reason as AnyReason, activeRuleIds)
+        collectFromReason(reason as AnyReason, coveredRuleIds)
+      }
+      for (const dep of trace.transitiveDeps) {
+        for (const reason of dep.causedBy) {
+          collectFromReason(reason as AnyReason, activeRuleIds, true)
+          collectFromReason(reason as AnyReason, coveredRuleIds, true)
+        }
+      }
+    }
+  }
+
+  return { activeRuleIds, coverage: { coveredRuleIds, fieldStates } }
+}
 
 const registry = new Map<string, RegistryEntry>()
 const listeners = new Set<() => void>()
@@ -23,11 +103,13 @@ let foulLogDepth = 50
 let registryVersion = 0
 
 const RESERVED_EXTENSION_IDS = new Set([
+  'coverage',
   'matrix',
   'conditions',
   'fouls',
   'graph',
   'reads',
+  'rules',
 ])
 
 function notify() {
@@ -200,8 +282,25 @@ export const register: RegisterFn = <
   })
   const renderIndex = (existing?.renderIndex ?? 0) + 1
   const readsInspection = resolveReadsInspection(values, options)
+  const rules: AnyRuleEntry[] =
+    existing?.ump === ump
+      ? existing.rules
+      : (ump.rules() as AnyRuleEntry[])
+  const { coverage, activeRuleIds } = buildCoverage(
+    existing?.coverage,
+    ump as Umpire<Record<string, FieldDef>, Record<string, unknown>>,
+    scorecard as ScorecardResult<
+      Record<string, FieldDef>,
+      Record<string, unknown>
+    >,
+    values,
+    conditions as Record<string, unknown> | undefined,
+    previous?.values,
+  )
 
   const nextEntry: RegistryEntry = {
+    activeRuleIds,
+    coverage,
     extensions: resolveExtensions(
       ump,
       values,
@@ -218,6 +317,7 @@ export const register: RegisterFn = <
     previous: previous as RegistryEntry['previous'],
     reads: readsInspection,
     renderIndex,
+    rules,
     scorecard: scorecard as RegistryEntry['scorecard'],
     snapshot: currentSnapshot as AnySnapshot,
     ump: ump as RegistryEntry['ump'],

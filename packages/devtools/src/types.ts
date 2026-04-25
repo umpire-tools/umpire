@@ -1,13 +1,20 @@
 import type {
   FieldDef,
   InputValues,
+  RuleEntry,
   ScorecardResult,
   Snapshot,
   Umpire,
 } from '@umpire/core'
 import type { ReadTable, ReadTableInspection } from '@umpire/reads'
 
-export type DevtoolsBuiltinTab = 'matrix' | 'conditions' | 'fouls' | 'graph'
+export type DevtoolsBuiltinTab =
+  | 'matrix'
+  | 'conditions'
+  | 'fouls'
+  | 'graph'
+  | 'rules'
+  | 'coverage'
 export type DevtoolsTab = DevtoolsBuiltinTab | 'reads' | (string & {})
 
 export type DevtoolsPosition =
@@ -126,6 +133,25 @@ export type AnyReadInspection = ReadTableInspection<
   Record<string, unknown>,
   Record<string, unknown>
 >
+
+export type AnyRuleEntry = RuleEntry<
+  Record<string, FieldDef>,
+  Record<string, unknown>
+>
+
+export type DevtoolsFieldCoverage = {
+  seenEnabled: boolean
+  seenDisabled: boolean
+  seenFair: boolean
+  seenFoul: boolean
+  seenSatisfied: boolean
+  seenUnsatisfied: boolean
+}
+
+export type DevtoolsCoverage = {
+  fieldStates: Record<string, DevtoolsFieldCoverage>
+  coveredRuleIds: Set<string>
+}
 export type AnyDevtoolsExtension = DevtoolsExtension<
   Record<string, FieldDef>,
   Record<string, unknown>
@@ -138,6 +164,8 @@ export type ResolvedDevtoolsExtension = {
 }
 
 export type RegistryEntry = {
+  activeRuleIds: Set<string>
+  coverage: DevtoolsCoverage
   extensions: ResolvedDevtoolsExtension[]
   foulLog: DevtoolsFoulEvent[]
   id: string
@@ -147,6 +175,7 @@ export type RegistryEntry = {
   previous: AnySnapshot | null
   reads: AnyReadInspection | null
   renderIndex: number
+  rules: AnyRuleEntry[]
   scorecard: AnyScorecard
   snapshot: AnySnapshot
   ump: AnyUmpire

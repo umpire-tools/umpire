@@ -19,7 +19,9 @@ import {
   tabStyle,
   theme,
 } from './theme.js'
+import { CoverageTab } from './tabs/CoverageTab.js'
 import { ReadsTab } from './tabs/ReadsTab.js'
+import { RulesTab } from './tabs/RulesTab.js'
 
 type Props = {
   options: Required<MountOptions>
@@ -81,6 +83,9 @@ function resolveTabs(entry: RegistryEntry | null): PanelTab[] {
   if (entry.reads) {
     tabs.push({ id: 'reads', label: 'reads' })
   }
+
+  tabs.push({ id: 'rules', label: 'rules' })
+  tabs.push({ id: 'coverage', label: 'coverage' })
 
   for (const extension of entry.extensions) {
     tabs.push({
@@ -388,6 +393,14 @@ function PanelBody({
 
   if (tab === 'reads') {
     return <ReadsTab inspection={entry.reads} />
+  }
+
+  if (tab === 'rules') {
+    return <RulesTab activeRuleIds={entry.activeRuleIds} rules={entry.rules} />
+  }
+
+  if (tab === 'coverage') {
+    return <CoverageTab coverage={entry.coverage} rules={entry.rules} />
   }
 
   const extension =

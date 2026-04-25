@@ -64,12 +64,14 @@ export function unmount() {
 export { register, snapshot, subscribe, unregister }
 
 export type {
+  AnyDevtoolsExtension,
   AnyReadInspection,
+  AnyRuleEntry,
   AnyScorecard,
   AnySnapshot,
   AnyUmpire,
-  AnyDevtoolsExtension,
   DevtoolsBuiltinTab,
+  DevtoolsCoverage,
   DevtoolsExtension,
   DevtoolsExtensionBadge,
   DevtoolsExtensionInspectContext,
@@ -77,11 +79,12 @@ export type {
   DevtoolsExtensionSection,
   DevtoolsExtensionTone,
   DevtoolsExtensionView,
+  DevtoolsFieldCoverage,
   DevtoolsFoulEvent,
   DevtoolsPosition,
   DevtoolsTab,
   MountOptions,
   RegisterOptions,
-  ResolvedDevtoolsExtension,
   RegistryEntry,
+  ResolvedDevtoolsExtension,
 } from './types.js'

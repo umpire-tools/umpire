@@ -10,11 +10,13 @@ export type ReasonLike = {
 }
 
 const skippedReasonKeys = new Set([
-  'rule',
+  'inner',
   'passed',
   'reason',
+  'ruleId',
+  'ruleIndex',
+  'rule',
   'trace',
-  'inner',
 ])
 
 export function formatValue(value: unknown, maxLength = 44): string {

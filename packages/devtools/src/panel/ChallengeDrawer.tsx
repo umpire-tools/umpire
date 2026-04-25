@@ -187,6 +187,11 @@ function ReasonView({ depth = 0, reason }: ReasonProps) {
             {passed ? 'pass' : 'fail'}
           </span>
         </div>
+        {typeof reason.ruleId === 'string' && (
+          <span style={{ color: theme.fgMuted, fontSize: 10 }}>
+            {reason.ruleId}
+          </span>
+        )}
       </div>
 
       {reason.reason && (
