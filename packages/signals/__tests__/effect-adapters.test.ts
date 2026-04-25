@@ -40,4 +40,32 @@ describe('effect-driven adapters', () => {
       ])
     })
   }
+
+  test('vue uses sync watchEffect semantics with no lag', () => {
+    const ump = umpire({
+      fields: {
+        useSso: { default: false },
+        password: { default: '' },
+        confirmPassword: { default: '' },
+      },
+      rules: [
+        enabledWhen('password', (values) => values.useSso !== true),
+        enabledWhen('confirmPassword', (values) => values.useSso !== true),
+        enabledWhen('confirmPassword', (values) => Boolean(values.password), {
+          reason: 'Enter a password first',
+        }),
+      ],
+    })
+
+    const reactive = reactiveUmp(ump, vueAdapter)
+
+    reactive.update({ password: 'hunter22', confirmPassword: 'hunter22' })
+    expect(reactive.fouls).toEqual([])
+
+    reactive.set('useSso', true)
+    expect(reactive.fouls.map((foul) => foul.field).sort()).toEqual([
+      'confirmPassword',
+      'password',
+    ])
+  })
 })
