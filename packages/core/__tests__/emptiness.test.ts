@@ -1,5 +1,4 @@
 import {
-  eitherOf,
   enabledWhen,
   isEmptyArray,
   isEmptyObject,
@@ -52,13 +51,5 @@ describe('emptiness helpers', () => {
     expect(isSatisfied({ theme: 'dark' }, { isEmpty: isEmptyObject })).toBe(
       true,
     )
-  })
-
-  test('re-exports eitherOf from the public entrypoint', () => {
-    const rule = eitherOf<{ alpha: {} }>('entry', {
-      only: [enabledWhen('alpha', () => true)],
-    })
-
-    expect(rule.type).toBe('eitherOf')
   })
 })

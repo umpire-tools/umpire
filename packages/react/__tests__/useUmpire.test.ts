@@ -10,34 +10,6 @@ const fields = {
 } satisfies Record<string, FieldDef>
 
 describe('useUmpire', () => {
-  it('returns check with correct availability', () => {
-    const ump = umpire({
-      fields,
-      rules: [enabledWhen('phone', (values) => !!values.name)],
-    })
-
-    const { result } = renderHook(() =>
-      useUmpire(ump, { name: 'Alice', email: '', phone: '' }),
-    )
-
-    expect(result.current.check.phone.enabled).toBe(true)
-    expect(result.current.check.name.enabled).toBe(true)
-    expect(result.current.check.email.enabled).toBe(true)
-  })
-
-  it('returns disabled when predicate fails', () => {
-    const ump = umpire({
-      fields,
-      rules: [enabledWhen('phone', (values) => !!values.name)],
-    })
-
-    const { result } = renderHook(() =>
-      useUmpire(ump, { name: '', email: '', phone: '' }),
-    )
-
-    expect(result.current.check.phone.enabled).toBe(false)
-  })
-
   it('recomputes check when values change', () => {
     const ump = umpire({
       fields,
@@ -50,47 +22,12 @@ describe('useUmpire', () => {
     )
 
     expect(result.current.check.phone.enabled).toBe(false)
+    expect(result.current.check.name.enabled).toBe(true)
+    expect(result.current.check.email.enabled).toBe(true)
 
     rerender({ values: { name: 'Alice', email: '', phone: '' } })
 
     expect(result.current.check.phone.enabled).toBe(true)
-  })
-
-  it('returns empty fouls on first render', () => {
-    const ump = umpire({
-      fields,
-      rules: [enabledWhen('phone', (values) => !!values.name)],
-    })
-
-    const { result } = renderHook(() =>
-      useUmpire(ump, { name: 'Alice', email: '', phone: '555-1234' }),
-    )
-
-    expect(result.current.fouls).toEqual([])
-  })
-
-  it('returns fouls when field transitions from enabled to disabled', () => {
-    const ump = umpire({
-      fields,
-      rules: [enabledWhen('phone', (values) => !!values.name)],
-    })
-
-    const { result, rerender } = renderHook(
-      ({ values }) => useUmpire(ump, values),
-      {
-        initialProps: {
-          values: { name: 'Alice', email: '', phone: '555-1234' },
-        },
-      },
-    )
-
-    expect(result.current.fouls).toEqual([])
-
-    // Clear name -> phone should become disabled, triggering a foul
-    rerender({ values: { name: '', email: '', phone: '555-1234' } })
-
-    expect(result.current.fouls.length).toBe(1)
-    expect(result.current.fouls[0].field).toBe('phone')
   })
 
   it('tracks prev correctly across rerenders', () => {

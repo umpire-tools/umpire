@@ -8,48 +8,72 @@ type TestFields = {
 }
 
 describe('foulMap', () => {
-  test('returns an empty object for an empty list', () => {
-    expect(foulMap<TestFields>([])).toEqual({})
-  })
-
-  test('indexes a single foul by field', () => {
-    const fouls: Foul<TestFields>[] = [
+  test('indexes fouls by field', () => {
+    const scenarios: Array<{
+      fouls: Foul<TestFields>[]
+      expected: Partial<Record<keyof TestFields, Foul<TestFields>>>
+    }> = [
       {
-        field: 'email',
-        reason: 'required',
-        suggestedValue: undefined,
+        fouls: [],
+        expected: {},
+      },
+      {
+        fouls: [
+          {
+            field: 'email',
+            reason: 'required',
+            suggestedValue: undefined,
+          },
+        ],
+        expected: {
+          email: {
+            field: 'email',
+            reason: 'required',
+            suggestedValue: undefined,
+          },
+        },
+      },
+      {
+        fouls: [
+          {
+            field: 'email',
+            reason: 'required',
+            suggestedValue: undefined,
+          },
+          {
+            field: 'plan',
+            reason: 'plan unavailable',
+            suggestedValue: 'basic',
+          },
+          {
+            field: 'notes',
+            reason: 'disabled',
+            suggestedValue: '',
+          },
+        ],
+        expected: {
+          email: {
+            field: 'email',
+            reason: 'required',
+            suggestedValue: undefined,
+          },
+          plan: {
+            field: 'plan',
+            reason: 'plan unavailable',
+            suggestedValue: 'basic',
+          },
+          notes: {
+            field: 'notes',
+            reason: 'disabled',
+            suggestedValue: '',
+          },
+        },
       },
     ]
 
-    expect(foulMap(fouls)).toEqual({
-      email: fouls[0],
-    })
-  })
-
-  test('indexes multiple fouls by field', () => {
-    const fouls: Foul<TestFields>[] = [
-      {
-        field: 'email',
-        reason: 'required',
-        suggestedValue: undefined,
-      },
-      {
-        field: 'plan',
-        reason: 'plan unavailable',
-        suggestedValue: 'basic',
-      },
-      {
-        field: 'notes',
-        reason: 'disabled',
-        suggestedValue: '',
-      },
-    ]
-
-    expect(foulMap(fouls)).toEqual({
-      email: fouls[0],
-      plan: fouls[1],
-      notes: fouls[2],
-    })
+    for (const { fouls, expected } of scenarios) {
+      expect(foulMap(fouls)).toEqual(expected)
+    }
   })
 
   test('keeps the last foul when fields are duplicated', () => {
