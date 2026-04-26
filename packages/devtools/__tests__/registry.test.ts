@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, mock } from 'bun:test'
-import { enabledWhen, umpire } from '@umpire/core'
+import { enabledWhen, requires, umpire } from '@umpire/core'
 import { createReads, enabledWhenRead } from '@umpire/reads'
 import type { ReadTableInspection } from '@umpire/reads'
 import {
@@ -71,6 +71,69 @@ describe('registry', () => {
     })
 
     expect(listener).toHaveBeenCalledTimes(2)
+  })
+
+  it('stores rules, activeRuleIds, and coverage on each entry', () => {
+    register('demo', demoUmp, {
+      gate: '',
+      target: 'kept',
+    })
+
+    const entry = snapshot().get('demo')
+    const gateRuleId = entry?.rules[0]?.id
+
+    expect(gateRuleId).toEqual(expect.any(String))
+    expect(entry?.activeRuleIds).toEqual(new Set([gateRuleId as string]))
+    expect(entry?.coverage.coveredRuleIds).toEqual(
+      new Set([gateRuleId as string]),
+    )
+    expect(entry?.coverage.fieldStates.gate).toBeDefined()
+    expect(entry?.coverage.fieldStates.target).toBeDefined()
+  })
+
+  it('tracks transitive rule IDs in active and covered sets', () => {
+    const transitiveUmp = umpire({
+      fields: {
+        gate: { default: '' },
+        start: { default: '' },
+        end: { default: '' },
+        submit: { default: '' },
+      },
+      rules: [
+        enabledWhen('start', (values) => Boolean(values.gate), {
+          reason: 'gate required',
+        }),
+        requires('end', 'start', { reason: 'need start' }),
+        requires('submit', 'end', { reason: 'need end' }),
+      ],
+    })
+
+    register('transitive', transitiveUmp, {
+      gate: '',
+      start: '09:00',
+      end: '10:00',
+      submit: 'yes',
+    })
+
+    let current = snapshot().get('transitive')
+    const expectedRuleIds = new Set(
+      current?.rules.map((rule) => rule.id).filter(Boolean),
+    )
+
+    expect(current?.activeRuleIds).toEqual(expectedRuleIds)
+    expect(current?.coverage.coveredRuleIds).toEqual(expectedRuleIds)
+
+    register('transitive', transitiveUmp, {
+      gate: 'open',
+      start: '09:00',
+      end: '10:00',
+      submit: 'yes',
+    })
+
+    current = snapshot().get('transitive')
+
+    expect(current?.activeRuleIds).toEqual(new Set())
+    expect(current?.coverage.coveredRuleIds).toEqual(expectedRuleIds)
   })
 
   it('removes entries when unregistered', () => {

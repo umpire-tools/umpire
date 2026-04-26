@@ -5,7 +5,6 @@ description: Mount an in-app Umpire inspector for scorecards, challenge traces, 
 
 `@umpire/devtools` is the in-app inspection surface for Umpire. It mounts a Shadow DOM panel, subscribes to explicit registrations, and lets you inspect the same `scorecard()` and `challenge()` data you would otherwise have to print or assert by hand.
 
-The visual language is intentionally tool-like: tabbed panes, tables, logs, and inspectors. It should feel distinct from your product UI, not like another styled feature surface.
 
 ## How it works
 
@@ -60,6 +59,8 @@ The panel shows:
 - Per-field challenge traces from `challenge()`
 - A rolling foul log for disabled-with-value transitions
 - A graph view of the structural dependency DAG
+- A rules tab listing every rule with its kind, id, and whether it is currently active
+- A coverage tab tracking which rules have been triggered and which field states have been observed this session
 - Optional extension tabs, including reads when you register a reads table
 
 ## React Helpers
@@ -186,7 +187,7 @@ mount({
 | `position` | `'bottom-right'` | One of `top-left`, `top-right`, `bottom-left`, `bottom-right` |
 | `offset` | `{ x: 16, y: 16 }` | Distance from the corner in CSS pixels |
 | `foulLogDepth` | `50` | Max foul events retained in the rolling log |
-| `defaultTab` | `'matrix'` | Starting tab: `matrix`, `conditions`, `fouls`, `graph`, `reads`, or a custom extension id |
+| `defaultTab` | `'matrix'` | Starting tab: `matrix`, `conditions`, `fouls`, `graph`, `rules`, `coverage`, `reads`, or a custom extension id |
 
 ## Slim Build
 
