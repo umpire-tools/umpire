@@ -1,4 +1,9 @@
-import type { ChallengeTraceAttachment } from '@umpire/core'
+import type {
+  ChallengeTraceAttachment,
+  RuleInspection,
+  RuleOperandInspection,
+} from '@umpire/core'
+import type { AnyRuleEntry } from '../types.js'
 
 export type ReasonLike = {
   inner?: ReasonLike[]
@@ -87,4 +92,68 @@ export function getTraceMeta(trace: ChallengeTraceAttachment) {
       value !== undefined &&
       (typeof value !== 'object' || value === null || Array.isArray(value)),
   )
+}
+
+export function describeOperand(
+  operand: RuleOperandInspection<string>,
+): string {
+  if (operand.kind === 'field') {
+    return operand.field
+  }
+
+  const predicate = operand.predicate
+
+  if (!predicate) {
+    return 'predicate'
+  }
+
+  if (predicate.field && predicate.namedCheck) {
+    return `${predicate.field}?.${predicate.namedCheck.__check}`
+  }
+
+  if (predicate.field) {
+    return `${predicate.field}?`
+  }
+
+  if (predicate.namedCheck) {
+    return predicate.namedCheck.__check
+  }
+
+  return 'predicate'
+}
+
+export function describeInspection(
+  inspection: RuleInspection<
+    Record<string, { required?: boolean }>,
+    Record<string, unknown>
+  >,
+): string {
+  switch (inspection.kind) {
+    case 'enabledWhen':
+      return `enabledWhen(${inspection.target})`
+    case 'fairWhen':
+      return `fairWhen(${inspection.target})`
+    case 'disables':
+      return `disables(${describeOperand(inspection.source)}, [${inspection.targets.join(', ')}])`
+    case 'requires':
+      return `requires(${inspection.target}, ${inspection.dependencies.map(describeOperand).join(', ')})`
+    case 'oneOf':
+      return `oneOf(${inspection.groupName})`
+    case 'anyOf':
+      return `anyOf(${inspection.rules.length} rules)`
+    case 'eitherOf':
+      return `eitherOf(${inspection.groupName})`
+    case 'custom':
+      return `${inspection.type}(${inspection.targets.join(', ')})`
+  }
+
+  const exhaustive: never = inspection
+
+  return exhaustive
+}
+
+export function describeEntry(entry: AnyRuleEntry): string {
+  return entry.inspection
+    ? describeInspection(entry.inspection)
+    : `uninspectable rule #${entry.index}`
 }

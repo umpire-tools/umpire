@@ -1,57 +1,10 @@
-import type { RuleInspection } from '@umpire/core'
 import type { AnyRuleEntry } from '../../types.js'
+import { describeEntry } from '../format.js'
 import { getRuleTone, pillStyle, scrollPaneStyle, theme } from '../theme.js'
 
 type Props = {
   activeRuleIds: Set<string>
   rules: AnyRuleEntry[]
-}
-
-type AnyRuleInspection = RuleInspection<
-  Record<string, { required?: boolean }>,
-  Record<string, unknown>
->
-
-function describeOperand(operand: { kind: string; field?: string }): string {
-  if (operand.kind === 'field' && typeof operand.field === 'string') {
-    return operand.field
-  }
-  return 'predicate'
-}
-
-function describeInspection(inspection: AnyRuleInspection): string {
-  if (inspection.kind === 'enabledWhen') {
-    return `enabledWhen(${inspection.target})`
-  }
-  if (inspection.kind === 'disables') {
-    return `disables(${describeOperand(inspection.source)}, [${inspection.targets.join(', ')}])`
-  }
-  if (inspection.kind === 'fairWhen') {
-    return `fairWhen(${inspection.target})`
-  }
-  if (inspection.kind === 'requires') {
-    return `requires(${inspection.target}, ${inspection.dependencies.map(describeOperand).join(', ')})`
-  }
-  if (inspection.kind === 'oneOf') {
-    return `oneOf(${inspection.groupName})`
-  }
-  if (inspection.kind === 'anyOf') {
-    return `anyOf(${inspection.rules.length} rules)`
-  }
-  if (inspection.kind === 'eitherOf') {
-    return `eitherOf(${inspection.groupName})`
-  }
-  if (inspection.kind === 'custom') {
-    return `${inspection.type}(${inspection.targets.join(', ')})`
-  }
-  const _exhaustive: never = inspection
-  return _exhaustive
-}
-
-function describeEntry(entry: AnyRuleEntry): string {
-  return entry.inspection
-    ? describeInspection(entry.inspection as AnyRuleInspection)
-    : `uninspectable rule #${entry.index}`
 }
 
 export function RulesTab({ activeRuleIds, rules }: Props) {

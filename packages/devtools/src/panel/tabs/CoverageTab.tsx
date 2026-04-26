@@ -10,6 +10,7 @@ import {
   sectionHeadingStyle,
   theme,
 } from '../theme.js'
+import { describeEntry } from '../format.js'
 
 type Props = {
   coverage: DevtoolsCoverage
@@ -114,15 +115,25 @@ export function CoverageTab({ coverage, rules }: Props) {
                 <div
                   key={entry.id}
                   style={{
-                    alignItems: 'center',
-                    display: 'flex',
-                    gap: 8,
+                    display: 'grid',
+                    gap: 4,
                   }}
                 >
-                  <span style={pillStyle(tone, true)}>{kind}</span>
-                  <span style={{ color: theme.fgMuted, fontSize: 10 }}>
-                    {entry.id}
-                  </span>
+                  <div
+                    style={{
+                      alignItems: 'center',
+                      display: 'flex',
+                      gap: 8,
+                    }}
+                  >
+                    <span style={pillStyle(tone, true)}>{kind}</span>
+                    <span style={{ color: theme.fgMuted, fontSize: 10 }}>
+                      {entry.id}
+                    </span>
+                  </div>
+                  <div style={{ color: theme.fgMuted, fontSize: 10 }}>
+                    {describeEntry(entry)}
+                  </div>
                 </div>
               )
             })}
