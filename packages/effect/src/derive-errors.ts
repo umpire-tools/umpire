@@ -6,13 +6,24 @@ export type NormalizedFieldError = {
   message: string
 }
 
+export const ROOT_ERROR_FIELD = '_root'
+
+export type DerivedErrorMap<F extends Record<string, FieldDef>> = Partial<
+  Record<(keyof F & string) | typeof ROOT_ERROR_FIELD, string>
+>
+
 export function deriveErrors<F extends Record<string, FieldDef>>(
   availability: AvailabilityMap<F>,
   errors: NormalizedFieldError[],
-): Partial<Record<keyof F & string, string>> {
-  const result: Partial<Record<keyof F & string, string>> = {}
+): DerivedErrorMap<F> {
+  const result: DerivedErrorMap<F> = {}
 
   for (const error of errors) {
+    if (error.field === '') {
+      result[ROOT_ERROR_FIELD] ??= error.message
+      continue
+    }
+
     const field = error.field as keyof F & string
     if (availability[field]?.enabled && result[field] === undefined) {
       result[field] = error.message

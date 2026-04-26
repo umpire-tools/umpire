@@ -193,5 +193,6 @@ describe('createEffectAdapter', () => {
     })
 
     expect(result.result).toMatchObject({ _tag: 'Left' })
+    expect(result.errors).toEqual({ _root: 'Passwords do not match' })
   })
 })

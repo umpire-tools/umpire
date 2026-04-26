@@ -8,6 +8,7 @@ import type {
 import {
   deriveErrors,
   effectErrors,
+  type DerivedErrorMap,
   type NormalizedFieldError,
 } from './derive-errors.js'
 import {
@@ -23,7 +24,7 @@ export type CreateEffectAdapterOptions<F extends Record<string, FieldDef>> = {
 } & DeriveSchemaOptions
 
 export type EffectAdapterRunResult<F extends Record<string, FieldDef>> = {
-  errors: Partial<Record<keyof F & string, string>>
+  errors: DerivedErrorMap<F>
   normalizedErrors: NormalizedFieldError[]
   result: Either.Either<Record<string, unknown>, ParseResult.ParseError>
   schemaFields: Array<keyof F & string>

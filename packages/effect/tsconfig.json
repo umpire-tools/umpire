@@ -11,8 +11,5 @@
     }
   },
   "include": ["src"],
-  "references": [
-    { "path": "../core" },
-    { "path": "../store" }
-  ]
+  "references": [{ "path": "../core" }, { "path": "../store" }]
 }
