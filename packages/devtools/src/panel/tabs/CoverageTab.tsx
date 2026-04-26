@@ -101,7 +101,9 @@ export function CoverageTab({ coverage, rules }: Props) {
 
         {uncoveredRules.length === 0 ? (
           <div style={{ color: theme.enabled, fontSize: 11 }}>
-            All rules have been triggered this session.
+            {rules.length === 0
+              ? 'No rules configured for this instance.'
+              : 'All rules have been triggered this session.'}
           </div>
         ) : (
           <div style={{ display: 'grid', gap: 6 }}>
