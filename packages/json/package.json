@@ -1,6 +1,6 @@
 {
   "name": "@umpire/json",
-  "version": "0.1.0-alpha.10",
+  "version": "1.0.0",
   "description": "JSON schema parsing and portable named checks for @umpire/core",
   "license": "MIT",
   "type": "module",

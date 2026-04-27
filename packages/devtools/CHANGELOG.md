@@ -1,5 +1,48 @@
 # @umpire/devtools
 
+## 1.0.0
+
+### Minor Changes
+
+- 8cb1eec: Expose rule inspection and live coverage tracking in devtools
+  - `RegistryEntry` now includes `rules` (`AnyRuleEntry[]`), `activeRuleIds` (rules currently failing this render), and `coverage` (accumulated field-state and rule-hit data for the session)
+  - `ChallengeDrawer` shows the stable `ruleId` on each reason entry, linking the "why" directly to the rule that caused it
+  - New built-in **rules** tab: lists every configured rule with its kind, stable ID, and a human-readable description; highlights rules that are actively failing in the current render
+  - New built-in **coverage** tab: tracks which field states (enabled/disabled/fair/foul/satisfied/unsatisfied) and which rules have been exercised since the panel was mounted; surfaces uncovered rules so you can spot dead constraints while using the app
+
+### Patch Changes
+
+- 9b30e1c: Improve devtools panel responsiveness by avoiding eager reads-extension materialization, deduplicating identical register() calls, and capping initial reads tab rendering.
+- 87c5920: Migrate the devtools package build from tsup to tsdown while preserving the existing standalone and slim/react bundle behavior.
+- fee01cf: code formatting & type adjustments for better consistency
+- 82fdd4b: Clean up duplicated internals across adapters and JSON tooling by sharing guards, JSON clone helpers, and store previous-state tracking, while simplifying reactive and snapshot plumbing.
+
+  Also tighten package metadata by marking `react` as an optional peer for `@umpire/devtools`.
+
+- 4eecbeb: Loosen `InputValues` from a generic `FieldValues<F>` alias to `Record<string, unknown>`. Consumer call sites (`check()`, `play()`, `useUmpire()`, adapters) no longer require casts when passing form state or dynamic records. Predicate callbacks keep `FieldValues<F>` for typed field access. Remove phantom `F` parameter from `Snapshot` — only `C` (conditions) is structurally used.
+- 4d8bd6c: adjusted publishing setup for `.claude` rules (i don't even honestly know if this kind of thing works. hopefully it's helpful!)
+- Updated dependencies [135e347]
+- Updated dependencies [5b6ab7d]
+- Updated dependencies [39be228]
+- Updated dependencies [9bc562b]
+- Updated dependencies [86280aa]
+- Updated dependencies [fee01cf]
+- Updated dependencies [82fdd4b]
+- Updated dependencies [4eecbeb]
+- Updated dependencies [4d8bd6c]
+- Updated dependencies [7fb75bf]
+- Updated dependencies [aad8d17]
+- Updated dependencies [0904040]
+- Updated dependencies [31bc71c]
+- Updated dependencies [6060d47]
+- Updated dependencies [17dea80]
+- Updated dependencies [bff4c43]
+- Updated dependencies [19fdbfe]
+- Updated dependencies [8eaa826]
+- Updated dependencies [17bd119]
+  - @umpire/core@1.0.0
+  - @umpire/reads@1.0.0
+
 ## 0.1.0-alpha.10
 
 ### Patch Changes
@@ -18,7 +61,7 @@
 - Updated dependencies [e570cac]
 - Updated dependencies [73cd485]
 - Updated dependencies [1fcfe46]
-  - @umpire/core@0.1.0
+  - @umpire/core@1.0.0
 
 ## 0.1.0-alpha.9
 

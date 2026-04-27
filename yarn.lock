@@ -1958,7 +1958,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@umpire/testing@workspace:packages/testing"
   peerDependencies:
-    "@umpire/core": ^0.1.0-alpha.10
+    "@umpire/core": "*"
   languageName: unknown
   linkType: soft
 

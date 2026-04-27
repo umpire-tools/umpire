@@ -1,6 +1,6 @@
 {
   "name": "@umpire/devtools",
-  "version": "0.1.0-alpha.10",
+  "version": "1.0.0",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

@@ -1,6 +1,6 @@
 {
   "name": "@umpire/write",
-  "version": "0.1.0-alpha.10",
+  "version": "1.0.0",
   "description": "Write-policy helpers for syncing Umpire state",
   "license": "MIT",
   "type": "module",

@@ -1,6 +1,6 @@
 {
   "name": "@umpire/solid",
-  "version": "0.1.0-alpha.10",
+  "version": "1.0.0",
   "description": "Solid component adapter for @umpire/core",
   "license": "MIT",
   "type": "module",

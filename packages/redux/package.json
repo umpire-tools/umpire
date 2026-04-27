@@ -1,6 +1,6 @@
 {
   "name": "@umpire/redux",
-  "version": "0.1.0-alpha.10",
+  "version": "1.0.0",
   "description": "Redux adapter for @umpire/core built on @umpire/store",
   "license": "MIT",
   "type": "module",
