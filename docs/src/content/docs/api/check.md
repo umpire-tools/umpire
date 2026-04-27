@@ -111,3 +111,18 @@ result.companyName.required
 ```
 
 That behavior keeps validation layers from flagging disabled fields as missing.
+
+## When to also use `play()`
+
+`check()` tells you the current state of every field. That is exactly what you need for validation: walk the availability map, skip disabled fields, collect anything that is enabled but unsatisfied or foul.
+
+What `check()` cannot tell you is whether a previously valid selection became stale because something else changed. Consider a scheduler where the user picks a timezone, then enables a "use local timezone" option. The timezone field is now disabled — but it still holds `"America/New_York"`. `check()` will correctly report it as disabled. It won't tell you that the value sitting there is now orphaned and should be cleared.
+
+That is the job [`play()`](/umpire/api/play/) was designed for. It takes two snapshots — the state before the change and the state after — and returns a list of fields whose values became stale in the transition. You apply those recommendations however your state layer works; `play()` never mutates anything.
+
+Most patch handlers need one or the other:
+
+- If you're validating before saving, `check()` is sufficient.
+- If a user action just changed which fields are active and you want to auto-reset the ones that fell out, reach for `play()`.
+
+The case where you genuinely need both in the same handler is uncommon. A field switch that disables something stale calls for `play()`. A form submission that checks completeness calls for `check()`. They are rarely the same moment.
