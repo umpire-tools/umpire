@@ -1,0 +1,27 @@
+name: Label agent PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  label:
+    name: Apply agent label
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Check for Claude co-authorship
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          has_claude=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits \
+            --jq '[.[].commit.message | test("Co-Authored-By: Claude")] | any')
+          echo "has_claude=$has_claude" >> "$GITHUB_OUTPUT"
+
+      - name: Apply agent label
+        if: steps.check.outputs.has_claude == 'true'
+        run: gh pr edit ${{ github.event.pull_request.number }} --add-label "👾 agent"
+        env:
+          GH_TOKEN: ${{ github.token }}

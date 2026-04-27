@@ -31,6 +31,15 @@
   color: FFB8F5
   description: Refinement and cleanup
 
+# ── Origin ───────────────────────────────────────────
+- name: "\U0001F47E agent"
+  color: d4b8ff
+  description: Created or co-authored by an AI agent
+
+- name: "\U0001F9F0 tools"
+  color: ffd6a5
+  description: CI, scripts, tooling, and workflow changes
+
 # ── Meta ─────────────────────────────────────────────
 - name: "\U0001F42A bump"
   color: c4a882
