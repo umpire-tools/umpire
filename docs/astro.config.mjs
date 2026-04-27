@@ -105,6 +105,7 @@ export default defineConfig({
             { label: 'DevTools', slug: 'extensions/devtools' },
             { label: 'Reads', slug: 'extensions/reads' },
             { label: 'Testing', slug: 'extensions/testing' },
+            { label: 'Write', slug: 'extensions/write' },
             { label: 'ESLint Plugin', slug: 'extensions/eslint-plugin' },
             { label: 'JSON', collapsed: true, items: [
               { label: 'Overview', slug: 'extensions/json' },

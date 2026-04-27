@@ -37,6 +37,13 @@ The evaluated candidate is `{ ...ump.init(), ...data }`. Extra keys on `data`
 are ignored by Umpire policy evaluation, but remain present on
 `result.candidate`.
 
+> **Note for ORM users:** `result.candidate` is Umpire-normalized — it starts
+> from `ump.init()` and overlays incoming `data`. Fields absent from `data` fall
+> back to Umpire defaults, which may differ from database or ORM defaults (e.g.
+> `null` vs a generated UUID). When persisting, choose deliberately between the
+> incoming `data` and `result.candidate` depending on which default source your
+> layer owns.
+
 Create results never include transition fouls, so `result.fouls` is always
 `[]`. `result.ok` is `true` only when there are no current-state policy issues.
 
