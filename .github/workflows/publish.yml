@@ -147,8 +147,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/dsl
         if: needs.detect-version-changes.outputs.dsl_changed == 'true'
@@ -157,8 +162,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/json
         if: needs.detect-version-changes.outputs.json_changed == 'true'
@@ -167,8 +177,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/reads
         if: needs.detect-version-changes.outputs.reads_changed == 'true'
@@ -177,8 +192,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/write
         if: needs.detect-version-changes.outputs.write_changed == 'true'
@@ -187,8 +207,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/devtools
         if: needs.detect-version-changes.outputs.devtools_changed == 'true'
@@ -197,8 +222,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/store
         if: needs.detect-version-changes.outputs.store_changed == 'true'
@@ -207,8 +237,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/signals
         if: needs.detect-version-changes.outputs.signals_changed == 'true'
@@ -217,8 +252,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/react
         if: needs.detect-version-changes.outputs.react_changed == 'true'
@@ -227,8 +267,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/redux
         if: needs.detect-version-changes.outputs.redux_changed == 'true'
@@ -237,8 +282,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/pinia
         if: needs.detect-version-changes.outputs.pinia_changed == 'true'
@@ -247,8 +297,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/tanstack-store
         if: needs.detect-version-changes.outputs.tanstack_store_changed == 'true'
@@ -257,8 +312,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/vuex
         if: needs.detect-version-changes.outputs.vuex_changed == 'true'
@@ -267,8 +327,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/zustand
         if: needs.detect-version-changes.outputs.zustand_changed == 'true'
@@ -277,8 +342,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/zod
         if: needs.detect-version-changes.outputs.zod_changed == 'true'
@@ -287,8 +357,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/testing
         if: needs.detect-version-changes.outputs.testing_changed == 'true'
@@ -297,8 +372,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/eslint-plugin
         if: needs.detect-version-changes.outputs.eslint_plugin_changed == 'true'
@@ -307,8 +387,13 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
 
       - name: Publish @umpire/solid
         if: needs.detect-version-changes.outputs.solid_changed == 'true'
@@ -317,5 +402,10 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
           if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
-          yarn pack -o package.tgz
-          npm publish package.tgz --provenance --access public --tag "$TAG"
+          PKG=$(node -p "require('./package.json').name")
+          if npm view "$PKG@$VERSION" version 2>/dev/null | grep -qF "$VERSION"; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
