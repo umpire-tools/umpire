@@ -40,7 +40,7 @@ jobs:
         # lockfile still references the old version constraints.
         with:
           title: '🐪 Version Packages'
-          version: yarn changeset version && yarn install
+          version: bash -c "yarn changeset version && yarn install"
         env:
           GITHUB_TOKEN: ${{ secrets.CHANGESETS_GITHUB_TOKEN != '' && secrets.CHANGESETS_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
 
