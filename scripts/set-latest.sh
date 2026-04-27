@@ -43,7 +43,7 @@ if [[ -z "$VERSION" ]]; then
 fi
 
 # Find the current and previous version tags.
-_all_tags=$(git tag --list 'v0.*' --sort=-version:refname)
+_all_tags=$(git tag --list 'v*' --sort=-version:refname)
 _stable_tags=$(echo "$_all_tags" | grep -v '-' || true)
 _tags="${_stable_tags:-$_all_tags}"
 CURR_TAG=$(echo "$_tags" | head -1)
