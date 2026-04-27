@@ -121,6 +121,27 @@ const fouls = signupUmp.play(
 // ]
 ```
 
+## When `check()` is enough
+
+Think about what question you're actually trying to answer.
+
+In a scheduler, a user picks a date, a time, a recurrence pattern, and a timezone. When they submit, you need to know which fields are active and which of those still lack a value. That is a question about the current state of the form — and `check()` answers it directly:
+
+```ts
+const availability = scheduleUmp.check(values, conditions)
+
+for (const [field, status] of Object.entries(availability)) {
+  if (!status.enabled) continue
+  if (!status.satisfied) errors.push(`${field} is required`)
+}
+```
+
+You don't need two snapshots for this. You don't need to know what changed. You need to know what's true right now.
+
+`play()` answers a different question: *something changed — do any fields need to be cleared?* The prototype for that is a recurrence toggle. The user sets a recurrence pattern, then switches the event to "all day." The time fields fall out of play, but they still hold values. `play()` notices that, tells you which fields are affected, and suggests what to reset them to.
+
+If your handler doesn't need to auto-reset anything — it just validates and saves — reach for `check()` and stop there. `play()` earns its keep when a state transition leaves stale values behind that you want to clean up before the user notices.
+
 ## `foulMap()` — lookup by field
 
 `play()` returns an array, which is convenient for rendering a banner but requires `.find()` when you need the foul for a specific field. `foulMap()` converts the array into a field-keyed map:
