@@ -1,8 +1,8 @@
 # @umpire/eslint-plugin
 
-ESLint rules that catch umpire mistakes at lint time: typo'd field names, inline instance creation, and logical impossibilities like self-disabling fields and circular requires chains.
+Lint rules that catch umpire mistakes at lint time: typo'd field names, inline instance creation, and logical impossibilities like self-disabling fields and circular requires chains.
 
-Requires **ESLint ≥ 9** (flat config only).
+Works with **ESLint ≥ 9** (flat config) and Oxlint JS plugins.
 
 ## Install
 
@@ -22,6 +22,21 @@ export default [
   // ... rest of your config
 ]
 ```
+
+## Oxlint
+
+Add the plugin to `jsPlugins`, then enable rules by full name:
+
+```json
+{
+  "jsPlugins": ["@umpire/eslint-plugin"],
+  "rules": {
+    "@umpire/eslint-plugin/no-self-disable": "error"
+  }
+}
+```
+
+`eslint` is an optional peer dependency and is only needed when using ESLint directly.
 
 ## Rules
 

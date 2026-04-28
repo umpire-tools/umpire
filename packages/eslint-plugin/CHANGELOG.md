@@ -1,5 +1,11 @@
 # @umpire/eslint-plugin
 
+## 1.0.1
+
+### Patch Changes
+
+- Mark `eslint` as an optional peer dependency to improve compatibility with Oxlint JS plugin usage.
+
 ## 1.0.0
 
 ### Patch Changes
