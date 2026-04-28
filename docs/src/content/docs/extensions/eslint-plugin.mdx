@@ -10,8 +10,11 @@ description: Catch umpire schema errors, performance pitfalls, and logical impos
 | | |
 |---|---|
 | ESLint | ≥ 9.0.0 |
+| Oxlint | JS plugins (`jsPlugins`) |
 | Config format | Flat config only (`eslint.config.js`) — legacy `.eslintrc` is not supported |
 | Node | Whatever ESLint 9 requires (≥ 18.18) |
+
+`eslint` is an optional peer dependency — it's only needed when using ESLint directly. Oxlint users don't need it installed.
 
 ## Install
 
@@ -64,6 +67,21 @@ export default [
   },
 ]
 ```
+
+## Oxlint setup
+
+Add the plugin to `jsPlugins`, then enable rules by their full name:
+
+```json
+{
+  "jsPlugins": ["@umpire/eslint-plugin"],
+  "rules": {
+    "@umpire/eslint-plugin/no-self-disable": "error"
+  }
+}
+```
+
+Rule names use the `@umpire/eslint-plugin/` prefix in Oxlint, unlike ESLint's `@umpire/` namespace.
 
 ## Rules
 
