@@ -1802,6 +1802,9 @@ __metadata:
     eslint: "npm:^10.0.0"
   peerDependencies:
     eslint: ">=9.0.0"
+  peerDependenciesMeta:
+    eslint:
+      optional: true
   languageName: unknown
   linkType: soft
 
