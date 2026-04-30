@@ -21,6 +21,7 @@ jobs:
       any_changed: ${{ steps.versions.outputs.any_changed }}
       core_changed: ${{ steps.versions.outputs.core_changed }}
       dsl_changed: ${{ steps.versions.outputs.dsl_changed }}
+      effect_changed: ${{ steps.versions.outputs.effect_changed }}
       json_changed: ${{ steps.versions.outputs.json_changed }}
       reads_changed: ${{ steps.versions.outputs.reads_changed }}
       write_changed: ${{ steps.versions.outputs.write_changed }}
@@ -58,7 +59,7 @@ jobs:
           const fs = require('node:fs');
           const path = require('node:path');
 
-          const packages = ['core', 'dsl', 'json', 'reads', 'write', 'devtools', 'store', 'signals', 'react', 'redux', 'pinia', 'tanstack-store', 'vuex', 'zustand', 'zod', 'testing', 'eslint-plugin', 'solid'];
+          const packages = ['core', 'dsl', 'effect', 'json', 'reads', 'write', 'devtools', 'store', 'signals', 'react', 'redux', 'pinia', 'tanstack-store', 'vuex', 'zustand', 'zod', 'testing', 'eslint-plugin', 'solid'];
 
           // Manual dispatch: mark everything changed so all packages are published.
           if (process.env.MANUAL_DISPATCH === 'true') {
@@ -172,6 +173,21 @@ jobs:
       - name: Publish @umpire/dsl
         if: needs.detect-version-changes.outputs.dsl_changed == 'true'
         working-directory: packages/dsl
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="latest"
+          if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
+          PKG=$(node -p "require('./package.json').name")
+          if npm show "$PKG@$VERSION" version > /dev/null 2>&1; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
+
+      - name: Publish @umpire/effect
+        if: needs.detect-version-changes.outputs.effect_changed == 'true'
+        working-directory: packages/effect
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
