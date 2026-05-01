@@ -50,6 +50,7 @@ describe('createEffectAdapter', () => {
 
     expect(ump.check({ count: 'not-a-number' }).count).toMatchObject({
       valid: false,
+      error: expect.any(String),
     })
     expect(ump.check({ count: 42 }).count).toMatchObject({ valid: true })
   })
@@ -163,6 +164,78 @@ describe('createEffectAdapter', () => {
     expect(foulResult.result).toMatchObject({ _tag: 'Left' })
     expect(foulResult.errors).toEqual({
       vehicleType: 'Vehicle type does not match the reserved spot',
+    })
+  })
+
+  test('rejectFoul allows absent optional foul fields', () => {
+    const fields = { spotType: {}, vehicleType: { required: false } }
+
+    const validation = createEffectAdapter({
+      schemas: {
+        spotType: Schema.Literals(['electric', 'standard']),
+        vehicleType: Schema.Literals(['electric', 'gas']),
+      },
+      rejectFoul: true,
+    })
+
+    const ump = umpire({
+      fields,
+      rules: [
+        fairWhen(
+          'vehicleType',
+          (value, values) =>
+            value === values.spotType || values.spotType === 'standard',
+          { reason: 'Vehicle type does not match the reserved spot' },
+        ),
+      ],
+    })
+
+    const availability = ump.check({
+      spotType: 'electric',
+      vehicleType: undefined,
+    })
+    const result = validation.run(availability, {
+      spotType: 'electric',
+      vehicleType: undefined,
+    })
+
+    expect(result.result).toMatchObject({ _tag: 'Right' })
+    expect(result.errors).toEqual({})
+  })
+
+  test('rejectFoul uses the default message when no reason is provided', () => {
+    const validation = createEffectAdapter({
+      schemas: {
+        mode: Schema.Literals(['open', 'locked']),
+        choice: Schema.String,
+      },
+      rejectFoul: true,
+    })
+
+    const availability = {
+      mode: {
+        enabled: true,
+        fair: true,
+        required: false,
+        satisfied: true,
+        valid: true,
+      },
+      choice: {
+        enabled: true,
+        fair: false,
+        required: false,
+        satisfied: true,
+        valid: true,
+      },
+    }
+    const result = validation.run(availability, {
+      mode: 'locked',
+      choice: 'stale',
+    })
+
+    expect(result.result).toMatchObject({ _tag: 'Left' })
+    expect(result.errors).toEqual({
+      choice: 'Value is not valid for the current context',
     })
   })
 

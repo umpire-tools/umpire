@@ -17,6 +17,29 @@ describe('formatEffectErrors', () => {
     ).toEqual([{ field: 'email', message: 'Enter a valid email' }])
   })
 
+  test('flattens composite issues from multiple fields', () => {
+    expect(
+      formatEffectErrors({
+        _tag: 'Composite',
+        issues: [
+          {
+            _tag: 'Pointer',
+            path: ['email'],
+            issue: 'Enter a valid email',
+          },
+          {
+            _tag: 'Pointer',
+            path: ['password'],
+            issue: 'At least 8 characters',
+          },
+        ],
+      }),
+    ).toEqual([
+      { field: 'email', message: 'Enter a valid email' },
+      { field: 'password', message: 'At least 8 characters' },
+    ])
+  })
+
   test('unwraps Filter issues to surface the inner message', () => {
     expect(
       formatEffectErrors({
