@@ -1,0 +1,86 @@
+# Umpire
+
+> Umpire is a declarative field-availability engine for object-shaped state with interdependent options. Define fields and rules, then derive which fields are enabled, required, satisfied, and foul.
+
+Umpire is an ESM-only TypeScript library. The `@umpire/core` package owns the pure logic and has zero runtime dependencies. Forms are the common use case, but Umpire also fits game boards, config panels, pricing calculators, permission matrices, and other object-shaped state with interdependent options.
+
+Important notes:
+
+- Satisfaction is presence-based by default: only `null` and `undefined` are unsatisfied unless a field overrides `isEmpty`.
+- `requires()` checks both dependency satisfaction and dependency availability.
+- `disables()` and `oneOf()` inspect source values, not source availability.
+- Multiple rules targeting the same field are ANDed; use `anyOf()` for OR behavior.
+- Disabled fields report `required: false`.
+- `play()` suggests resets only for fields that became disabled and still hold stale values.
+- Use "foul" for unavailable or invalid-in-context values. Avoid "unfair".
+- `challenge()` and `scorecard()` are debugging surfaces, not app-state inputs.
+
+## Docs
+
+- [Introduction](https://sdougbrown.github.io/umpire/): Project overview, live lineup demo, and first examples.
+- [Quick Start](https://sdougbrown.github.io/umpire/learn/): Rule-by-rule introduction with runnable examples for `requires()`, `enabledWhen()`, `fairWhen()`, `disables()`, `oneOf()`, `check()`, `anyOf()`, `eitherOf()`, and `play()`.
+- [Availability](https://sdougbrown.github.io/umpire/concepts/availability/): How Umpire decides which fields are in play.
+- [Satisfaction](https://sdougbrown.github.io/umpire/concepts/satisfaction/): Presence-based satisfaction and custom `isEmpty` behavior.
+- [Evaluation Order](https://sdougbrown.github.io/umpire/concepts/evaluation/): How rules compose and why rule order does not change results.
+- [Composing Validation](https://sdougbrown.github.io/umpire/concepts/validation/): How availability rules can consume validation checks.
+- [Selection](https://sdougbrown.github.io/umpire/concepts/selection/): Modeling mutually exclusive choices with Umpire.
+
+## API Reference
+
+- [`umpire()`](https://sdougbrown.github.io/umpire/api/umpire/): Creates an Umpire instance from fields and rules.
+- [`field<V>()`](https://sdougbrown.github.io/umpire/api/field/): Fluent field definition helper.
+- [Rules overview](https://sdougbrown.github.io/umpire/api/rules/): Rule model and rule composition overview.
+- [`requires()`](https://sdougbrown.github.io/umpire/api/rules/requires/): Require a dependency field to be satisfied and available.
+- [`enabledWhen()`](https://sdougbrown.github.io/umpire/api/rules/enabled-when/): Enable a field only when a predicate passes.
+- [`fairWhen()`](https://sdougbrown.github.io/umpire/api/rules/fair-when/): Mark an enabled field's current value foul when it no longer fits.
+- [`disables()`](https://sdougbrown.github.io/umpire/api/rules/disables/): Disable target fields when a source value is active.
+- [`oneOf()`](https://sdougbrown.github.io/umpire/api/rules/one-of/): Keep only one branch of fields active.
+- [`anyOf()`](https://sdougbrown.github.io/umpire/api/rules/any-of/): Compose OR behavior across rules that would otherwise be ANDed.
+- [`eitherOf()`](https://sdougbrown.github.io/umpire/api/rules/either-of/): Name OR branches that each contain one or more rules.
+- [`check()`](https://sdougbrown.github.io/umpire/api/check/): Build reusable validation predicates for availability rules.
+- [`play()`](https://sdougbrown.github.io/umpire/api/play/): Compare snapshots and recommend resets for stale values.
+- [`challenge()`](https://sdougbrown.github.io/umpire/api/challenge/): Explain why a field is available, disabled, required, satisfied, or foul.
+- [`scorecard()`](https://sdougbrown.github.io/umpire/api/scorecard/): Debug a full evaluation with traces, graph information, and transitions.
+
+## Adapters and Extensions
+
+- [React adapter](https://sdougbrown.github.io/umpire/adapters/react/): `useUmpire()` hook for React.
+- [Solid adapter](https://sdougbrown.github.io/umpire/adapters/solid/): `useUmpire()` hook for Solid.
+- [Signals adapter](https://sdougbrown.github.io/umpire/adapters/signals/): Fine-grained reactive adapter built around `SignalProtocol`.
+- [Store adapter](https://sdougbrown.github.io/umpire/adapters/store/): Generic `getState()` plus `subscribe(next, prev)` adapter foundation.
+- [Zustand adapter](https://sdougbrown.github.io/umpire/adapters/zustand/): Zustand adapter built on the store contract.
+- [Redux adapter](https://sdougbrown.github.io/umpire/adapters/redux/): Redux and Redux Toolkit integration.
+- [TanStack Store adapter](https://sdougbrown.github.io/umpire/adapters/tanstack-store/): TanStack Store integration.
+- [Pinia adapter](https://sdougbrown.github.io/umpire/adapters/pinia/): Pinia integration.
+- [Vuex adapter](https://sdougbrown.github.io/umpire/adapters/vuex/): Vuex 4 integration.
+- [Validation adapters](https://sdougbrown.github.io/umpire/adapters/validation/): Availability-aware validation integration.
+- [Zod adapter](https://sdougbrown.github.io/umpire/adapters/validation/zod/): Availability-aware Zod schemas.
+- [JSON helpers](https://sdougbrown.github.io/umpire/extensions/json/): JSON builders and checks for rule configuration.
+- [Reads](https://sdougbrown.github.io/umpire/extensions/reads/): Derived read tables and read-backed rule bridges.
+- [Testing](https://sdougbrown.github.io/umpire/extensions/testing/): Invariant probes for rule configurations.
+- [DevTools](https://sdougbrown.github.io/umpire/extensions/devtools/): In-app inspector for scorecards, traces, fouls, and graph views.
+- [DSL](https://sdougbrown.github.io/umpire/extensions/dsl/): Expression DSL for declarative rule predicates.
+
+## Examples
+
+- [Minesweeper](https://sdougbrown.github.io/umpire/examples/minesweeper/): Non-form example modeling board cells as fields.
+- [PC Builder](https://sdougbrown.github.io/umpire/examples/pc-builder/): Compatibility rules for interdependent hardware selections.
+- [Calendar Recurrence](https://sdougbrown.github.io/umpire/examples/calendar/): Scheduling options with mutually exclusive recurrence modes.
+- [Freight Quote](https://sdougbrown.github.io/umpire/examples/freight-quote/): Pricing calculator with conditional fields.
+- [Login + Captcha](https://sdougbrown.github.io/umpire/examples/captcha/): Security flow with challenge-dependent availability.
+- [Signup Form + Zod](https://sdougbrown.github.io/umpire/examples/signup/): Availability-aware validation with Zod.
+- [Config-Driven UI](https://sdougbrown.github.io/umpire/examples/config-driven-ui/): Dynamic UI generated from configuration and rules.
+
+## Source
+
+- [Repository](https://github.com/sdougbrown/umpire): Monorepo for all packages and the docs app.
+- [Root README](https://github.com/sdougbrown/umpire/blob/main/README.md): Package list, installation, quick example, and project status.
+- [`@umpire/core` exports](https://github.com/sdougbrown/umpire/blob/main/packages/core/src/index.ts): Public core API surface.
+- [`@umpire/core` package guide](https://github.com/sdougbrown/umpire/blob/main/packages/core/README.md): Core package examples and notes.
+- [Contributor guide](https://github.com/sdougbrown/umpire/blob/main/AGENTS.md): Repo architecture, behavior to preserve, and local workflow notes for coding agents.
+
+## Optional
+
+- [Droid-First Development](https://sdougbrown.github.io/umpire/droid-first/): How Umpire documents itself for agent-assisted development.
+- [ESLint Plugin](https://sdougbrown.github.io/umpire/extensions/eslint-plugin/): Static checks for Umpire rule configurations.
+- [Write](https://sdougbrown.github.io/umpire/extensions/write/): Write-policy checks layered on Umpire availability.
