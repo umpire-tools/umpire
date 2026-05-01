@@ -1,12 +1,17 @@
 import { describe, expect, test } from 'bun:test'
 
-import { umpire } from '@umpire/core'
+import { enabledWhen, umpire } from '@umpire/core'
 import * as drizzleAdapter from '@umpire/drizzle'
 import { checkCreate, checkPatch, fromDrizzleTable } from '@umpire/drizzle'
+import { sql } from 'drizzle-orm'
 import {
+  bigint,
   boolean,
+  date,
   integer,
+  json,
   jsonb,
+  numeric,
   pgEnum,
   pgTable,
   serial,
@@ -84,6 +89,67 @@ describe('fromDrizzleTable', () => {
     )
   })
 
+  test('covers scalar, array, JSON, and date satisfaction strategies', () => {
+    const inventory = pgTable('inventory', {
+      sku: text('sku_code').notNull(),
+      serials: text().array(),
+      count: integer(),
+      price: numeric({ mode: 'number' }),
+      ledgerId: bigint({ mode: 'bigint' }),
+      legacyId: bigint({ mode: 'string' }),
+      active: boolean(),
+      metadata: json(),
+      shippedOn: date(),
+    })
+    const { fields } = fromDrizzleTable(inventory)
+    const ump = umpire({ fields, rules: [] })
+
+    expect(Object.keys(fields)).toEqual([
+      'sku',
+      'serials',
+      'count',
+      'price',
+      'ledgerId',
+      'legacyId',
+      'active',
+      'metadata',
+      'shippedOn',
+    ])
+    expect(ump.check({ sku: '' }).sku.satisfied).toBe(false)
+    expect(ump.check({ sku: 'BAT-42' }).sku.satisfied).toBe(true)
+    expect(ump.check({ serials: [] }).serials.satisfied).toBe(false)
+    expect(ump.check({ serials: ['A'] }).serials.satisfied).toBe(true)
+    expect(ump.check({ count: Number.NaN }).count.satisfied).toBe(false)
+    expect(ump.check({ count: 0 }).count.satisfied).toBe(true)
+    expect(ump.check({ price: '12.50' }).price.satisfied).toBe(false)
+    expect(ump.check({ price: 12.5 }).price.satisfied).toBe(true)
+    expect(ump.check({ ledgerId: 1 }).ledgerId.satisfied).toBe(false)
+    expect(ump.check({ ledgerId: 1n }).ledgerId.satisfied).toBe(true)
+    expect(ump.check({ legacyId: '' }).legacyId.satisfied).toBe(false)
+    expect(ump.check({ legacyId: '42' }).legacyId.satisfied).toBe(true)
+    expect(ump.check({ active: false }).active.satisfied).toBe(true)
+    expect(ump.check({ metadata: [] }).metadata.satisfied).toBe(false)
+    expect(ump.check({ metadata: { fragile: true } }).metadata.satisfied).toBe(
+      true,
+    )
+    expect(ump.check({ shippedOn: '2026-04-30' }).shippedOn.satisfied).toBe(
+      true,
+    )
+  })
+
+  test('uses TypeScript property names rather than database column names', () => {
+    const contacts = pgTable('contacts', {
+      displayName: text('display_name').notNull(),
+      phoneNumber: text('phone_number'),
+    })
+
+    const { fields } = fromDrizzleTable(contacts)
+
+    expect(Object.keys(fields)).toEqual(['displayName', 'phoneNumber'])
+    expect(fields.display_name).toBeUndefined()
+    expect(fields.phone_number).toBeUndefined()
+  })
+
   test('allows explicit excludes and per-field overrides', () => {
     const { fields } = fromDrizzleTable(users, {
       exclude: ['externalId', 'createdAt'],
@@ -92,6 +158,7 @@ describe('fromDrizzleTable', () => {
         accountType: 'string',
       },
       required: {
+        email: false,
         companyName: true,
       },
     })
@@ -99,6 +166,7 @@ describe('fromDrizzleTable', () => {
 
     expect(fields.externalId).toBeUndefined()
     expect(fields.createdAt).toBeUndefined()
+    expect(fields.email.required).toBe(false)
     expect(fields.companyName.required).toBe(true)
     expect(ump.check({ displayName: 'anonymous' }).displayName.satisfied).toBe(
       false,
@@ -124,6 +192,63 @@ describe('fromDrizzleTable', () => {
     expect(fields.alwaysIdentity).toBeUndefined()
     expect(fields.generated).toMatchObject({ required: false })
     expect(fields.runtime).toMatchObject({ required: false })
+  })
+
+  test('copies only static primitive defaults from Drizzle metadata', () => {
+    const defaults = pgTable('defaults', {
+      status: text().notNull().default('draft'),
+      retries: integer().notNull().default(3),
+      archived: boolean().notNull().default(false),
+      generatedCode: text()
+        .notNull()
+        .default(sql`gen_random_uuid()`),
+      runtimeCode: text()
+        .notNull()
+        .$defaultFn(() => 'runtime'),
+      updatedAt: timestamp()
+        .notNull()
+        .$onUpdate(() => new Date()),
+    })
+
+    const { fields } = fromDrizzleTable(defaults)
+
+    expect(fields.status).toMatchObject({
+      required: false,
+      default: 'draft',
+    })
+    expect(fields.retries).toMatchObject({
+      required: false,
+      default: 3,
+    })
+    expect(fields.archived).toMatchObject({
+      required: false,
+      default: false,
+    })
+    expect(fields.generatedCode).toMatchObject({ required: false })
+    expect(fields.generatedCode.default).toBeUndefined()
+    expect(fields.runtimeCode).toMatchObject({ required: false })
+    expect(fields.runtimeCode.default).toBeUndefined()
+    expect(fields.updatedAt).toMatchObject({ required: false })
+    expect(fields.updatedAt.default).toBeUndefined()
+  })
+
+  test('excludes generated expression and identity columns by default', () => {
+    const projections = pgTable('projections', {
+      firstName: text().notNull(),
+      lastName: text().notNull(),
+      fullName: text().generatedAlwaysAs(
+        sql`${sql.identifier('first_name')} || ' ' || ${sql.identifier(
+          'last_name',
+        )}`,
+      ),
+      sequence: integer().generatedByDefaultAsIdentity(),
+    })
+
+    const { fields } = fromDrizzleTable(projections)
+
+    expect(Object.keys(fields)).toEqual(['firstName', 'lastName'])
+    expect(fields.fullName).toBeUndefined()
+    expect(fields.sequence).toBeUndefined()
   })
 
   test('handles SQLite boolean and timestamp modes', () => {
@@ -159,6 +284,50 @@ describe('write re-exports', () => {
     expect(checkPatch(ump, { email: 'a@example.com' }, { email: '' }).ok).toBe(
       false,
     )
+  })
+
+  test('composes derived fields with handwritten availability rules', () => {
+    const users = pgTable('users_for_rules', {
+      id: serial().primaryKey(),
+      accountType: text().notNull().default('personal'),
+      companyName: text(),
+    })
+    const base = fromDrizzleTable(users)
+    const ump = umpire({
+      fields: base.fields,
+      rules: [
+        enabledWhen('companyName', (values) => {
+          return values.accountType === 'business'
+        }),
+      ],
+    })
+
+    const createResult = checkCreate(ump, {
+      accountType: 'personal',
+      companyName: 'Acme',
+    })
+    const patchResult = checkPatch(
+      ump,
+      { accountType: 'business', companyName: 'Acme' },
+      { accountType: 'personal' },
+    )
+
+    expect(createResult.ok).toBe(false)
+    expect(createResult.issues).toEqual([
+      {
+        kind: 'disabled',
+        field: 'companyName',
+        message: 'condition not met',
+      },
+    ])
+    expect(patchResult.ok).toBe(false)
+    expect(patchResult.fouls).toEqual([
+      {
+        field: 'companyName',
+        reason: 'condition not met',
+        suggestedValue: undefined,
+      },
+    ])
   })
 
   test('exports the public runtime surface', () => {

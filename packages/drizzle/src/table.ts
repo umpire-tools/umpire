@@ -39,6 +39,7 @@ type DrizzleColumn = Column & {
   onUpdateFn?: (() => unknown) | undefined
   generated?: unknown
   generatedIdentity?: { type?: 'always' | 'byDefault' } | undefined
+  dimensions?: number
 }
 
 export function fromDrizzleTable<T extends Table>(
@@ -106,6 +107,10 @@ function shouldExcludeColumn(column: DrizzleColumn): boolean {
 }
 
 function strategyForColumn(column: DrizzleColumn): DrizzleIsEmptyStrategy {
+  if (typeof column.dimensions === 'number' && column.dimensions > 0) {
+    return 'array'
+  }
+
   if (column.enumValues !== undefined) {
     return 'present'
   }
