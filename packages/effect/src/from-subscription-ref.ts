@@ -17,11 +17,11 @@ export function fromSubscriptionRef<
   const subscribe = (listener: (next: S, prev: S) => void): (() => void) => {
     const tracker = trackPreviousState(getState())
 
-    // ref.changes emits the current value immediately, then all subsequent
-    // changes. Drop the first emission so the listener only fires on updates,
-    // matching the contract that fromStore expects.
+    // Effect's changes stream emits the current value immediately, then all
+    // subsequent changes. Drop the first emission so the listener only fires on
+    // updates, matching the contract that fromStore expects.
     const fiber = Effect.runFork(
-      Stream.runForEach(Stream.drop(ref.changes, 1), (next) =>
+      Stream.runForEach(Stream.drop(SubscriptionRef.changes(ref), 1), (next) =>
         Effect.sync(() => {
           const prev = tracker.next(next)
           listener(next, prev)

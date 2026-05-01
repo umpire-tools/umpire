@@ -1,4 +1,3 @@
-import { Either, ParseResult, Schema } from 'effect'
 import type {
   AvailabilityMap,
   FieldDef,
@@ -12,6 +11,12 @@ import {
   type NormalizedFieldError,
 } from './derive-errors.js'
 import {
+  decodeEffectSchema,
+  isDecodeFailure,
+  isDecodeSuccess,
+  type EffectDecodeResult,
+} from './effect-schema.js'
+import {
   deriveSchema,
   type AnyEffectSchema,
   type DeriveSchemaOptions,
@@ -20,13 +25,13 @@ import {
 
 export type CreateEffectAdapterOptions<F extends Record<string, FieldDef>> = {
   schemas: FieldSchemas<F>
-  build?(schema: Schema.Schema.AnyNoContext): Schema.Schema.AnyNoContext
+  build?(schema: AnyEffectSchema): AnyEffectSchema
 } & DeriveSchemaOptions
 
 export type EffectAdapterRunResult<F extends Record<string, FieldDef>> = {
   errors: DerivedErrorMap<F>
   normalizedErrors: NormalizedFieldError[]
-  result: Either.Either<Record<string, unknown>, ParseResult.ParseError>
+  result: EffectDecodeResult<Record<string, unknown>>
   schemaFields: Array<keyof F & string>
 }
 
@@ -49,13 +54,11 @@ export function createEffectAdapter<F extends Record<string, FieldDef>>(
   >) {
     if (!schema) continue
 
-    const decode = Schema.decodeUnknownEither(schema)
-
     validators[field] = (value: unknown) => {
-      const result = decode(value)
-      if (Either.isRight(result)) return { valid: true }
+      const result = decodeEffectSchema(schema, value)
+      if (isDecodeSuccess(result)) return { valid: true }
 
-      const errors = effectErrors(result.left)
+      const errors = effectErrors(result.error)
       const message = errors[0]?.message
       return message !== undefined
         ? { valid: false, error: message }
@@ -68,13 +71,13 @@ export function createEffectAdapter<F extends Record<string, FieldDef>>(
     run(availability, values) {
       const baseSchema = deriveSchema(availability, schemas, { rejectFoul })
       const schema = build ? build(baseSchema) : baseSchema
-      const decode = Schema.decodeUnknownEither(schema)
-      const result = decode(values, { errors: 'all' }) as Either.Either<
-        Record<string, unknown>,
-        ParseResult.ParseError
-      >
-      const normalizedErrors = Either.isLeft(result)
-        ? effectErrors(result.left)
+      const result = decodeEffectSchema<Record<string, unknown>>(
+        schema,
+        values,
+        { errors: 'all' },
+      )
+      const normalizedErrors = isDecodeFailure(result)
+        ? effectErrors(result.error)
         : []
 
       const schemaFields = (

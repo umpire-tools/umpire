@@ -2,11 +2,19 @@ import { enabledWhen, fairWhen, umpire } from '@umpire/core'
 import { Schema } from 'effect'
 import { createEffectAdapter } from '../src/adapter.js'
 
-const emailSchema = Schema.String.pipe(
-  Schema.filter((s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s), {
-    message: () => 'Enter a valid email',
-  }),
+const emailSchema = stringMatching(
+  (s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s),
+  'Enter a valid email',
 )
+
+function stringMatching(
+  predicate: (value: string) => boolean,
+  message: string,
+): Schema.Decoder<unknown, never> {
+  return Schema.String.check(
+    Schema.makeFilter((value) => (predicate(value) ? undefined : message)),
+  )
+}
 
 describe('createEffectAdapter', () => {
   test('creates per-field validators that surface the first parse error', () => {
@@ -42,6 +50,7 @@ describe('createEffectAdapter', () => {
 
     expect(ump.check({ count: 'not-a-number' }).count).toMatchObject({
       valid: false,
+      error: expect.any(String),
     })
     expect(ump.check({ count: 42 }).count).toMatchObject({ valid: true })
   })
@@ -57,11 +66,7 @@ describe('createEffectAdapter', () => {
     const validation = createEffectAdapter({
       schemas: {
         email: emailSchema,
-        password: Schema.String.pipe(
-          Schema.filter((s) => s.length >= 8, {
-            message: () => 'At least 8 characters',
-          }),
-        ),
+        password: stringMatching((s) => s.length >= 8, 'At least 8 characters'),
         confirmPassword: Schema.String,
         companyName: Schema.String,
       },
@@ -119,8 +124,8 @@ describe('createEffectAdapter', () => {
 
     const validation = createEffectAdapter({
       schemas: {
-        spotType: Schema.Literal('electric', 'standard'),
-        vehicleType: Schema.Literal('electric', 'gas'),
+        spotType: Schema.Literals(['electric', 'standard']),
+        vehicleType: Schema.Literals(['electric', 'gas']),
       },
       rejectFoul: true,
     })
@@ -157,8 +162,80 @@ describe('createEffectAdapter', () => {
       vehicleType: 'gas',
     })
     expect(foulResult.result).toMatchObject({ _tag: 'Left' })
-    expect(foulResult.errors).toMatchObject({
+    expect(foulResult.errors).toEqual({
       vehicleType: 'Vehicle type does not match the reserved spot',
+    })
+  })
+
+  test('rejectFoul allows absent optional foul fields', () => {
+    const fields = { spotType: {}, vehicleType: { required: false } }
+
+    const validation = createEffectAdapter({
+      schemas: {
+        spotType: Schema.Literals(['electric', 'standard']),
+        vehicleType: Schema.Literals(['electric', 'gas']),
+      },
+      rejectFoul: true,
+    })
+
+    const ump = umpire({
+      fields,
+      rules: [
+        fairWhen(
+          'vehicleType',
+          (value, values) =>
+            value === values.spotType || values.spotType === 'standard',
+          { reason: 'Vehicle type does not match the reserved spot' },
+        ),
+      ],
+    })
+
+    const availability = ump.check({
+      spotType: 'electric',
+      vehicleType: undefined,
+    })
+    const result = validation.run(availability, {
+      spotType: 'electric',
+      vehicleType: undefined,
+    })
+
+    expect(result.result).toMatchObject({ _tag: 'Right' })
+    expect(result.errors).toEqual({})
+  })
+
+  test('rejectFoul uses the default message when no reason is provided', () => {
+    const validation = createEffectAdapter({
+      schemas: {
+        mode: Schema.Literals(['open', 'locked']),
+        choice: Schema.String,
+      },
+      rejectFoul: true,
+    })
+
+    const availability = {
+      mode: {
+        enabled: true,
+        fair: true,
+        required: false,
+        satisfied: true,
+        valid: true,
+      },
+      choice: {
+        enabled: true,
+        fair: false,
+        required: false,
+        satisfied: true,
+        valid: true,
+      },
+    }
+    const result = validation.run(availability, {
+      mode: 'locked',
+      choice: 'stale',
+    })
+
+    expect(result.result).toMatchObject({ _tag: 'Left' })
+    expect(result.errors).toEqual({
+      choice: 'Value is not valid for the current context',
     })
   })
 
@@ -174,12 +251,12 @@ describe('createEffectAdapter', () => {
         confirmPassword: Schema.String,
       },
       build: (base) =>
-        base.pipe(
-          Schema.filter(
-            (data) =>
-              (data as Record<string, unknown>).password ===
-              (data as Record<string, unknown>).confirmPassword,
-            { message: () => 'Passwords do not match' },
+        base.check(
+          Schema.makeFilter((data) =>
+            (data as Record<string, unknown>).password ===
+            (data as Record<string, unknown>).confirmPassword
+              ? undefined
+              : 'Passwords do not match',
           ),
         ),
     })
