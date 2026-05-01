@@ -2,7 +2,12 @@ import { describe, expect, test } from 'bun:test'
 
 import { enabledWhen, umpire } from '@umpire/core'
 import * as drizzleAdapter from '@umpire/drizzle'
-import { checkCreate, checkPatch, fromDrizzleTable } from '@umpire/drizzle'
+import {
+  checkCreate,
+  checkPatch,
+  fromDrizzleModel,
+  fromDrizzleTable,
+} from '@umpire/drizzle'
 import { sql } from 'drizzle-orm'
 import {
   bigint,
@@ -334,7 +339,113 @@ describe('write re-exports', () => {
     expect(Object.keys(drizzleAdapter).sort()).toEqual([
       'checkCreate',
       'checkPatch',
+      'fromDrizzleModel',
       'fromDrizzleTable',
     ])
+  })
+})
+
+describe('fromDrizzleModel', () => {
+  test('composes multiple tables into namespaced flat fields', () => {
+    const accounts = pgTable('model_accounts', {
+      id: serial().primaryKey(),
+      email: text().notNull(),
+      accountType: text().notNull().default('personal'),
+    })
+    const profiles = pgTable('model_profiles', {
+      id: serial().primaryKey(),
+      accountId: integer().notNull(),
+      displayName: text(),
+      createdAt: timestamp().defaultNow().notNull(),
+    })
+
+    const model = fromDrizzleModel({
+      account: accounts,
+      profile: {
+        table: profiles,
+        exclude: ['createdAt'],
+        required: {
+          displayName: true,
+        },
+      },
+    })
+
+    expect(Object.keys(model.fields)).toEqual([
+      'account.email',
+      'account.accountType',
+      'profile.accountId',
+      'profile.displayName',
+    ])
+    expect(model.fields['account.email'].required).toBe(true)
+    expect(model.fields['account.accountType']).toMatchObject({
+      required: false,
+      default: 'personal',
+    })
+    expect(model.fields['profile.accountId'].required).toBe(true)
+    expect(model.fields['profile.displayName'].required).toBe(true)
+    expect(model.fields['account.id']).toBeUndefined()
+    expect(model.fields['profile.createdAt']).toBeUndefined()
+    expect(model.rules).toEqual([])
+  })
+
+  test('provides typed field-name helpers for rules over namespaced fields', () => {
+    const accounts = pgTable('model_rule_accounts', {
+      id: serial().primaryKey(),
+      accountType: text().notNull().default('personal'),
+    })
+    const billing = pgTable('model_rule_billing', {
+      id: serial().primaryKey(),
+      taxId: text(),
+    })
+    const model = fromDrizzleModel({ account: accounts, billing })
+    const taxId = model.name('billing', 'taxId')
+    const taxIdField = model.field('billing', 'taxId')
+    const ump = umpire({
+      fields: model.fields,
+      rules: [
+        enabledWhen(taxIdField, (values) => {
+          return values[model.name('account', 'accountType')] === 'business'
+        }),
+      ],
+    })
+
+    expect(taxId).toBe('billing.taxId')
+    expect((taxIdField as { __umpfield: string }).__umpfield).toBe(
+      'billing.taxId',
+    )
+    expect(model.fields['billing.taxId']).toMatchObject({ required: false })
+    expect(ump.check({ 'account.accountType': 'personal' })[taxId]).toEqual(
+      expect.objectContaining({
+        enabled: false,
+        reason: 'condition not met',
+      }),
+    )
+    expect(
+      ump.check({
+        'account.accountType': 'business',
+        'billing.taxId': '12-3456789',
+      })[taxId],
+    ).toEqual(
+      expect.objectContaining({
+        enabled: true,
+        satisfied: true,
+      }),
+    )
+  })
+
+  test('throws when dotted namespaces and field names collide', () => {
+    const profile = pgTable('model_collision_profile', {
+      'name.first': text(),
+    })
+    const profileName = pgTable('model_collision_profile_name', {
+      first: text(),
+    })
+
+    expect(() =>
+      fromDrizzleModel({
+        profile,
+        'profile.name': profileName,
+      }),
+    ).toThrow('Duplicate model field "profile.name.first"')
   })
 })

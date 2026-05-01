@@ -1,6 +1,14 @@
+export { fromDrizzleModel } from './model.js'
+export type {
+  FromDrizzleModelConfig,
+  FromDrizzleModelFields,
+  FromDrizzleModelResult,
+  FromDrizzleModelTableEntry,
+} from './model.js'
 export { fromDrizzleTable } from './table.js'
 export type {
   DrizzleIsEmptyStrategy,
+  FromDrizzleTableFields,
   FromDrizzleTableOptions,
   FromDrizzleTableResult,
 } from './table.js'

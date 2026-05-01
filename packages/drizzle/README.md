@@ -52,9 +52,15 @@ if (!result.ok) {
 ## API
 
 ```ts
-import { fromDrizzleTable, checkCreate, checkPatch } from '@umpire/drizzle'
+import {
+  fromDrizzleModel,
+  fromDrizzleTable,
+  checkCreate,
+  checkPatch,
+} from '@umpire/drizzle'
 import type {
   DrizzleIsEmptyStrategy,
+  FromDrizzleModelResult,
   FromDrizzleTableOptions,
   FromDrizzleTableResult,
 } from '@umpire/drizzle'
@@ -92,6 +98,36 @@ type FromDrizzleTableOptions = {
 ```
 
 Built-in `isEmpty` strategies: `'present'`, `'string'`, `'number'`, `'bigint'`, `'boolean'`, `'array'`, `'object'`.
+
+### `fromDrizzleModel(model)`
+
+Composes multiple Drizzle tables into one collision-proof Umpire policy surface.
+Each table is namespaced into flat field keys like `account.email` and
+`billing.taxId`.
+
+```ts
+const model = fromDrizzleModel({
+  account: accounts,
+  billing: {
+    table: billingProfiles,
+    exclude: ['createdAt'],
+  },
+})
+
+const policy = umpire({
+  fields: model.fields,
+  rules: [
+    enabledWhen(model.field('billing', 'taxId'), (values) => {
+      return values[model.name('account', 'accountType')] === 'business'
+    }),
+  ],
+})
+```
+
+Entries may be either a table or `{ table, ...fromDrizzleTableOptions }`.
+`model.name(namespace, field)` returns the namespaced string key, and
+`model.field(namespace, field)` returns a named Umpire field ref for rule
+helpers.
 
 ### `checkCreate`, `checkPatch`
 

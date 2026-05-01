@@ -17,7 +17,7 @@
     "prepack": "node ../../scripts/materialize-agent-compat.mjs prepack",
     "postpack": "node ../../scripts/materialize-agent-compat.mjs postpack",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.type-tests.json --noEmit"
   },
   "files": [
     "dist",

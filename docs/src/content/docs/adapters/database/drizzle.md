@@ -119,6 +119,60 @@ Spread `base.fields` and `base.rules` into your `umpire()` call, then add your
 own rules. The `rules` array is empty today but is part of the return type so
 future Drizzle-derived rules can be added without a breaking change.
 
+## `fromDrizzleModel(model)`
+
+Use `fromDrizzleModel()` when one domain policy spans several tables. It runs
+`fromDrizzleTable()` for each table, namespaces the fields, and returns one flat
+Umpire field map.
+
+```ts
+import { enabledWhen, umpire } from '@umpire/core'
+import { fromDrizzleModel } from '@umpire/drizzle'
+
+const accountModel = fromDrizzleModel({
+  account: accounts,
+  profile: profiles,
+  billing: {
+    table: billingProfiles,
+    exclude: ['createdAt', 'updatedAt'],
+  },
+})
+
+export const accountUmp = umpire({
+  fields: accountModel.fields,
+  rules: [
+    enabledWhen(accountModel.field('billing', 'taxId'), (values) => {
+      return values[accountModel.name('account', 'accountType')] === 'business'
+    }),
+  ],
+})
+```
+
+The generated keys are strings such as `account.email`,
+`profile.displayName`, and `billing.taxId`. Umpire still treats fields as a flat
+record; the namespace is an adapter-level convention that avoids collisions
+between common column names like `id`, `status`, or `createdAt`.
+
+Each model entry can be a table directly or an object with table-specific
+options:
+
+```ts
+const model = fromDrizzleModel({
+  account: accounts,
+  billing: {
+    table: billingProfiles,
+    exclude: ['createdAt'],
+    required: {
+      taxId: true,
+    },
+  },
+})
+```
+
+`model.name(namespace, field)` returns the namespaced field name.
+`model.field(namespace, field)` returns a named Umpire field ref for rule
+helpers like `enabledWhen()`, `requires()`, and `fairWhen()`.
+
 ## Column Mapping
 
 Primary keys and generated columns are excluded by default. Everything else is

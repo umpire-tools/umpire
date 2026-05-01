@@ -44,13 +44,15 @@ type ExcludedColumnName<O extends FromDrizzleTableOptions> =
   O['exclude'] extends readonly (infer K)[] ? Extract<K, string> : never
 
 type IsWritableColumn<C> = C extends Column
-  ? C['_']['isPrimaryKey'] extends true
+  ? C extends { primary: true }
     ? false
-    : C['_']['generated'] extends undefined
-      ? C['_']['identity'] extends undefined
-        ? true
+    : C['_']['isPrimaryKey'] extends true
+      ? false
+      : C['_']['generated'] extends undefined
+        ? C['_']['identity'] extends undefined
+          ? true
+          : false
         : false
-      : false
   : false
 
 type WritableColumnName<T extends Table, O extends FromDrizzleTableOptions> = {
@@ -70,6 +72,7 @@ type DrizzleColumn = Column & {
   default?: unknown
   defaultFn?: (() => unknown) | undefined
   onUpdateFn?: (() => unknown) | undefined
+  primary: boolean
   generated?: unknown
   generatedIdentity?: { type?: 'always' | 'byDefault' } | undefined
   dimensions?: number
