@@ -55,6 +55,7 @@ Important notes:
 - [Vuex adapter](https://sdougbrown.github.io/umpire/adapters/vuex/): Vuex 4 integration.
 - [Validation adapters](https://sdougbrown.github.io/umpire/adapters/validation/): Availability-aware validation integration.
 - [Zod adapter](https://sdougbrown.github.io/umpire/adapters/validation/zod/): Availability-aware Zod schemas.
+- [Drizzle adapter](https://sdougbrown.github.io/umpire/adapters/database/drizzle/): Drizzle table hydration for Umpire fields and write-policy checks.
 - [JSON helpers](https://sdougbrown.github.io/umpire/extensions/json/): JSON builders and checks for rule configuration.
 - [Reads](https://sdougbrown.github.io/umpire/extensions/reads/): Derived read tables and read-backed rule bridges.
 - [Testing](https://sdougbrown.github.io/umpire/extensions/testing/): Invariant probes for rule configurations.

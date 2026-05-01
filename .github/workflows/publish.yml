@@ -25,6 +25,7 @@ jobs:
       json_changed: ${{ steps.versions.outputs.json_changed }}
       reads_changed: ${{ steps.versions.outputs.reads_changed }}
       write_changed: ${{ steps.versions.outputs.write_changed }}
+      drizzle_changed: ${{ steps.versions.outputs.drizzle_changed }}
       devtools_changed: ${{ steps.versions.outputs.devtools_changed }}
       store_changed: ${{ steps.versions.outputs.store_changed }}
       signals_changed: ${{ steps.versions.outputs.signals_changed }}
@@ -59,7 +60,7 @@ jobs:
           const fs = require('node:fs');
           const path = require('node:path');
 
-          const packages = ['core', 'dsl', 'effect', 'json', 'reads', 'write', 'devtools', 'store', 'signals', 'react', 'redux', 'pinia', 'tanstack-store', 'vuex', 'zustand', 'zod', 'testing', 'eslint-plugin', 'solid'];
+          const packages = ['core', 'dsl', 'effect', 'json', 'reads', 'write', 'drizzle', 'devtools', 'store', 'signals', 'react', 'redux', 'pinia', 'tanstack-store', 'vuex', 'zustand', 'zod', 'testing', 'eslint-plugin', 'solid'];
 
           // Manual dispatch: mark everything changed so all packages are published.
           if (process.env.MANUAL_DISPATCH === 'true') {
@@ -233,6 +234,21 @@ jobs:
       - name: Publish @umpire/write
         if: needs.detect-version-changes.outputs.write_changed == 'true'
         working-directory: packages/write
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="latest"
+          if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
+          PKG=$(node -p "require('./package.json').name")
+          if npm show "$PKG@$VERSION" version > /dev/null 2>&1; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
+
+      - name: Publish @umpire/drizzle
+        if: needs.detect-version-changes.outputs.drizzle_changed == 'true'
+        working-directory: packages/drizzle
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"

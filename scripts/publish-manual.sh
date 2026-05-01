@@ -34,6 +34,7 @@ PACKAGES=(
   json
   reads
   write
+  drizzle
   devtools
   store
   signals

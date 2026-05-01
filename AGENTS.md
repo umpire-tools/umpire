@@ -6,7 +6,7 @@
 
 - Umpire is a declarative field-availability engine for object-shaped state with interdependent options. It is not limited to forms.
 - Root workspaces live in `packages/*`. `docs/` is a separate Astro/Starlight app and is not part of the root Yarn workspaces.
-- Published packages: `core`, `react`, `signals`, `store`, `zustand`, `redux`, `tanstack-store`, `pinia`, `vuex`, `zod`, `json`, `reads`, `testing`, `devtools`.
+- Published packages: `core`, `react`, `signals`, `store`, `zustand`, `redux`, `tanstack-store`, `pinia`, `vuex`, `zod`, `json`, `reads`, `write`, `drizzle`, `testing`, `devtools`.
 
 ## Build And Test
 
@@ -21,7 +21,7 @@ Quick reference (root): `yarn test`, `yarn build`, `yarn typecheck`.
 - `@umpire/core` owns pure logic, graph construction, evaluation, `umpire()`, `scorecard()`, and `challenge()`.
 - `@umpire/store` is the subscription adapter foundation. `redux`, `pinia`, `tanstack-store`, and `vuex` normalize into it; `zustand` re-exports it because Zustand already fits the contract.
 - `@umpire/react` is intentionally thin. `@umpire/signals` is the fine-grained reactive adapter.
-- `@umpire/json`, `@umpire/zod`, `@umpire/reads`, `@umpire/testing`, and `@umpire/devtools` are optional helper packages layered on top of core.
+- `@umpire/json`, `@umpire/zod`, `@umpire/reads`, `@umpire/write`, `@umpire/drizzle`, `@umpire/testing`, and `@umpire/devtools` are optional helper packages layered on top of core.
 
 ## Behavior To Preserve
 

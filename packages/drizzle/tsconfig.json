@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "paths": {
+      "@umpire/core": ["../core/src/index.ts"],
+      "@umpire/core/*": ["../core/src/*"],
+      "@umpire/write": ["../write/src/index.ts"],
+      "@umpire/write/*": ["../write/src/*"],
+      "@umpire/drizzle": ["./src/index.ts"],
+      "@umpire/drizzle/*": ["./src/*"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "../core" }, { "path": "../write" }]
+}
