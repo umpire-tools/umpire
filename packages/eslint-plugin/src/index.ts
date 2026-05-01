@@ -4,6 +4,7 @@ import noContradictingRules from './rules/no-contradicting-rules.js'
 import noInlineUmpireInit from './rules/no-inline-umpire-init.js'
 import noSelfDisable from './rules/no-self-disable.js'
 import noUnknownFields from './rules/no-unknown-fields.js'
+import noWriteOwnedFields from './rules/no-write-owned-fields.js'
 
 const plugin = {
   meta: {
@@ -15,6 +16,7 @@ const plugin = {
     'no-self-disable': noSelfDisable,
     'no-contradicting-rules': noContradictingRules,
     'no-circular-requires': noCircularRequires,
+    'no-write-owned-fields': noWriteOwnedFields,
   },
   configs: {} as Record<string, Linter.Config>,
 }
