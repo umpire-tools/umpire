@@ -3,9 +3,14 @@ title: '@umpire/drizzle'
 description: Derive Umpire fields from Drizzle ORM table definitions and reuse @umpire/write at the service boundary.
 ---
 
-`@umpire/drizzle` is a Drizzle ORM adapter for Umpire's policy layer. It reads
-Drizzle table columns, derives an Umpire `fields` object, and leaves
-cross-field business rules for you to add in code.
+When your server-side state is modeled in Drizzle, `@umpire/drizzle` gives you
+the fastest way to start an Umpire policy from real schema metadata.
+
+It reads Drizzle column metadata once at setup time, derives an Umpire `fields`
+object, and lets you focus on the part that matters most: cross-field business
+rules like "companyName is required for business accounts." The result is less
+duplicated config, fewer drift bugs between schema and policy, and clearer
+service-layer checks before persistence.
 
 ## Install
 
@@ -59,6 +64,13 @@ The adapter uses Drizzle's public `getColumns()` helper. It does not need a
 database connection and does not inspect migrations.
 
 ```ts
+function fromDrizzleTable<T extends Table, const O extends FromDrizzleTableOptions = {}>(
+  table: T,
+  options?: O,
+): FromDrizzleTableResult<FromDrizzleTableFields<T, O>>
+```
+
+```ts
 const { fields, rules } = fromDrizzleTable(users, {
   exclude: ['createdAt', 'updatedAt'],
   required: {
@@ -72,6 +84,40 @@ const { fields, rules } = fromDrizzleTable(users, {
 
 `rules` is currently empty. Drizzle knows column shape; it does not know your
 business availability policy.
+
+### `FromDrizzleTableOptions`
+
+```ts
+type FromDrizzleTableOptions = {
+  exclude?: readonly string[]       // omit columns by TypeScript property name
+  isEmpty?: Record<string, DrizzleIsEmptyStrategy | NonNullable<FieldDef['isEmpty']>>
+  required?: Record<string, boolean>  // override requiredness from Drizzle metadata
+}
+```
+
+- `exclude` omits columns by their TypeScript property name, not the database
+  column name. If your Drizzle column is `text('display_name')`, exclude it as
+  `displayName`.
+- `isEmpty` overrides a field's satisfaction strategy. Accepts a built-in
+  strategy name or a custom `(value) => boolean` function.
+- `required` overrides requiredness derived from Drizzle's `notNull` and
+  default metadata.
+
+Built-in `isEmpty` strategies are `'present'`, `'string'`, `'number'`,
+`'bigint'`, `'boolean'`, `'array'`, and `'object'`.
+
+### `FromDrizzleTableResult`
+
+```ts
+type FromDrizzleTableResult<F extends Record<string, FieldDef> = Record<string, FieldDef>> = {
+  fields: F
+  rules: Rule<F>[]
+}
+```
+
+Spread `base.fields` and `base.rules` into your `umpire()` call, then add your
+own rules. The `rules` array is empty today but is part of the return type so
+future Drizzle-derived rules can be added without a breaking change.
 
 ## Column Mapping
 
@@ -90,12 +136,19 @@ mapped conservatively:
 | JSON object columns | empty objects are unsatisfied |
 | date/time columns | presence-based satisfaction |
 
+Field keys use your TypeScript property names, not database column names. A
+Drizzle column defined as `text('display_name')` appears as `displayName` in the
+derived fields.
+
 ## Write Checks
 
 `@umpire/drizzle` re-exports `checkCreate` and `checkPatch` from
-`@umpire/write`:
+`@umpire/write` so your service layer can check availability policy before
+calling Drizzle's `db.insert()` or `db.update()`:
 
 ```ts
+import { checkPatch } from '@umpire/drizzle'
+
 const result = checkPatch(userUmp, existingUser, patch)
 if (!result.ok) {
   return Response.json(
@@ -110,3 +163,18 @@ await db.update(users).set(patch)
 Run schema validation, authorization, and database constraints separately.
 Umpire answers whether the candidate respects your availability policy; Drizzle
 and the database still own persistence correctness.
+
+See [`@umpire/write`](/umpire/extensions/write/) for the full result shape and
+the distinction between issues and fouls.
+
+## Boundary
+
+`@umpire/drizzle` is strongest at deriving availability metadata from table
+shape. Pair it with your schema validation, authorization, and database
+constraints for a complete write pipeline.
+
+## See also
+
+- [`@umpire/write`](/umpire/extensions/write/) — policy-level create and patch checks
+- [`umpire()`](/umpire/api/umpire/) — the engine constructor that consumes the derived fields
+- [Satisfaction](/umpire/concepts/satisfaction/) — how Umpire decides whether a value counts as present

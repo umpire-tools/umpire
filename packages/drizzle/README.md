@@ -1,11 +1,8 @@
 # @umpire/drizzle
 
-Drizzle table hydration for Umpire availability policies.
+When your server-side state is modeled in Drizzle, `@umpire/drizzle` gives you the fastest way to start an Umpire policy from real schema metadata. It derives a `fields` object from your table columns so you can focus on the cross-field business rules that Drizzle doesn't know about — "companyName is required for business accounts" — and run consistent policy checks before persistence via `checkCreate` and `checkPatch`.
 
-`@umpire/drizzle` turns Drizzle table column metadata into Umpire field
-definitions, then lets you add the business rules Drizzle cannot know about.
-It also re-exports `checkCreate` and `checkPatch` from `@umpire/write` for
-service-layer policy checks.
+[Docs](https://sdougbrown.github.io/umpire/adapters/database/drizzle/) · [Quick Start](https://sdougbrown.github.io/umpire/learn/)
 
 ## Install
 
@@ -13,21 +10,14 @@ service-layer policy checks.
 yarn add @umpire/core @umpire/write @umpire/drizzle drizzle-orm
 ```
 
-`drizzle-orm` is a peer dependency. The first RC targets Drizzle
-`1.0.0-rc.1` and newer 1.x releases.
+`drizzle-orm` is a peer dependency. This RC targets Drizzle `1.0.0-rc.1` and newer 1.x releases.
 
-## API
-
-```ts
-import { fromDrizzleTable, checkCreate, checkPatch } from '@umpire/drizzle'
-```
-
-### `fromDrizzleTable(table, options?)`
+## Usage
 
 ```ts
 import { pgTable, serial, text, varchar } from 'drizzle-orm/pg-core'
 import { enabledWhen, requires, umpire } from '@umpire/core'
-import { fromDrizzleTable } from '@umpire/drizzle'
+import { checkCreate, fromDrizzleTable } from '@umpire/drizzle'
 
 const users = pgTable('users', {
   id: serial().primaryKey(),
@@ -40,7 +30,7 @@ const users = pgTable('users', {
 
 const base = fromDrizzleTable(users)
 
-export const userUmp = umpire({
+const userUmp = umpire({
   fields: base.fields,
   rules: [
     ...base.rules,
@@ -48,35 +38,83 @@ export const userUmp = umpire({
     requires('companyName', (values) => values.accountType === 'business'),
   ],
 })
-```
 
-`fromDrizzleTable()` uses Drizzle's public `getColumns()` helper. Primary keys
-and generated columns are excluded by default. Requiredness comes from
-`notNull` unless the column has a Drizzle default, runtime default, or update
-function. Static primitive defaults are copied to the Umpire field definition;
-SQL and runtime defaults are treated as storage-layer behavior and are not
-copied.
+const result = checkCreate(userUmp, {
+  email: 'alex@example.com',
+  accountType: 'business',
+})
 
-## Options
-
-```ts
-type FromDrizzleTableOptions = {
-  exclude?: readonly string[]
-  isEmpty?: Record<string, DrizzleIsEmptyStrategy | FieldDef['isEmpty']>
-  required?: Record<string, boolean>
+if (!result.ok) {
+  throw new Error(result.errors.join(', '))
 }
 ```
 
-- `exclude` omits columns by TypeScript field name.
-- `isEmpty` overrides a field's satisfaction strategy.
-- `required` overrides requiredness derived from Drizzle metadata.
+## API
 
-Built-in `isEmpty` strategies are `'present'`, `'string'`, `'number'`,
-`'bigint'`, `'boolean'`, `'array'`, and `'object'`.
+```ts
+import { fromDrizzleTable, checkCreate, checkPatch } from '@umpire/drizzle'
+import type {
+  DrizzleIsEmptyStrategy,
+  FromDrizzleTableOptions,
+  FromDrizzleTableResult,
+} from '@umpire/drizzle'
+```
+
+### `fromDrizzleTable(table, options?)`
+
+Reads Drizzle column metadata via `getColumns()` and returns `{ fields, rules }`. Primary keys and generated columns are excluded by default. Requiredness comes from `notNull` unless the column has a Drizzle default, runtime default, or update function. Static primitive defaults are copied to the Umpire field definition; SQL and runtime defaults are treated as storage-layer behavior and are not copied.
+
+```ts
+const { fields, rules } = fromDrizzleTable(users, {
+  exclude: ['createdAt', 'updatedAt'],
+  isEmpty: {
+    companyName: 'string',
+  },
+  required: {
+    companyName: true,
+  },
+})
+```
+
+`rules` is currently empty. Drizzle knows column shape; it does not know your business availability policy.
+
+#### Options
+
+```ts
+type FromDrizzleTableOptions = {
+  exclude?: readonly string[] // omit by TypeScript property name
+  isEmpty?: Record<
+    string,
+    DrizzleIsEmptyStrategy | NonNullable<FieldDef['isEmpty']>
+  > // override satisfaction strategy
+  required?: Record<string, boolean> // override requiredness
+}
+```
+
+Built-in `isEmpty` strategies: `'present'`, `'string'`, `'number'`, `'bigint'`, `'boolean'`, `'array'`, `'object'`.
+
+### `checkCreate`, `checkPatch`
+
+Re-exported from [`@umpire/write`](https://www.npmjs.com/package/@umpire/write). Use them to check whether a create or patch candidate passes Umpire availability policy before persisting:
+
+```ts
+const result = checkPatch(userUmp, existingUser, patch)
+if (!result.ok) {
+  return Response.json(
+    { errors: result.errors, fouls: result.fouls },
+    { status: 422 },
+  )
+}
+
+await db.update(users).set(patch)
+```
 
 ## Boundary
 
-This adapter hydrates policy metadata only. It does not validate enum members,
-string lengths, number ranges, uniqueness, foreign keys, authorization, nested
-writes, transactions, or database constraints. Keep those in your schema,
-service, and database layers.
+`@umpire/drizzle` is strongest at deriving availability metadata from table shape. Pair it with your schema validation, authorization, and database constraints for a complete write pipeline.
+
+## Docs
+
+- [Drizzle adapter](https://sdougbrown.github.io/umpire/adapters/database/drizzle/) — column mapping table, write checks, and boundary guide
+- [@umpire/write](https://sdougbrown.github.io/umpire/extensions/write/) — full result shape for `checkCreate`/`checkPatch`
+- [Quick Start](https://sdougbrown.github.io/umpire/learn/) — learn each rule primitive
