@@ -10,15 +10,16 @@ Availability-aware Effect Schema validation and SubscriptionRef bridge for [@ump
 npm install @umpire/core @umpire/effect effect
 ```
 
-`effect` is a peer dependency — bring your own version (v3+).
+`effect` is a peer dependency — bring your own Effect v4 beta/stable release.
 
 ## Usage
 
 ```ts
-import { Either, Schema } from 'effect'
+import { Schema } from 'effect'
 import { enabledWhen, umpire } from '@umpire/core'
 import {
   createEffectAdapter,
+  decodeEffectSchema,
   deriveErrors,
   deriveSchema,
   effectErrors,
@@ -37,17 +38,17 @@ const ump = umpire({
   ],
 })
 
-// 2. Define per-field Effect schemas (R = never required)
+// 2. Define per-field Effect schemas with no service/context dependencies
 const fieldSchemas = {
-  email: Schema.String.pipe(
-    Schema.filter((s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s), {
-      message: () => 'Enter a valid email',
-    }),
+  email: Schema.String.check(
+    Schema.makeFilter((s) =>
+      /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s) ? undefined : 'Enter a valid email',
+    ),
   ),
-  companyName: Schema.String.pipe(
-    Schema.filter((s) => s.length > 0, {
-      message: () => 'Company name is required',
-    }),
+  companyName: Schema.String.check(
+    Schema.makeFilter((s) =>
+      s.length > 0 ? undefined : 'Company name is required',
+    ),
   ),
 }
 
@@ -55,9 +56,9 @@ const fieldSchemas = {
 const availability = ump.check(values, { plan })
 
 const schema = deriveSchema(availability, fieldSchemas)
-const result = Schema.decodeUnknownEither(schema)(values)
+const result = decodeEffectSchema(schema, values)
 
-if (Either.isLeft(result)) {
+if (result._tag === 'Left') {
   const errors = deriveErrors(availability, effectErrors(result.left))
   // errors.email → 'Enter a valid email' (only if email is enabled)
   // errors.companyName → undefined (disabled on personal plan)
@@ -92,7 +93,8 @@ Builds a `Schema.Struct` from the availability map:
 - **Enabled + required** fields use the base schema
 - **Enabled + optional** fields get `Schema.optional()`
 
-Pass per-field schemas with `R = never` — schemas with context dependencies are not supported.
+Pass per-field schemas with no service/context dependencies.
+Use `decodeEffectSchema()` for convenience, or call Effect v4's native `Schema.decodeUnknownResult()` directly.
 
 #### `rejectFoul` option
 
@@ -106,7 +108,7 @@ When `rejectFoul: true`, a foul field with a present value fails with the field'
 
 ### `effectErrors(parseError)`
 
-Normalizes an Effect `ParseError` into `{ field, message }[]` pairs for use with `deriveErrors`.
+Normalizes an Effect schema parse error or issue into `{ field, message }[]` pairs for use with `deriveErrors`.
 
 ### `deriveErrors(availability, errors)`
 
@@ -128,18 +130,18 @@ const validation = createEffectAdapter({
     confirmPassword: Schema.String,
   },
   build: (base) =>
-    base.pipe(
-      Schema.filter(
-        (data) =>
-          (data as Record<string, unknown>).password ===
-          (data as Record<string, unknown>).confirmPassword,
-        { message: () => 'Passwords do not match' },
+    base.check(
+      Schema.makeFilter((data) =>
+        (data as Record<string, unknown>).password ===
+        (data as Record<string, unknown>).confirmPassword
+          ? undefined
+          : 'Passwords do not match',
       ),
     ),
 })
 ```
 
-If you need every issue or deeper control, you can use `deriveSchema()` and `Schema.decodeUnknownEither()` directly.
+If you need every issue or deeper control, you can use `deriveSchema()` with either `decodeEffectSchema()` or Effect v4's native decode API.
 
 ### `fromSubscriptionRef(ump, ref, options)`
 
@@ -183,10 +185,12 @@ import { isEmptyString, umpire } from '@umpire/core'
 
 const validation = createEffectAdapter({
   schemas: {
-    email: Schema.String.pipe(
-      Schema.filter((s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s), {
-        message: () => 'Enter a valid email',
-      }),
+    email: Schema.String.check(
+      Schema.makeFilter((s) =>
+        /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)
+          ? undefined
+          : 'Enter a valid email',
+      ),
     ),
   },
 })

@@ -2,11 +2,19 @@ import { enabledWhen, fairWhen, umpire } from '@umpire/core'
 import { Schema } from 'effect'
 import { createEffectAdapter } from '../src/adapter.js'
 
-const emailSchema = Schema.String.pipe(
-  Schema.filter((s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s), {
-    message: () => 'Enter a valid email',
-  }),
+const emailSchema = stringMatching(
+  (s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s),
+  'Enter a valid email',
 )
+
+function stringMatching(
+  predicate: (value: string) => boolean,
+  message: string,
+): Schema.Top {
+  return Schema.String.check(
+    Schema.makeFilter((value) => (predicate(value) ? undefined : message)),
+  )
+}
 
 describe('createEffectAdapter', () => {
   test('creates per-field validators that surface the first parse error', () => {
@@ -57,11 +65,7 @@ describe('createEffectAdapter', () => {
     const validation = createEffectAdapter({
       schemas: {
         email: emailSchema,
-        password: Schema.String.pipe(
-          Schema.filter((s) => s.length >= 8, {
-            message: () => 'At least 8 characters',
-          }),
-        ),
+        password: stringMatching((s) => s.length >= 8, 'At least 8 characters'),
         confirmPassword: Schema.String,
         companyName: Schema.String,
       },
@@ -119,8 +123,8 @@ describe('createEffectAdapter', () => {
 
     const validation = createEffectAdapter({
       schemas: {
-        spotType: Schema.Literal('electric', 'standard'),
-        vehicleType: Schema.Literal('electric', 'gas'),
+        spotType: Schema.Literals(['electric', 'standard']),
+        vehicleType: Schema.Literals(['electric', 'gas']),
       },
       rejectFoul: true,
     })
@@ -174,12 +178,12 @@ describe('createEffectAdapter', () => {
         confirmPassword: Schema.String,
       },
       build: (base) =>
-        base.pipe(
-          Schema.filter(
-            (data) =>
-              (data as Record<string, unknown>).password ===
-              (data as Record<string, unknown>).confirmPassword,
-            { message: () => 'Passwords do not match' },
+        base.check(
+          Schema.makeFilter((data) =>
+            (data as Record<string, unknown>).password ===
+            (data as Record<string, unknown>).confirmPassword
+              ? undefined
+              : 'Passwords do not match',
           ),
         ),
     })

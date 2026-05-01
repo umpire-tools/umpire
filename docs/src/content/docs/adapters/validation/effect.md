@@ -11,7 +11,7 @@ description: Build availability-aware Effect schemas from an Umpire availability
 yarn add @umpire/core @umpire/effect effect
 ```
 
-`effect` is a peer dependency — bring your own version (v3+).
+`effect` is a peer dependency — bring your own Effect v4 beta/stable release.
 
 ## API
 
@@ -26,20 +26,35 @@ Builds a `Schema.Struct` from the availability map:
 
 ```ts
 import { Schema } from 'effect'
-import { deriveSchema } from '@umpire/effect'
+import {
+  decodeEffectSchema,
+  deriveSchema,
+} from '@umpire/effect'
 
 const fieldSchemas = {
-  email:       Schema.String.pipe(Schema.filter((s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s), { message: () => 'Enter a valid email' })),
-  companyName: Schema.String.pipe(Schema.filter((s) => s.length > 0, { message: () => 'Company name is required' })),
+  email: Schema.String.check(
+    Schema.makeFilter((s) =>
+      /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)
+        ? undefined
+        : 'Enter a valid email',
+    ),
+  ),
+  companyName: Schema.String.check(
+    Schema.makeFilter((s) =>
+      s.length > 0 ? undefined : 'Company name is required',
+    ),
+  ),
   companySize: Schema.String,
 }
 
 const availability = ump.check(values, conditions)
 const schema = deriveSchema(availability, fieldSchemas)
-const result = Schema.decodeUnknownEither(schema)(values)
+const result = decodeEffectSchema(schema, values)
 ```
 
-Schemas must have `R = never` — schemas with context dependencies are not supported.
+`decodeEffectSchema()` returns a convenient `{ _tag: 'Right' | 'Left' }` result. If you call Effect directly, use Effect v4's native `Schema.decodeUnknownResult()` API.
+
+Schemas must have no service/context dependencies.
 
 #### `rejectFoul` option
 
@@ -49,20 +64,18 @@ Fields where `fair: false` hold values that were once valid but are now contextu
 // Server handler — rejects any submission containing a foul value
 const availability = engine.check(body)
 const schema = deriveSchema(availability, fieldSchemas, { rejectFoul: true })
-const result = Schema.decodeUnknownEither(schema)(body)
+const result = decodeEffectSchema(schema, body)
 ```
 
 When `rejectFoul: true`, a foul field with a present value fails with the field's `reason` as the error message. If the field is optional and absent, it passes — only submissions that *contain* a foul value are rejected.
 
 ### `effectErrors(parseError)`
 
-Normalizes an Effect `ParseError` into `{ field, message }[]` pairs.
+Normalizes an Effect schema parse error or issue into `{ field, message }[]` pairs.
 
 ```ts
-import { Either } from 'effect'
-
-const result = Schema.decodeUnknownEither(schema)(values)
-if (Either.isLeft(result)) {
+const result = decodeEffectSchema(schema, values)
+if (result._tag === 'Left') {
   const pairs = effectErrors(result.left)
   // [{ field: 'email', message: 'Enter a valid email' }, ...]
 }
@@ -102,7 +115,7 @@ const ump = umpire({
 
 // Full derived-schema validation
 const result = validation.run(availability, values)
-if (Either.isLeft(result.result)) {
+if (result.result._tag === 'Left') {
   console.log(result.errors)       // { email: 'Enter a valid email' }
   console.log(result.schemaFields)  // ['email'] — disabled fields excluded
 }
@@ -117,12 +130,12 @@ const validation = createEffectAdapter({
     confirmPassword: Schema.String,
   },
   build: (base) =>
-    base.pipe(
-      Schema.filter(
-        (data) =>
-          (data as Record<string, unknown>).password ===
-          (data as Record<string, unknown>).confirmPassword,
-        { message: () => 'Passwords do not match' },
+    base.check(
+      Schema.makeFilter((data) =>
+        (data as Record<string, unknown>).password ===
+        (data as Record<string, unknown>).confirmPassword
+          ? undefined
+          : 'Passwords do not match',
       ),
     ),
 })
@@ -130,7 +143,7 @@ const validation = createEffectAdapter({
 
 The root-level refinement error surfaces under `result.errors._root`.
 
-If you need every issue or deeper control, use `deriveSchema()` and `Schema.decodeUnknownEither()` directly.
+If you need every issue or deeper control, use `deriveSchema()` with either `decodeEffectSchema()` or Effect v4's native decode API.
 
 ## `fromSubscriptionRef()`
 

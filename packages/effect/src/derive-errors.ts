@@ -1,5 +1,5 @@
-import { ParseResult } from 'effect'
 import type { AvailabilityMap, FieldDef } from '@umpire/core'
+import { formatEffectErrors } from './effect-compat.js'
 
 export type NormalizedFieldError = {
   field: string
@@ -33,12 +33,6 @@ export function deriveErrors<F extends Record<string, FieldDef>>(
   return result
 }
 
-export function effectErrors(
-  parseError: ParseResult.ParseError,
-): NormalizedFieldError[] {
-  const formatted = ParseResult.ArrayFormatter.formatErrorSync(parseError)
-  return formatted.map((item) => ({
-    field: String(item.path[0] ?? ''),
-    message: item.message,
-  }))
+export function effectErrors(parseError: unknown): NormalizedFieldError[] {
+  return formatEffectErrors(parseError)
 }
