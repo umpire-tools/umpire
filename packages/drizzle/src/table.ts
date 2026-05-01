@@ -33,6 +33,39 @@ export type FromDrizzleTableResult<
   rules: Rule<F>[]
 }
 
+type DrizzleTableColumns<T extends Table> = T['_']['columns']
+
+type DrizzleTableColumnName<T extends Table> = Extract<
+  keyof DrizzleTableColumns<T>,
+  string
+>
+
+type ExcludedColumnName<O extends FromDrizzleTableOptions> =
+  O['exclude'] extends readonly (infer K)[] ? Extract<K, string> : never
+
+type IsWritableColumn<C> = C extends Column
+  ? C['_']['isPrimaryKey'] extends true
+    ? false
+    : C['_']['generated'] extends undefined
+      ? C['_']['identity'] extends undefined
+        ? true
+        : false
+      : false
+  : false
+
+type WritableColumnName<T extends Table, O extends FromDrizzleTableOptions> = {
+  [K in DrizzleTableColumnName<T>]: K extends ExcludedColumnName<O>
+    ? never
+    : IsWritableColumn<DrizzleTableColumns<T>[K]> extends true
+      ? K
+      : never
+}[DrizzleTableColumnName<T>]
+
+export type FromDrizzleTableFields<
+  T extends Table,
+  O extends FromDrizzleTableOptions = FromDrizzleTableOptions,
+> = Record<WritableColumnName<T, O>, FieldDef>
+
 type DrizzleColumn = Column & {
   default?: unknown
   defaultFn?: (() => unknown) | undefined
@@ -42,12 +75,13 @@ type DrizzleColumn = Column & {
   dimensions?: number
 }
 
-export function fromDrizzleTable<T extends Table>(
+export function fromDrizzleTable<
+  T extends Table,
+  const O extends FromDrizzleTableOptions = {},
+>(
   table: T,
-  options: FromDrizzleTableOptions = {},
-): FromDrizzleTableResult<
-  Record<Extract<keyof T['_']['columns'], string>, FieldDef>
-> {
+  options: O = {} as O,
+): FromDrizzleTableResult<FromDrizzleTableFields<T, O>> {
   const columns = getColumns(table) as Record<string, DrizzleColumn>
   const exclude = new Set(options.exclude ?? [])
   const fields: Record<string, FieldDef> = {}
@@ -61,10 +95,7 @@ export function fromDrizzleTable<T extends Table>(
   }
 
   return {
-    fields: fields as Record<
-      Extract<keyof T['_']['columns'], string>,
-      FieldDef
-    >,
+    fields: fields as FromDrizzleTableFields<T, O>,
     rules: [],
   }
 }
