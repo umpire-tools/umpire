@@ -10,8 +10,8 @@ export {
   decodeEffectSchema,
   isDecodeFailure,
   isDecodeSuccess,
-} from './effect-compat.js'
-export type { EffectDecodeResult, EffectParseOptions } from './effect-compat.js'
+} from './effect-schema.js'
+export type { EffectDecodeResult, EffectParseOptions } from './effect-schema.js'
 export { createEffectAdapter } from './adapter.js'
 export type {
   CreateEffectAdapterOptions,

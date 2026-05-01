@@ -1,10 +1,7 @@
 import type { AvailabilityMap, FieldDef } from '@umpire/core'
-import { formatEffectErrors } from './effect-compat.js'
+import type { NormalizedEffectError } from './effect-schema.js'
 
-export type NormalizedFieldError = {
-  field: string
-  message: string
-}
+export type NormalizedFieldError = NormalizedEffectError
 
 export const ROOT_ERROR_FIELD = '_root'
 
@@ -33,6 +30,4 @@ export function deriveErrors<F extends Record<string, FieldDef>>(
   return result
 }
 
-export function effectErrors(parseError: unknown): NormalizedFieldError[] {
-  return formatEffectErrors(parseError)
-}
+export { formatEffectErrors as effectErrors } from './effect-schema.js'

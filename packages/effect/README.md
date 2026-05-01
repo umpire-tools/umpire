@@ -59,7 +59,7 @@ const schema = deriveSchema(availability, fieldSchemas)
 const result = decodeEffectSchema(schema, values)
 
 if (result._tag === 'Left') {
-  const errors = deriveErrors(availability, effectErrors(result.left))
+  const errors = deriveErrors(availability, effectErrors(result.error))
   // errors.email → 'Enter a valid email' (only if email is enabled)
   // errors.companyName → undefined (disabled on personal plan)
 }

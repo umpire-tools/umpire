@@ -1,50 +1,30 @@
 import { Result, Schema } from 'effect'
-import type { SchemaIssue } from 'effect'
+import type { SchemaAST, SchemaIssue } from 'effect'
 
-export type EffectParseOptions = {
-  readonly errors?: 'first' | 'all'
-} & Record<string, unknown>
+export type EffectParseOptions = SchemaAST.ParseOptions
+
+export type NormalizedEffectError = {
+  field: string
+  message: string
+}
 
 export type EffectDecodeResult<A> =
   | {
       readonly _tag: 'Right'
-      readonly ok: true
-      readonly right: A
       readonly value: A
-      readonly source: unknown
     }
   | {
       readonly _tag: 'Left'
-      readonly ok: false
-      readonly left: unknown
       readonly error: unknown
-      readonly source: unknown
     }
 
-type Decoder = (input: unknown, options?: EffectParseOptions) => unknown
-
-type EffectSchemaApi = {
-  readonly decodeUnknownResult?: (
-    schema: unknown,
-    options?: EffectParseOptions,
-  ) => Decoder
-}
-
-const schemaApi = Schema as EffectSchemaApi
-
 export function decodeEffectSchema<A = unknown>(
-  schema: unknown,
+  schema: Schema.Decoder<unknown, never>,
   input: unknown,
   options?: EffectParseOptions,
 ): EffectDecodeResult<A> {
-  if (schemaApi.decodeUnknownResult) {
-    return normalizeDecodeResult<A>(
-      schemaApi.decodeUnknownResult(schema)(input, options),
-    )
-  }
-
-  throw new Error(
-    '@umpire/effect requires Effect Schema decodeUnknownResult from Effect v4.',
+  return normalizeDecodeResult<A>(
+    Schema.decodeUnknownResult(schema)(input, options),
   )
 }
 
@@ -64,23 +44,23 @@ function normalizeDecodeResult<A>(source: unknown): EffectDecodeResult<A> {
   const result = source as Result.Result<A, unknown>
 
   if (Result.isSuccess(result)) {
-    const value = result.success as A
-    return { _tag: 'Right', ok: true, right: value, value, source }
+    return { _tag: 'Right', value: result.success as A }
   }
 
   if (Result.isFailure(result)) {
-    const error = result.failure
-    return { _tag: 'Left', ok: false, left: error, error, source }
+    return { _tag: 'Left', error: result.failure }
   }
 
-  return { _tag: 'Left', ok: false, left: source, error: source, source }
+  throw new Error(
+    '@umpire/effect expected Schema.decodeUnknownResult() to return an Effect Result.',
+  )
 }
 
 export function formatEffectErrors(
   parseError: unknown,
-): Array<{ field: string; message: string }> {
+): NormalizedEffectError[] {
   const issue =
-    isRecord(parseError) && 'issue' in parseError
+    isRecord(parseError) && 'issue' in parseError && !('_tag' in parseError)
       ? parseError.issue
       : parseError
 

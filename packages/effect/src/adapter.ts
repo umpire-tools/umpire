@@ -12,9 +12,10 @@ import {
 } from './derive-errors.js'
 import {
   decodeEffectSchema,
+  isDecodeFailure,
   isDecodeSuccess,
   type EffectDecodeResult,
-} from './effect-compat.js'
+} from './effect-schema.js'
 import {
   deriveSchema,
   type AnyEffectSchema,
@@ -75,8 +76,9 @@ export function createEffectAdapter<F extends Record<string, FieldDef>>(
         values,
         { errors: 'all' },
       )
-      const normalizedErrors =
-        result._tag === 'Left' ? effectErrors(result.error) : []
+      const normalizedErrors = isDecodeFailure(result)
+        ? effectErrors(result.error)
+        : []
 
       const schemaFields = (
         Object.keys(availability) as Array<keyof F & string>

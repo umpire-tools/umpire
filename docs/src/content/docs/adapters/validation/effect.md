@@ -76,7 +76,7 @@ Normalizes an Effect schema parse error or issue into `{ field, message }[]` pai
 ```ts
 const result = decodeEffectSchema(schema, values)
 if (result._tag === 'Left') {
-  const pairs = effectErrors(result.left)
+  const pairs = effectErrors(result.error)
   // [{ field: 'email', message: 'Enter a valid email' }, ...]
 }
 ```
@@ -86,7 +86,7 @@ if (result._tag === 'Left') {
 Filters normalized error pairs to only include enabled fields and keeps the first message per field. Returns `Partial<Record<string, string>>`. Root-level errors from cross-field refinements are keyed under `'_root'`.
 
 ```ts
-const errors = deriveErrors(availability, effectErrors(result.left))
+const errors = deriveErrors(availability, effectErrors(result.error))
 // { email: 'Enter a valid email' }
 // companyName omitted if disabled on the current plan
 ```

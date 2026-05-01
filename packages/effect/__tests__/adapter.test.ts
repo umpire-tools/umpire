@@ -10,7 +10,7 @@ const emailSchema = stringMatching(
 function stringMatching(
   predicate: (value: string) => boolean,
   message: string,
-): Schema.Top {
+): Schema.Decoder<unknown, never> {
   return Schema.String.check(
     Schema.makeFilter((value) => (predicate(value) ? undefined : message)),
   )
@@ -161,7 +161,7 @@ describe('createEffectAdapter', () => {
       vehicleType: 'gas',
     })
     expect(foulResult.result).toMatchObject({ _tag: 'Left' })
-    expect(foulResult.errors).toMatchObject({
+    expect(foulResult.errors).toEqual({
       vehicleType: 'Vehicle type does not match the reserved spot',
     })
   })

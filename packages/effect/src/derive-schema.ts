@@ -1,7 +1,7 @@
 import { Schema } from 'effect'
 import type { AvailabilityMap, FieldDef } from '@umpire/core'
 
-export type AnyEffectSchema = Schema.Top
+export type AnyEffectSchema = Schema.Decoder<unknown, never>
 
 export type FieldSchemas<F extends Record<string, FieldDef>> = Partial<
   Record<keyof F & string, AnyEffectSchema>
@@ -20,6 +20,8 @@ export type DeriveSchemaOptions = {
   rejectFoul?: boolean
 }
 
+// Effect v4 optional property signatures are also schemas, so Schema.Top covers
+// both required fields and Schema.optional(...) entries in a struct shape.
 type ShapeEntry = Schema.Top
 
 export function deriveSchema<F extends Record<string, FieldDef>>(
@@ -49,5 +51,7 @@ export function deriveSchema<F extends Record<string, FieldDef>>(
     shape[field] = status.required ? base : Schema.optional(base)
   }
 
-  return Schema.Struct(shape as Schema.Struct.Fields) as AnyEffectSchema
+  return Schema.Struct(
+    shape as Schema.Struct.Fields,
+  ) as unknown as AnyEffectSchema
 }
