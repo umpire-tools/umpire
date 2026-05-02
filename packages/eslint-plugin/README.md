@@ -50,4 +50,4 @@ Add the plugin to `jsPlugins`, then enable rules by full name:
 
 ## Docs
 
-https://sdougbrown.github.io/umpire/extensions/eslint-plugin/
+https://umpire.tools/extensions/eslint-plugin/

@@ -31,6 +31,6 @@ enabledWhen('companyName', (_values, conditions) => conditions.plan === 'busines
 
 ## See also
 
-- [Quick Start: enabledWhen](/umpire/learn/#enabledwhen) — interactive demo
-- [`check()`](/umpire/api/rules/check/) — bridge validators into `enabledWhen` predicates
-- [Custom Reasons](/umpire/api/rules/#custom-reasons) — static and dynamic reason strings
+- [Quick Start: enabledWhen](/learn/#enabledwhen) — interactive demo
+- [`check()`](/api/rules/check/) — bridge validators into `enabledWhen` predicates
+- [Custom Reasons](/api/rules/#custom-reasons) — static and dynamic reason strings

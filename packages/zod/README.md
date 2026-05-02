@@ -2,7 +2,7 @@
 
 Availability-aware Zod validation for [@umpire/core](https://www.npmjs.com/package/@umpire/core)-powered state. Disabled fields produce no validation errors. Required/optional follows Umpire's availability map.
 
-[Docs](https://sdougbrown.github.io/umpire/examples/signup/) · [Quick Start](https://sdougbrown.github.io/umpire/learn/)
+[Docs](https://umpire.tools/examples/signup/) · [Quick Start](https://umpire.tools/learn/)
 
 ## Install
 
@@ -203,6 +203,6 @@ No per-field branching. No `if (field === 'companyName' && plan === 'business')`
 
 ## Docs
 
-- [Signup Form + Zod demo](https://sdougbrown.github.io/umpire/examples/signup/) — live interactive example
-- [Composing with Validation](https://sdougbrown.github.io/umpire/concepts/validation/) — patterns and boundary guide
-- [Quick Start](https://sdougbrown.github.io/umpire/learn/) — learn each rule primitive
+- [Signup Form + Zod demo](https://umpire.tools/examples/signup/) — live interactive example
+- [Composing with Validation](https://umpire.tools/concepts/validation/) — patterns and boundary guide
+- [Quick Start](https://umpire.tools/learn/) — learn each rule primitive

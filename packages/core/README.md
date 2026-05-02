@@ -2,7 +2,7 @@
 
 Pure field-availability logic for any state with interdependent options. No framework code, no subscriptions, no runtime dependencies.
 
-[Docs](https://sdougbrown.github.io/umpire/)
+[Docs](https://umpire.tools/)
 
 ## Install
 
@@ -80,7 +80,7 @@ const fouls = signupUmp.play(
 - `ump.graph()` returns the structural dependency graph.
 - `ump.rules()` returns normalized runtime rule entries with `id`, `index`, and inspection metadata for debugging and test tooling.
 
-See the docs for full type details and behavior notes: https://sdougbrown.github.io/umpire/
+See the docs for full type details and behavior notes: https://umpire.tools/
 
 ## Rule Types
 
@@ -97,7 +97,7 @@ Use `field<V>('name')` to create a typed field reference. Pass it to `fairWhen` 
 
 ## Docs
 
-https://sdougbrown.github.io/umpire/
+https://umpire.tools/
 
 ## Benchmarks
 

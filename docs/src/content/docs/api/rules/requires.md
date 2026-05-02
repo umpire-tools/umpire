@@ -55,6 +55,6 @@ requires('endTime', ({ startTime }) => typeof startTime === 'string' && startTim
 
 ## See also
 
-- [Quick Start: requires](/umpire/learn/#requires) — interactive demo
-- [Field Satisfaction Semantics](/umpire/concepts/satisfaction/) — how Umpire defines "present"
-- [Topological Evaluation Order](/umpire/concepts/evaluation/) — why `requires` creates ordering edges
+- [Quick Start: requires](/learn/#requires) — interactive demo
+- [Field Satisfaction Semantics](/concepts/satisfaction/) — how Umpire defines "present"
+- [Topological Evaluation Order](/concepts/evaluation/) — why `requires` creates ordering edges

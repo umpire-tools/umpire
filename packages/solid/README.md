@@ -2,7 +2,7 @@
 
 Solid adapter package for deriving Umpire availability from reactive state, whether the state is local to one component or shared through a Solid store/context boundary.
 
-[Docs](https://sdougbrown.github.io/umpire/)
+[Docs](https://umpire.tools/)
 
 ## Install
 
@@ -146,4 +146,4 @@ const form = fromSolidStore(ump, { values, set, conditions })
 
 ## Docs
 
-https://sdougbrown.github.io/umpire/
+https://umpire.tools/

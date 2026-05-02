@@ -8,7 +8,7 @@ description: Solid helpers for component-local and shared Umpire state.
 - `useUmpire()` when a component owns the values
 - `fromSolidStore()` when one shared store or context should back the form
 
-If you want to use `reactiveUmp()` directly, see [Signals — Solid](/umpire/adapters/signals/solid/).
+If you want to use `reactiveUmp()` directly, see [Signals — Solid](/adapters/signals/solid/).
 
 ## Install
 
@@ -213,7 +213,7 @@ The returned object gives you `field()`, `foul()`, `set()`, `update()`, `values`
 
 - Choose `useUmpire()` when one component owns the values and just needs derived availability.
 - Choose `fromSolidStore()` when several children should read from one shared form state.
-- Choose [`@umpire/signals/solid`](/umpire/adapters/signals/solid/) when you want to work with `reactiveUmp()` directly.
+- Choose [`@umpire/signals/solid`](/adapters/signals/solid/) when you want to work with `reactiveUmp()` directly.
 
 ## Notes
 

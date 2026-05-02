@@ -41,13 +41,13 @@ When `reactive.field(field).enabled` changes, only this component re-renders. Th
 
 ### Why signals instead of `useUmpire`?
 
-[`useUmpire`](/umpire/adapters/react/) derives everything on every render — `check()` runs, the full availability map rebuilds, React reconciles the whole tree. For most forms that's fine.
+[`useUmpire`](/adapters/react/) derives everything on every render — `check()` runs, the full availability map rebuilds, React reconciles the whole tree. For most forms that's fine.
 
 `@umpire/signals` gives you per-field subscriptions. Each consumer only recomputes when its own dependencies move. If you have dozens of interdependent fields and want surgical updates, that's the difference.
 
 If you'd collapse all signals into one blob and re-render everything anyway, just use `useUmpire` — it's simpler and does exactly that.
 
-Solid also has [`@umpire/solid`](/umpire/adapters/solid/) if you'd rather start with `useUmpire()` or `fromSolidStore()` instead of `reactiveUmp()`.
+Solid also has [`@umpire/solid`](/adapters/solid/) if you'd rather start with `useUmpire()` or `fromSolidStore()` instead of `reactiveUmp()`.
 
 ---
 

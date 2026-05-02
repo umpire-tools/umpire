@@ -7,10 +7,10 @@ hero:
   tagline: "Declare fields. Declare rules. Umpire tells you what's in play — and calls foul when values are out of bounds. Forms, game boards, config panels, anything with interdependent state."
   actions:
     - text: Quick Start
-      link: /umpire/learn/
+      link: /learn/
       variant: primary
     - text: Read the concepts
-      link: /umpire/concepts/availability/
+      link: /concepts/availability/
       variant: secondary
   image:
     html: |
@@ -132,7 +132,7 @@ import MinesweeperDemo from '../../components/MinesweeperDemo.tsx'
     <p>
       In its simplest possible form, there are three <code>enabledWhen</code> rules per cell. 192 rules total. <strong>1ms</strong> to evaluate the entire board.
     </p>
-    <a class="sl-link-button primary" href="/umpire/examples/minesweeper/">Read the writeup</a>
+    <a class="sl-link-button primary" href="/examples/minesweeper/">Read the writeup</a>
   </div>
 </div>
 
@@ -221,7 +221,7 @@ Umpire answers one question: given the current field values and conditions, whic
 Umpire is intentionally small — it handles availability so you can handle everything else with whatever tools you already use.
 
 - **State** — yours. Umpire reads values, never writes them. Use React state, Zustand, signals, a plain object — whatever owns your form.
-- **Validation** — yours, but composable. [`check()`](/umpire/api/rules/#checkfield-validator) bridges validators (Zod, regex, functions) into availability rules. See [Composing with Validation](/umpire/concepts/validation/).
+- **Validation** — yours, but composable. [`check()`](/api/rules/#checkfield-validator) bridges validators (Zod, regex, functions) into availability rules. See [Composing with Validation](/concepts/validation/).
 - **Rendering** — yours. Umpire returns `enabled: boolean` per field. Hide it, disable it, dim it — your call.
 - **Cleanup** — yours, but guided. `play()` recommends which stale values to reset. You decide when and whether to apply them.
 </div>
@@ -241,11 +241,11 @@ Use `@umpire/core` when you just need pure availability logic. Add `@umpire/reac
 
 ## Where To Next
 
-- Try the [Quick Start](/umpire/learn/) to learn each rule primitive with interactive demos.
+- Try the [Quick Start](/learn/) to learn each rule primitive with interactive demos.
 - Read [Availability vs Validation](./concepts/availability/) for the mental model.
 - Read [Field Satisfaction Semantics](./concepts/satisfaction/) before writing rules with `isEmpty`.
-- Use [umpire()](./api/umpire/) and [Rules](./api/rules/) as the reference for the core API.
+- Use [umpire()](./api/) and [Rules](./api/rules/) as the reference for the core API.
 - See [Signup Form Walkthrough](./examples/signup/) for the same example broken down step by step.
 - Read [Config-Driven UI, With Behavior](./examples/config-driven-ui/) to see rules-as-data applied to the classic schema-form pattern.
-- Robots: start with [`llms.txt`](/umpire/llms.txt) for the agent-oriented map of Umpire docs, API references, examples, and source context.
+- Robots: start with [`llms.txt`](/llms.txt) for the agent-oriented map of Umpire docs, API references, examples, and source context.
 </div>

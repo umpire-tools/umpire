@@ -119,7 +119,7 @@ The three levels, in order:
 
 `play()` surfaces an inappropriate value as a foul — same format as an availability foul, same convergence property.
 
-See [`fairWhen()`](/umpire/api/rules/fair-when/) for the full rule reference.
+See [`fairWhen()`](/api/rules/fair-when/) for the full rule reference.
 
 ## Use Presence First, Validation Second
 
@@ -145,4 +145,4 @@ const loginUmp = umpire({
 
 `requires()` handles presence. `check()` bridges into richer validation logic when you need it.
 
-For full validation composition — building dynamic Zod schemas from availability, filtering errors to enabled fields, gating submit on both layers — see the [Signup Form + Zod](/umpire/examples/signup/) example and the [`@umpire/zod`](/umpire/adapters/validation/zod/) integration.
+For full validation composition — building dynamic Zod schemas from availability, filtering errors to enabled fields, gating submit on both layers — see the [Signup Form + Zod](/examples/signup/) example and the [`@umpire/zod`](/adapters/validation/zod/) integration.

@@ -2,7 +2,7 @@
 
 Generic store adapter foundation for Umpire. Use it when your store can provide `getState()` plus `subscribe((next, prev) => unsubscribe)`.
 
-[Docs](https://sdougbrown.github.io/umpire/)
+[Docs](https://umpire.tools/)
 
 ## Install
 

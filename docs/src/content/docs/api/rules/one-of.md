@@ -60,5 +60,5 @@ oneOf('subDayStrategy', {
 
 ## See also
 
-- [Quick Start: oneOf](/umpire/learn/#oneof) — interactive demo
-- [Topological Evaluation Order](/umpire/concepts/evaluation/) — how branches interact with the dependency graph
+- [Quick Start: oneOf](/learn/#oneof) — interactive demo
+- [Topological Evaluation Order](/concepts/evaluation/) — how branches interact with the dependency graph

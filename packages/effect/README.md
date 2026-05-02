@@ -2,7 +2,7 @@
 
 Availability-aware Effect Schema validation and SubscriptionRef bridge for [@umpire/core](https://www.npmjs.com/package/@umpire/core)-powered state. Disabled fields produce no validation errors. Required/optional follows Umpire's availability map.
 
-[Docs](https://sdougbrown.github.io/umpire/adapters/validation/effect/) · [Quick Start](https://sdougbrown.github.io/umpire/learn/)
+[Docs](https://umpire.tools/adapters/validation/effect/) · [Quick Start](https://umpire.tools/learn/)
 
 ## Install
 
@@ -172,7 +172,7 @@ store.field('email').enabled // true
 store.destroy()
 ```
 
-`select` and `conditions` follow the same contract as `@umpire/store`. See [Selection](https://sdougbrown.github.io/umpire/concepts/selection/) for patterns.
+`select` and `conditions` follow the same contract as `@umpire/store`. See [Selection](https://umpire.tools/concepts/selection/) for patterns.
 
 ### Blank strings and `isEmpty`
 
@@ -208,7 +208,7 @@ That keeps blank strings out of the validation path until the field is satisfied
 
 ## Docs
 
-- [Effect Adapter](https://sdougbrown.github.io/umpire/adapters/validation/effect/) — full API reference
-- [Validator Integrations](https://sdougbrown.github.io/umpire/adapters/validation/) — the general contract and how it extends to other libraries
-- [Composing with Validation](https://sdougbrown.github.io/umpire/concepts/validation/) — patterns and boundary guide
-- [Quick Start](https://sdougbrown.github.io/umpire/learn/) — learn each rule primitive
+- [Effect Adapter](https://umpire.tools/adapters/validation/effect/) — full API reference
+- [Validator Integrations](https://umpire.tools/adapters/validation/) — the general contract and how it extends to other libraries
+- [Composing with Validation](https://umpire.tools/concepts/validation/) — patterns and boundary guide
+- [Quick Start](https://umpire.tools/learn/) — learn each rule primitive

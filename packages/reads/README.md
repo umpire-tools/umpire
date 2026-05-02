@@ -2,7 +2,7 @@
 
 Derived read tables and read-backed rule bridges for [@umpire/core](https://www.npmjs.com/package/@umpire/core).
 
-[Docs](https://sdougbrown.github.io/umpire/)
+[Docs](https://umpire.tools/)
 
 ## Install
 
@@ -70,4 +70,4 @@ reads.inspect({ cpu: 'am5', motherboard: 'am5' })
 
 ## Docs
 
-https://sdougbrown.github.io/umpire/
+https://umpire.tools/

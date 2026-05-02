@@ -142,4 +142,4 @@ This separation is intentional. The game engine owns transitions, reads owns der
 
 ## Scale
 
-The [test suite](https://github.com/sdougbrown/umpire/blob/main/packages/core/__tests__/minesweeper.test.ts) includes a 30×16 expert board — **480 fields, 1,440 rules**. Construction takes 2ms. `check()` takes 1ms. Umpire's topological evaluation is O(n) per field, so it scales linearly with board size.
+The [test suite](https://github.com/sdougbrown/blob/main/packages/core/__tests__/minesweeper.test.ts) includes a 30×16 expert board — **480 fields, 1,440 rules**. Construction takes 2ms. `check()` takes 1ms. Umpire's topological evaluation is O(n) per field, so it scales linearly with board size.

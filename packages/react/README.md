@@ -2,7 +2,7 @@
 
 React hook for deriving Umpire availability and reset recommendations from component state.
 
-[Docs](https://sdougbrown.github.io/umpire/)
+[Docs](https://umpire.tools/)
 
 ## Install
 
@@ -69,4 +69,4 @@ const { check, fouls } = useUmpire(ump, values, context)
 
 ## Docs
 
-https://sdougbrown.github.io/umpire/
+https://umpire.tools/

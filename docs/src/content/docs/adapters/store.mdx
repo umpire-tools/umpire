@@ -52,7 +52,7 @@ interface UmpireStore<F extends Record<string, FieldDef>> {
 
 `select` maps your store state to the flat `{ [fieldName]: value }` shape Umpire expects. `conditions` carries external context rules can read but that isn't a field itself (plan tier, user role, feature flags). Neither has to come from the same slice.
 
-See [Selection](/umpire/concepts/selection/) for the full breakdown of patterns.
+See [Selection](/concepts/selection/) for the full breakdown of patterns.
 
 ## Shim Packages
 
@@ -67,6 +67,6 @@ See [Selection](/umpire/concepts/selection/) for the full breakdown of patterns.
 
 Signal-first libraries are not covered by this package because they do not expose the same `getState()/subscribe()` surface.
 
-- Solid has first-class shared-store support in [`@umpire/solid`](/umpire/adapters/solid/#fromsolidstore) via `fromSolidStore()`, which uses `@umpire/signals` under the hood.
+- Solid has first-class shared-store support in [`@umpire/solid`](/adapters/solid/#fromsolidstore) via `fromSolidStore()`, which uses `@umpire/signals` under the hood.
 - Other signal-first libraries like Jotai, Valtio, MobX, and Preact signals usually fit best as thin adapters built on `@umpire/signals`, not as `@umpire/store` shims.
 - If you'd like to add one, a pull request is welcome.
