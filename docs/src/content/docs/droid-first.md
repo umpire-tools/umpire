@@ -9,7 +9,7 @@ We call this **droid-first** development. The docs are for you. The rules are fo
 
 ## Site-level context
 
-Umpire also publishes an [`llms.txt`](/umpire/llms.txt) file for agents that enter through the docs site instead of an installed package. It follows the [`llms.txt` convention](https://llmstxt.org/): a short Markdown guide that points language models at the docs, API reference, examples, package adapters, and source files most likely to answer implementation questions.
+Umpire also publishes an [`llms.txt`](/llms.txt) file for agents that enter through the docs site instead of an installed package. It follows the [`llms.txt` convention](https://llmstxt.org/): a short Markdown guide that points language models at the docs, API reference, examples, package adapters, and source files most likely to answer implementation questions.
 
 `AGENTS.md` is still the instruction surface for package consumers and contributors. `llms.txt` serves a different job: it is the front door for agents browsing the public site, keeping the important links and Umpire-specific semantics close to the top of the context.
 

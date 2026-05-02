@@ -24,7 +24,7 @@ const when = expr.and(
 const emailReady = expr.check('email', namedValidators.email())
 ```
 
-For the full field and condition op reference, see [`@umpire/dsl`](/umpire/extensions/dsl/). All those signatures carry over unchanged — `@umpire/json`'s `expr` extends that interface with `check()` rather than replacing it.
+For the full field and condition op reference, see [`@umpire/dsl`](/extensions/dsl/). All those signatures carry over unchanged — `@umpire/json`'s `expr` extends that interface with `check()` rather than replacing it.
 
 ### `expr.check(field, validator)`
 
@@ -260,5 +260,5 @@ eitherOfJson('delivery', {
 
 ## See also
 
-- [`@umpire/json` overview](/umpire/extensions/json/) — `fromJson`, `toJson`, conditions, and portability
-- [`@umpire/dsl`](/umpire/extensions/dsl/) — the pure expression layer for programmatic-only rules
+- [`@umpire/json` overview](/extensions/json/) — `fromJson`, `toJson`, conditions, and portability
+- [`@umpire/dsl`](/extensions/dsl/) — the pure expression layer for programmatic-only rules

@@ -134,11 +134,11 @@ If `confirmPassword` is disabled, `deriveSchema` excludes it and the refinement 
 
 ## When to use the manual pattern instead
 
-`@umpire/zod` handles the common case. If you need finer control — async validators, nested schemas, custom coercion, or `superRefine` — the manual intersection approach in [Composing with Validation](/umpire/concepts/validation/) gives you full flexibility.
+`@umpire/zod` handles the common case. If you need finer control — async validators, nested schemas, custom coercion, or `superRefine` — the manual intersection approach in [Composing with Validation](/concepts/validation/) gives you full flexibility.
 
 ## Discriminated Unions
 
-If you have an existing Zod discriminated union that models mutually-exclusive field groups, you can derive an umpire `oneOf` rule from it directly. This is a compatibility path — umpire's native [`oneOf`](/umpire/api/rules/one-of/) gives you the same structure without the schema coupling. But if your validation layer already defines the groups via `z.discriminatedUnion`, there is no reason to duplicate that definition.
+If you have an existing Zod discriminated union that models mutually-exclusive field groups, you can derive an umpire `oneOf` rule from it directly. This is a compatibility path — umpire's native [`oneOf`](/api/rules/one-of/) gives you the same structure without the schema coupling. But if your validation layer already defines the groups via `z.discriminatedUnion`, there is no reason to duplicate that definition.
 
 Take this payment method schema as the running example:
 
@@ -243,7 +243,7 @@ Both functions work with Zod v3 and v4. The literal value is read from `._def.va
 
 ## See also
 
-- [`oneOf`](/umpire/api/rules/one-of/) — the native rule for mutually-exclusive field groups
-- [Validator Integrations](/umpire/adapters/validation/) — the general contract and how it extends to other libraries
-- [Composing with Validation](/umpire/concepts/validation/) — conceptual boundary and manual patterns
-- [Signup Form + Zod](/umpire/examples/signup/) — full walkthrough with `deriveSchema`, the render loop, and foul handling
+- [`oneOf`](/api/rules/one-of/) — the native rule for mutually-exclusive field groups
+- [Validator Integrations](/adapters/validation/) — the general contract and how it extends to other libraries
+- [Composing with Validation](/concepts/validation/) — conceptual boundary and manual patterns
+- [Signup Form + Zod](/examples/signup/) — full walkthrough with `deriveSchema`, the render loop, and foul handling

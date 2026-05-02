@@ -5,9 +5,9 @@ description: Named OR paths built from ANDed rule groups.
 
 Named OR paths — each branch is a group of rules that must all pass together (AND). If any branch fully satisfies, the outer rule passes (OR). Name your branches when you need to debug which path matched, or when each path is more than one rule.
 
-Unlike [`oneOf()`](/umpire/api/rules/one-of/), `eitherOf()` does not disable sibling branches and does not resolve a single active branch. Multiple branches may match at once.
+Unlike [`oneOf()`](/api/rules/one-of/), `eitherOf()` does not disable sibling branches and does not resolve a single active branch. Multiple branches may match at once.
 
-Reach for [`anyOf()`](/umpire/api/rules/any-of/) when the OR paths are single rules and you don't need them named. Reach for `eitherOf()` when each path has multiple rules, or when you want `challenge()` to tell you exactly which path matched.
+Reach for [`anyOf()`](/api/rules/any-of/) when the OR paths are single rules and you don't need them named. Reach for `eitherOf()` when each path has multiple rules, or when you want `challenge()` to tell you exactly which path matched.
 
 ## Signature
 
@@ -109,7 +109,7 @@ Submit unlocks the moment either branch fully passes. If you're on a known SSO d
 
 ## See also
 
-- [Quick Start: eitherOf](/umpire/learn/#eitherof) — interactive demo
-- [`anyOf()`](/umpire/api/rules/any-of/) — plain OR across single rules, no branch names
-- [`oneOf()`](/umpire/api/rules/one-of/) — mutually exclusive field branches
-- [Signup Form example](/umpire/examples/signup/) — `eitherOf` wiring SSO and password auth paths on a real form
+- [Quick Start: eitherOf](/learn/#eitherof) — interactive demo
+- [`anyOf()`](/api/rules/any-of/) — plain OR across single rules, no branch names
+- [`oneOf()`](/api/rules/one-of/) — mutually exclusive field branches
+- [Signup Form example](/examples/signup/) — `eitherOf` wiring SSO and password auth paths on a real form

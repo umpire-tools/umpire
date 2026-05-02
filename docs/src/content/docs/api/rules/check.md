@@ -58,11 +58,11 @@ enabledWhen('submit', check('email', namedValidators.email()), {
 
 Plain functions, regexes, and library schemas run fine at runtime — they just can't serialize. `toJson()` places them in `excluded`. Named checks carry stable metadata so the JSON contract can reconstruct them exactly.
 
-In `@umpire/json`, this same pattern maps to either a top-level `"check"` rule or an `expr.check()` expression depending on context. See [`@umpire/json`](/umpire/extensions/json/) for how the two portable forms work.
+In `@umpire/json`, this same pattern maps to either a top-level `"check"` rule or an `expr.check()` expression depending on context. See [`@umpire/json`](/extensions/json/) for how the two portable forms work.
 
 ## See also
 
-- [ump.check()](/umpire/api/check/) — the evaluation method (different function, same concept)
-- [Quick Start: check](/umpire/learn/#check) — interactive demo
-- [Composing with Validation](/umpire/concepts/validation/) — patterns for using Umpire alongside Zod, Yup, etc.
-- [`@umpire/json`](/umpire/extensions/json/) — portable schemas, named checks, and `excluded`
+- [ump.check()](/api/check/) — the evaluation method (different function, same concept)
+- [Quick Start: check](/learn/#check) — interactive demo
+- [Composing with Validation](/concepts/validation/) — patterns for using Umpire alongside Zod, Yup, etc.
+- [`@umpire/json`](/extensions/json/) — portable schemas, named checks, and `excluded`

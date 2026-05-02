@@ -118,7 +118,7 @@ That behavior keeps validation layers from flagging disabled fields as missing.
 
 What `check()` cannot tell you is whether a previously valid selection became stale because something else changed. Consider a scheduler where the user picks a timezone, then enables a "use local timezone" option. The timezone field is now disabled — but it still holds `"America/New_York"`. `check()` will correctly report it as disabled. It won't tell you that the value sitting there is now orphaned and should be cleared.
 
-That is the job [`play()`](/umpire/api/play/) was designed for. It takes two snapshots — the state before the change and the state after — and returns a list of fields whose values became stale in the transition. You apply those recommendations however your state layer works; `play()` never mutates anything.
+That is the job [`play()`](/api/play/) was designed for. It takes two snapshots — the state before the change and the state after — and returns a list of fields whose values became stale in the transition. You apply those recommendations however your state layer works; `play()` never mutates anything.
 
 Most patch handlers need one or the other:
 

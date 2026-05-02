@@ -191,7 +191,7 @@ store.field('email').enabled // true
 store.destroy() // interrupts the background fiber
 ```
 
-`select` and `conditions` follow the same contract as [`@umpire/store`](/umpire/adapters/store/). See [Selection](/umpire/concepts/selection/) for the full breakdown of patterns.
+`select` and `conditions` follow the same contract as [`@umpire/store`](/adapters/store/). See [Selection](/concepts/selection/) for the full breakdown of patterns.
 
 The returned `UmpireStore` surface is the same as all store adapters: `field(name)`, `fouls`, `getAvailability()`, `subscribe(listener)`, and `destroy()`.
 
@@ -219,12 +219,12 @@ That keeps blank strings in the "not yet validateable" lane until the field is a
 
 ## When to use the manual pattern instead
 
-`@umpire/effect` handles the common case. If you need finer control — async validation, nested schemas, custom transformations, or custom error formatting — the manual intersection approach in [Composing with Validation](/umpire/concepts/validation/) gives you full flexibility.
+`@umpire/effect` handles the common case. If you need finer control — async validation, nested schemas, custom transformations, or custom error formatting — the manual intersection approach in [Composing with Validation](/concepts/validation/) gives you full flexibility.
 
 ## See also
 
-- [Validator Integrations](/umpire/adapters/validation/) — the general contract and how it extends to other libraries
-- [`@umpire/zod`](/umpire/adapters/validation/zod/) — the Zod equivalent of this adapter
-- [`@umpire/store`](/umpire/adapters/store/) — the generic store adapter that `fromSubscriptionRef` delegates to
-- [Composing with Validation](/umpire/concepts/validation/) — conceptual boundary and manual patterns
-- [`fairWhen()`](/umpire/api/rules/fair-when/) — the rule that produces `fair: false`
+- [Validator Integrations](/adapters/validation/) — the general contract and how it extends to other libraries
+- [`@umpire/zod`](/adapters/validation/zod/) — the Zod equivalent of this adapter
+- [`@umpire/store`](/adapters/store/) — the generic store adapter that `fromSubscriptionRef` delegates to
+- [Composing with Validation](/concepts/validation/) — conceptual boundary and manual patterns
+- [`fairWhen()`](/api/rules/fair-when/) — the rule that produces `fair: false`

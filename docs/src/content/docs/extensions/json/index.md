@@ -196,7 +196,7 @@ The modern split is:
 - `expr.check()` for structural predicates that depend on another field passing a portable validator
 - top-level `"check"` only when you need to preserve older JSON schemas
 
-See [@umpire/dsl](/umpire/extensions/dsl/) for the full non-`check` expression vocabulary.
+See [@umpire/dsl](/extensions/dsl/) for the full non-`check` expression vocabulary.
 
 ## Conditions
 
@@ -264,12 +264,12 @@ The portable toolkit is:
 
 Arbitrary functions, regexes, and library validators still work at runtime — they just won't serialize. `toJson()` records them in `excluded` and the next implementation has to recreate them natively.
 
-See [@umpire/dsl](/umpire/extensions/dsl/) and [Builders & Checks](/umpire/extensions/json/builders/) for the full authoring vocabulary.
+See [@umpire/dsl](/extensions/dsl/) and [Builders & Checks](/extensions/json/builders/) for the full authoring vocabulary.
 
 ## See also
 
-- [@umpire/dsl](/umpire/extensions/dsl/) — pure `Expr`, `expr.*`, `compileExpr`, and `getExprFieldRefs`
-- [Builders & Checks](/umpire/extensions/json/builders/) — JSON-only `expr.check()`, `namedValidators`, and portable builders
-- [Composing with Validation](/umpire/concepts/validation/) — where `check()` fits conceptually
-- [check() helper](/umpire/api/rules/check/) — validator shapes in core
-- [Config-Driven UI, With Behavior](/umpire/examples/config-driven-ui/) — live-edit a JSON schema and watch a generic renderer respond
+- [@umpire/dsl](/extensions/dsl/) — pure `Expr`, `expr.*`, `compileExpr`, and `getExprFieldRefs`
+- [Builders & Checks](/extensions/json/builders/) — JSON-only `expr.check()`, `namedValidators`, and portable builders
+- [Composing with Validation](/concepts/validation/) — where `check()` fits conceptually
+- [check() helper](/api/rules/check/) — validator shapes in core
+- [Config-Driven UI, With Behavior](/examples/config-driven-ui/) — live-edit a JSON schema and watch a generic renderer respond

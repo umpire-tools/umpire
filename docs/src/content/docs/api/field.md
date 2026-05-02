@@ -89,5 +89,5 @@ The plain object form has no value type — predicates receive `value: unknown` 
 
 ## See also
 
-- [`fairWhen()`](/umpire/api/rules/fair-when/) — the rule that benefits most from typed field builders
-- [Field Appropriateness](/umpire/concepts/satisfaction/#appropriateness) — why the type matters for predicate authoring
+- [`fairWhen()`](/api/rules/fair-when/) — the rule that benefits most from typed field builders
+- [Field Appropriateness](/concepts/satisfaction/#appropriateness) — why the type matters for predicate authoring

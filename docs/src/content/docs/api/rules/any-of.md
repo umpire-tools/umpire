@@ -5,7 +5,7 @@ description: Pass if any inner rule passes — OR logic for availability.
 
 Multiple rules targeting the same field are ANDed by default. Wrap them in `anyOf()` when any one successful path should unlock the target.
 
-Use [`eitherOf()`](/umpire/api/rules/either-of/) when those OR paths need names and each path is itself a group of ANDed rules.
+Use [`eitherOf()`](/api/rules/either-of/) when those OR paths need names and each path is itself a group of ANDed rules.
 
 ## Signature
 
@@ -42,7 +42,7 @@ enabledWhen('submit', ({ password }) => !!password, { reason: 'Enter a password'
 
 Both must pass for `submit` to be enabled.
 
-If you need **AND groups composable inside OR logic** — for example, "path A requires condition 1 AND condition 2, OR path B requires condition 3 AND condition 4" — use [`eitherOf()`](/umpire/api/rules/either-of/). Each branch in `eitherOf` is an AND group, and branches are ORed:
+If you need **AND groups composable inside OR logic** — for example, "path A requires condition 1 AND condition 2, OR path B requires condition 3 AND condition 4" — use [`eitherOf()`](/api/rules/either-of/). Each branch in `eitherOf` is an AND group, and branches are ORed:
 
 ```ts
 eitherOf('submitAuth', {
@@ -54,6 +54,6 @@ eitherOf('submitAuth', {
 
 ## See also
 
-- [Quick Start: anyOf](/umpire/learn/#anyof) — interactive demo
-- [`eitherOf()`](/umpire/api/rules/either-of/) — named OR branches built from rule groups
-- [`enabledWhen()`](/umpire/api/rules/enabled-when/) — the most common inner rule for `anyOf`
+- [Quick Start: anyOf](/learn/#anyof) — interactive demo
+- [`eitherOf()`](/api/rules/either-of/) — named OR branches built from rule groups
+- [`enabledWhen()`](/api/rules/enabled-when/) — the most common inner rule for `anyOf`

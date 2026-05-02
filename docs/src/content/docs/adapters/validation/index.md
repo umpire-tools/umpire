@@ -87,7 +87,7 @@ Each library's "always-fail with message" primitive:
 
 ## See also
 
-- [`@umpire/zod`](/umpire/adapters/validation/zod/) — reference implementation
-- [`@umpire/effect`](/umpire/adapters/validation/effect/) — Effect Schema adapter and SubscriptionRef bridge
-- [Composing with Validation](/umpire/concepts/validation/) — manual patterns and the `check()` bridge
-- [`fairWhen()`](/umpire/api/rules/fair-when/) — the rule that produces `fair: false`
+- [`@umpire/zod`](/adapters/validation/zod/) — reference implementation
+- [`@umpire/effect`](/adapters/validation/effect/) — Effect Schema adapter and SubscriptionRef bridge
+- [Composing with Validation](/concepts/validation/) — manual patterns and the `check()` bridge
+- [`fairWhen()`](/api/rules/fair-when/) — the rule that produces `fair: false`

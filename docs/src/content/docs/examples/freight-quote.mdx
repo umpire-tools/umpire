@@ -20,7 +20,7 @@ A freight quoting form with 13 fields and 7 rules spanning **5 of Umpire's 6 rul
 | **`requires`** | Company name only matters for business accounts. Hazmat class requires the hazardous toggle. |
 | **`enabledWhen`** | Admin-only fields (discount override, price hold) gate on the `isAdmin` condition. Promo locks service level and vehicle type. |
 | **`oneOf`** | Fragile and climate-controlled handling are mutually exclusive branches — picking one hides the other's fields. |
-| **`disables`** | _(not used here — see the [Printer Menu](/umpire/adapters/zustand/) for `disables` in action)_ |
+| **`disables`** | _(not used here — see the [Printer Menu](/adapters/zustand/) for `disables` in action)_ |
 | **conditions** | `isAdmin` and `promoActive` are external facts, not field values. Toggle them with the switches at the top. |
 
 ### Things to try
@@ -33,7 +33,7 @@ A freight quoting form with 13 fields and 7 rules spanning **5 of Umpire's 6 rul
 
 ### Implementation
 
-This demo uses [`@umpire/signals`](/umpire/adapters/signals/) with [Preact](https://preactjs.com/) and [`@preact/signals`](https://preactjs.com/guide/v10/signals/). Each field component reads signal-backed values during render — Preact auto-subscribes and re-renders only the fields that changed.
+This demo uses [`@umpire/signals`](/adapters/signals/) with [Preact](https://preactjs.com/) and [`@preact/signals`](https://preactjs.com/guide/v10/signals/). Each field component reads signal-backed values during render — Preact auto-subscribes and re-renders only the fields that changed.
 
 The entire Umpire integration is the rule definitions and a ~10-line signal adapter. No `useEffect`, no state synchronization, no manual subscriptions.
 

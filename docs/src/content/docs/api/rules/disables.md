@@ -52,5 +52,5 @@ A disabled field with a lingering value still affects its dependents. `disables`
 
 ## See also
 
-- [Quick Start: disables](/umpire/learn/#disables) — interactive demo
-- [Availability vs Validation](/umpire/concepts/availability/#recommendations-not-mutations) — why stale values persist
+- [Quick Start: disables](/learn/#disables) — interactive demo
+- [Availability vs Validation](/concepts/availability/#recommendations-not-mutations) — why stale values persist

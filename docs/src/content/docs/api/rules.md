@@ -7,16 +7,16 @@ Every rule helper returns a `Rule<F, C>` object. Rules are plain values — they
 
 | Rule | Purpose |
 |------|---------|
-| [`requires()`](/umpire/api/rules/requires/) | Field stays disabled until dependencies are satisfied and available |
-| [`enabledWhen()`](/umpire/api/rules/enabled-when/) | Field enabled only when a predicate returns true |
-| [`fairWhen()`](/umpire/api/rules/fair-when/) | Field's current value is appropriate only when a predicate returns true |
-| [`disables()`](/umpire/api/rules/disables/) | Active source disables target fields |
-| [`oneOf()`](/umpire/api/rules/one-of/) | Only one branch of fields is active at a time |
-| [`anyOf()`](/umpire/api/rules/any-of/) | OR logic — pass if any inner rule passes |
-| [`eitherOf()`](/umpire/api/rules/either-of/) | Named OR paths where each branch is a group of ANDed rules |
-| [`check()`](/umpire/api/rules/check/) | Bridge validators into rules with preserved field metadata |
+| [`requires()`](/api/rules/requires/) | Field stays disabled until dependencies are satisfied and available |
+| [`enabledWhen()`](/api/rules/enabled-when/) | Field enabled only when a predicate returns true |
+| [`fairWhen()`](/api/rules/fair-when/) | Field's current value is appropriate only when a predicate returns true |
+| [`disables()`](/api/rules/disables/) | Active source disables target fields |
+| [`oneOf()`](/api/rules/one-of/) | Only one branch of fields is active at a time |
+| [`anyOf()`](/api/rules/any-of/) | OR logic — pass if any inner rule passes |
+| [`eitherOf()`](/api/rules/either-of/) | Named OR paths where each branch is a group of ANDed rules |
+| [`check()`](/api/rules/check/) | Bridge validators into rules with preserved field metadata |
 
-Try each one interactively on the [Quick Start](/umpire/learn/) page. For lint-time validation of `requires()`, `disables()`, and the rest — see the [ESLint Plugin](/umpire/extensions/eslint-plugin/).
+Try each one interactively on the [Quick Start](/learn/) page. For lint-time validation of `requires()`, `disables()`, and the rest — see the [ESLint Plugin](/extensions/eslint-plugin/).
 
 ## Custom Reasons
 
@@ -38,7 +38,7 @@ Two ways to fix this:
 
 ### `field<V>()` for per-field type capture
 
-When a rule like `fairWhen` needs a typed `value` parameter, use a named [`field<V>()`](/umpire/api/field/) builder. It captures the value type for that field and flows it through to the predicate — no annotation needed.
+When a rule like `fairWhen` needs a typed `value` parameter, use a named [`field<V>()`](/api/field/) builder. It captures the value type for that field and flows it through to the predicate — no annotation needed.
 
 ```ts
 const motherboard = field<string>('motherboard')

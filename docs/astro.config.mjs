@@ -4,8 +4,7 @@ import preact from '@astrojs/preact'
 import react from '@astrojs/react'
 
 export default defineConfig({
-  site: 'https://sdougbrown.github.io',
-  base: '/umpire',
+  site: 'https://umpire.tools',
   vite: {
     define: {
       'process.env.UMPIRE_INTERNAL': JSON.stringify('true'),

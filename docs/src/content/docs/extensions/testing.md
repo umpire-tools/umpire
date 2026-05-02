@@ -478,6 +478,6 @@ expect(monkeyTest(ump).passed).toBe(true)
 
 ## See also
 
-- [`umpire()` construction-time checks](/api/umpire/#structural-contradiction-detection) — what gets caught before runtime
+- [`umpire()` construction-time checks](/api/#structural-contradiction-detection) — what gets caught before runtime
 - [scorecard()](/api/scorecard/) — the transition API that `scorecardAssert` wraps
 - [DevTools](/extensions/devtools/) — visual inspection of scorecards and foul logs during development

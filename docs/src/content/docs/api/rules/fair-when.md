@@ -19,7 +19,7 @@ fairWhen(
 )
 ```
 
-The first argument can be a field name string or a named [`field<V>()`](/umpire/api/field/) builder. Using a named builder gives the predicate a typed `value` parameter instead of `unknown`.
+The first argument can be a field name string or a named [`field<V>()`](/api/field/) builder. Using a named builder gives the predicate a typed `value` parameter instead of `unknown`.
 
 ## Example
 
@@ -93,7 +93,7 @@ fairWhen('motherboard', (mb, values) =>
   socketFor(mb as string) === socketFor(values.cpu as string ?? ''))
 ```
 
-For typed predicates without repetition, use [`field<V>()`](/umpire/api/field/) or the chained builder form:
+For typed predicates without repetition, use [`field<V>()`](/api/field/) or the chained builder form:
 
 ```ts
 const fields = {
@@ -108,7 +108,7 @@ const fields = {
 
 ## See also
 
-- [`field<V>()`](/umpire/api/field/) — typed field builder, named form for top-level rules
-- [Field Appropriateness](/umpire/concepts/satisfaction/#appropriateness) — the three-level model: present, satisfied, appropriate
-- [`play()`](/umpire/api/play/) — how fairness fouls surface as reset recommendations
-- [`enabledWhen()`](/umpire/api/rules/enabled-when/) — for gating availability, not value appropriateness
+- [`field<V>()`](/api/field/) — typed field builder, named form for top-level rules
+- [Field Appropriateness](/concepts/satisfaction/#appropriateness) — the three-level model: present, satisfied, appropriate
+- [`play()`](/api/play/) — how fairness fouls surface as reset recommendations
+- [`enabledWhen()`](/api/rules/enabled-when/) — for gating availability, not value appropriateness
