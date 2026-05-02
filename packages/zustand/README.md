@@ -2,7 +2,7 @@
 
 Zustand entry point for Umpire's generic store adapter. Zustand satisfies the `@umpire/store` contract natively, so this package re-exports `fromStore()` with a named ecosystem entry point.
 
-[Docs](https://sdougbrown.github.io/umpire/)
+[Docs](https://umpire.tools/)
 
 ## Install
 
@@ -82,4 +82,4 @@ Zustand subscriptions provide both `next` and `prev` state, so `fromStore()` can
 
 ## Docs
 
-https://sdougbrown.github.io/umpire/
+https://umpire.tools/

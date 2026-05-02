@@ -2,7 +2,7 @@
 
 In-app inspector for Umpire. Mounts a Shadow DOM panel that subscribes to registered ump instances and lets you inspect availability, challenge traces, foul logs, and the structural dependency graph — without printing or asserting by hand.
 
-[Docs](https://sdougbrown.github.io/umpire/extensions/devtools/)
+[Docs](https://umpire.tools/extensions/devtools/)
 
 ## Install
 

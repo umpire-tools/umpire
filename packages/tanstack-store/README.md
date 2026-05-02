@@ -2,7 +2,7 @@
 
 TanStack Store adapter for Umpire. It snapshots previous `.state`, then delegates to `@umpire/store`.
 
-[Docs](https://sdougbrown.github.io/umpire/)
+[Docs](https://umpire.tools/)
 
 ## Install
 

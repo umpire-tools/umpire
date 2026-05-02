@@ -2,7 +2,7 @@
 
 Signal adapter for Umpire. Bring your own signal implementation through `SignalProtocol`, or use one of the packaged adapters.
 
-[Docs](https://sdougbrown.github.io/umpire/)
+[Docs](https://umpire.tools/)
 
 ## Install
 
@@ -110,4 +110,4 @@ If the adapter does not provide `effect()`, field availability still works, but 
 
 ## Docs
 
-https://sdougbrown.github.io/umpire/
+https://umpire.tools/
