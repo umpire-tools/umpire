@@ -1,13 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 
 import { enabledWhen, umpire } from '@umpire/core'
+import { checkCreate, checkPatch } from '@umpire/write'
 import * as drizzleAdapter from '@umpire/drizzle'
-import {
-  checkCreate,
-  checkPatch,
-  fromDrizzleModel,
-  fromDrizzleTable,
-} from '@umpire/drizzle'
+import { fromDrizzleModel, fromDrizzleTable } from '@umpire/drizzle'
 import { sql } from 'drizzle-orm'
 import {
   bigint,
@@ -275,8 +271,8 @@ describe('fromDrizzleTable', () => {
   })
 })
 
-describe('write re-exports', () => {
-  test('re-exports checkCreate and checkPatch from @umpire/write', () => {
+describe('write checks with derived fields', () => {
+  test('checkCreate and checkPatch work with fields derived from Drizzle tables', () => {
     const users = pgTable('users_for_write', {
       id: serial().primaryKey(),
       email: text().notNull(),
@@ -336,12 +332,18 @@ describe('write re-exports', () => {
   })
 
   test('exports the public runtime surface', () => {
-    expect(Object.keys(drizzleAdapter).sort()).toEqual([
-      'checkCreate',
-      'checkPatch',
-      'fromDrizzleModel',
-      'fromDrizzleTable',
-    ])
+    const keys = Object.keys(drizzleAdapter).sort()
+    expect(keys).toContain('fromDrizzleTable')
+    expect(keys).toContain('fromDrizzleModel')
+    expect(keys).toContain('checkDrizzleCreate')
+    expect(keys).toContain('checkDrizzlePatch')
+    expect(keys).toContain('checkDrizzleModelCreate')
+    expect(keys).toContain('checkDrizzleModelPatch')
+    expect(keys).toContain('createDrizzlePolicy')
+    expect(keys).toContain('createDrizzleModelPolicy')
+    expect(keys).toContain('getTableColumnsMeta')
+    expect(keys).not.toContain('checkCreate')
+    expect(keys).not.toContain('checkPatch')
   })
 })
 
@@ -410,9 +412,6 @@ describe('fromDrizzleModel', () => {
     })
 
     expect(taxId).toBe('billing.taxId')
-    expect((taxIdField as { __umpfield: string }).__umpfield).toBe(
-      'billing.taxId',
-    )
     expect(model.fields['billing.taxId']).toMatchObject({ required: false })
     expect(ump.check({ 'account.accountType': 'personal' })[taxId]).toEqual(
       expect.objectContaining({

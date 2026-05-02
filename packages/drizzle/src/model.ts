@@ -110,7 +110,7 @@ export function fromDrizzleModel<const M extends FromDrizzleModelConfig>(
   }
 }
 
-function getEntryTable(entry: FromDrizzleModelTableEntry): Table {
+export function getEntryTable(entry: FromDrizzleModelTableEntry): Table {
   if (isEntryConfig(entry)) {
     return entry.table
   }
@@ -118,7 +118,7 @@ function getEntryTable(entry: FromDrizzleModelTableEntry): Table {
   return entry
 }
 
-function getEntryOptions(
+export function getEntryOptions(
   entry: FromDrizzleModelTableEntry,
 ): FromDrizzleTableOptions {
   if (!isEntryConfig(entry)) {

@@ -69,13 +69,67 @@ export type FromDrizzleTableFields<
 > = Record<WritableColumnName<T, O>, FieldDef>
 
 type DrizzleColumn = Column & {
+  name: string
+  notNull: boolean
+  hasDefault: boolean
   default?: unknown
   defaultFn?: (() => unknown) | undefined
   onUpdateFn?: (() => unknown) | undefined
   primary: boolean
   generated?: unknown
   generatedIdentity?: { type?: 'always' | 'byDefault' } | undefined
+  enumValues?: unknown
+  dataType: string
   dimensions?: number
+}
+
+export type DrizzleColumnMeta = {
+  propertyName: string
+  dbColumnName: string
+  writable: boolean
+  excluded: boolean
+  required: boolean
+  hasStaticDefault: boolean
+  staticDefault?: string | number | boolean | null
+  hasRuntimeDefault: boolean
+  hasSqlDefault: boolean
+  isUpdateManaged: boolean
+  dimensions?: number
+  hasEnumValues: boolean
+  dataType: string
+}
+
+export function getTableColumnsMeta(table: Table): DrizzleColumnMeta[] {
+  const columns = getColumns(table) as Record<string, DrizzleColumn>
+  return Object.entries(columns).map(([propertyName, column]) => {
+    const excluded = shouldExcludeColumn(column)
+    const isStaticDefault =
+      column.default === null ||
+      typeof column.default === 'string' ||
+      typeof column.default === 'number' ||
+      typeof column.default === 'boolean'
+    return {
+      propertyName,
+      dbColumnName: column.name,
+      writable: !excluded,
+      excluded,
+      required:
+        column.notNull &&
+        !column.hasDefault &&
+        column.defaultFn === undefined &&
+        column.onUpdateFn === undefined,
+      hasStaticDefault: isStaticDefault,
+      staticDefault: isStaticDefault
+        ? (column.default as string | number | boolean | null)
+        : undefined,
+      hasRuntimeDefault: column.defaultFn !== undefined,
+      hasSqlDefault: column.default !== undefined && !isStaticDefault,
+      isUpdateManaged: column.onUpdateFn !== undefined,
+      dimensions: column.dimensions,
+      hasEnumValues: column.enumValues !== undefined,
+      dataType: column.dataType,
+    }
+  })
 }
 
 export function fromDrizzleTable<
@@ -85,51 +139,36 @@ export function fromDrizzleTable<
   table: T,
   options: O = {} as O,
 ): FromDrizzleTableResult<FromDrizzleTableFields<T, O>> {
-  const columns = getColumns(table) as Record<string, DrizzleColumn>
   const exclude = new Set(options.exclude ?? [])
   const fields: Record<string, FieldDef> = {}
 
-  for (const [fieldName, column] of Object.entries(columns)) {
-    if (exclude.has(fieldName) || shouldExcludeColumn(column)) {
+  for (const meta of getTableColumnsMeta(table)) {
+    if (exclude.has(meta.propertyName) || meta.excluded) {
       continue
     }
 
-    fields[fieldName] = fieldFromColumn(fieldName, column, options)
+    const field: FieldDef = {
+      required: options.required?.[meta.propertyName] ?? meta.required,
+    }
+
+    if (meta.hasStaticDefault) {
+      field.default = meta.staticDefault
+    }
+
+    const isEmpty = resolveIsEmpty(
+      options.isEmpty?.[meta.propertyName] ?? strategyForColumn(meta),
+    )
+    if (isEmpty !== isEmptyPresent) {
+      field.isEmpty = isEmpty
+    }
+
+    fields[meta.propertyName] = field
   }
 
   return {
     fields: fields as FromDrizzleTableFields<T, O>,
     rules: [],
   }
-}
-
-function fieldFromColumn(
-  fieldName: string,
-  column: DrizzleColumn,
-  options: FromDrizzleTableOptions,
-): FieldDef {
-  const field: FieldDef = {
-    required:
-      options.required?.[fieldName] ??
-      (column.notNull &&
-        !column.hasDefault &&
-        column.defaultFn === undefined &&
-        column.onUpdateFn === undefined),
-  }
-
-  const defaultValue = staticDefaultValue(column.default)
-  if (defaultValue.hasDefault) {
-    field.default = defaultValue.value
-  }
-
-  const isEmpty = resolveIsEmpty(
-    options.isEmpty?.[fieldName] ?? strategyForColumn(column),
-  )
-  if (isEmpty !== isEmptyPresent) {
-    field.isEmpty = isEmpty
-  }
-
-  return field
 }
 
 function shouldExcludeColumn(column: DrizzleColumn): boolean {
@@ -140,16 +179,16 @@ function shouldExcludeColumn(column: DrizzleColumn): boolean {
   )
 }
 
-function strategyForColumn(column: DrizzleColumn): DrizzleIsEmptyStrategy {
-  if (typeof column.dimensions === 'number' && column.dimensions > 0) {
+function strategyForColumn(meta: DrizzleColumnMeta): DrizzleIsEmptyStrategy {
+  if (typeof meta.dimensions === 'number' && meta.dimensions > 0) {
     return 'array'
   }
 
-  if (column.enumValues !== undefined) {
+  if (meta.hasEnumValues) {
     return 'present'
   }
 
-  const [dataType, constraint] = column.dataType.split(' ')
+  const [dataType, constraint] = meta.dataType.split(' ')
 
   switch (dataType) {
     case 'array':
@@ -204,21 +243,4 @@ function isEmptyBigInt(value: unknown): boolean {
 
 function isEmptyBoolean(value: unknown): boolean {
   return typeof value !== 'boolean'
-}
-
-function staticDefaultValue(
-  defaultValue: unknown,
-):
-  | { hasDefault: true; value: string | number | boolean | null }
-  | { hasDefault: false } {
-  if (
-    defaultValue === null ||
-    typeof defaultValue === 'string' ||
-    typeof defaultValue === 'number' ||
-    typeof defaultValue === 'boolean'
-  ) {
-    return { hasDefault: true, value: defaultValue }
-  }
-
-  return { hasDefault: false }
 }
