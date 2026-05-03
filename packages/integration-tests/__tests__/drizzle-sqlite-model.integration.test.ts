@@ -85,7 +85,7 @@ function buildModelPolicy() {
         requires('account.companyName', (v) => {
           return v['account.accountType'] === 'business'
         }),
-        requires('shipment.hazClass', 'shipment.hazardous'),
+        requires('shipment.hazClass', (v) => v['shipment.hazardous'] === true),
         enabledWhen(
           'shipment.serviceLevel',
           (_v, c) => !Boolean(c.promoActive),
@@ -254,6 +254,99 @@ describe('drizzle sqlite model policy multi-table write', () => {
 
       expect(updatedAccount?.companyName).toBe('New Co')
       expect(updatedShipment?.serviceLevel).toBe('expedited')
+    } finally {
+      close()
+    }
+  })
+
+  it('model patch clears stale namespaced dependent field', () => {
+    const { db, sqlite, close } = createMemoryDb()
+    try {
+      createSchema(sqlite)
+
+      const policy = buildModelPolicy()
+      const createResult = policy.checkCreate({
+        'account.accountType': 'personal',
+        'shipment.hazardous': true,
+        'shipment.hazClass': 'class3_flammable',
+        'shipment.serviceLevel': 'standard',
+      })
+
+      const accountRow = db
+        .insert(quoteAccounts)
+        .values(createResult.dataByTable.account as QuoteAccount)
+        .returning()
+        .get()
+
+      const shipmentRow = db
+        .insert(quoteShipments)
+        .values({
+          ...(createResult.dataByTable.shipment as QuoteShipment),
+          accountId: accountRow!.id,
+        })
+        .returning()
+        .get()
+
+      const patchResult = policy.checkPatch(
+        {
+          'account.accountType': 'personal',
+          'shipment.hazardous': true,
+          'shipment.hazClass': 'class3_flammable',
+          'shipment.serviceLevel': 'standard',
+        },
+        { 'shipment.hazardous': false },
+      )
+
+      expect(patchResult.ok).toBe(true)
+      expect(patchResult.dataByTable.account).toEqual({})
+      expect(patchResult.dataByTable.shipment).toEqual({
+        hazClass: null,
+        hazardous: false,
+      })
+
+      db.update(quoteShipments)
+        .set(patchResult.dataByTable.shipment as Partial<QuoteShipment>)
+        .where(sql`id = ${shipmentRow!.id}`)
+        .run()
+
+      const updatedShipment = db
+        .select()
+        .from(quoteShipments)
+        .where(sql`id = ${shipmentRow!.id}`)
+        .get() as Record<string, unknown> | undefined
+
+      expect(updatedShipment?.hazardous).toBe(false)
+      expect(updatedShipment?.hazClass).toBe(null)
+    } finally {
+      close()
+    }
+  })
+
+  it('model patch blocks context-disabled field updates', () => {
+    const { sqlite, close } = createMemoryDb()
+    try {
+      createSchema(sqlite)
+
+      const policy = buildModelPolicy()
+      const patchResult = policy.checkPatch(
+        {
+          'account.accountType': 'personal',
+          'shipment.hazardous': false,
+          'shipment.serviceLevel': 'standard',
+        },
+        { 'shipment.serviceLevel': 'expedited' },
+        { context: { promoActive: true } },
+      )
+
+      expect(patchResult.ok).toBe(false)
+      expect(
+        patchResult.issues.rules.some(
+          (i) => i.field === 'shipment.serviceLevel' && i.kind === 'disabled',
+        ),
+      ).toBe(true)
+      expect(patchResult.dataByTable.shipment).not.toHaveProperty(
+        'serviceLevel',
+      )
     } finally {
       close()
     }

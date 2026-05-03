@@ -19,20 +19,26 @@ import { fromDrizzleTable, type FromDrizzleTableOptions } from './table.js'
 
 type WriteOpts<
   F extends Record<string, FieldDef>,
-  C = Record<string, unknown>,
+  C extends Record<string, unknown> = Record<string, unknown>,
 > = DrizzleWriteOptions<C> & { validation?: UmpireValidationAdapter<F> }
 
-export type DrizzlePolicyOptions<F extends Record<string, FieldDef>> = {
+export type DrizzlePolicyOptions<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+> = {
   table?: FromDrizzleTableOptions
   fields?: Partial<Record<string, FieldDef>>
-  rules?: Rule<F>[]
+  rules?: Rule<F, C>[]
   validation?: UmpireValidationAdapter<F>
   unknownKeys?: 'reject' | 'strip'
   nonWritableKeys?: 'reject' | 'strip'
 }
 
-function mergeOpts<F extends Record<string, FieldDef>, C>(
-  builder: DrizzlePolicyOptions<F>,
+function mergeOpts<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  builder: DrizzlePolicyOptions<F, C>,
   call?: WriteOpts<F, C>,
 ): WriteOpts<F, C> {
   return {
@@ -45,26 +51,29 @@ function mergeOpts<F extends Record<string, FieldDef>, C>(
 
 // ── Single-table policy ──
 
-export function createDrizzlePolicy<T extends Table>(
+export function createDrizzlePolicy<
+  T extends Table,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
   table: T,
-  options: DrizzlePolicyOptions<Record<string, FieldDef>> = {},
+  options: DrizzlePolicyOptions<Record<string, FieldDef>, C> = {},
 ): {
   checkCreate(
     data: Record<string, unknown>,
-    callOpts?: WriteOpts<Record<string, FieldDef>>,
+    callOpts?: WriteOpts<Record<string, FieldDef>, C>,
   ): DrizzleWriteResult<Record<string, FieldDef>>
   checkPatch(
     existing: Record<string, unknown>,
     patch: Record<string, unknown>,
-    callOpts?: WriteOpts<Record<string, FieldDef>>,
+    callOpts?: WriteOpts<Record<string, FieldDef>, C>,
   ): DrizzleWriteResult<Record<string, FieldDef>>
   fields: Record<string, FieldDef>
-  rules: Rule<Record<string, FieldDef>>[]
-  ump: Umpire<Record<string, FieldDef>>
+  rules: Rule<Record<string, FieldDef>, C>[]
+  ump: Umpire<Record<string, FieldDef>, C>
 } {
   const derived = fromDrizzleTable(table, options.table ?? {}) as unknown as {
     fields: Record<string, FieldDef>
-    rules: Rule<Record<string, FieldDef>>[]
+    rules: Rule<Record<string, FieldDef>, C>[]
   }
 
   const fields = { ...derived.fields, ...options.fields } as Record<
@@ -73,7 +82,7 @@ export function createDrizzlePolicy<T extends Table>(
   >
   const rules = [
     ...derived.rules,
-    ...((options.rules ?? []) as Rule<Record<string, FieldDef>>[]),
+    ...((options.rules ?? []) as Rule<Record<string, FieldDef>, C>[]),
   ]
   const ump = umpire({ fields, rules })
 
@@ -103,28 +112,31 @@ export function createDrizzlePolicy<T extends Table>(
 
 // ── Model policy ──
 
-export function createDrizzleModelPolicy<M extends FromDrizzleModelConfig>(
+export function createDrizzleModelPolicy<
+  M extends FromDrizzleModelConfig,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
   modelConfig: M,
-  options: DrizzlePolicyOptions<Record<string, FieldDef>> = {},
+  options: DrizzlePolicyOptions<Record<string, FieldDef>, C> = {},
 ): {
   checkCreate(
     data: Record<string, unknown>,
-    callOpts?: WriteOpts<Record<string, FieldDef>>,
+    callOpts?: WriteOpts<Record<string, FieldDef>, C>,
   ): DrizzleModelWriteResult<Record<string, FieldDef>>
   checkPatch(
     existing: Record<string, unknown>,
     patch: Record<string, unknown>,
-    callOpts?: WriteOpts<Record<string, FieldDef>>,
+    callOpts?: WriteOpts<Record<string, FieldDef>, C>,
   ): DrizzleModelWriteResult<Record<string, FieldDef>>
   fields: Record<string, FieldDef>
-  rules: Rule<Record<string, FieldDef>>[]
-  ump: Umpire<Record<string, FieldDef>>
+  rules: Rule<Record<string, FieldDef>, C>[]
+  ump: Umpire<Record<string, FieldDef>, C>
   name: FromDrizzleModelResult<M>['name']
   field: FromDrizzleModelResult<M>['field']
 } {
   const model = fromDrizzleModel(modelConfig) as unknown as {
     fields: Record<string, FieldDef>
-    rules: Rule<Record<string, FieldDef>>[]
+    rules: Rule<Record<string, FieldDef>, C>[]
     name: FromDrizzleModelResult<M>['name']
     field: FromDrizzleModelResult<M>['field']
   }
@@ -135,7 +147,7 @@ export function createDrizzleModelPolicy<M extends FromDrizzleModelConfig>(
   >
   const rules = [
     ...model.rules,
-    ...((options.rules ?? []) as Rule<Record<string, FieldDef>>[]),
+    ...((options.rules ?? []) as Rule<Record<string, FieldDef>, C>[]),
   ]
   const ump = umpire({ fields, rules })
 

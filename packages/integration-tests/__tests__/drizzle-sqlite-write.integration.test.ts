@@ -101,7 +101,7 @@ function buildPolicy() {
     fields: { companyName: { required: true } },
     rules: [
       requires('companyName', (v) => v.accountType === 'business'),
-      requires('hazClass', 'hazardous'),
+      requires('hazClass', (v) => v.hazardous === true),
       oneOf(
         'handlingMode',
         {
@@ -407,6 +407,137 @@ describe('drizzle sqlite freight quote single-table write', () => {
       expect(updated?.accountType).toBe('business')
       expect(updated?.hazardous).toBe(false)
       expect(updated?.serviceLevel).toBe('standard')
+    } finally {
+      close()
+    }
+  })
+
+  it('patch clears stale dependent field when discriminator changes', () => {
+    const { db, sqlite, close } = createMemoryDb()
+    try {
+      sqlite.run(createSchema())
+
+      const policy = buildPolicy()
+      const createResult = policy.checkCreate({
+        accountType: 'business',
+        companyName: 'Old Co',
+        hazardous: false,
+        serviceLevel: 'standard',
+        vehicleType: 'dry_van',
+      })
+
+      const inserted = db
+        .insert(freightQuotes)
+        .values(createResult.data as FreightQuote)
+        .returning()
+        .get()
+
+      const patchResult = policy.checkPatch(
+        {
+          accountType: 'business',
+          companyName: 'Old Co',
+          hazardous: false,
+          serviceLevel: 'standard',
+          vehicleType: 'dry_van',
+        },
+        { accountType: 'personal' },
+      )
+
+      expect(patchResult.ok).toBe(true)
+      expect(patchResult.data).toHaveProperty('accountType', 'personal')
+      expect(patchResult.data).toHaveProperty('companyName', null)
+
+      db.update(freightQuotes)
+        .set(patchResult.data as Partial<FreightQuote>)
+        .where(sql`id = ${inserted!.id}`)
+        .run()
+
+      const updated = db
+        .select()
+        .from(freightQuotes)
+        .where(sql`id = ${inserted!.id}`)
+        .get() as Record<string, unknown> | undefined
+
+      expect(updated?.accountType).toBe('personal')
+      expect(updated?.companyName).toBe(null)
+    } finally {
+      close()
+    }
+  })
+
+  it('patch clears stale boolean-dependent detail when toggle turns off', () => {
+    const { db, sqlite, close } = createMemoryDb()
+    try {
+      sqlite.run(createSchema())
+
+      const policy = buildPolicy()
+      const createResult = policy.checkCreate({
+        accountType: 'personal',
+        hazardous: true,
+        hazClass: 'class3_flammable',
+        serviceLevel: 'standard',
+        vehicleType: 'dry_van',
+      })
+
+      const inserted = db
+        .insert(freightQuotes)
+        .values(createResult.data as FreightQuote)
+        .returning()
+        .get()
+
+      const patchResult = policy.checkPatch(
+        {
+          accountType: 'personal',
+          hazardous: true,
+          hazClass: 'class3_flammable',
+          serviceLevel: 'standard',
+          vehicleType: 'dry_van',
+        },
+        { hazardous: false },
+      )
+
+      expect(patchResult.ok).toBe(true)
+      expect(patchResult.data).toHaveProperty('hazardous', false)
+      expect(patchResult.data).toHaveProperty('hazClass', null)
+
+      db.update(freightQuotes)
+        .set(patchResult.data as Partial<FreightQuote>)
+        .where(sql`id = ${inserted!.id}`)
+        .run()
+
+      const updated = db
+        .select()
+        .from(freightQuotes)
+        .where(sql`id = ${inserted!.id}`)
+        .get() as Record<string, unknown> | undefined
+
+      expect(updated?.hazardous).toBe(false)
+      expect(updated?.hazClass).toBe(null)
+    } finally {
+      close()
+    }
+  })
+
+  it('empty patch succeeds with no write payload', () => {
+    const { sqlite, close } = createMemoryDb()
+    try {
+      sqlite.run(createSchema())
+
+      const policy = buildPolicy()
+      const patchResult = policy.checkPatch(
+        {
+          accountType: 'personal',
+          companyName: null,
+          hazardous: false,
+          handlingMode: 'standard',
+          serviceLevel: 'standard',
+          vehicleType: 'dry_van',
+        },
+        {},
+      )
+
+      expect(patchResult.ok).toBe(true)
+      expect(patchResult.data).toEqual({})
     } finally {
       close()
     }
