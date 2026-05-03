@@ -86,6 +86,25 @@ function getChangedFields<F extends Record<string, FieldDef>>(
   )
 }
 
+function assertScorecardValuesComplete<F extends Record<string, FieldDef>>(
+  fieldNames: Array<keyof F & string>,
+  values: InputValues,
+  label: string,
+) {
+  const missingFields = fieldNames.filter(
+    (field) => !Object.hasOwn(values, field),
+  )
+
+  if (missingFields.length === 0) {
+    return
+  }
+
+  const missingList = missingFields.map((field) => `"${field}"`).join(', ')
+  throw new Error(
+    `[@umpire/core] scorecard() requires ${label}.values to include every field key; missing ${missingList}. Pass null for fields you do not care about.`,
+  )
+}
+
 function normalizeValidators<F extends Record<string, FieldDef>>(
   fields: F,
   validators: ValidationMap<F> | undefined,
@@ -1323,6 +1342,11 @@ export function umpire<
     options: ScorecardOptions<C> = {},
   ): ScorecardResult<NormalizeFields<FInput>, C> {
     const { before, includeChallenge = false } = options
+    assertScorecardValuesComplete(fieldNames, snapshot.values, 'snapshot')
+    if (before) {
+      assertScorecardValuesComplete(fieldNames, before.values, 'before')
+    }
+
     const typedValues = snapshot.values as FieldValues<NormalizeFields<FInput>>
     const typedPrev = before?.values as
       | FieldValues<NormalizeFields<FInput>>

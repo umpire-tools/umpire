@@ -12,12 +12,13 @@
 
 A Drizzle column becomes a **required** Umpire field only when it is `notNull()` with no default and no `defaultFn`. Other columns (nullable, or notNull with a default) become optional fields. The `requires` rule from `@umpire/core` then controls **enabled**, not `required` — see root AGENTS.md for the distinction.
 
-To block a write on a missing conditional field (e.g. "company name required for business accounts"):
+To block a write on a missing conditional field that can later be disabled and cleared (e.g. "company name required for business accounts"):
 
-1. Make the Drizzle column `notNull()` with no default so Umpire marks it `required: true`.
-2. Use `requires` to enable/disable it based on the condition.
+1. Keep the Drizzle column nullable if disabled states need to clear it to `null`.
+2. Set the Umpire field override to `required: true`.
+3. Use `requires` to enable/disable it based on the condition.
 
-Without step 1, an absent field is silently unsatisfied but never flagged as an issue.
+Without the Umpire `required: true` field setting, an absent field is silently unsatisfied but never flagged as an issue. Do not use Drizzle `.notNull()` as the conditional-requiredness mechanism for fields that rules may disable; when Umpire omits or clears a disabled field, the database constraint will still apply.
 
 ## SQLite / Bun-SQLite
 
@@ -47,13 +48,16 @@ enabledWhen('field', (_v, c) => c.isAdmin)
 
 ## `oneOf` `activeBranch` Return Type
 
-The `activeBranch` callback must return a value from the branch-name union, not a `string`. Use a cast rather than `String()`:
+The `activeBranch` callback must return a value from the branch-name union, not a generic `string`. Narrow runtime values before returning them:
 
 ```ts
 oneOf('handlingMode', { fragile: [...], climate: [...] }, {
-  activeBranch: (v) =>
-    v.handlingMode === 'standard'
-      ? null
-      : (v.handlingMode as 'fragile' | 'climate'),
+  activeBranch: (v) => {
+    if (v.handlingMode === 'fragile' || v.handlingMode === 'climate') {
+      return v.handlingMode
+    }
+
+    return null
+  },
 })
 ```

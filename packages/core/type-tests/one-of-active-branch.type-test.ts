@@ -61,3 +61,20 @@ oneOf(
     activeBranch: () => 'third',
   },
 )
+
+oneOf(
+  'strategy',
+  {
+    first: ['alpha'],
+    second: ['beta'],
+  },
+  {
+    activeBranch: (values) => {
+      if (values.mode === 'first' || values.mode === 'second') {
+        return values.mode
+      }
+
+      return null
+    },
+  },
+)

@@ -200,6 +200,56 @@ describe('scorecard', () => {
     expect(card.fields.bio.error).toBeUndefined()
   })
 
+  test('throws a clear error when scorecard snapshot values are partial', () => {
+    const ump = umpire({
+      fields: {
+        accountType: {},
+        companyName: {},
+      },
+      rules: [requires('companyName', 'accountType')],
+    })
+
+    expect(() =>
+      ump.scorecard({
+        values: {
+          accountType: 'business',
+        },
+      }),
+    ).toThrow(
+      'scorecard() requires snapshot.values to include every field key; missing "companyName"',
+    )
+  })
+
+  test('throws a clear error when scorecard before values are partial', () => {
+    const ump = umpire({
+      fields: {
+        accountType: {},
+        companyName: {},
+      },
+      rules: [requires('companyName', 'accountType')],
+    })
+
+    expect(() =>
+      ump.scorecard(
+        {
+          values: {
+            accountType: 'business',
+            companyName: 'Acme',
+          },
+        },
+        {
+          before: {
+            values: {
+              accountType: 'personal',
+            },
+          },
+        },
+      ),
+    ).toThrow(
+      'scorecard() requires before.values to include every field key; missing "companyName"',
+    )
+  })
+
   test('returns a defensive graph copy and null transition.before by default', () => {
     const ump = umpire({
       fields: {
@@ -218,7 +268,7 @@ describe('scorecard', () => {
       edges: [{ from: 'alpha', to: 'beta', type: 'requires' }],
     })
 
-    const card = ump.scorecard({ values: { alpha: 'set' } })
+    const card = ump.scorecard({ values: { alpha: 'set', beta: null } })
     expect(card.transition.before).toBeNull()
 
     card.graph.nodes.push('mutated-again')

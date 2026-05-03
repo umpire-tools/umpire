@@ -109,10 +109,12 @@ function buildPolicy() {
           climate: ['tempRange', 'humidity'],
         },
         {
-          activeBranch: (v) =>
-            v.handlingMode === 'standard'
-              ? null
-              : (v.handlingMode as 'fragile' | 'climate'),
+          activeBranch: (v) => {
+            if (v.handlingMode === 'fragile' || v.handlingMode === 'climate') {
+              return v.handlingMode
+            }
+            return null
+          },
         },
       ),
       enabledWhen('discountOverride', (_v, c) => Boolean(c.isAdmin)),
