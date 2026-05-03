@@ -473,18 +473,16 @@ describe('drizzle sqlite freight quote single-table write', () => {
         { handlingMode: 'climate' },
       )
 
-      // Preflight should fail with foul issues for stale fragile fields
-      expect(badPatch.ok).toBe(false)
-      const foulIssues = badPatch.issues.rules.filter((i) => i.kind === 'foul')
-      expect(foulIssues.length).toBeGreaterThan(0)
-      expect(foulIssues.some((i) => i.field === 'blankets')).toBe(true)
-      expect(foulIssues.some((i) => i.field === 'crateType')).toBe(true)
+      // Preflight should auto-clear stale fragile fields via generated nulls.
+      // checkDrizzlePatch now includes null clears for disabled fields in data.
+      expect(badPatch.ok).toBe(true)
+      const patchData = badPatch.data as Record<string, unknown>
+      expect(patchData).toHaveProperty('handlingMode', 'climate')
+      expect(patchData).toHaveProperty('blankets', null)
+      expect(patchData).toHaveProperty('crateType', null)
 
-      // Corrected patch: clear fragile values in patch, set climate values.
-      // The preflight passes because combined state has stale values cleared.
-      // Disabled fields (blankets, crateType) are filtered from the patch data
-      // since checkDrizzlePatch excludes fields with enabled:false.
-      const goodPatch = policy.checkPatch(
+      // Explicit null clears produce the same result as auto-generated clears
+      const explicitPatch = policy.checkPatch(
         {
           accountType: 'personal',
           hazardous: false,
@@ -503,18 +501,16 @@ describe('drizzle sqlite freight quote single-table write', () => {
         },
       )
 
-      expect(goodPatch.ok).toBe(true)
-      // Patch data only includes enabled fields (climate branch)
-      const patchData = goodPatch.data as Record<string, unknown>
-      expect(patchData).toHaveProperty('handlingMode', 'climate')
-      expect(patchData).toHaveProperty('tempRange', 'frozen')
-      expect(patchData).toHaveProperty('humidity', 50)
-      // blankets/crateType are disabled under climate and filtered from data
-      expect(patchData).not.toHaveProperty('blankets')
-      expect(patchData).not.toHaveProperty('crateType')
+      expect(explicitPatch.ok).toBe(true)
+      const explicitPatchData = explicitPatch.data as Record<string, unknown>
+      expect(explicitPatchData).toHaveProperty('handlingMode', 'climate')
+      expect(explicitPatchData).toHaveProperty('tempRange', 'frozen')
+      expect(explicitPatchData).toHaveProperty('humidity', 50)
+      expect(explicitPatchData).toHaveProperty('blankets', null)
+      expect(explicitPatchData).toHaveProperty('crateType', null)
 
       db.update(freightQuotes)
-        .set(goodPatch.data as Partial<FreightQuote>)
+        .set(explicitPatch.data as Partial<FreightQuote>)
         .where(sql`id = ${inserted!.id}`)
         .run()
 
@@ -527,10 +523,8 @@ describe('drizzle sqlite freight quote single-table write', () => {
       expect(updated?.handlingMode).toBe('climate')
       expect(updated?.tempRange).toBe('frozen')
       expect(updated?.humidity).toBe(50)
-      // blankets/crateType persist from the original create because disabled
-      // fields are excluded from the patch data.
-      expect(updated?.blankets).toBe(3)
-      expect(updated?.crateType).toBe('wood')
+      expect(updated?.blankets).toBe(null)
+      expect(updated?.crateType).toBe(null)
     } finally {
       close()
     }

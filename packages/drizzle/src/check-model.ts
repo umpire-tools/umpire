@@ -272,19 +272,89 @@ export function checkDrizzleModelPatch<
     }
   }
 
-  // Run write check on flat data
-  const write = writeCheckPatch(
+  // Run initial write check on flat patch data
+  const initialWrite = writeCheckPatch(
     ump,
     existing,
     flatShapedPatch,
     options?.context,
   )
 
-  // Build data by table (patch-shaped, so just split flat patch back)
+  // Build stale-value clears from two sources
+  const rawFlatClears: Record<string, null> = {}
+
+  for (const foul of initialWrite.fouls) {
+    const status = (
+      initialWrite.availability as Record<string, { enabled?: boolean }>
+    )[foul.field]
+    if (status?.enabled !== false) continue
+
+    const userSubmittedNonNull =
+      Object.hasOwn(flatShapedPatch, foul.field) &&
+      flatShapedPatch[foul.field] != null
+
+    if (existing[foul.field] != null && !userSubmittedNonNull) {
+      rawFlatClears[foul.field] = null
+    }
+  }
+
+  for (const [field, value] of Object.entries(flatShapedPatch)) {
+    const status = (
+      initialWrite.availability as Record<string, { enabled?: boolean }>
+    )[field]
+    if (status?.enabled === false && value == null && existing[field] != null) {
+      rawFlatClears[field] = null
+    }
+  }
+
+  // Shape per-namespace through column filter
+  const flatStaleClears: Record<string, unknown> = {}
+
+  for (const [ns, meta] of namespaceMeta) {
+    const localRawClears: Record<string, null> = {}
+    for (const flatKey of Object.keys(rawFlatClears)) {
+      const split = splitKey(flatKey)
+      if (split?.namespace === ns) {
+        localRawClears[split.localKey] = null
+      }
+    }
+
+    if (Object.keys(localRawClears).length === 0) continue
+
+    const { shapedData: localStaleClears } = shapePatchData(
+      meta.tableMeta,
+      meta.exclude,
+      localRawClears,
+      { unknownKeys: 'strip', nonWritableKeys: 'strip' },
+    )
+
+    for (const [localKey, value] of Object.entries(localStaleClears)) {
+      flatStaleClears[`${ns}.${localKey}`] = value
+    }
+  }
+
+  // Re-run write check only when shaped stale clears exist
+  const write =
+    Object.keys(flatStaleClears).length === 0
+      ? initialWrite
+      : writeCheckPatch(
+          ump,
+          existing,
+          { ...flatStaleClears, ...flatShapedPatch },
+          options?.context,
+        )
+
+  // Build data by table (stale clears + enabled user fields)
   const dataByTable: Record<string, Record<string, unknown>> = {}
 
   for (const [ns] of namespaceMeta) {
     const nsData: Record<string, unknown> = {}
+    for (const [flatKey, value] of Object.entries(flatStaleClears)) {
+      const split = splitKey(flatKey)
+      if (split?.namespace === ns) {
+        nsData[split.localKey] = value
+      }
+    }
     for (const [flatKey, value] of Object.entries(flatShapedPatch)) {
       const split = splitKey(flatKey)
       if (split?.namespace === ns) {

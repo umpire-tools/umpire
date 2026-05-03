@@ -224,7 +224,7 @@ describe('checkDrizzlePatch', () => {
     )
   })
 
-  test('foul field returns rule issue with kind: foul', () => {
+  test('branch switch includes stale-value clears in data', () => {
     const ump = umpire({
       fields: base.fields,
       rules: [
@@ -242,15 +242,64 @@ describe('checkDrizzlePatch', () => {
       { accountType: 'personal' },
     )
 
-    expect(result.ok).toBe(false)
+    expect(result.ok).toBe(true)
     const foulIssues = result.issues.rules.filter((i) => i.kind === 'foul')
-    expect(foulIssues.length).toBeGreaterThan(0)
-    expect(foulIssues[0]).toEqual(
-      expect.objectContaining({
-        kind: 'foul',
-        field: 'companyName',
-      }),
+    expect(foulIssues.length).toBe(0)
+    expect(result.data).toHaveProperty('companyName', null)
+    expect(result.data).toHaveProperty('accountType', 'personal')
+  })
+
+  test('explicit null on disabled field appears in data', () => {
+    const ump = umpire({
+      fields: base.fields,
+      rules: [
+        enabledWhen(
+          'companyName',
+          (values) => values.accountType === 'business',
+        ),
+      ],
+    })
+
+    const result = checkDrizzlePatch(
+      users,
+      ump,
+      { email: 'a@example.com', accountType: 'personal', companyName: 'Acme' },
+      { companyName: null },
     )
+
+    expect(result.ok).toBe(true)
+    expect(result.issues.rules).toEqual([])
+    expect(result.data).toHaveProperty('companyName', null)
+  })
+
+  test('non-null value on disabled field produces rule issue and no data', () => {
+    const ump = umpire({
+      fields: base.fields,
+      rules: [
+        enabledWhen(
+          'companyName',
+          (values) => values.accountType === 'business',
+        ),
+      ],
+    })
+
+    const result = checkDrizzlePatch(
+      users,
+      ump,
+      { email: 'a@example.com', accountType: 'personal' },
+      { companyName: 'Acme' },
+    )
+
+    expect(result.ok).toBe(false)
+    expect(result.issues.rules).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'disabled',
+          field: 'companyName',
+        }),
+      ]),
+    )
+    expect(result.data).not.toHaveProperty('companyName')
   })
 
   test('rejects primary key in patch input', () => {

@@ -250,7 +250,7 @@ describe('checkDrizzleModelPatch', () => {
     )
   })
 
-  test('foul produces rule issue in patch', () => {
+  test('branch switch includes stale-value clears in dataByTable', () => {
     const ruleUmp = umpire({
       fields: model.fields,
       rules: [
@@ -267,13 +267,43 @@ describe('checkDrizzleModelPatch', () => {
         'account.email': 'a@example.com',
         'account.accountType': 'business',
         'account.companyName': 'Acme',
+        'profile.accountId': 1,
       },
       { 'account.accountType': 'personal' },
     )
 
-    expect(result.ok).toBe(false)
+    expect(result.ok).toBe(true)
     const foulIssues = result.issues.rules.filter((i) => i.kind === 'foul')
-    expect(foulIssues.length).toBeGreaterThan(0)
+    expect(foulIssues.length).toBe(0)
+    expect(result.dataByTable.account).toHaveProperty('companyName', null)
+    expect(result.dataByTable.account).toHaveProperty('accountType', 'personal')
+  })
+
+  test('explicit null on disabled namespaced field appears in dataByTable', () => {
+    const ruleUmp = umpire({
+      fields: model.fields,
+      rules: [
+        enabledWhen('account.companyName', (values) => {
+          return values['account.accountType'] === 'business'
+        }),
+      ],
+    })
+
+    const result = checkDrizzleModelPatch(
+      modelConfig,
+      ruleUmp,
+      {
+        'account.email': 'a@example.com',
+        'account.accountType': 'personal',
+        'account.companyName': 'Acme',
+        'profile.accountId': 1,
+      },
+      { 'account.companyName': null },
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.issues.rules).toEqual([])
+    expect(result.dataByTable.account).toHaveProperty('companyName', null)
   })
 
   test('unknown namespace rejects by default in patch', () => {

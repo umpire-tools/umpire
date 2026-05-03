@@ -106,9 +106,50 @@ export function checkDrizzlePatch<
     options,
   )
 
-  const write = writeCheckPatch(ump, existing, shapedData, options?.context)
+  const initialWrite = writeCheckPatch(
+    ump,
+    existing,
+    shapedData,
+    options?.context,
+  )
 
-  const filteredData: Record<string, unknown> = {}
+  const rawClears: Record<string, null> = {}
+  for (const foul of initialWrite.fouls) {
+    const status = (
+      initialWrite.availability as Record<string, { enabled?: boolean }>
+    )[foul.field]
+    if (status?.enabled !== false) continue
+
+    const userSubmittedNonNull =
+      Object.hasOwn(shapedData, foul.field) && shapedData[foul.field] != null
+
+    if (existing[foul.field] != null && !userSubmittedNonNull) {
+      rawClears[foul.field] = null
+    }
+  }
+  for (const [field, value] of Object.entries(shapedData)) {
+    const status = (
+      initialWrite.availability as Record<string, { enabled?: boolean }>
+    )[field]
+    if (status?.enabled === false && value == null && existing[field] != null) {
+      rawClears[field] = null
+    }
+  }
+
+  const { shapedData: staleClears } = shapePatchData(
+    tableMeta,
+    exclude,
+    rawClears,
+    { unknownKeys: 'strip', nonWritableKeys: 'strip' },
+  )
+
+  const shapedPatchWithClears = { ...staleClears, ...shapedData }
+  const write =
+    Object.keys(staleClears).length === 0
+      ? initialWrite
+      : writeCheckPatch(ump, existing, shapedPatchWithClears, options?.context)
+
+  const filteredData: Record<string, unknown> = { ...staleClears }
   for (const key of Object.keys(shapedData)) {
     const status = (
       write.availability as Record<string, { enabled?: boolean }>
