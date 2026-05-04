@@ -1,4 +1,5 @@
 ---
+"@umpire/drizzle": patch
 ---
 
 Add `@umpire/drizzle` as an RC adapter for deriving Umpire write policies from Drizzle ORM 1.0 table metadata.
