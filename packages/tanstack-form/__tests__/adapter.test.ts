@@ -7,9 +7,13 @@ describe('createUmpireFormAdapter', () => {
     const engine = umpire({
       fields: { email: {} },
       rules: [
-        fairWhen('email', (v) => String((v as Record<string, unknown>).email).includes('@'), {
-          reason: 'Invalid',
-        }),
+        fairWhen(
+          'email',
+          (v) => String((v as Record<string, unknown>).email).includes('@'),
+          {
+            reason: 'Invalid',
+          },
+        ),
       ],
     })
 
@@ -24,13 +28,17 @@ describe('createUmpireFormAdapter', () => {
     const adapter = createUmpireFormAdapter(form as never, engine)
     const availability = adapter.getAvailability()
 
-    expect((availability as Record<string, { fair: boolean }>).email.fair).toBe(false)
+    expect((availability as Record<string, { fair: boolean }>).email.fair).toBe(
+      false,
+    )
   })
 
   it('getField returns status with available/disabled aliases', () => {
     const engine = umpire({
       fields: { a: {}, b: {} },
-      rules: [enabledWhen('b', (v) => (v as Record<string, unknown>).a === 'yes')],
+      rules: [
+        enabledWhen('b', (v) => (v as Record<string, unknown>).a === 'yes'),
+      ],
     })
 
     const form = {
@@ -90,7 +98,9 @@ describe('createUmpireFormAdapter', () => {
   it('getFouls returns fouls when values change between snapshots', () => {
     const engine = umpire({
       fields: { x: { required: true }, y: {} },
-      rules: [enabledWhen('y', (v) => (v as Record<string, unknown>).x !== null)],
+      rules: [
+        enabledWhen('y', (v) => (v as Record<string, unknown>).x !== null),
+      ],
     })
 
     const form = {
@@ -112,7 +122,9 @@ describe('createUmpireFormAdapter', () => {
   it('applyStrike calls setFieldValue for each foul', () => {
     const engine = umpire({
       fields: { x: {}, y: {} },
-      rules: [enabledWhen('y', (v) => (v as Record<string, unknown>).x === 'yes')],
+      rules: [
+        enabledWhen('y', (v) => (v as Record<string, unknown>).x === 'yes'),
+      ],
     })
 
     const setFieldCalls: Array<{ name: string; value: unknown }> = []
@@ -159,10 +171,13 @@ describe('createUmpireFormAdapter', () => {
   it('custom setFieldValue option overrides default', () => {
     const engine = umpire({
       fields: { x: {}, y: {} },
-      rules: [enabledWhen('y', (v) => (v as Record<string, unknown>).x === 'yes')],
+      rules: [
+        enabledWhen('y', (v) => (v as Record<string, unknown>).x === 'yes'),
+      ],
     })
 
-    const customCalls: Array<{ form: unknown; name: string; value: unknown }> = []
+    const customCalls: Array<{ form: unknown; name: string; value: unknown }> =
+      []
     const customSetFieldValue = (f: unknown, name: string, value: unknown) => {
       customCalls.push({ form: f, name, value })
     }
@@ -190,7 +205,13 @@ describe('createUmpireFormAdapter', () => {
   it('custom conditions function is called to resolve conditions', () => {
     const engine = umpire({
       fields: { a: {}, b: {} },
-      rules: [enabledWhen('b', (_values, conditions) => (conditions as Record<string, unknown>)?.mode === 'edit')],
+      rules: [
+        enabledWhen(
+          'b',
+          (_values, conditions) =>
+            (conditions as Record<string, unknown>)?.mode === 'edit',
+        ),
+      ],
     })
 
     const form = {
@@ -213,7 +234,9 @@ describe('createUmpireFormAdapter', () => {
   it('refresh resets previous snapshot to given values', () => {
     const engine = umpire({
       fields: { x: { required: true }, y: {} },
-      rules: [enabledWhen('y', (v) => (v as Record<string, unknown>).x !== null)],
+      rules: [
+        enabledWhen('y', (v) => (v as Record<string, unknown>).x !== null),
+      ],
     })
 
     const form = {

@@ -1,6 +1,9 @@
 import type { Umpire, FieldDef } from '@umpire/core'
 
-export function getUmpireLinkedFields<F extends Record<string, FieldDef>, C extends Record<string, unknown>>(
+export function getUmpireLinkedFields<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
   engine: Umpire<F, C>,
   fieldName: string,
   options?: {

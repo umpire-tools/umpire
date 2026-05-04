@@ -19,7 +19,10 @@ export function umpireDynamicValidator<
 >(
   engine: Umpire<F, C>,
   options?: UmpireDynamicValidatorOptions<C>,
-): (opts: { value: Record<string, unknown>; formApi: unknown }) => Record<string, string> | undefined {
+): (opts: {
+  value: Record<string, unknown>
+  formApi: unknown
+}) => Record<string, string> | undefined {
   return ({ value, formApi }) => {
     const conditions =
       typeof options?.conditions === 'function'
@@ -32,7 +35,14 @@ export function umpireDynamicValidator<
     for (const [name, status] of Object.entries(
       availability as Record<
         string,
-        { enabled?: boolean; required?: boolean; satisfied?: boolean; fair?: boolean; reason?: string | null; error?: string }
+        {
+          enabled?: boolean
+          required?: boolean
+          satisfied?: boolean
+          fair?: boolean
+          reason?: string | null
+          error?: string
+        }
       >,
     )) {
       if (!status.enabled) continue

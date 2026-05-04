@@ -9,16 +9,24 @@ type UmpireReadListenerEvent<Input, R> = {
   fieldApi?: unknown
 }
 
-type UmpireReadListenerHandler<Input, R> = (event: UmpireReadListenerEvent<Input, R>) => void
+type UmpireReadListenerHandler<Input, R> = (
+  event: UmpireReadListenerEvent<Input, R>,
+) => void
 
-type UmpireReadListenerHandlers<Input, Reads extends Record<string, unknown>> = {
+type UmpireReadListenerHandlers<
+  Input,
+  Reads extends Record<string, unknown>,
+> = {
   [K in keyof Reads & string]?: UmpireReadListenerHandler<Input, Reads[K]>
 }
 
 export type UmpireReadListenersOptions = {
   events?: Array<'onChange' | 'onBlur'>
   debounceMs?: number
-  selectInput?: (values: Record<string, unknown>, formApi: unknown) => Record<string, unknown>
+  selectInput?: (
+    values: Record<string, unknown>,
+    formApi: unknown,
+  ) => Record<string, unknown>
 }
 
 export function umpireReadListeners<
@@ -73,16 +81,13 @@ export function umpireReadListeners<
       fieldApi?: unknown
     }) => {
       const values = options?.selectInput
-        ? (
-            options.selectInput(
-              (formApi as { state: { values: Record<string, unknown> } }).state
-                .values,
-              formApi,
-          ) as Input)
-        : (
+        ? (options.selectInput(
             (formApi as { state: { values: Record<string, unknown> } }).state
-              .values as Input
-          )
+              .values,
+            formApi,
+          ) as Input)
+        : ((formApi as { state: { values: Record<string, unknown> } }).state
+            .values as Input)
 
       evaluate(values, formApi, fieldApi)
     }

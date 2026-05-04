@@ -3,11 +3,13 @@ import { snapshotValue } from '@umpire/core/snapshot'
 
 export type UmpireFormOptionsConfig<C> = {
   conditions?: C | ((formApi: unknown) => C)
-  strike?: boolean | {
-    events?: Array<'onChange' | 'onBlur'>
-    debounceMs?: number
-    mode?: 'suggestedValue' | 'resetField'
-  }
+  strike?:
+    | boolean
+    | {
+        events?: Array<'onChange' | 'onBlur'>
+        debounceMs?: number
+        mode?: 'suggestedValue' | 'resetField'
+      }
 }
 
 /**
@@ -24,9 +26,7 @@ export type UmpireFormOptionsConfig<C> = {
  * })
  * ```
  */
-export function createUmpireFormOptions<
-  C extends Record<string, unknown>,
->(
+export function createUmpireFormOptions<C extends Record<string, unknown>>(
   engine: Umpire<any, C>,
   options?: UmpireFormOptionsConfig<C>,
 ): Record<string, unknown> {
@@ -43,7 +43,14 @@ export function createUmpireFormOptions<
   const listeners: Record<string, unknown> = {}
 
   for (const event of events) {
-    listeners[event] = ({ formApi }: { formApi: { state: { values: Record<string, unknown> }; setFieldValue(name: string, value: unknown): void } }) => {
+    listeners[event] = ({
+      formApi,
+    }: {
+      formApi: {
+        state: { values: Record<string, unknown> }
+        setFieldValue(name: string, value: unknown): void
+      }
+    }) => {
       const conditions =
         typeof options?.conditions === 'function'
           ? (options.conditions as (formApi: unknown) => C)(formApi)
@@ -63,7 +70,9 @@ export function createUmpireFormOptions<
 
       for (const foul of fouls) {
         if (useResetField) {
-          ;(formApi as unknown as { resetField(name: string): void }).resetField(foul.field)
+          ;(
+            formApi as unknown as { resetField(name: string): void }
+          ).resetField(foul.field)
         } else {
           formApi.setFieldValue(foul.field, foul.suggestedValue)
         }

@@ -132,8 +132,14 @@ export const UmpireFormSubscribe = defineComponent({
   props: {
     form: { type: Object as PropType<any>, required: true },
     engine: { type: Object as PropType<Umpire<any, any>>, required: true },
-    conditions: { type: [Object, Function] as PropType<any>, default: undefined },
-    strike: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+    conditions: {
+      type: [Object, Function] as PropType<any>,
+      default: undefined,
+    },
+    strike: {
+      type: Boolean as PropType<boolean | undefined>,
+      default: undefined,
+    },
   },
   setup(props, { slots }) {
     const umpireForm = useUmpireForm(props.form, props.engine, {

@@ -2150,6 +2150,8 @@ __metadata:
     "@happy-dom/global-registrator": "npm:^17.4.4"
     "@tanstack/form-core": "npm:^1.29.1"
     "@tanstack/react-form": "npm:^1.29.1"
+    "@tanstack/solid-form": "npm:^1.29.1"
+    "@tanstack/vue-form": "npm:^1.29.1"
     "@testing-library/react": "npm:^16.3.2"
     "@types/react": "npm:^19.2.14"
     "@types/react-dom": "npm:^19.2.3"
@@ -2162,10 +2164,15 @@ __metadata:
     react-dom: "npm:^19.2.4"
     solid-js: "npm:^1.0.0"
     tsdown: "npm:^0.21.7"
+    vue: "npm:^3.0.0"
   peerDependencies:
     "@tanstack/form-core": ^1.0.0
     "@tanstack/react-form": ^1.0.0
+    "@tanstack/solid-form": ^1.0.0
+    "@tanstack/vue-form": ^1.0.0
     react: ^18.0.0 || ^19.0.0
+    solid-js: ^1.0.0
+    vue: ^3.0.0
   languageName: unknown
   linkType: soft
 

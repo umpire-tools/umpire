@@ -39,8 +39,10 @@ describe('createUmpireForm', () => {
 
     const { value: umpireForm, dispose } = withRoot(() => {
       const form = {
-        useStore: (selector: Function) =>
-          () => selector({ values: { country: 'Canada', state: 'ON', city: 'Toronto' } }),
+        useStore: (selector: Function) => () =>
+          selector({
+            values: { country: 'Canada', state: 'ON', city: 'Toronto' },
+          }),
         setFieldValue: () => {},
       }
       return createUmpireForm(form as any, engine)
@@ -64,8 +66,8 @@ describe('createUmpireForm', () => {
 
     const { value: umpireForm, dispose } = withRoot(() => {
       const form = {
-        useStore: (selector: Function) =>
-          () => selector({ values: { country: 'US', state: 'CA', city: 'LA' } }),
+        useStore: (selector: Function) => () =>
+          selector({ values: { country: 'US', state: 'CA', city: 'LA' } }),
         setFieldValue: () => {},
       }
       return createUmpireForm(form as any, engine)
@@ -99,8 +101,8 @@ describe('createUmpireForm', () => {
         city: 'LA',
       })
       const form = {
-        useStore: (selector: Function) =>
-          () => selector({ values: storeValues() }),
+        useStore: (selector: Function) => () =>
+          selector({ values: storeValues() }),
         setFieldValue: () => {},
       }
       return {
@@ -135,8 +137,8 @@ describe('createUmpireForm', () => {
       })
       const setFieldValue = mock(() => {})
       const form = {
-        useStore: (selector: Function) =>
-          () => selector({ values: storeValues() }),
+        useStore: (selector: Function) => () =>
+          selector({ values: storeValues() }),
         setFieldValue,
       }
       return {
@@ -268,8 +270,7 @@ describe('UmpireFormSubscribe', () => {
       let captured: any = null
 
       const Subscribe = (opts: { selector: Function; children: Function }) => {
-        const valuesAccessor = () =>
-          opts.selector({ values: { a: 'test' } })
+        const valuesAccessor = () => opts.selector({ values: { a: 'test' } })
         return opts.children(valuesAccessor)
       }
 

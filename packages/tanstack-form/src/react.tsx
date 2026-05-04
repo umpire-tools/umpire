@@ -1,4 +1,11 @@
-import { createContext, createElement, useCallback, useContext, useEffect, useMemo } from 'react'
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+} from 'react'
 import type { ReactNode } from 'react'
 import { useStore, createFormHookContexts } from '@tanstack/react-form'
 import { useUmpire } from '@umpire/react'
@@ -32,7 +39,9 @@ const defaultField: UmpireFormField = {
   reasons: [],
 }
 
-function buildFieldProxy(check: AvailabilityMap<any> | undefined): (name: string) => UmpireFormField {
+function buildFieldProxy(
+  check: AvailabilityMap<any> | undefined,
+): (name: string) => UmpireFormField {
   const fieldCache = new Map<string, UmpireFormField>()
 
   return function field(name: string): UmpireFormField {
@@ -40,15 +49,33 @@ function buildFieldProxy(check: AvailabilityMap<any> | undefined): (name: string
     if (cached) return cached
 
     const proxy: UmpireFormField = {
-      get enabled() { return check?.[name]?.enabled ?? false },
-      get available() { return check?.[name]?.enabled ?? false },
-      get disabled() { return !(check?.[name]?.enabled ?? false) },
-      get required() { return check?.[name]?.required ?? false },
-      get satisfied() { return check?.[name]?.satisfied ?? false },
-      get fair() { return check?.[name]?.fair ?? true },
-      get reason() { return check?.[name]?.reason ?? null },
-      get reasons() { return check?.[name]?.reasons ?? [] },
-      get error() { return (check?.[name] as any)?.error },
+      get enabled() {
+        return check?.[name]?.enabled ?? false
+      },
+      get available() {
+        return check?.[name]?.enabled ?? false
+      },
+      get disabled() {
+        return !(check?.[name]?.enabled ?? false)
+      },
+      get required() {
+        return check?.[name]?.required ?? false
+      },
+      get satisfied() {
+        return check?.[name]?.satisfied ?? false
+      },
+      get fair() {
+        return check?.[name]?.fair ?? true
+      },
+      get reason() {
+        return check?.[name]?.reason ?? null
+      },
+      get reasons() {
+        return check?.[name]?.reasons ?? []
+      },
+      get error() {
+        return (check?.[name] as any)?.error
+      },
     }
     fieldCache.set(name, proxy)
     return proxy
@@ -64,12 +91,18 @@ function resolveConditions<C>(input: C | (() => C) | undefined): C | undefined {
 
 // --- Hook ---
 
-export function useUmpireForm<F extends Record<string, FieldDef>, C extends Record<string, unknown>>(
+export function useUmpireForm<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
   form: { store: unknown; setFieldValue(name: string, value: unknown): void },
   engine: Umpire<F, C>,
   options?: UseUmpireFormOptions<C>,
 ): UmpireForm<F> {
-  const values = useStore(form.store as any, (s: any) => s.values) as Record<string, unknown>
+  const values = useStore(form.store as any, (s: any) => s.values) as Record<
+    string,
+    unknown
+  >
   const conditions = resolveConditions(options?.conditions)
 
   const { check, fouls } = useUmpire(engine, values, conditions)
@@ -86,18 +119,24 @@ export function useUmpireForm<F extends Record<string, FieldDef>, C extends Reco
     }
   }, [applyStrike, fouls, options?.strike])
 
-  const umpireForm = useMemo(() => ({
-    field: buildFieldProxy(check),
-    fouls,
-    applyStrike,
-  }), [check, fouls, applyStrike])
+  const umpireForm = useMemo(
+    () => ({
+      field: buildFieldProxy(check),
+      fouls,
+      applyStrike,
+    }),
+    [check, fouls, applyStrike],
+  )
 
   return umpireForm
 }
 
 // --- Subscribe render-prop ---
 
-type UmpireFormSubscribeProps<F extends Record<string, FieldDef>, C extends Record<string, unknown>> = {
+type UmpireFormSubscribeProps<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+> = {
   form: { Subscribe: any; setFieldValue(name: string, value: unknown): void }
   engine: Umpire<F, C>
   conditions?: C | (() => C)
@@ -105,9 +144,10 @@ type UmpireFormSubscribeProps<F extends Record<string, FieldDef>, C extends Reco
   children: (umpireForm: UmpireForm<F>) => ReactNode
 }
 
-export function UmpireFormSubscribe<F extends Record<string, FieldDef>, C extends Record<string, unknown>>(
-  props: UmpireFormSubscribeProps<F, C>,
-) {
+export function UmpireFormSubscribe<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(props: UmpireFormSubscribeProps<F, C>) {
   const Subscribe = (props.form as any).Subscribe
 
   return (
@@ -128,7 +168,10 @@ export function UmpireFormSubscribe<F extends Record<string, FieldDef>, C extend
   )
 }
 
-function UmpireFormSnapshot<F extends Record<string, FieldDef>, C extends Record<string, unknown>>({
+function UmpireFormSnapshot<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>({
   form,
   engine,
   values,
@@ -159,11 +202,14 @@ function UmpireFormSnapshot<F extends Record<string, FieldDef>, C extends Record
     }
   }, [applyStrike, fouls, strike])
 
-  const umpireForm = useMemo(() => ({
-    field: buildFieldProxy(check),
-    fouls,
-    applyStrike,
-  }), [check, fouls, applyStrike])
+  const umpireForm = useMemo(
+    () => ({
+      field: buildFieldProxy(check),
+      fouls,
+      applyStrike,
+    }),
+    [check, fouls, applyStrike],
+  )
 
   return <>{children(umpireForm)}</>
 }
@@ -171,31 +217,38 @@ function UmpireFormSnapshot<F extends Record<string, FieldDef>, C extends Record
 // --- Context-based components ---
 
 const { useFormContext } = createFormHookContexts()
-const UmpireFormContext = createContext<{ umpireForm: UmpireForm<any> | null }>({ umpireForm: null })
+const UmpireFormContext = createContext<{ umpireForm: UmpireForm<any> | null }>(
+  { umpireForm: null },
+)
 
 type CreateUmpireFormComponentsOptions<C> = {
   conditions?: C | ((form: unknown) => C)
   strike?: boolean
 }
 
-export function createUmpireFormComponents<F extends Record<string, FieldDef>, C extends Record<string, unknown>>(
-  engine: Umpire<F, C>,
-  options?: CreateUmpireFormComponentsOptions<C>,
-) {
+export function createUmpireFormComponents<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(engine: Umpire<F, C>, options?: CreateUmpireFormComponentsOptions<C>) {
   const autoValidators = umpireFieldValidators(engine)
 
   function UmpireScope({ children }: { children: ReactNode }) {
     const form = useFormContext()
-    const resolvedConditions = typeof options?.conditions === 'function'
-      ? (options.conditions as (form: unknown) => C)(form)
-      : options?.conditions
+    const resolvedConditions =
+      typeof options?.conditions === 'function'
+        ? (options.conditions as (form: unknown) => C)(form)
+        : options?.conditions
 
     const umpireForm = useUmpireForm(form as any, engine, {
       conditions: resolvedConditions as any,
       strike: options?.strike,
     })
 
-    return createElement(UmpireFormContext.Provider, { value: { umpireForm } }, children)
+    return createElement(
+      UmpireFormContext.Provider,
+      { value: { umpireForm } },
+      children,
+    )
   }
 
   function UmpireField<Name extends string>({
@@ -224,7 +277,13 @@ export function createUmpireFormComponents<F extends Record<string, FieldDef>, C
     )
   }
 
-  function UmpireSubmit({ label, disabled }: { label: string; disabled?: boolean }) {
+  function UmpireSubmit({
+    label,
+    disabled,
+  }: {
+    label: string
+    disabled?: boolean
+  }) {
     const form = useFormContext()
     const { umpireForm } = useContext(UmpireFormContext)
     const Subscribe = (form as any).Subscribe
@@ -235,7 +294,9 @@ export function createUmpireFormComponents<F extends Record<string, FieldDef>, C
         children={(isSubmitting: boolean) => (
           <button
             type="submit"
-            disabled={disabled || isSubmitting || (umpireForm?.fouls.length ?? 0) > 0}
+            disabled={
+              disabled || isSubmitting || (umpireForm?.fouls.length ?? 0) > 0
+            }
           >
             {label}
           </button>

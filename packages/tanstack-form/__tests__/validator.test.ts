@@ -1,11 +1,9 @@
-import {
-  enabledWhen,
-  fairWhen,
-  requires,
-  umpire,
-} from '@umpire/core'
+import { enabledWhen, fairWhen, requires, umpire } from '@umpire/core'
 import { describe, it, expect } from 'bun:test'
-import { umpireFieldValidator, umpireFieldValidators } from '../src/validator.js'
+import {
+  umpireFieldValidator,
+  umpireFieldValidators,
+} from '../src/validator.js'
 
 describe('umpireFieldValidator', () => {
   it('disabled field produces no error', () => {
@@ -17,7 +15,9 @@ describe('umpireFieldValidator', () => {
     const validators = umpireFieldValidator(engine, 'state')
     const result = (validators.onChange as Function)({
       value: 'CA',
-      fieldApi: { form: { state: { values: { country: 'Canada', state: 'ON' } } } },
+      fieldApi: {
+        form: { state: { values: { country: 'Canada', state: 'ON' } } },
+      },
     })
 
     expect(result).toBeUndefined()
@@ -26,7 +26,11 @@ describe('umpireFieldValidator', () => {
   it('foul field with default rejectFoul returns the foul reason', () => {
     const engine = umpire({
       fields: { email: {} },
-      rules: [fairWhen('email', (v) => String(v).includes('@'), { reason: 'Invalid email' })],
+      rules: [
+        fairWhen('email', (v) => String(v).includes('@'), {
+          reason: 'Invalid email',
+        }),
+      ],
     })
 
     const validators = umpireFieldValidator(engine, 'email')
@@ -41,10 +45,16 @@ describe('umpireFieldValidator', () => {
   it('foul field with rejectFoul: false produces no error', () => {
     const engine = umpire({
       fields: { email: {} },
-      rules: [fairWhen('email', (v) => String(v).includes('@'), { reason: 'Invalid email' })],
+      rules: [
+        fairWhen('email', (v) => String(v).includes('@'), {
+          reason: 'Invalid email',
+        }),
+      ],
     })
 
-    const validators = umpireFieldValidator(engine, 'email', { rejectFoul: false })
+    const validators = umpireFieldValidator(engine, 'email', {
+      rejectFoul: false,
+    })
     const result = (validators.onChange as Function)({
       value: 'not-an-email',
       fieldApi: { form: { state: { values: { email: 'not-an-email' } } } },
@@ -57,7 +67,9 @@ describe('umpireFieldValidator', () => {
     const engine = umpire({
       fields: { name: {} },
       rules: [],
-      validators: { name: { validator: (v: unknown) => v !== 'bad', error: 'Bad name' } },
+      validators: {
+        name: { validator: (v: unknown) => v !== 'bad', error: 'Bad name' },
+      },
     })
 
     const validators = umpireFieldValidator(engine, 'name')
@@ -168,7 +180,12 @@ describe('umpireFieldValidator', () => {
   it('conditions passed as function are called with fieldApi.form', () => {
     const engine = umpire({
       fields: { a: {}, b: {} },
-      rules: [enabledWhen('b', (_v, conditions) => (conditions as any)?.mode === 'edit')],
+      rules: [
+        enabledWhen(
+          'b',
+          (_v, conditions) => (conditions as any)?.mode === 'edit',
+        ),
+      ],
     })
 
     const formCaptured: Array<unknown> = []
@@ -192,7 +209,12 @@ describe('umpireFieldValidator', () => {
   it('conditions passed as plain object work directly', () => {
     const engine = umpire({
       fields: { a: {}, b: {} },
-      rules: [enabledWhen('b', (_v, conditions) => (conditions as any)?.mode === 'edit')],
+      rules: [
+        enabledWhen(
+          'b',
+          (_v, conditions) => (conditions as any)?.mode === 'edit',
+        ),
+      ],
     })
 
     const validators = umpireFieldValidator(engine, 'b', {

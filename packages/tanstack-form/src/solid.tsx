@@ -114,9 +114,9 @@ export function createUmpireForm<
   engine: Umpire<F, C>,
   options?: CreateUmpireFormOptions<C>,
 ): SolidUmpireForm<F> {
-  const values = form.useStore(
-    (state: any) => state.values,
-  ) as Accessor<Record<string, unknown>>
+  const values = form.useStore((state: any) => state.values) as Accessor<
+    Record<string, unknown>
+  >
 
   const conditions = resolveConditions(options?.conditions)
   const { check, fouls } = useUmpire(engine, values, conditions)
@@ -284,7 +284,7 @@ export function createUmpireFormComponents<
             return form?.Field
           },
           get fallback() {
-            return props.children(() => ({} as any), avail())
+            return props.children(() => ({}) as any, avail())
           },
           children: (Field: Accessor<any>) =>
             Field()({

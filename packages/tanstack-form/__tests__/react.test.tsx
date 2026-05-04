@@ -4,12 +4,7 @@ GlobalRegistrator.register()
 import { describe, it, expect, mock } from 'bun:test'
 import { render } from '@testing-library/react'
 import React from 'react'
-import {
-  umpire,
-  enabledWhen,
-  fairWhen,
-  requires,
-} from '@umpire/core'
+import { umpire, enabledWhen, fairWhen, requires } from '@umpire/core'
 import {
   useUmpireForm,
   UmpireFormSubscribe,
@@ -127,9 +122,7 @@ describe('createUmpireFormComponents', () => {
   it('engine respects conditions for enabled/disabled', () => {
     const engine = umpire({
       fields: { role: {} },
-      rules: [
-        enabledWhen('role', (_v, ctx) => (ctx as any)?.mode === 'edit'),
-      ],
+      rules: [enabledWhen('role', (_v, ctx) => (ctx as any)?.mode === 'edit')],
     })
 
     const avail = engine.check({ role: 'admin' }, { mode: 'edit' } as any)

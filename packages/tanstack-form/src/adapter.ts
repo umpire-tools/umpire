@@ -73,9 +73,9 @@ export function createUmpireFormAdapter<
 
   function getField(name: string): UmpireFormField {
     const availability = getAvailability()
-    const status = (
-      availability as Record<string, Partial<UmpireFormField>>
-    )[name]
+    const status = (availability as Record<string, Partial<UmpireFormField>>)[
+      name
+    ]
 
     if (!status) {
       return getDefaultFieldStatus()

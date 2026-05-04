@@ -34,7 +34,12 @@ describe('getUmpireLinkedFields', () => {
   it('returns linked fields for enabledWhen dependency', () => {
     const engine = umpire({
       fields: { a: {}, b: {} },
-      rules: [enabledWhen('b', check('a', (v) => v === 'ok'))],
+      rules: [
+        enabledWhen(
+          'b',
+          check('a', (v) => v === 'ok'),
+        ),
+      ],
     })
 
     expect(getUmpireLinkedFields(engine, 'b')).toEqual(['a'])
@@ -43,7 +48,11 @@ describe('getUmpireLinkedFields', () => {
   it('returns linked fields for fairWhen dependency', () => {
     const predicate = ((_val: unknown, values: Record<string, unknown>) =>
       values.a === 'ok') as {
-      (value: unknown, values: Record<string, unknown>, conditions: Record<string, unknown>): boolean
+      (
+        value: unknown,
+        values: Record<string, unknown>,
+        conditions: Record<string, unknown>,
+      ): boolean
       _checkField?: string
     }
     predicate._checkField = 'a'
@@ -68,9 +77,7 @@ describe('getUmpireLinkedFields', () => {
   it('returns linked fields for oneOf group members', () => {
     const engine = umpire({
       fields: { a: {}, b: {}, c: {}, d: {} },
-      rules: [
-        oneOf('group', { first: ['a', 'b'], second: ['c', 'd'] }),
-      ],
+      rules: [oneOf('group', { first: ['a', 'b'], second: ['c', 'd'] })],
     })
 
     const result = getUmpireLinkedFields(engine, 'a')
@@ -83,7 +90,12 @@ describe('getUmpireLinkedFields', () => {
       rules: [
         eitherOf('group', {
           branchA: [requires('b', 'a')],
-          branchB: [enabledWhen('b', check('c', (v) => v === 'ok'))],
+          branchB: [
+            enabledWhen(
+              'b',
+              check('c', (v) => v === 'ok'),
+            ),
+          ],
         }),
       ],
     })
@@ -98,7 +110,10 @@ describe('getUmpireLinkedFields', () => {
       rules: [
         requires('d', 'a'),
         requires('d', 'b'),
-        enabledWhen('d', check('a', (v) => v === 'ok')),
+        enabledWhen(
+          'd',
+          check('a', (v) => v === 'ok'),
+        ),
         disables('c', ['d']),
       ],
     })
@@ -125,7 +140,9 @@ describe('getUmpireLinkedFields', () => {
     })
 
     const defaultResult = getUmpireLinkedFields(engine, 'b')
-    const explicitResult = getUmpireLinkedFields(engine, 'b', { excludeSelf: false })
+    const explicitResult = getUmpireLinkedFields(engine, 'b', {
+      excludeSelf: false,
+    })
     expect(explicitResult).toEqual(defaultResult)
     expect(explicitResult).not.toContain('b')
   })

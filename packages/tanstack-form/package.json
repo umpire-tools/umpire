@@ -62,15 +62,15 @@
     "@happy-dom/global-registrator": "^17.4.4",
     "@tanstack/form-core": "^1.29.1",
     "@tanstack/react-form": "^1.29.1",
+    "@tanstack/solid-form": "^1.29.1",
+    "@tanstack/vue-form": "^1.29.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "solid-js": "^1.0.0",
-    "@tanstack/solid-form": "^1.29.1",
-    "@tanstack/vue-form": "^1.29.1",
-    "vue": "^3.0.0",
-    "tsdown": "^0.21.7"
+    "tsdown": "^0.21.7",
+    "vue": "^3.0.0"
   }
 }

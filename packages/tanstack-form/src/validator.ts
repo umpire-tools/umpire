@@ -35,7 +35,12 @@ export function umpireFieldValidator<
     const fieldCheck = (
       availability as Record<
         string,
-        { enabled?: boolean; fair?: boolean; reason?: string | null; error?: string }
+        {
+          enabled?: boolean
+          fair?: boolean
+          reason?: string | null
+          error?: string
+        }
       >
     )[fieldName]
 

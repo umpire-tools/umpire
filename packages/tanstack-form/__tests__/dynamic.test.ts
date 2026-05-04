@@ -127,7 +127,10 @@ describe('umpireDynamicValidator', () => {
     const engine = umpire({
       fields: { a: {}, b: {} },
       rules: [
-        enabledWhen('b', (_v, conditions) => (conditions as any)?.mode === 'edit'),
+        enabledWhen(
+          'b',
+          (_v, conditions) => (conditions as any)?.mode === 'edit',
+        ),
       ],
     })
 
@@ -153,7 +156,10 @@ describe('umpireDynamicValidator', () => {
     const engine = umpire({
       fields: { a: {}, b: {} },
       rules: [
-        enabledWhen('b', (_v, conditions) => (conditions as any)?.mode === 'edit'),
+        enabledWhen(
+          'b',
+          (_v, conditions) => (conditions as any)?.mode === 'edit',
+        ),
       ],
     })
 

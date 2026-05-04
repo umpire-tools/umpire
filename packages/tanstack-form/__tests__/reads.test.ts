@@ -45,14 +45,20 @@ describe('umpireReadListeners', () => {
   })
 
   it('multiple handlers for different reads are all called', () => {
-    const reads = createReads<{ x: number; y: number }, { sum: number; product: number }>({
+    const reads = createReads<
+      { x: number; y: number },
+      { sum: number; product: number }
+    >({
       sum: ({ input }) => input.x + input.y,
       product: ({ input }) => input.x * input.y,
     })
 
     const sumHandler = mock(() => {})
     const productHandler = mock(() => {})
-    const listeners = umpireReadListeners(reads, { sum: sumHandler, product: productHandler })
+    const listeners = umpireReadListeners(reads, {
+      sum: sumHandler,
+      product: productHandler,
+    })
 
     const formApi = { state: { values: { x: 3, y: 4 } } }
     ;(listeners.onChange as Function)({ formApi })
@@ -82,7 +88,11 @@ describe('umpireReadListeners', () => {
     })
 
     const handler = mock(() => {})
-    const listeners = umpireReadListeners(reads, { doubled: handler }, { events: ['onBlur'] })
+    const listeners = umpireReadListeners(
+      reads,
+      { doubled: handler },
+      { events: ['onBlur'] },
+    )
 
     expect(listeners.onChange).toBeUndefined()
     expect(listeners.onBlur).toBeDefined()
@@ -94,7 +104,11 @@ describe('umpireReadListeners', () => {
     })
 
     const handler = mock(() => {})
-    const listeners = umpireReadListeners(reads, { doubled: handler }, { events: ['onChange', 'onBlur'] })
+    const listeners = umpireReadListeners(
+      reads,
+      { doubled: handler },
+      { events: ['onChange', 'onBlur'] },
+    )
 
     expect(listeners.onChange).toBeDefined()
     expect(listeners.onBlur).toBeDefined()
@@ -106,7 +120,11 @@ describe('umpireReadListeners', () => {
     })
 
     const handler = mock(() => {})
-    const listeners = umpireReadListeners(reads, { doubled: handler }, { debounceMs: 300 })
+    const listeners = umpireReadListeners(
+      reads,
+      { doubled: handler },
+      { debounceMs: 300 },
+    )
 
     expect(listeners['onChangeDebounceMs' as keyof typeof listeners]).toBe(300)
   })
@@ -120,7 +138,11 @@ describe('umpireReadListeners', () => {
     const selectInput = (values: Record<string, unknown>) => ({
       firstName: (values as { name: string }).name,
     })
-    const listeners = umpireReadListeners(reads, { greeting: handler }, { selectInput })
+    const listeners = umpireReadListeners(
+      reads,
+      { greeting: handler },
+      { selectInput },
+    )
 
     const formApi = { state: { values: { name: 'Alice' } } }
     ;(listeners.onChange as Function)({ formApi })

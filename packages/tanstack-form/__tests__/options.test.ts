@@ -12,7 +12,11 @@ describe('createUmpireFormOptions', () => {
   it('produces onChange listener when strike is true', () => {
     const engine = umpire({
       fields: { email: {} },
-      rules: [fairWhen('email', (v) => String(v).includes('@'), { reason: 'Bad email' })],
+      rules: [
+        fairWhen('email', (v) => String(v).includes('@'), {
+          reason: 'Bad email',
+        }),
+      ],
     })
 
     const result = createUmpireFormOptions(engine, { strike: true })
@@ -23,7 +27,11 @@ describe('createUmpireFormOptions', () => {
   it('initializes previousSnapshot on first call (no strikes applied)', () => {
     const engine = umpire({
       fields: { email: {} },
-      rules: [fairWhen('email', (v) => String(v).includes('@'), { reason: 'Bad email' })],
+      rules: [
+        fairWhen('email', (v) => String(v).includes('@'), {
+          reason: 'Bad email',
+        }),
+      ],
     })
 
     const result = createUmpireFormOptions(engine, { strike: true })
@@ -43,7 +51,11 @@ describe('createUmpireFormOptions', () => {
   it('applies strike on foul transition', () => {
     const engine = umpire({
       fields: { email: {} },
-      rules: [fairWhen('email', (v) => String(v).includes('@'), { reason: 'Bad email' })],
+      rules: [
+        fairWhen('email', (v) => String(v).includes('@'), {
+          reason: 'Bad email',
+        }),
+      ],
     })
 
     const result = createUmpireFormOptions(engine, { strike: true })
@@ -51,7 +63,9 @@ describe('createUmpireFormOptions', () => {
     const setFieldValueCalls: Array<[string, unknown]> = []
 
     const formApi = {
-      get state() { return { values } },
+      get state() {
+        return { values }
+      },
       setFieldValue(name: string, value: unknown) {
         setFieldValueCalls.push([name, value])
         values = { ...values, [name]: value }
@@ -76,7 +90,9 @@ describe('createUmpireFormOptions', () => {
       rules: [],
     })
 
-    const result = createUmpireFormOptions(engine, { strike: { events: ['onBlur'] } })
+    const result = createUmpireFormOptions(engine, {
+      strike: { events: ['onBlur'] },
+    })
 
     expect((result as any).listeners.onBlur).toBeInstanceOf(Function)
     expect((result as any).listeners.onChange).toBeUndefined()
@@ -88,7 +104,9 @@ describe('createUmpireFormOptions', () => {
       rules: [],
     })
 
-    const result = createUmpireFormOptions(engine, { strike: { events: ['onChange', 'onBlur'] } })
+    const result = createUmpireFormOptions(engine, {
+      strike: { events: ['onChange', 'onBlur'] },
+    })
 
     expect((result as any).listeners.onChange).toBeInstanceOf(Function)
     expect((result as any).listeners.onBlur).toBeInstanceOf(Function)
@@ -100,7 +118,9 @@ describe('createUmpireFormOptions', () => {
       rules: [],
     })
 
-    const result = createUmpireFormOptions(engine, { strike: { debounceMs: 300 } })
+    const result = createUmpireFormOptions(engine, {
+      strike: { debounceMs: 300 },
+    })
 
     expect((result as any).listeners.onChange).toBeInstanceOf(Function)
     expect((result as any).listeners.onChangeDebounceMs).toBe(300)
@@ -109,15 +129,23 @@ describe('createUmpireFormOptions', () => {
   it('calls resetField instead of setFieldValue when mode is resetField', () => {
     const engine = umpire({
       fields: { email: {} },
-      rules: [fairWhen('email', (v) => String(v).includes('@'), { reason: 'Bad email' })],
+      rules: [
+        fairWhen('email', (v) => String(v).includes('@'), {
+          reason: 'Bad email',
+        }),
+      ],
     })
 
-    const result = createUmpireFormOptions(engine, { strike: { mode: 'resetField' } })
+    const result = createUmpireFormOptions(engine, {
+      strike: { mode: 'resetField' },
+    })
     let values = { email: 'test@example.com' }
     const resetFieldCalls: string[] = []
 
     const formApi = {
-      get state() { return { values } },
+      get state() {
+        return { values }
+      },
       setFieldValue(_name: string, _value: unknown) {
         // should NOT be called in resetField mode
       },
@@ -140,7 +168,14 @@ describe('createUmpireFormOptions', () => {
   it('conditions function is called with formApi to resolve conditions', () => {
     const engine = umpire({
       fields: { email: {} },
-      rules: [fairWhen('email', (v, conditions) => (conditions as any)?.mode === 'edit' || String(v).includes('@'), { reason: 'Bad email' })],
+      rules: [
+        fairWhen(
+          'email',
+          (v, conditions) =>
+            (conditions as any)?.mode === 'edit' || String(v).includes('@'),
+          { reason: 'Bad email' },
+        ),
+      ],
     })
 
     const capturedApis: unknown[] = []
@@ -155,7 +190,9 @@ describe('createUmpireFormOptions', () => {
     let values = { email: 'bad' }
     const setFieldValueCalls: Array<[string, unknown]> = []
     const formApi = {
-      get state() { return { values } },
+      get state() {
+        return { values }
+      },
       setFieldValue(name: string, value: unknown) {
         setFieldValueCalls.push([name, value])
         values = { ...values, [name]: value }
@@ -175,7 +212,14 @@ describe('createUmpireFormOptions', () => {
   it('conditions passed as plain object work directly', () => {
     const engine = umpire({
       fields: { email: {} },
-      rules: [fairWhen('email', (v, conditions) => (conditions as any)?.mode === 'edit' || String(v).includes('@'), { reason: 'Bad email' })],
+      rules: [
+        fairWhen(
+          'email',
+          (v, conditions) =>
+            (conditions as any)?.mode === 'edit' || String(v).includes('@'),
+          { reason: 'Bad email' },
+        ),
+      ],
     })
 
     const result = createUmpireFormOptions(engine, {
@@ -186,7 +230,9 @@ describe('createUmpireFormOptions', () => {
     let values = { email: 'bad' }
     const setFieldValueCalls: Array<[string, unknown]> = []
     const formApi = {
-      get state() { return { values } },
+      get state() {
+        return { values }
+      },
       setFieldValue(name: string, value: unknown) {
         setFieldValueCalls.push([name, value])
         values = { ...values, [name]: value }
@@ -215,7 +261,9 @@ describe('createUmpireFormOptions', () => {
 
     let vals1 = { x: 'hello' }
     const api1 = {
-      get state() { return { values: vals1 } },
+      get state() {
+        return { values: vals1 }
+      },
       setFieldValue(name: string, value: unknown) {
         calls1.push([name, value])
         vals1 = { ...vals1, [name]: value }
@@ -224,7 +272,9 @@ describe('createUmpireFormOptions', () => {
 
     let vals2 = { x: 'world' }
     const api2 = {
-      get state() { return { values: vals2 } },
+      get state() {
+        return { values: vals2 }
+      },
       setFieldValue(name: string, value: unknown) {
         calls2.push([name, value])
         vals2 = { ...vals2, [name]: value }
