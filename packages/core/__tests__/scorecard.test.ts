@@ -200,7 +200,9 @@ describe('scorecard', () => {
     expect(card.fields.bio.error).toBeUndefined()
   })
 
-  test('throws a clear error when scorecard snapshot values are partial', () => {
+  test('warns when scorecard snapshot values are partial', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
     const ump = umpire({
       fields: {
         accountType: {},
@@ -209,18 +211,23 @@ describe('scorecard', () => {
       rules: [requires('companyName', 'accountType')],
     })
 
-    expect(() =>
-      ump.scorecard({
-        values: {
-          accountType: 'business',
-        },
-      }),
-    ).toThrow(
-      'scorecard() requires snapshot.values to include every field key; missing "companyName"',
+    ump.scorecard({
+      values: {
+        accountType: 'business',
+      },
+    })
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'auto-filled missing keys in snapshot.values: "companyName"',
+      ),
     )
+    warn.mockRestore()
   })
 
-  test('throws a clear error when scorecard before values are partial', () => {
+  test('warns when scorecard before values are partial', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
     const ump = umpire({
       fields: {
         accountType: {},
@@ -229,25 +236,50 @@ describe('scorecard', () => {
       rules: [requires('companyName', 'accountType')],
     })
 
-    expect(() =>
-      ump.scorecard(
-        {
+    ump.scorecard(
+      {
+        values: {
+          accountType: 'business',
+          companyName: 'Acme',
+        },
+      },
+      {
+        before: {
           values: {
-            accountType: 'business',
-            companyName: 'Acme',
+            accountType: 'personal',
           },
         },
-        {
-          before: {
-            values: {
-              accountType: 'personal',
-            },
-          },
-        },
-      ),
-    ).toThrow(
-      'scorecard() requires before.values to include every field key; missing "companyName"',
+      },
     )
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'auto-filled missing keys in before.values: "companyName"',
+      ),
+    )
+    warn.mockRestore()
+  })
+
+  test('does not warn when all fields are explicitly present', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const ump = umpire({
+      fields: {
+        accountType: {},
+        companyName: {},
+      },
+      rules: [requires('companyName', 'accountType')],
+    })
+
+    ump.scorecard({
+      values: {
+        accountType: 'business',
+        companyName: null,
+      },
+    })
+
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
   })
 
   test('returns a defensive graph copy and null transition.before by default', () => {
@@ -268,7 +300,7 @@ describe('scorecard', () => {
       edges: [{ from: 'alpha', to: 'beta', type: 'requires' }],
     })
 
-    const card = ump.scorecard({ values: { alpha: 'set', beta: null } })
+    const card = ump.scorecard({ values: { alpha: 'set' } })
     expect(card.transition.before).toBeNull()
 
     card.graph.nodes.push('mutated-again')
