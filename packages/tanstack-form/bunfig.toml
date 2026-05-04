@@ -1,0 +1,3 @@
+[test]
+preload = ["../../test/preload-workspace-aliases.ts", "./test-setup.ts"]
+coverageSkipTestFiles = true

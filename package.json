@@ -31,6 +31,10 @@
   "devDependencies": {
     "@changesets/cli": "^2.30.0",
     "@happy-dom/global-registrator": "^20.0.10",
+    "@tanstack/form-core": "^1.29.1",
+    "@tanstack/react-form": "^1.29.1",
+    "@tanstack/solid-form": "^1.29.1",
+    "@tanstack/vue-form": "^1.29.1",
     "@types/bun": "^1.3.12",
     "@umpire/eslint-plugin": "workspace:^",
     "eslint": "^10.2.1",

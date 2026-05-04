@@ -1,0 +1,552 @@
+---
+title: '@umpire/tanstack-form'
+description: Bridge Umpire availability graphs into TanStack Form validation, conditional rendering, and strike-on-transition.
+---
+
+`@umpire/tanstack-form` connects an Umpire engine to TanStack Form. It derives field validators from your availability graph, wires `onChangeListenTo` so dependent fields revalidate when their upstreams change, and provides framework-specific hooks for React, Solid, and Vue.
+
+Everything starts from the engine — you define your fields and rules once with `umpire()`, and this package translates that graph into TanStack Form's validator and listener shapes.
+
+## Install
+
+```bash
+# Core + framework-neutral helpers
+yarn add @umpire/core @umpire/tanstack-form @tanstack/form-core
+
+# Plus your framework's form package:
+yarn add @tanstack/react-form react          # React
+yarn add @tanstack/solid-form solid-js       # Solid
+yarn add @tanstack/vue-form vue              # Vue
+```
+
+The framework-neutral exports (validators, adapter, options, reads, linked fields) come from the root entry. React, Solid, and Vue helpers each have their own subpath:
+
+```ts
+import { umpireFieldValidator } from '@umpire/tanstack-form'         // framework-neutral
+import { useUmpireForm } from '@umpire/tanstack-form/react'         // React
+import { createUmpireForm } from '@umpire/tanstack-form/solid'      // Solid
+import { useUmpireForm } from '@umpire/tanstack-form/vue'           // Vue
+```
+
+## Field Validation
+
+### `umpireFieldValidator()`
+
+Produces a TanStack Form validators object for a single field. The validator reads the engine's `check()` output and surfaces foul reasons and validation errors. The `onChangeListenTo` (or `onBlurListenTo`, etc.) is derived from the dependency graph automatically — you don't have to wire it by hand.
+
+```ts
+function umpireFieldValidator<F, C>(
+  engine: Umpire<F, C>,
+  fieldName: string,
+  options?: UmpireFieldValidatorOptions<C>,
+): Record<string, unknown>
+```
+
+Options:
+
+- `conditions` — static conditions object, or a function `(formApi) => C` called at validation time
+- `events` — which events to attach to. Defaults to `['onChange']`
+- `listenTo` — override the graph-derived listener list. Usually unnecessary
+- `rejectFoul` — whether foul fields produce errors. Defaults to `true`; set `false` if you only care about availability gating, not validation messages
+
+The return shape matches what TanStack Form expects on a `Field`'s `validators` prop:
+
+```ts
+{
+  onChange: (opts) => errorMessage | undefined,
+  onChangeListenTo: ['country'],
+}
+```
+
+Example — a `state` field that's only available when `country` is `'US'`, and a `vatId` field that must pass a fairness check:
+
+```ts
+import { enabledWhen, fairWhen, requires, umpire } from '@umpire/core'
+import { umpireFieldValidator } from '@umpire/tanstack-form'
+
+const engine = umpire({
+  fields: {
+    country: {},
+    state: { required: true },
+    vatId: {},
+  },
+  rules: [
+    enabledWhen('state', (v) => v.country === 'US', { reason: 'Only US addresses have a state' }),
+    fairWhen('vatId', (v) => /^[A-Z]{2}/.test(String(v.vatId)), { reason: 'VAT ID must start with two letters' }),
+  ],
+})
+
+// state revalidates whenever country changes — the graph edge is automatic
+const stateValidators = umpireFieldValidator(engine, 'state')
+// → { onChange: fn, onChangeListenTo: ['country'] }
+
+const vatIdValidators = umpireFieldValidator(engine, 'vatId', {
+  events: ['onChange', 'onBlur'],
+})
+// → { onChange: fn, onChangeListenTo: [], onBlur: fn, onBlurListenTo: [] }
+```
+
+Pass it to a TanStack Form `Field`:
+
+```tsx
+<form.Field name="state" validators={stateValidators}>
+  {(field) => <input value={field.state.value} onChange={field.handleChange} />}
+</form.Field>
+```
+
+A disabled field produces no error — the validator returns `undefined` early. A foul field returns its `reason` string. A field with a core `validators` error returns that error instead.
+
+### Batch Validation with `umpireFieldValidators()`
+
+Generates validators for every field in the graph at once. Useful with `createFormHook` where you set up all field validators as a batch.
+
+```ts
+function umpireFieldValidators<F, C>(
+  engine: Umpire<F, C>,
+  options?: Omit<UmpireFieldValidatorOptions<C>, 'listenTo'>,
+): Record<string, Record<string, unknown>>
+```
+
+The `listenTo` option is omitted because each field's listener list is derived from the graph automatically.
+
+```ts
+const allValidators = umpireFieldValidators(engine)
+
+// allValidators.state  → { onChange: fn, onChangeListenTo: ['country'] }
+// allValidators.vatId  → { onChange: fn, onChangeListenTo: [] }
+// allValidators.country → { onChange: fn, onChangeListenTo: [] }
+```
+
+Each entry is a valid validators object for that field's TanStack Form `Field` component.
+
+## Dynamic Validator
+
+### `umpireDynamicValidator()`
+
+A whole-form escape hatch. Instead of validating one field at a time, it checks every field and returns a map of `{ fieldName: errorMessage }`. This plugs into TanStack Form's `form.options.validators.onDynamic`.
+
+```ts
+function umpireDynamicValidator<F, C>(
+  engine: Umpire<F, C>,
+  options?: UmpireDynamicValidatorOptions<C>,
+): (opts: { value: Record<string, unknown>; formApi: unknown }) => Record<string, string> | undefined
+```
+
+**Errors land in `form.state.errorMap.onDynamic`, not `field.state.meta.errors`.** This matters: if you need errors on individual fields (for inline messages near inputs), use `umpireFieldValidator` instead. The dynamic validator is for cross-field or whole-form messages.
+
+```ts
+import { umpireDynamicValidator } from '@umpire/tanstack-form'
+
+const validate = umpireDynamicValidator(engine)
+
+const form = useForm({
+  defaultValues: engine.init(),
+  validators: { onDynamic: validate },
+})
+
+// Errors appear at form.state.errorMap.onDynamic
+// e.g. { state: 'Only US addresses have a state', vatId: 'VAT ID must start with two letters' }
+```
+
+Disabled fields are skipped. Unsatisfied required fields produce `'Required'`. Foul fields produce their reason (unless `rejectFoul: false`).
+
+## Form Options
+
+### `createUmpireFormOptions()`
+
+Produces TanStack Form option fragments for strike-on-transition behavior — when a field becomes disabled and still holds a stale value, the form automatically resets it.
+
+```ts
+function createUmpireFormOptions<C>(
+  engine: Umpire<any, C>,
+  options?: UmpireFormOptionsConfig<C>,
+): Record<string, unknown>
+```
+
+Options:
+
+- `conditions` — static object or `(formApi) => C`
+- `strike` — `true` for sensible defaults, or an object:
+  - `events` — defaults to `['onChange']`
+  - `debounceMs` — debounce the strike listener
+  - `mode` — `'suggestedValue'` (default) writes `foul.suggestedValue` via `setFieldValue`; `'resetField'` calls `form.resetField()` instead
+
+Spread the result into your `useForm` options:
+
+```ts
+import { createUmpireFormOptions } from '@umpire/tanstack-form'
+
+const form = useForm({
+  defaultValues: engine.init(),
+  ...createUmpireFormOptions(engine, { strike: true }),
+  // → adds { listeners: { onChange: fn } } to the form options
+})
+```
+
+Each call to `createUmpireFormOptions` owns its own snapshot closure. In React, wrap it in `useMemo` to avoid resetting the snapshot on every render.
+
+## Framework-Neutral Adapter
+
+### `createUmpireFormAdapter()`
+
+A low-level adapter that doesn't depend on any framework's reactive system. Useful when you need the Umpire surface (field status, fouls, strike) outside of the provided React/Solid/Vue hooks, or in a custom integration.
+
+```ts
+function createUmpireFormAdapter<F, C>(
+  form: {
+    state: { values: Record<string, unknown> }
+    setFieldValue(name: string, value: unknown): void
+  },
+  engine: Umpire<F, C>,
+  options?: { conditions?: C | (() => C); setFieldValue?: (form, name, value) => void },
+): UmpireFormAdapter<F>
+```
+
+The adapter returns:
+
+```ts
+{
+  getField(name: string): UmpireFormField
+  getAvailability(): Record<string, unknown>
+  getFouls(): Foul<F>[]
+  applyStrike(): void
+  refresh(values: Record<string, unknown>): void
+}
+```
+
+`UmpireFormField` is a normalized status object:
+
+```ts
+{
+  enabled: boolean
+  available: boolean     // alias for enabled
+  disabled: boolean     // alias for !enabled
+  required: boolean
+  satisfied: boolean
+  fair: boolean
+  reason: string | null
+  reasons: string[]
+  error?: string
+}
+```
+
+Call `refresh()` after external value changes to reset the adapter's snapshot so `getFouls()` doesn't produce stale-transition false positives.
+
+## React
+
+### `useUmpireForm()`
+
+A React hook that subscribes to the form's store, derives availability and fouls via `useUmpire`, and returns an `UmpireForm` object.
+
+```ts
+import { useUmpireForm } from '@umpire/tanstack-form/react'
+
+const umpireForm = useUmpireForm(form, engine, { conditions, strike })
+```
+
+Returns:
+
+```ts
+{
+  field(name: string): UmpireFormField
+  fouls: Foul<F>[]
+  applyStrike(): void
+}
+```
+
+When `strike: true`, fouls are applied automatically via `useEffect`.
+
+Usage with `useForm`:
+
+```tsx
+import { useForm } from '@tanstack/react-form'
+import { enabledWhen, requires, umpire } from '@umpire/core'
+import { useUmpireForm } from '@umpire/tanstack-form/react'
+
+const engine = umpire({
+  fields: {
+    country: {},
+    state: { required: true },
+    vatId: {},
+  },
+  rules: [
+    enabledWhen('state', (v) => v.country === 'US'),
+    requires('vatId', 'country'),
+  ],
+})
+
+function AddressForm() {
+  const form = useForm({ defaultValues: engine.init() })
+  const umpireForm = useUmpireForm(form, engine)
+
+  return (
+    <form>
+      <form.Field name="country">
+        {(field) => <input value={field.state.value} onChange={field.handleChange} />}
+      </form.Field>
+
+      {umpireForm.field('state').enabled && (
+        <form.Field name="state">
+          {(field) => <input value={field.state.value} onChange={field.handleChange} />}
+        </form.Field>
+      )}
+
+      {umpireForm.field('vatId').enabled && (
+        <form.Field name="vatId">
+          {(field) => <input value={field.state.value} onChange={field.handleChange} />}
+        </form.Field>
+      )}
+    </form>
+  )
+}
+```
+
+### `UmpireFormSubscribe`
+
+A render-prop component that subscribes to the form's values and provides an `UmpireForm` without requiring a hook call. Useful when you want availability-derived rendering inside a subtree without threading the hook.
+
+```tsx
+import { UmpireFormSubscribe } from '@umpire/tanstack-form/react'
+
+<UmpireFormSubscribe form={form} engine={engine}>
+  {(umpireForm) => (
+    <>
+      {umpireForm.field('state').enabled && <StateInput />}
+      {umpireForm.field('vatId').enabled && <VatIdInput />}
+    </>
+  )}
+</UmpireFormSubscribe>
+```
+
+Supports `conditions` and `strike` props.
+
+### `createUmpireFormComponents()`
+
+Factory that produces context-aware components wired to `createFormHook` from TanStack Form. This is the highest-level API — it auto-wires validators, handles conditional rendering, and provides a submit button that disables when fouls exist.
+
+```tsx
+import { createFormHook } from '@tanstack/react-form'
+import { createUmpireFormComponents } from '@umpire/tanstack-form/react'
+
+const { Field, Submit, useFormContext } = createFormHook(() => ({
+  fieldContext: {},
+  formContext: {},
+  error: 'form-error',
+}))
+
+const { UmpireScope, UmpireField, UmpireSubmit } = createUmpireFormComponents(engine)
+
+function AddressForm() {
+  const form = useForm({ defaultValues: engine.init() })
+
+  return (
+    <form>
+      <UmpireScope>
+        <UmpireField name="country">
+          {(field, availability) => (
+            <input value={field.state.value} onChange={field.handleChange} />
+          )}
+        </UmpireField>
+
+        <UmpireField name="state">
+          {(field, availability) => (
+            <input
+              value={field.state.value}
+              onChange={field.handleChange}
+              required={availability.required}
+            />
+          )}
+        </UmpireField>
+
+        <UmpireSubmit label="Save" />
+      </UmpireScope>
+    </form>
+  )
+}
+```
+
+`UmpireField` automatically:
+
+- Hides the field when `availability.enabled` is `false`
+- Applies auto-wired validators from `umpireFieldValidators` unless you pass an explicit `validators` prop
+- Passes both the TanStack Form `field` API and the `UmpireFormField` status to children
+
+`UmpireSubmit` disables itself when fouls exist or the form is submitting.
+
+## Solid
+
+### `createUmpireForm()`
+
+The Solid equivalent of React's `useUmpireForm`. Solid uses accessors instead of snapshots, so `conditions` can be an `Accessor<C>`.
+
+```ts
+import { createUmpireForm } from '@umpire/tanstack-form/solid'
+
+const umpireForm = createUmpireForm(form, engine, { conditions, strike })
+```
+
+Returns the same `UmpireForm` surface. When `strike: true`, fouls are applied via `createEffect`.
+
+```tsx
+import { createForm } from '@tanstack/solid-form'
+import { createUmpireForm } from '@umpire/tanstack-form/solid'
+
+function AddressForm() {
+  const form = createForm({ defaultValues: engine.init() })
+  const umpireForm = createUmpireForm(form, engine)
+
+  return (
+    <form>
+      <form.Field name="country">
+        {(field) => <input value={field().state.value} onInput={field().handleChange} />}
+      </form.Field>
+
+      <Show when={umpireForm.field('state').enabled}>
+        <form.Field name="state">
+          {(field) => <input value={field().state.value} onInput={field().handleChange} />}
+        </form.Field>
+      </Show>
+    </form>
+  )
+}
+```
+
+### `UmpireFormSubscribe`
+
+Render-prop component for Solid. Same interface as the React version, adapted to Solid's reactive primitives.
+
+### `createUmpireFormComponents()`
+
+Factory producing `UmpireScope`, `UmpireField`, and `UmpireSubmit` for Solid. Works with `createFormHook` from `@tanstack/solid-form`.
+
+```tsx
+import { createFormHook } from '@tanstack/solid-form'
+import { createUmpireFormComponents } from '@umpire/tanstack-form/solid'
+
+const { Field, Submit, useFormContext } = createFormHook(() => ({
+  fieldContext: {},
+  formContext: {},
+  error: 'form-error',
+}))
+
+const { UmpireScope, UmpireField, UmpireSubmit } = createUmpireFormComponents(engine)
+```
+
+`UmpireField` hides the field when not enabled, auto-wires validators, and passes both the field accessor and availability status to children.
+
+## Vue
+
+### `useUmpireForm()`
+
+A composable that tracks form values via `useStore` from `@tanstack/vue-store` and returns a reactive `UmpireForm`.
+
+```ts
+import { useUmpireForm } from '@umpire/tanstack-form/vue'
+
+const umpireForm = useUmpireForm(form, engine, { conditions, strike })
+```
+
+`conditions` can be a plain value, a `ref`, a computed, or a function returning `C`.
+
+```vue
+<script setup>
+import { useForm } from '@tanstack/vue-form'
+import { useUmpireForm } from '@umpire/tanstack-form/vue'
+
+const form = useForm({ defaultValues: engine.init() })
+const umpireForm = useUmpireForm(form, engine)
+</script>
+
+<template>
+  <form>
+    <form.Field name="country" #default="field">
+      <input :value="field.state.value" @input="field.handleChange" />
+    </form.Field>
+
+    <form.Field v-if="umpireForm.field('state').enabled" name="state" #default="field">
+      <input :value="field.state.value" @input="field.handleChange" />
+    </form.Field>
+  </form>
+</template>
+```
+
+### `UmpireFormSubscribe`
+
+A Vue component (defined via `defineComponent`) that provides the `UmpireForm` through a scoped slot.
+
+```vue
+<UmpireFormSubscribe :form="form" :engine="engine" v-slot="{ umpireForm }">
+  <div v-if="umpireForm.field('state').enabled">
+    <!-- state field -->
+  </div>
+</UmpireFormSubscribe>
+```
+
+`createUmpireFormComponents` is not available for Vue in v1.
+
+## Reads & Listeners
+
+### `umpireReadListeners()`
+
+Connects an `@umpire/reads` `ReadTable` to TanStack Form's listener system. Each time the form values change, the reads are resolved and your handlers are called with both current and previous read values. This is for external side effects — analytics, derived state, logging — not for validation.
+
+```ts
+import { createReads } from '@umpire/reads'
+import { umpireReadListeners } from '@umpire/tanstack-form'
+
+const reads = createReads({
+  total: ({ input }) => Number(input.price) * Number(input.quantity),
+})
+
+const listeners = umpireReadListeners(reads, {
+  total: ({ read, previousRead, values }) => {
+    analytics.track('total_changed', { from: previousRead, to: read })
+  },
+})
+
+// Plug into form options:
+const form = useForm({
+  defaultValues: { price: '0', quantity: '1' },
+  listeners,
+})
+```
+
+Options:
+
+- `events` — defaults to `['onChange']`
+- `debounceMs` — debounce the listener
+- `selectInput` — transform raw form values before passing to `reads.resolve()`
+
+The returned shape is a TanStack Form `listeners` object with `onChange` / `onBlur` keys and optional debounce keys, ready to spread into your form options.
+
+## Linked Fields
+
+### `getUmpireLinkedFields()`
+
+Returns the upstream dependency names for a field, derived from the engine's graph. This is what `umpireFieldValidator` uses internally to set `onChangeListenTo`. You might call it directly when wiring custom listener logic.
+
+```ts
+import { getUmpireLinkedFields } from '@umpire/tanstack-form'
+
+const engine = umpire({
+  fields: { country: {}, state: {}, vatId: {} },
+  rules: [
+    enabledWhen('state', (v) => v.country === 'US'),
+    requires('vatId', 'country'),
+  ],
+})
+
+getUmpireLinkedFields(engine, 'state')
+// → ['country']
+
+getUmpireLinkedFields(engine, 'vatId')
+// → ['country']
+
+getUmpireLinkedFields(engine, 'country')
+// → []
+```
+
+Options:
+
+- `excludeSelf` — exclude the field itself from the result. Defaults to `true`
+- `listenTo` — explicit override; skips graph lookup when provided
