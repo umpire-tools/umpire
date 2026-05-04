@@ -9,18 +9,18 @@ import {
 } from './check-model.js'
 import type { FromDrizzleModelConfig, FromDrizzleModelResult } from './model.js'
 import { fromDrizzleModel } from './model.js'
+import type { WriteValidationAdapter } from '@umpire/write'
 import type {
   DrizzleModelWriteResult,
   DrizzleWriteOptions,
   DrizzleWriteResult,
-  UmpireValidationAdapter,
 } from './result.js'
 import { fromDrizzleTable, type FromDrizzleTableOptions } from './table.js'
 
 type WriteOpts<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
-> = DrizzleWriteOptions<C> & { validation?: UmpireValidationAdapter<F> }
+> = DrizzleWriteOptions<C> & { validation?: WriteValidationAdapter<F> }
 
 export type DrizzlePolicyOptions<
   F extends Record<string, FieldDef>,
@@ -29,7 +29,7 @@ export type DrizzlePolicyOptions<
   table?: FromDrizzleTableOptions
   fields?: Partial<Record<string, FieldDef>>
   rules?: Rule<F, C>[]
-  validation?: UmpireValidationAdapter<F>
+  validation?: WriteValidationAdapter<F>
   unknownKeys?: 'reject' | 'strip'
   nonWritableKeys?: 'reject' | 'strip'
 }

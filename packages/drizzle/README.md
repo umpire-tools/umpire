@@ -145,6 +145,18 @@ if (!result.ok) {
 await db.update(users).set(patch)
 ```
 
+## Validation Composition
+
+When you want to combine Umpire write-policy issues with schema validation
+errors (from Zod, Effect, etc.), use `composeWriteResult` and
+`WriteValidationAdapter` from `@umpire/write`. Drizzle's write-pipeline
+helpers (`createDrizzlePolicy`, `checkDrizzleCreate`, etc.) accept a
+`WriteValidationAdapter` to integrate schema checks alongside column-derived
+availability policy.
+
+Drizzle owns column shaping and write-payload concerns; generic validation
+result composition lives in `@umpire/write`.
+
 ## Boundary
 
 `@umpire/drizzle` is strongest at deriving availability metadata from table shape. Pair it with your schema validation, authorization, and database constraints for a complete write pipeline.

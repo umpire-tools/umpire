@@ -748,8 +748,15 @@ describe('exports', () => {
   })
 
   test('exports only the runtime checking helpers', () => {
-    expect(Object.keys(write).sort()).toEqual(['checkCreate', 'checkPatch'])
+    expect(Object.keys(write).sort()).toEqual([
+      'checkCreate',
+      'checkPatch',
+      'composeWriteResult',
+      'runWriteValidationAdapter',
+    ])
     expect(typeof write.checkCreate).toBe('function')
     expect(typeof write.checkPatch).toBe('function')
+    expect(typeof write.composeWriteResult).toBe('function')
+    expect(typeof write.runWriteValidationAdapter).toBe('function')
   })
 })

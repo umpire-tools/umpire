@@ -51,7 +51,10 @@ export type {
 } from './rules.js'
 export {
   isEmptyArray,
+  isEmptyBigInt,
+  isEmptyBoolean,
   isEmptyObject,
+  isEmptyNumber,
   isEmptyPresent,
   isEmptyString,
 } from './emptiness.js'

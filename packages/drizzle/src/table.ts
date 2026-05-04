@@ -1,6 +1,9 @@
 import {
   isEmptyArray,
+  isEmptyBigInt,
+  isEmptyBoolean,
   isEmptyObject,
+  isEmptyNumber,
   isEmptyPresent,
   isEmptyString,
   type FieldDef,
@@ -231,16 +234,4 @@ function resolveIsEmpty(
     case 'present':
       return isEmptyPresent
   }
-}
-
-function isEmptyNumber(value: unknown): boolean {
-  return typeof value !== 'number' || Number.isNaN(value)
-}
-
-function isEmptyBigInt(value: unknown): boolean {
-  return typeof value !== 'bigint'
-}
-
-function isEmptyBoolean(value: unknown): boolean {
-  return typeof value !== 'boolean'
 }

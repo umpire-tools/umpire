@@ -4,7 +4,7 @@
 - Use `createDrizzlePolicy(table, options)` for an ergonomic single-table write pipeline with bound `checkCreate()` / `checkPatch()`.
 - Use `createDrizzleModelPolicy(modelConfig, options)` for multi-table write pipelines with flat namespaced fields and `dataByTable` output.
 - Stateless helpers `checkDrizzleCreate()` / `checkDrizzlePatch()` and `checkDrizzleModelCreate()` / `checkDrizzleModelPatch()` are available for callers who already hold an Umpire instance.
-- Validation composition is first-class: pass a `UmpireValidationAdapter` (structural protocol satisfied by `@umpire/zod` and `@umpire/effect` adapters) to validate candidate values during write checks.
+- Validation composition uses `WriteValidationAdapter` from `@umpire/write` (structural protocol satisfied by `@umpire/zod` and `@umpire/effect` adapters) to validate candidate values during write checks. Generic validation result composition (`composeWriteResult`, `runWriteValidationAdapter`) lives in `@umpire/write`; Drizzle owns column/write-payload shaping, not generic composition.
 - This adapter hydrates availability metadata, shapes Drizzle write payloads, and composes sheet validation. It does not execute database writes, own transactions, authorization, async uniqueness checks, or database constraint guarantees.
 - Prefer Drizzle's public `getColumns()` API for table inspection. Do not reach into table symbols directly.
 

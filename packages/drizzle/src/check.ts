@@ -12,12 +12,11 @@ import {
   shapePatchData,
 } from './writability.js'
 import {
-  combineDrizzleWriteResult,
-  runValidationAdapter,
-  type DrizzleWriteOptions,
-  type DrizzleWriteResult,
-  type UmpireValidationAdapter,
-} from './result.js'
+  composeWriteResult,
+  runWriteValidationAdapter,
+  type WriteValidationAdapter,
+} from '@umpire/write'
+import { type DrizzleWriteOptions, type DrizzleWriteResult } from './result.js'
 
 function deriveExclude<F extends Record<string, FieldDef>>(
   tableMeta: ReturnType<typeof getTableColumnsMeta>,
@@ -35,7 +34,7 @@ type FullDrizzleWriteOptions<
   F extends Record<string, FieldDef>,
   C = Record<string, unknown>,
 > = DrizzleWriteOptions<C> & {
-  validation?: UmpireValidationAdapter<F>
+  validation?: WriteValidationAdapter<F>
 }
 
 export function checkDrizzleCreate<
@@ -69,20 +68,19 @@ export function checkDrizzleCreate<
   )
 
   const validation = options?.validation
-    ? runValidationAdapter(
+    ? runWriteValidationAdapter(
         options.validation,
         write.availability,
         write.candidate,
       )
     : undefined
 
-  return combineDrizzleWriteResult({
+  const composed = composeWriteResult({
     write,
-    columnIssues,
     validation,
-    data: finalData as InferInsertModel<T>,
-    debug: {},
+    extraIssues: { columns: columnIssues },
   })
+  return { ...composed, data: finalData as InferInsertModel<T> }
 }
 
 export function checkDrizzlePatch<
@@ -160,18 +158,17 @@ export function checkDrizzlePatch<
   }
 
   const validation = options?.validation
-    ? runValidationAdapter(
+    ? runWriteValidationAdapter(
         options.validation,
         write.availability,
         write.candidate,
       )
     : undefined
 
-  return combineDrizzleWriteResult({
+  const composed = composeWriteResult({
     write,
-    columnIssues,
     validation,
-    data: filteredData as Partial<InferInsertModel<T>>,
-    debug: {},
+    extraIssues: { columns: columnIssues },
   })
+  return { ...composed, data: filteredData as Partial<InferInsertModel<T>> }
 }

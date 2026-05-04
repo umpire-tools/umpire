@@ -106,6 +106,30 @@ The `message` for each issue comes from the Umpire status `reason`/first
 2. `${field} is disabled`
 3. `${field} is foul`
 
+## Validation Composition
+
+When you pair write-policy checks with a schema validation library (Zod,
+Effect, etc.), `@umpire/write` provides two helpers for composing results:
+
+```ts
+import { composeWriteResult, runWriteValidationAdapter } from '@umpire/write'
+import type { WriteValidationAdapter } from '@umpire/write'
+```
+
+`WriteValidationAdapter<F>` is a structural protocol — any object with a
+`run(availability, values)` method that returns normalized field-level errors
+satisfies it. The adapters exported by `@umpire/zod` and `@umpire/effect`
+satisfy this protocol out of the box.
+
+`runWriteValidationAdapter` calls the adapter (if provided) and returns
+normalized schema issues. `composeWriteResult` then merges write-policy issues,
+schema issues, and any extra issue groups into a single result with a combined
+`ok` flag.
+
+This is generic validation composition — it knows nothing about ORMs, database
+constraints, or Drizzle columns. Packages like `@umpire/drizzle` layer
+column-shaping and payload concerns on top.
+
 ## Boundary
 
 `ok` means the candidate passes Umpire write policy only. It does not mean the

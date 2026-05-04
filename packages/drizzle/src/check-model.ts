@@ -17,13 +17,14 @@ import {
   shapePatchData,
 } from './writability.js'
 import {
-  combineDrizzleWriteResult,
-  runValidationAdapter,
+  composeWriteResult,
+  runWriteValidationAdapter,
+  type WriteValidationAdapter,
+} from '@umpire/write'
+import {
   type DrizzleColumnIssue,
   type DrizzleModelWriteResult,
   type DrizzleWriteOptions,
-  type DrizzleWriteResult,
-  type UmpireValidationAdapter,
 } from './result.js'
 
 // ── Namespace utilities ──
@@ -43,7 +44,7 @@ type ModelWriteOptions<
   F extends Record<string, FieldDef>,
   C = Record<string, unknown>,
 > = DrizzleWriteOptions<C> & {
-  validation?: UmpireValidationAdapter<F>
+  validation?: WriteValidationAdapter<F>
 }
 
 // ── Model write helpers ──
@@ -175,24 +176,19 @@ export function checkDrizzleModelCreate<
   }
 
   const validation = options?.validation
-    ? runValidationAdapter(
+    ? runWriteValidationAdapter(
         options.validation,
         write.availability,
         write.candidate,
       )
     : undefined
 
-  // Combine result as model result (omit data, add dataByTable)
-  const baseResult = combineDrizzleWriteResult({
+  const composed = composeWriteResult({
     write,
-    columnIssues: allColumnIssues,
     validation,
-    data: undefined as never,
-    debug: {},
+    extraIssues: { columns: allColumnIssues },
   })
-
-  const { data: _data, ...rest } = baseResult
-  return { ...rest, dataByTable }
+  return { ...composed, dataByTable }
 }
 
 export function checkDrizzleModelPatch<
@@ -370,21 +366,17 @@ export function checkDrizzleModelPatch<
   }
 
   const validation = options?.validation
-    ? runValidationAdapter(
+    ? runWriteValidationAdapter(
         options.validation,
         write.availability,
         write.candidate,
       )
     : undefined
 
-  const baseResult = combineDrizzleWriteResult({
+  const composed = composeWriteResult({
     write,
-    columnIssues: allColumnIssues,
     validation,
-    data: undefined as never,
-    debug: {},
+    extraIssues: { columns: allColumnIssues },
   })
-
-  const { data: _data, ...rest } = baseResult
-  return { ...rest, dataByTable }
+  return { ...composed, dataByTable }
 }

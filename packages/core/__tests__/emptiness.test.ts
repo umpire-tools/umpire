@@ -1,6 +1,9 @@
 import {
   isEmptyArray,
+  isEmptyBigInt,
+  isEmptyBoolean,
   isEmptyObject,
+  isEmptyNumber,
   isEmptyPresent,
   isEmptyString,
   isSatisfied,
@@ -50,5 +53,44 @@ describe('emptiness helpers', () => {
     expect(isSatisfied({ theme: 'dark' }, { isEmpty: isEmptyObject })).toBe(
       true,
     )
+  })
+})
+
+describe('isEmptyNumber', () => {
+  test('0 is not empty', () => expect(isEmptyNumber(0)).toBe(false))
+  test('1 is not empty', () => expect(isEmptyNumber(1)).toBe(false))
+  test('-1 is not empty', () => expect(isEmptyNumber(-1)).toBe(false))
+  test('NaN is empty', () => {
+    expect(isEmptyNumber(NaN)).toBe(true)
+  })
+  test('non-number is empty', () => {
+    expect(isEmptyNumber('1')).toBe(true)
+  })
+  test('null is empty', () => {
+    expect(isEmptyNumber(null)).toBe(true)
+  })
+})
+
+describe('isEmptyBigInt', () => {
+  test('BigInt(0) is not empty', () => {
+    expect(isEmptyBigInt(BigInt(0))).toBe(false)
+  })
+  test('BigInt(1) is not empty', () => {
+    expect(isEmptyBigInt(BigInt(1))).toBe(false)
+  })
+  test('non-bigint is empty', () => {
+    expect(isEmptyBigInt(0)).toBe(true)
+  })
+})
+
+describe('isEmptyBoolean', () => {
+  test('false is not empty', () => {
+    expect(isEmptyBoolean(false)).toBe(false)
+  })
+  test('true is not empty', () => {
+    expect(isEmptyBoolean(true)).toBe(false)
+  })
+  test('non-boolean is empty', () => {
+    expect(isEmptyBoolean('true')).toBe(true)
   })
 })

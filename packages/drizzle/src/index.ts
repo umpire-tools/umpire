@@ -26,14 +26,9 @@ export {
   buildCreateDataFromCandidate,
 } from './writability.js'
 export type { DrizzleKeyHandlingOptions } from './writability.js'
-export { combineDrizzleWriteResult, runValidationAdapter } from './result.js'
 export type {
   DrizzleColumnIssue,
   DrizzleModelWriteResult,
-  DrizzleRuleIssue,
-  DrizzleSchemaIssue,
-  DrizzleWriteDebug,
   DrizzleWriteOptions,
   DrizzleWriteResult,
-  UmpireValidationAdapter,
 } from './result.js'
