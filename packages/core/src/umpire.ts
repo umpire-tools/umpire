@@ -13,6 +13,7 @@ import {
 } from './field.js'
 import type { FieldInput, NormalizeFields } from './field.js'
 import { foulMap } from './foul-map.js'
+import { shouldWarnInDev } from './dev.js'
 import {
   buildGraph,
   detectCycles,
@@ -101,7 +102,7 @@ function fillMissingScorecardValues<F extends Record<string, FieldDef>>(
     }
   }
 
-  if (autoFilled.length > 0 && process.env.NODE_ENV !== 'production') {
+  if (autoFilled.length > 0 && shouldWarnInDev()) {
     console.warn(
       `[@umpire/core] scorecard() auto-filled missing keys in ${label}.values: ${autoFilled.map((field) => `"${field}"`).join(', ')}. Pass null explicitly to silence this warning.`,
     )
