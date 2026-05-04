@@ -36,10 +36,13 @@ export function useUmpireForm<
   engine: Umpire<F, C>,
   options?: CreateUmpireFormOptions<C>,
 ): VueUmpireForm<F> {
-  const values = useStore(form.store as any, (s: any) => s.values)
+  const values = useStore(
+    form.store as never,
+    (state: unknown) => (state as { values: Record<string, unknown> }).values,
+  )
 
   const conditions = computed(() => {
-    return resolveAccessor(options?.conditions as any) as C | undefined
+    return resolveAccessor(options?.conditions) as C | undefined
   })
 
   const availability = computed(() =>
@@ -78,7 +81,7 @@ export function useUmpireForm<
         return availability.value[name]?.reasons ?? []
       },
       get error() {
-        return (availability.value[name] as any)?.error
+        return availability.value[name]?.error
       },
     }
     fieldCache.set(name, cached)
@@ -130,10 +133,23 @@ export function useUmpireForm<
 export const UmpireFormSubscribe = defineComponent({
   name: 'UmpireFormSubscribe',
   props: {
-    form: { type: Object as PropType<any>, required: true },
-    engine: { type: Object as PropType<Umpire<any, any>>, required: true },
+    form: {
+      type: Object as PropType<{
+        store: unknown
+        setFieldValue(name: string, value: unknown): void
+      }>,
+      required: true,
+    },
+    engine: {
+      type: Object as PropType<
+        Umpire<Record<string, FieldDef>, Record<string, unknown>>
+      >,
+      required: true,
+    },
     conditions: {
-      type: [Object, Function] as PropType<any>,
+      type: [Object, Function] as PropType<
+        Accessor<Record<string, unknown>> | undefined
+      >,
       default: undefined,
     },
     strike: {

@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'bun:test'
-import { enabledWhen, fairWhen, requires, umpire } from '@umpire/core'
+import { enabledWhen, fairWhen, umpire } from '@umpire/core'
 import { umpireDynamicValidator } from '../src/dynamic.js'
 
 describe('umpireDynamicValidator', () => {
+  type Values = Record<string, unknown>
+  type Conditions = { mode: 'edit' }
+
   it('returns undefined when all fields are valid', () => {
     const engine = umpire({
       fields: { email: {}, name: { required: true } },
@@ -25,7 +28,7 @@ describe('umpireDynamicValidator', () => {
   it('disabled field produces no error', () => {
     const engine = umpire({
       fields: { country: {}, state: { required: true } },
-      rules: [enabledWhen('state', (v) => (v as any).country === 'US')],
+      rules: [enabledWhen('state', (v) => (v as Values).country === 'US')],
     })
 
     const validate = umpireDynamicValidator(engine)
@@ -129,16 +132,16 @@ describe('umpireDynamicValidator', () => {
       rules: [
         enabledWhen(
           'b',
-          (_v, conditions) => (conditions as any)?.mode === 'edit',
+          (_v, conditions) => conditions?.mode === 'edit',
         ),
       ],
-    })
+    } satisfies Parameters<typeof umpire<{ a: {}; b: {} }, Conditions>>[0])
 
     const formCaptured: Array<unknown> = []
     const validate = umpireDynamicValidator(engine, {
       conditions: (formApi: unknown) => {
         formCaptured.push(formApi)
-        return { mode: 'edit' } as any
+        return { mode: 'edit' }
       },
     })
 
@@ -158,13 +161,13 @@ describe('umpireDynamicValidator', () => {
       rules: [
         enabledWhen(
           'b',
-          (_v, conditions) => (conditions as any)?.mode === 'edit',
+          (_v, conditions) => conditions?.mode === 'edit',
         ),
       ],
-    })
+    } satisfies Parameters<typeof umpire<{ a: {}; b: {} }, Conditions>>[0])
 
     const validate = umpireDynamicValidator(engine, {
-      conditions: { mode: 'edit' } as any,
+      conditions: { mode: 'edit' },
     })
 
     const result = validate({

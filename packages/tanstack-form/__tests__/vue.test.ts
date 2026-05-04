@@ -2,6 +2,49 @@ import { describe, it, expect, mock } from 'bun:test'
 import { enabledWhen, umpire } from '@umpire/core'
 import { useUmpireForm, UmpireFormSubscribe } from '../src/vue.js'
 
+type Values = Record<string, unknown>
+type StoreListener = () => void
+type Store = {
+  state: { values: Values }
+  get(): { values: Values }
+  subscribe(listener: StoreListener): { unsubscribe(): void }
+}
+type Form = {
+  store: Store
+  setFieldValue(name: string, value: unknown): void
+}
+type SlotProps = {
+  umpireForm: {
+    field(name: string): { enabled: boolean; required: boolean }
+    fouls: unknown[]
+    applyStrike(): void
+  }
+}
+type ComponentShape = {
+  name?: string
+  props?: Record<string, { required?: boolean }>
+  setup?: (
+    props: { form: Form; engine: typeof engineForSetup },
+    context: {
+      slots: { default?: (props: SlotProps) => unknown }
+      emit: () => void
+    },
+  ) => () => unknown
+}
+const engineForSetup = umpire({ fields: { a: {} }, rules: [] })
+
+function createStore(values: Values): Store {
+  return new (class {
+    state = { values }
+    get() {
+      return this.state
+    }
+    subscribe(_listener: StoreListener) {
+      return { unsubscribe: () => {} }
+    }
+  })()
+}
+
 describe('useUmpireForm', () => {
   it('is a function', () => {
     expect(typeof useUmpireForm).toBe('function')
@@ -10,23 +53,15 @@ describe('useUmpireForm', () => {
   it('field returns object with correct property names', () => {
     const engine = umpire({
       fields: { country: {}, state: {} },
-      rules: [enabledWhen('state', (v: any) => v.country === 'US')],
+      rules: [enabledWhen('state', (v) => (v as Values).country === 'US')],
     })
 
     const form = {
-      store: new (class {
-        state = { values: { country: 'US', state: 'CA' } }
-        get() {
-          return this.state
-        }
-        subscribe(_listener: any) {
-          return { unsubscribe: () => {} }
-        }
-      })(),
+      store: createStore({ country: 'US', state: 'CA' }),
       setFieldValue(_name: string, _value: unknown) {},
     }
 
-    const umpireForm = useUmpireForm(form as any, engine)
+    const umpireForm = useUmpireForm(form, engine)
     const f = umpireForm.field('state')
 
     expect(f).toHaveProperty('enabled')
@@ -42,23 +77,15 @@ describe('useUmpireForm', () => {
   it('available returns same value as enabled', () => {
     const engine = umpire({
       fields: { a: {}, b: {} },
-      rules: [enabledWhen('b', (v: any) => v.a === 'yes')],
+      rules: [enabledWhen('b', (v) => (v as Values).a === 'yes')],
     })
 
     const form = {
-      store: new (class {
-        state = { values: { a: 'yes', b: 'hello' } }
-        get() {
-          return this.state
-        }
-        subscribe(_listener: any) {
-          return { unsubscribe: () => {} }
-        }
-      })(),
+      store: createStore({ a: 'yes', b: 'hello' }),
       setFieldValue(_name: string, _value: unknown) {},
     }
 
-    const umpireForm = useUmpireForm(form as any, engine)
+    const umpireForm = useUmpireForm(form, engine)
     const f = umpireForm.field('b')
 
     expect(f.available).toBe(f.enabled)
@@ -72,23 +99,15 @@ describe('useUmpireForm', () => {
   it('disabled is opposite of enabled', () => {
     const engine = umpire({
       fields: { a: {}, b: {} },
-      rules: [enabledWhen('b', (v: any) => v.a === 'yes')],
+      rules: [enabledWhen('b', (v) => (v as Values).a === 'yes')],
     })
 
     const form = {
-      store: new (class {
-        state = { values: { a: 'no', b: 'hello' } }
-        get() {
-          return this.state
-        }
-        subscribe(_listener: any) {
-          return { unsubscribe: () => {} }
-        }
-      })(),
+      store: createStore({ a: 'no', b: 'hello' }),
       setFieldValue(_name: string, _value: unknown) {},
     }
 
-    const umpireForm = useUmpireForm(form as any, engine)
+    const umpireForm = useUmpireForm(form, engine)
     const f = umpireForm.field('b')
 
     expect(f.enabled).toBe(false)
@@ -102,45 +121,29 @@ describe('useUmpireForm', () => {
     })
 
     const form = {
-      store: new (class {
-        state = { values: { x: 'a' } }
-        get() {
-          return this.state
-        }
-        subscribe(_listener: any) {
-          return { unsubscribe: () => {} }
-        }
-      })(),
+      store: createStore({ x: 'a' }),
       setFieldValue(_name: string, _value: unknown) {},
     }
 
-    const umpireForm = useUmpireForm(form as any, engine)
+    const umpireForm = useUmpireForm(form, engine)
     expect(Array.isArray(umpireForm.fouls)).toBe(true)
   })
 
   it('applyStrike calls setFieldValue for each foul', () => {
     const engine = umpire({
       fields: { x: { required: true }, y: {} },
-      rules: [enabledWhen('y', (v: any) => v.x !== null)],
+      rules: [enabledWhen('y', (v) => (v as Values).x !== null)],
     })
 
     const setFieldCalls: Array<{ name: string; value: unknown }> = []
     const form = {
-      store: new (class {
-        state = { values: { x: 'hello', y: 'world' } }
-        get() {
-          return this.state
-        }
-        subscribe(_listener: any) {
-          return { unsubscribe: () => {} }
-        }
-      })(),
+      store: createStore({ x: 'hello', y: 'world' }),
       setFieldValue(name: string, value: unknown) {
         setFieldCalls.push({ name, value })
       },
     }
 
-    const umpireForm = useUmpireForm(form as any, engine, { strike: true })
+    const umpireForm = useUmpireForm(form, engine, { strike: true })
     expect(Array.isArray(umpireForm.fouls)).toBe(true)
 
     umpireForm.applyStrike()
@@ -155,14 +158,16 @@ describe('UmpireFormSubscribe', () => {
   })
 
   it('has correct props definition', () => {
-    expect((UmpireFormSubscribe as any).name).toBe('UmpireFormSubscribe')
-    const props = (UmpireFormSubscribe as any).props
+    const component = UmpireFormSubscribe as ComponentShape
+    expect(component.name).toBe('UmpireFormSubscribe')
+    const props = component.props
+    expect(props).toBeDefined()
     expect(props).toHaveProperty('form')
     expect(props).toHaveProperty('engine')
     expect(props).toHaveProperty('conditions')
     expect(props).toHaveProperty('strike')
-    expect(props.form.required).toBe(true)
-    expect(props.engine.required).toBe(true)
+    expect(props?.form.required).toBe(true)
+    expect(props?.engine.required).toBe(true)
   })
 
   it('renders default slot with umpireForm via setup', () => {
@@ -172,20 +177,13 @@ describe('UmpireFormSubscribe', () => {
     })
 
     const form = {
-      store: new (class {
-        state = { values: { a: 'test' } }
-        get() {
-          return this.state
-        }
-        subscribe(_l: any) {
-          return { unsubscribe: () => {} }
-        }
-      })(),
+      store: createStore({ a: 'test' }),
       setFieldValue(_name: string, _value: unknown) {},
     }
 
-    const slotFn = mock((_props: any) => 'vnode')
-    const setup = (UmpireFormSubscribe as any).setup
+    const slotFn = mock((_props: SlotProps) => 'vnode')
+    const setup = (UmpireFormSubscribe as ComponentShape).setup
+    expect(setup).toBeDefined()
     const renderFn = setup(
       { form, engine },
       { slots: { default: slotFn }, emit: () => {} },
@@ -202,7 +200,7 @@ describe('UmpireFormSubscribe', () => {
       }),
     })
 
-    const slotArg = (slotFn as any).mock.calls[0][0]
+    const slotArg = slotFn.mock.calls[0][0]
     expect(slotArg.umpireForm.field('a').enabled).toBe(true)
     expect(slotArg.umpireForm.field('a').required).toBe(false)
   })

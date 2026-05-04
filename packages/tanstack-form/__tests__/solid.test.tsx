@@ -1,5 +1,6 @@
 import { describe, it, expect, mock } from 'bun:test'
 import { createRoot, createSignal } from 'solid-js'
+import type { Accessor, JSX } from 'solid-js'
 import { enabledWhen, requires, umpire } from '@umpire/core'
 import type { FieldDef } from '@umpire/core'
 import {
@@ -27,25 +28,50 @@ const fields = {
   city: {},
 } satisfies Record<string, FieldDef>
 
+type Values = Record<string, unknown>
+type Selector<T> = (state: { values: Values }) => T
+type SolidForm = {
+  useStore<T>(selector: Selector<T>): Accessor<T>
+  setFieldValue(name: string, value: unknown): void
+}
+type Subscribe = (opts: {
+  selector: Selector<Values>
+  children(values: Accessor<Values>): JSX.Element
+}) => JSX.Element
+type UmpireFormLike = {
+  field(name: string): {
+    enabled: boolean
+    available: boolean
+    disabled: boolean
+    required: boolean
+    satisfied: boolean
+    fair: boolean
+    reason: string | null
+    reasons: string[]
+  }
+  fouls: Array<{ field: string; suggestedValue: unknown }>
+  applyStrike(): void
+}
+
 describe('createUmpireForm', () => {
   it('returns field status from engine', () => {
     const engine = umpire({
       fields,
       rules: [
-        enabledWhen('state', (v: any) => v.country === 'US'),
+        enabledWhen('state', (v) => (v as Values).country === 'US'),
         requires('city', 'state'),
       ],
     })
 
     const { value: umpireForm, dispose } = withRoot(() => {
       const form = {
-        useStore: (selector: Function) => () =>
+        useStore: <T,>(selector: Selector<T>) => () =>
           selector({
             values: { country: 'Canada', state: 'ON', city: 'Toronto' },
           }),
         setFieldValue: () => {},
-      }
-      return createUmpireForm(form as any, engine)
+      } satisfies SolidForm
+      return createUmpireForm(form, engine)
     })
 
     try {
@@ -61,16 +87,16 @@ describe('createUmpireForm', () => {
   it('available alias matches enabled', () => {
     const engine = umpire({
       fields,
-      rules: [enabledWhen('state', (v: any) => v.country === 'US')],
+      rules: [enabledWhen('state', (v) => (v as Values).country === 'US')],
     })
 
     const { value: umpireForm, dispose } = withRoot(() => {
       const form = {
-        useStore: (selector: Function) => () =>
+        useStore: <T,>(selector: Selector<T>) => () =>
           selector({ values: { country: 'US', state: 'CA', city: 'LA' } }),
         setFieldValue: () => {},
-      }
-      return createUmpireForm(form as any, engine)
+      } satisfies SolidForm
+      return createUmpireForm(form, engine)
     })
 
     try {
@@ -88,10 +114,10 @@ describe('createUmpireForm', () => {
     }
   })
 
-  it('fouls returns fouls array on transition', () => {
+  it('fouls returns fouls array on transition', async () => {
     const engine = umpire({
       fields,
-      rules: [enabledWhen('state', (v: any) => v.country === 'US')],
+      rules: [enabledWhen('state', (v) => (v as Values).country === 'US')],
     })
 
     const { value, dispose } = withRoot(() => {
@@ -101,20 +127,23 @@ describe('createUmpireForm', () => {
         city: 'LA',
       })
       const form = {
-        useStore: (selector: Function) => () =>
+        useStore: <T,>(selector: Selector<T>) => () =>
           selector({ values: storeValues() }),
         setFieldValue: () => {},
-      }
+      } satisfies SolidForm
       return {
         setStoreValues,
-        form: createUmpireForm(form as any, engine),
+        form: createUmpireForm(form, engine),
       }
     })
 
     try {
+      await Promise.resolve()
+      expect(value.form.field('country').enabled).toBe(true)
       expect(value.form.fouls).toEqual([])
 
       value.setStoreValues({ country: 'Canada', state: 'CA', city: 'LA' })
+      await Promise.resolve()
 
       expect(value.form.fouls).toHaveLength(1)
       expect(value.form.fouls[0].field).toBe('state')
@@ -123,10 +152,10 @@ describe('createUmpireForm', () => {
     }
   })
 
-  it('applyStrike calls setFieldValue', () => {
+  it('applyStrike calls setFieldValue', async () => {
     const engine = umpire({
       fields,
-      rules: [enabledWhen('state', (v: any) => v.country === 'US')],
+      rules: [enabledWhen('state', (v) => (v as Values).country === 'US')],
     })
 
     const { value, dispose } = withRoot(() => {
@@ -137,21 +166,24 @@ describe('createUmpireForm', () => {
       })
       const setFieldValue = mock(() => {})
       const form = {
-        useStore: (selector: Function) => () =>
+        useStore: <T,>(selector: Selector<T>) => () =>
           selector({ values: storeValues() }),
         setFieldValue,
-      }
+      } satisfies SolidForm
       return {
         setStoreValues,
         setFieldValue,
-        form: createUmpireForm(form as any, engine),
+        form: createUmpireForm(form, engine),
       }
     })
 
     try {
-      value.form.fouls
+      await Promise.resolve()
+      expect(value.form.field('country').enabled).toBe(true)
+      expect(value.form.fouls).toEqual([])
 
       value.setStoreValues({ country: 'Canada', state: 'CA', city: 'LA' })
+      await Promise.resolve()
 
       expect(value.form.fouls.length).toBeGreaterThan(0)
       value.form.applyStrike()
@@ -182,7 +214,7 @@ describe('createUmpireFormComponents', () => {
     createRoot((dispose) => {
       let childRendered = false
 
-      const memo = (UmpireFormContext.Provider as any)({
+      const memo = UmpireFormContext.Provider({
         value: () => ({
           field: () => ({
             enabled: false,
@@ -198,7 +230,7 @@ describe('createUmpireFormComponents', () => {
           applyStrike: () => {},
         }),
         children: () => {
-          const result = (UmpireField as any)({
+          const result = UmpireField({
             name: 'a',
             children: () => {
               childRendered = true
@@ -225,7 +257,7 @@ describe('createUmpireFormComponents', () => {
     createRoot((dispose) => {
       let childRendered = false
 
-      const memo = (UmpireFormContext.Provider as any)({
+      const memo = UmpireFormContext.Provider({
         value: () => ({
           field: () => ({
             enabled: true,
@@ -241,7 +273,7 @@ describe('createUmpireFormComponents', () => {
           applyStrike: () => {},
         }),
         children: () => {
-          const result = (UmpireField as any)({
+          const result = UmpireField({
             name: 'a',
             children: () => {
               childRendered = true
@@ -267,21 +299,21 @@ describe('UmpireFormSubscribe', () => {
     const engine = umpire({ fields: { a: {} }, rules: [] })
 
     const { value: capturedUmpireForm, dispose } = withRoot(() => {
-      let captured: any = null
+      let captured: UmpireFormLike | null = null
 
-      const Subscribe = (opts: { selector: Function; children: Function }) => {
+      const Subscribe: Subscribe = (opts) => {
         const valuesAccessor = () => opts.selector({ values: { a: 'test' } })
         return opts.children(valuesAccessor)
       }
 
       UmpireFormSubscribe({
-        form: { Subscribe, setFieldValue: () => {} } as any,
+        form: { Subscribe, setFieldValue: () => {} },
         engine,
-        children: (umpireForm: any) => {
+        children: (umpireForm) => {
           captured = umpireForm
           return null
         },
-      } as any)
+      })
 
       return captured
     })

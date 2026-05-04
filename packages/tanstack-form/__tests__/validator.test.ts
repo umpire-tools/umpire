@@ -6,14 +6,27 @@ import {
 } from '../src/validator.js'
 
 describe('umpireFieldValidator', () => {
+  type Values = Record<string, unknown>
+  type Conditions = { mode: 'edit' }
+  type FieldValidatorCall = (opts: {
+    value: unknown
+    fieldApi: {
+      form: { state: { values: Record<string, unknown> } }
+    }
+  }) => unknown
+
+  function validator(value: unknown): FieldValidatorCall {
+    return value as FieldValidatorCall
+  }
+
   it('disabled field produces no error', () => {
     const engine = umpire({
       fields: { country: {}, state: {} },
-      rules: [enabledWhen('state', (v) => (v as any).country === 'US')],
+      rules: [enabledWhen('state', (v) => (v as Values).country === 'US')],
     })
 
     const validators = umpireFieldValidator(engine, 'state')
-    const result = (validators.onChange as Function)({
+    const result = validator(validators.onChange)({
       value: 'CA',
       fieldApi: {
         form: { state: { values: { country: 'Canada', state: 'ON' } } },
@@ -34,7 +47,7 @@ describe('umpireFieldValidator', () => {
     })
 
     const validators = umpireFieldValidator(engine, 'email')
-    const result = (validators.onChange as Function)({
+    const result = validator(validators.onChange)({
       value: 'not-an-email',
       fieldApi: { form: { state: { values: { email: 'not-an-email' } } } },
     })
@@ -55,7 +68,7 @@ describe('umpireFieldValidator', () => {
     const validators = umpireFieldValidator(engine, 'email', {
       rejectFoul: false,
     })
-    const result = (validators.onChange as Function)({
+    const result = validator(validators.onChange)({
       value: 'not-an-email',
       fieldApi: { form: { state: { values: { email: 'not-an-email' } } } },
     })
@@ -73,7 +86,7 @@ describe('umpireFieldValidator', () => {
     })
 
     const validators = umpireFieldValidator(engine, 'name')
-    const result = (validators.onChange as Function)({
+    const result = validator(validators.onChange)({
       value: 'bad',
       fieldApi: { form: { state: { values: { name: 'bad' } } } },
     })
@@ -88,7 +101,7 @@ describe('umpireFieldValidator', () => {
     })
 
     const validators = umpireFieldValidator(engine, 'name')
-    const result = (validators.onChange as Function)({
+    const result = validator(validators.onChange)({
       value: 'hello',
       fieldApi: { form: { state: { values: { name: 'hello' } } } },
     })
@@ -143,7 +156,7 @@ describe('umpireFieldValidator', () => {
       events: ['onSubmit'],
     })
 
-    const result = (validators.onSubmit as Function)({
+    const result = validator(validators.onSubmit)({
       value: 'test@example.com',
       fieldApi: {
         form: { state: { values: { email: 'test@example.com' } } },
@@ -183,21 +196,21 @@ describe('umpireFieldValidator', () => {
       rules: [
         enabledWhen(
           'b',
-          (_v, conditions) => (conditions as any)?.mode === 'edit',
+          (_v, conditions) => conditions?.mode === 'edit',
         ),
       ],
-    })
+    } satisfies Parameters<typeof umpire<{ a: {}; b: {} }, Conditions>>[0])
 
     const formCaptured: Array<unknown> = []
     const validators = umpireFieldValidator(engine, 'b', {
       conditions: (formApi: unknown) => {
         formCaptured.push(formApi)
-        return { mode: 'edit' } as any
+        return { mode: 'edit' }
       },
     })
 
     const form = { state: { values: { a: 'x', b: 'test' } } }
-    const result = (validators.onChange as Function)({
+    const result = validator(validators.onChange)({
       value: 'test',
       fieldApi: { form },
     })
@@ -212,15 +225,15 @@ describe('umpireFieldValidator', () => {
       rules: [
         enabledWhen(
           'b',
-          (_v, conditions) => (conditions as any)?.mode === 'edit',
+          (_v, conditions) => conditions?.mode === 'edit',
         ),
       ],
-    })
+    } satisfies Parameters<typeof umpire<{ a: {}; b: {} }, Conditions>>[0])
 
     const validators = umpireFieldValidator(engine, 'b', {
-      conditions: { mode: 'edit' } as any,
+      conditions: { mode: 'edit' },
     })
-    const result = (validators.onChange as Function)({
+    const result = validator(validators.onChange)({
       value: 'test',
       fieldApi: { form: { state: { values: { a: 'x', b: 'test' } } } },
     })

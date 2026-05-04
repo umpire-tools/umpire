@@ -40,7 +40,7 @@ const defaultField: UmpireFormField = {
 }
 
 function buildFieldProxy(
-  check: AvailabilityMap<any> | undefined,
+  check: AvailabilityMap<Record<string, FieldDef>> | undefined,
 ): (name: string) => UmpireFormField {
   const fieldCache = new Map<string, UmpireFormField>()
 
@@ -74,7 +74,7 @@ function buildFieldProxy(
         return check?.[name]?.reasons ?? []
       },
       get error() {
-        return (check?.[name] as any)?.error
+        return check?.[name]?.error
       },
     }
     fieldCache.set(name, proxy)
@@ -99,10 +99,10 @@ export function useUmpireForm<
   engine: Umpire<F, C>,
   options?: UseUmpireFormOptions<C>,
 ): UmpireForm<F> {
-  const values = useStore(form.store as any, (s: any) => s.values) as Record<
-    string,
-    unknown
-  >
+  const values = useStore(
+    form.store as never,
+    (state: { values: Record<string, unknown> }) => state.values,
+  ) as Record<string, unknown>
   const conditions = resolveConditions(options?.conditions)
 
   const { check, fouls } = useUmpire(engine, values, conditions)
@@ -137,7 +137,16 @@ type UmpireFormSubscribeProps<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 > = {
-  form: { Subscribe: any; setFieldValue(name: string, value: unknown): void }
+  form: {
+    Subscribe(props: {
+      selector(state: { values: Record<string, unknown> }): Record<
+        string,
+        unknown
+      >
+      children(values: Record<string, unknown>): ReactNode
+    }): ReactNode
+    setFieldValue(name: string, value: unknown): void
+  }
   engine: Umpire<F, C>
   conditions?: C | (() => C)
   strike?: boolean
@@ -148,11 +157,11 @@ export function UmpireFormSubscribe<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 >(props: UmpireFormSubscribeProps<F, C>) {
-  const Subscribe = (props.form as any).Subscribe
+  const Subscribe = props.form.Subscribe
 
   return (
     <Subscribe
-      selector={(state: any) => state.values}
+      selector={(state: { values: Record<string, unknown> }) => state.values}
       children={(values: Record<string, unknown>) => (
         <UmpireFormSnapshot
           form={props.form}
@@ -217,9 +226,29 @@ function UmpireFormSnapshot<
 // --- Context-based components ---
 
 const { useFormContext } = createFormHookContexts()
-const UmpireFormContext = createContext<{ umpireForm: UmpireForm<any> | null }>(
-  { umpireForm: null },
-)
+type UmpireFormContextValue = {
+  field(name: string): UmpireFormField
+  fouls: Array<{ field: string }>
+  applyStrike(): void
+}
+
+const UmpireFormContext = createContext<{
+  umpireForm: UmpireFormContextValue | null
+}>({ umpireForm: null })
+
+type TanStackReactForm = {
+  store: unknown
+  setFieldValue(name: string, value: unknown): void
+  Field(props: {
+    name: string
+    validators?: Record<string, unknown>
+    children(field: unknown): ReactNode
+  }): ReactNode
+  Subscribe(props: {
+    selector(state: { isSubmitting: boolean }): boolean
+    children(isSubmitting: boolean): ReactNode
+  }): ReactNode
+}
 
 type CreateUmpireFormComponentsOptions<C> = {
   conditions?: C | ((form: unknown) => C)
@@ -239,8 +268,8 @@ export function createUmpireFormComponents<
         ? (options.conditions as (form: unknown) => C)(form)
         : options?.conditions
 
-    const umpireForm = useUmpireForm(form as any, engine, {
-      conditions: resolvedConditions as any,
+    const umpireForm = useUmpireForm(form as TanStackReactForm, engine, {
+      conditions: resolvedConditions,
       strike: options?.strike,
     })
 
@@ -258,7 +287,7 @@ export function createUmpireFormComponents<
   }: {
     name: Name
     validators?: Record<string, unknown>
-    children: (field: any, availability: UmpireFormField) => ReactNode
+    children: (field: unknown, availability: UmpireFormField) => ReactNode
   }) {
     const { umpireForm } = useContext(UmpireFormContext)
     const form = useFormContext()
@@ -268,11 +297,11 @@ export function createUmpireFormComponents<
 
     const finalValidators = validators ?? autoValidators[name]
 
-    const Field = (form as any).Field
+    const Field = (form as TanStackReactForm).Field
 
     return (
-      <Field name={name as any} validators={finalValidators as any}>
-        {(field: any) => children(field, availability)}
+      <Field name={name} validators={finalValidators}>
+        {(field: unknown) => children(field, availability)}
       </Field>
     )
   }
@@ -286,11 +315,11 @@ export function createUmpireFormComponents<
   }) {
     const form = useFormContext()
     const { umpireForm } = useContext(UmpireFormContext)
-    const Subscribe = (form as any).Subscribe
+    const Subscribe = (form as TanStackReactForm).Subscribe
 
     return (
       <Subscribe
-        selector={(state: any) => state.isSubmitting}
+        selector={(state: { isSubmitting: boolean }) => state.isSubmitting}
         children={(isSubmitting: boolean) => (
           <button
             type="submit"

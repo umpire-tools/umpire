@@ -1,16 +1,14 @@
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 GlobalRegistrator.register()
 
-import { describe, it, expect, mock } from 'bun:test'
+import { describe, it, expect } from 'bun:test'
 import { render } from '@testing-library/react'
 import React from 'react'
-import { umpire, enabledWhen, fairWhen, requires } from '@umpire/core'
+import { umpire, enabledWhen } from '@umpire/core'
 import {
   useUmpireForm,
   UmpireFormSubscribe,
   createUmpireFormComponents,
-  type UmpireFormField,
-  type UmpireForm,
 } from '../src/react.js'
 import { umpireFieldValidators } from '../src/validator.js'
 
@@ -37,6 +35,8 @@ describe('exports', () => {
 // ---------------------------------------------------------------------------
 
 describe('useUmpireForm', () => {
+  type Values = Record<string, unknown>
+
   it('returns field status matching engine state', () => {
     const engine = umpire({
       fields: { email: {}, name: { required: true } },
@@ -58,7 +58,7 @@ describe('useUmpireForm', () => {
   it('available alias matches enabled', () => {
     const engine = umpire({
       fields: { a: {}, b: {}, c: {} },
-      rules: [enabledWhen('c', (v) => (v as any).a === 'x')],
+      rules: [enabledWhen('c', (v) => (v as Values).a === 'x')],
     })
 
     const avail = engine.check({ a: 'x', b: '', c: '' })
@@ -72,7 +72,7 @@ describe('useUmpireForm', () => {
   it('disabled field has required: false', () => {
     const engine = umpire({
       fields: { a: {}, b: {} },
-      rules: [enabledWhen('b', (v) => (v as any).a === 'x')],
+      rules: [enabledWhen('b', (v) => (v as Values).a === 'x')],
     })
 
     const avail = engine.check({ a: 'y', b: 'val' })
@@ -86,6 +86,8 @@ describe('useUmpireForm', () => {
 // ---------------------------------------------------------------------------
 
 describe('createUmpireFormComponents', () => {
+  type Conditions = { mode: 'edit' | 'view' }
+
   it('returns { UmpireScope, UmpireField, UmpireSubmit }', () => {
     const engine = umpire({
       fields: { email: {} },
@@ -122,13 +124,15 @@ describe('createUmpireFormComponents', () => {
   it('engine respects conditions for enabled/disabled', () => {
     const engine = umpire({
       fields: { role: {} },
-      rules: [enabledWhen('role', (_v, ctx) => (ctx as any)?.mode === 'edit')],
-    })
+      rules: [enabledWhen('role', (_v, ctx) => ctx?.mode === 'edit')],
+    } satisfies Parameters<
+      typeof umpire<{ role: {} }, Conditions>
+    >[0])
 
-    const avail = engine.check({ role: 'admin' }, { mode: 'edit' } as any)
+    const avail = engine.check({ role: 'admin' }, { mode: 'edit' })
     expect(avail.role.enabled).toBe(true)
 
-    const avail2 = engine.check({ role: 'admin' }, { mode: 'view' } as any)
+    const avail2 = engine.check({ role: 'admin' }, { mode: 'view' })
     expect(avail2.role.enabled).toBe(false)
   })
 })
@@ -144,13 +148,22 @@ describe('UmpireFormSubscribe', () => {
       rules: [],
     })
 
-    function MockSubscribe({ selector, children }: any) {
+    function MockSubscribe({
+      selector,
+      children,
+    }: {
+      selector(state: { values: Record<string, unknown> }): Record<
+        string,
+        unknown
+      >
+      children(values: Record<string, unknown>): React.ReactNode
+    }) {
       return <>{children(selector({ values: { email: 'a@b.com' } }))}</>
     }
 
     const { getByTestId } = render(
       <UmpireFormSubscribe
-        form={{ Subscribe: MockSubscribe, setFieldValue: () => {} } as any}
+        form={{ Subscribe: MockSubscribe, setFieldValue: () => {} }}
         engine={engine}
       >
         {(umpireForm) => (

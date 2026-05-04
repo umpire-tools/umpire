@@ -3,6 +3,15 @@ import { createReads } from '@umpire/reads'
 import { umpireReadListeners } from '../src/reads.js'
 
 describe('umpireReadListeners', () => {
+  type Listener = (opts: {
+    formApi: { state: { values: Record<string, unknown> } }
+    fieldApi?: unknown
+  }) => void
+
+  function listener(value: unknown): Listener {
+    return value as Listener
+  }
+
   it('calls handler with current and no previous read on first invocation', () => {
     const reads = createReads<{ x: number }, { doubled: number }>({
       doubled: ({ input }) => input.x * 2,
@@ -12,7 +21,7 @@ describe('umpireReadListeners', () => {
     const listeners = umpireReadListeners(reads, { doubled: handler })
 
     const formApi = { state: { values: { x: 5 } } }
-    ;(listeners.onChange as Function)({ formApi })
+    listener(listeners.onChange)({ formApi })
 
     expect(handler).toHaveBeenCalledTimes(1)
     const call = handler.mock.calls[0][0]
@@ -31,10 +40,10 @@ describe('umpireReadListeners', () => {
     const listeners = umpireReadListeners(reads, { doubled: handler })
 
     const formApi1 = { state: { values: { x: 5 } } }
-    ;(listeners.onChange as Function)({ formApi: formApi1 })
+    listener(listeners.onChange)({ formApi: formApi1 })
 
     const formApi2 = { state: { values: { x: 10 } } }
-    ;(listeners.onChange as Function)({ formApi: formApi2 })
+    listener(listeners.onChange)({ formApi: formApi2 })
 
     expect(handler).toHaveBeenCalledTimes(2)
     const secondCall = handler.mock.calls[1][0]
@@ -61,7 +70,7 @@ describe('umpireReadListeners', () => {
     })
 
     const formApi = { state: { values: { x: 3, y: 4 } } }
-    ;(listeners.onChange as Function)({ formApi })
+    listener(listeners.onChange)({ formApi })
 
     expect(sumHandler).toHaveBeenCalledTimes(1)
     expect(productHandler).toHaveBeenCalledTimes(1)
@@ -78,7 +87,7 @@ describe('umpireReadListeners', () => {
 
     const formApi = { state: { values: { x: 5 } } }
     expect(() => {
-      ;(listeners.onChange as Function)({ formApi })
+      listener(listeners.onChange)({ formApi })
     }).not.toThrow()
   })
 
@@ -145,7 +154,7 @@ describe('umpireReadListeners', () => {
     )
 
     const formApi = { state: { values: { name: 'Alice' } } }
-    ;(listeners.onChange as Function)({ formApi })
+    listener(listeners.onChange)({ formApi })
 
     expect(handler).toHaveBeenCalledTimes(1)
     const call = handler.mock.calls[0][0]
@@ -162,10 +171,10 @@ describe('umpireReadListeners', () => {
     const listeners = umpireReadListeners(reads, { doubled: handler })
 
     const formApi1 = { state: { values: { x: 1 } } }
-    ;(listeners.onChange as Function)({ formApi: formApi1 })
+    listener(listeners.onChange)({ formApi: formApi1 })
 
     const formApi2 = { state: { values: { x: 2 } } }
-    ;(listeners.onChange as Function)({ formApi: formApi2 })
+    listener(listeners.onChange)({ formApi: formApi2 })
 
     const firstCall = handler.mock.calls[0][0]
     const secondCall = handler.mock.calls[1][0]
@@ -184,7 +193,7 @@ describe('umpireReadListeners', () => {
 
     const fieldApi = { name: 'x', value: 5 }
     const formApi = { state: { values: { x: 5 } } }
-    ;(listeners.onChange as Function)({ formApi, fieldApi })
+    listener(listeners.onChange)({ formApi, fieldApi })
 
     expect(handler).toHaveBeenCalledTimes(1)
     const call = handler.mock.calls[0][0]
@@ -208,7 +217,7 @@ describe('umpireReadListeners', () => {
     })
 
     const formApi = { state: { values: { a: 10, b: 3 } } }
-    ;(listeners.onChange as Function)({ formApi })
+    listener(listeners.onChange)({ formApi })
 
     expect(sumHandler.mock.calls[0][0].read).toBe(13)
     expect(diffHandler.mock.calls[0][0].read).toBe(7)

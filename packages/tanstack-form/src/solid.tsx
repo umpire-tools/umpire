@@ -83,7 +83,7 @@ function buildSolidUmpireForm<F extends Record<string, FieldDef>>(
           return check()[name]?.reasons ?? []
         },
         get error() {
-          return (check()[name] as any)?.error
+          return check()[name]?.error
         },
       }
       fieldCache.set(name, cached)
@@ -108,15 +108,13 @@ export function createUmpireForm<
   C extends Record<string, unknown>,
 >(
   form: {
-    useStore(selector: (state: any) => any): Accessor<any>
+    useStore<T>(selector: (state: { values: Record<string, unknown> }) => T): Accessor<T>
     setFieldValue(name: string, value: unknown): void
   },
   engine: Umpire<F, C>,
   options?: CreateUmpireFormOptions<C>,
 ): SolidUmpireForm<F> {
-  const values = form.useStore((state: any) => state.values) as Accessor<
-    Record<string, unknown>
-  >
+  const values = form.useStore((state) => state.values)
 
   const conditions = resolveConditions(options?.conditions)
   const { check, fouls } = useUmpire(engine, values, conditions)
@@ -144,8 +142,14 @@ type UmpireFormSubscribeProps<
   C extends Record<string, unknown>,
 > = {
   form: {
-    Subscribe: any
-    useStore: any
+    Subscribe(props: {
+      selector(state: { values: Record<string, unknown> }): Record<
+        string,
+        unknown
+      >
+      children(values: Accessor<Record<string, unknown>>): JSX.Element
+    }): JSX.Element
+    useStore<T>(selector: (state: { values: Record<string, unknown> }) => T): Accessor<T>
     setFieldValue(name: string, value: unknown): void
   }
   engine: Umpire<F, C>
@@ -190,8 +194,8 @@ export function UmpireFormSubscribe<
   C extends Record<string, unknown>,
 >(props: UmpireFormSubscribeProps<F, C>): JSX.Element {
   return props.form.Subscribe({
-    selector: (state: any) => state.values,
-    children: (values: any) => {
+    selector: (state: { values: Record<string, unknown> }) => state.values,
+    children: (values: Accessor<Record<string, unknown>>) => {
       const umpireForm = buildUmpireFormFromValues(
         props.form,
         props.engine,
@@ -204,7 +208,13 @@ export function UmpireFormSubscribe<
   })
 }
 
-export const UmpireFormContext = createContext<() => SolidUmpireForm<any>>(
+export const UmpireFormContext = createContext<
+  () => {
+    field(name: string): UmpireFormField
+    fouls: Array<{ field: string }>
+    applyStrike(): void
+  }
+>(
   () => ({
     field: () => ({
       enabled: true,
@@ -223,9 +233,24 @@ export const UmpireFormContext = createContext<() => SolidUmpireForm<any>>(
 
 const { useFormContext } = createFormHookContexts()
 
-function useOptionalFormContext(): any | null {
+type TanStackSolidForm = {
+  useStore<T>(selector: (state: { values: Record<string, unknown> }) => T): Accessor<T>
+  setFieldValue(name: string, value: unknown): void
+  Field(props: {
+    name: string
+    validators?: Record<string, unknown>
+    children(field: Accessor<unknown>): JSX.Element
+  }): JSX.Element
+}
+
+type BooleanShow = (props: {
+  when: boolean
+  children: JSX.Element
+}) => JSX.Element
+
+function useOptionalFormContext(): TanStackSolidForm | null {
   try {
-    return useFormContext() as any
+    return useFormContext() as TanStackSolidForm
   } catch {
     return null
   }
@@ -243,8 +268,8 @@ export function createUmpireFormComponents<
       typeof options?.conditions === 'function'
         ? (options.conditions as (form: unknown) => C)(form)
         : options?.conditions
-    const umpireForm = createUmpireForm(form as any, engine, {
-      conditions: resolvedConditions as any,
+    const umpireForm = createUmpireForm(form as TanStackSolidForm, engine, {
+      conditions: resolvedConditions,
       strike: options?.strike,
     })
     const getUmpireForm = () => umpireForm
@@ -261,7 +286,7 @@ export function createUmpireFormComponents<
     name: Name
     validators?: Record<string, unknown>
     children: (
-      field: Accessor<any>,
+      field: Accessor<unknown>,
       availability: UmpireFormField,
     ) => JSX.Element
   }): JSX.Element {
@@ -274,24 +299,20 @@ export function createUmpireFormComponents<
       () => props.validators ?? autoValidators[props.name],
     )
 
-    return createComponent(Show as any, {
+    return createComponent(Show as unknown as BooleanShow, {
       get when() {
         return avail().enabled
       },
       get children() {
-        return createComponent(Show as any, {
-          get when() {
-            return form?.Field
-          },
-          get fallback() {
-            return props.children(() => ({}) as any, avail())
-          },
-          children: (Field: Accessor<any>) =>
-            Field()({
-              name: props.name as any,
-              validators: finalValidators() as any,
-              children: (field: any) => props.children(field, avail()),
-            }),
+        if (!form?.Field) {
+          return props.children(() => ({}), avail())
+        }
+
+        return form.Field({
+          name: props.name,
+          validators: finalValidators(),
+          children: (field: Accessor<unknown>) =>
+            props.children(field, avail()),
         })
       },
     })

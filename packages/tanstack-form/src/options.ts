@@ -1,4 +1,4 @@
-import type { Umpire, Snapshot } from '@umpire/core'
+import type { FieldDef, Umpire, Snapshot } from '@umpire/core'
 import { snapshotValue } from '@umpire/core/snapshot'
 
 export type UmpireFormOptionsConfig<C> = {
@@ -26,8 +26,11 @@ export type UmpireFormOptionsConfig<C> = {
  * })
  * ```
  */
-export function createUmpireFormOptions<C extends Record<string, unknown>>(
-  engine: Umpire<any, C>,
+export function createUmpireFormOptions<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  engine: Umpire<F, C>,
   options?: UmpireFormOptionsConfig<C>,
 ): Record<string, unknown> {
   let previousSnapshot: Snapshot<C> | null = null

@@ -17,7 +17,7 @@ describe('createUmpireFormAdapter', () => {
       ],
     })
 
-    let formValues = { email: 'bad' }
+    const formValues = { email: 'bad' }
     const form = {
       get state() {
         return { values: formValues }
