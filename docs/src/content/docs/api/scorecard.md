@@ -9,9 +9,9 @@ description: Combine check(), play(), and graph() into a single typed snapshot o
 
 ```ts
 ump.scorecard(
-  snapshot: Snapshot<F, C>,
+  snapshot: Snapshot<C>,
   options?: {
-    before?: Snapshot<F, C>
+    before?: Snapshot<C>
     includeChallenge?: boolean
   },
 ): ScorecardResult<F, C>
@@ -92,7 +92,7 @@ A field can have `foul !== null` with `changed: false` and `cascaded: true`. Tha
 
 ```ts
 type ScorecardTransition<F, C> = {
-  before: Snapshot<F, C> | null
+  before: Snapshot<C> | null
   changedFields: Array<keyof F & string>
   fouls: Foul<F>[]
   foulsByField: Partial<Record<keyof F & string, Foul<F>>>
@@ -149,6 +149,33 @@ result.fields.motherboard.trace
 Keep this off in production render paths. It runs a full `challenge()` call per field, which is more expensive than the default path. It is appropriate for dev tools, debug panels, and test assertions.
 
 See [`ump.challenge()`](/api/challenge) for the trace shape.
+
+## Missing value auto-fill
+
+`scorecard()` previously required every declared field key to be present in `snapshot.values` and `before.values`. It now auto-fills any missing keys with `null`, so partial values objects are accepted.
+
+In non-production builds, auto-fill produces a `console.warn` listing the fields that were filled. The warning tells you which keys were absent — useful for catching incomplete test fixtures or forgotten fields during development.
+
+```ts
+// Before: this would throw because 'ram' is missing
+const result = pcUmp.scorecard({
+  values: { cpu: 'amd-r7', motherboard: 'asus-x670' },
+  // ram key is missing — auto-filled to null
+})
+// Console (non-production):
+// [@umpire/core] scorecard() auto-filled missing keys in snapshot.values: "ram". Pass null explicitly to silence this warning.
+```
+
+Pass `null` explicitly for optional fields to suppress the warning:
+
+```ts
+const result = pcUmp.scorecard({
+  values: { cpu: 'amd-r7', motherboard: 'asus-x670', ram: null },
+})
+// No warning — all keys are present, ram is explicitly null
+```
+
+This makes the debugging API more ergonomic. You no longer need to populate every declared field to inspect availability — pass the fields you care about and let `scorecard()` fill the rest. The warning keeps accidental omissions visible in development without blocking the call.
 
 ## Example
 

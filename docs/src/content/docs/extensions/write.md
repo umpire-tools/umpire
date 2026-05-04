@@ -105,6 +105,126 @@ The `message` for each issue comes from the field's `reason` in the availability
 
 A patch can be `ok: false` due to issues, fouls, or both. Inspect both lists to understand why.
 
+## Validation Composition
+
+When you pair write-policy checks with a schema validation library (Zod, Effect, etc.), `@umpire/write` provides helpers for composing the two checks into a single result. This is independent of ORM concerns — it is about merging availability policy issues with structural validation errors.
+
+### WriteValidationAdapter protocol
+
+`WriteValidationAdapter<F>` is a structural protocol. Any object with a `run(availability, values)` method that returns normalized field-level errors satisfies it. The adapters exported by `@umpire/zod` (`createZodAdapter`) and `@umpire/effect` (`createEffectAdapter`) satisfy this protocol out of the box.
+
+```ts
+import type { WriteValidationAdapter } from '@umpire/write'
+
+type WriteValidationAdapter<F extends Record<string, FieldDef>> = {
+  run(
+    availability: AvailabilityMap<F>,
+    values: InputValues,
+  ): {
+    errors: Partial<Record<keyof F & string, string>>
+    normalizedErrors: NormalizedFieldErrorWithPath[]
+    result: unknown
+    schemaFields: Array<keyof F & string>
+  }
+  validators?: ValidationMap<F>
+}
+```
+
+### runWriteValidationAdapter
+
+Calls the adapter (if provided) and returns normalized schema issues. Returns `undefined` when no adapter is passed.
+
+```ts
+import { runWriteValidationAdapter } from '@umpire/write'
+
+const validationRun = runWriteValidationAdapter(
+  adapter,
+  write.availability,
+  write.candidate,
+)
+// validationRun.schemaIssues — field-level error objects
+// validationRun.validationResult — adapter-specific raw result
+```
+
+### composeWriteResult
+
+Merges write-policy issues, schema validation issues, and any extra issue groups into a single result with a combined `ok` flag.
+
+```ts
+import { composeWriteResult } from '@umpire/write'
+
+const result = composeWriteResult({
+  write,            // from checkCreate() or checkPatch()
+  validation,       // from runWriteValidationAdapter()
+  extraIssues: {},  // e.g. { columns: columnIssues } from @umpire/drizzle
+})
+// result.ok           — false if any issue group has entries
+// result.issues.rules — availability policy issues + fouls
+// result.issues.schema — validation issues from the adapter
+```
+
+The composed result shape:
+
+```ts
+type WriteComposedResult<F, TExtraIssues> = {
+  ok: boolean
+  availability: AvailabilityMap<F>
+  issues: {
+    rules: WriteRuleIssue<F>[]
+    schema: WriteSchemaIssue<F>[]
+  } & TExtraIssues
+  debug: {
+    candidate: WriteCandidate<F>
+    validationResult?: unknown
+  }
+}
+```
+
+### Example: Zod adapter with composeWriteResult
+
+```ts
+import { checkCreate, composeWriteResult, runWriteValidationAdapter } from '@umpire/write'
+import { createZodAdapter } from '@umpire/zod'
+import { z } from 'zod'
+
+const validation = createZodAdapter({
+  schemas: {
+    email: z.string().email('Enter a valid email'),
+    companyName: z.string().min(1, 'Company name required'),
+  },
+})
+
+const write = checkCreate(ump, req.body, context)
+const validationRun = runWriteValidationAdapter(validation, write.availability, write.candidate)
+
+const result = composeWriteResult({ write, validation: validationRun })
+
+if (!result.ok) {
+  // result.issues.rules   — "companyName is required" (policy)
+  // result.issues.schema  — "Enter a valid email" (Zod)
+}
+```
+
+### Namespaced helpers
+
+When field names include a separator (e.g. `account.email` from Drizzle models or `fromDrizzleModel`), these helpers restructure flat key-value records into nested objects and flatten error paths back. They are imported by the `@umpire/zod` and `@umpire/effect` adapters for nested validation but are available for direct use.
+
+```ts
+import {
+  flattenFieldErrorPath,
+  flattenFieldErrorPaths,
+  joinFieldPath,
+  nestNamespacedValues,
+  splitNamespacedField,
+} from '@umpire/write'
+```
+
+- **`nestNamespacedValues(values, { separator? })`** — converts `{ 'account.email': 'x', 'account.name': 'y' }` into `{ account: { email: 'x', name: 'y' } }`. Separator defaults to `'.'`.
+- **`flattenFieldErrorPaths(errors, { separator? })`** — converts errors with nested `.path` arrays back to flat field keys using the separator. Each error has a `field` and `path`; the flat key is `path.join(separator)`.
+- **`flattenFieldErrorPath(error, { separator? })`** — single-error variant of the above.
+- **`splitNamespacedField(field, { separator? })`** — returns `{ namespace, localKey }` for a namespaced field, or `null` if the separator is absent.
+- **`joinFieldPath(path, { separator? })`** — joins path segments into a key string using the separator.
+
 ## Boundary
 
 `result.ok` means the candidate passes Umpire write policy only. It does not mean the input is:
@@ -133,3 +253,6 @@ In all cases, the pattern is the same: Umpire first, ORM second. Reject early on
 - [`ump.check()`](/api/check/) — the availability API that `checkCreate`/`checkPatch` wrap
 - [`play()`](/api/play/) — transition foul computation used by `checkPatch`
 - [Composing Validation](/concepts/validation/) — where Umpire fits in a layered validation strategy
+- [`@umpire/drizzle`](/adapters/database/drizzle/) — Drizzle-aware write checks and policy creation
+- [`@umpire/zod`](/adapters/validation/zod/) — Zod adapter satisfying the `WriteValidationAdapter` protocol
+- [`@umpire/effect`](/adapters/validation/effect/) — Effect adapter satisfying the same protocol
