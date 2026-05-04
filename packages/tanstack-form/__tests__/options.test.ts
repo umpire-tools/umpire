@@ -199,9 +199,7 @@ describe('createUmpireFormOptions', () => {
           { reason: 'Bad email' },
         ),
       ],
-    } satisfies Parameters<
-      typeof umpire<{ email: {} }, Conditions>
-    >[0])
+    } satisfies Parameters<typeof umpire<{ email: {} }, Conditions>>[0])
 
     const capturedApis: unknown[] = []
     const result = createUmpireFormOptions(engine, {
@@ -245,9 +243,7 @@ describe('createUmpireFormOptions', () => {
           { reason: 'Bad email' },
         ),
       ],
-    } satisfies Parameters<
-      typeof umpire<{ email: {} }, Conditions>
-    >[0])
+    } satisfies Parameters<typeof umpire<{ email: {} }, Conditions>>[0])
 
     const result = createUmpireFormOptions(engine, {
       strike: true,

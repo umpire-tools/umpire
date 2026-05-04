@@ -125,9 +125,7 @@ describe('createUmpireFormComponents', () => {
     const engine = umpire({
       fields: { role: {} },
       rules: [enabledWhen('role', (_v, ctx) => ctx?.mode === 'edit')],
-    } satisfies Parameters<
-      typeof umpire<{ role: {} }, Conditions>
-    >[0])
+    } satisfies Parameters<typeof umpire<{ role: {} }, Conditions>>[0])
 
     const avail = engine.check({ role: 'admin' }, { mode: 'edit' })
     expect(avail.role.enabled).toBe(true)
@@ -152,10 +150,9 @@ describe('UmpireFormSubscribe', () => {
       selector,
       children,
     }: {
-      selector(state: { values: Record<string, unknown> }): Record<
-        string,
-        unknown
-      >
+      selector(state: {
+        values: Record<string, unknown>
+      }): Record<string, unknown>
       children(values: Record<string, unknown>): React.ReactNode
     }) {
       return <>{children(selector({ values: { email: 'a@b.com' } }))}</>

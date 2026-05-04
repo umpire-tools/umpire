@@ -194,10 +194,7 @@ describe('umpireFieldValidator', () => {
     const engine = umpire({
       fields: { a: {}, b: {} },
       rules: [
-        enabledWhen(
-          'b',
-          (_v, conditions) => conditions?.mode === 'edit',
-        ),
+        enabledWhen('b', (_v, conditions) => conditions?.mode === 'edit'),
       ],
     } satisfies Parameters<typeof umpire<{ a: {}; b: {} }, Conditions>>[0])
 
@@ -223,10 +220,7 @@ describe('umpireFieldValidator', () => {
     const engine = umpire({
       fields: { a: {}, b: {} },
       rules: [
-        enabledWhen(
-          'b',
-          (_v, conditions) => conditions?.mode === 'edit',
-        ),
+        enabledWhen('b', (_v, conditions) => conditions?.mode === 'edit'),
       ],
     } satisfies Parameters<typeof umpire<{ a: {}; b: {} }, Conditions>>[0])
 

@@ -108,7 +108,9 @@ export function createUmpireForm<
   C extends Record<string, unknown>,
 >(
   form: {
-    useStore<T>(selector: (state: { values: Record<string, unknown> }) => T): Accessor<T>
+    useStore<T>(
+      selector: (state: { values: Record<string, unknown> }) => T,
+    ): Accessor<T>
     setFieldValue(name: string, value: unknown): void
   },
   engine: Umpire<F, C>,
@@ -143,13 +145,14 @@ type UmpireFormSubscribeProps<
 > = {
   form: {
     Subscribe(props: {
-      selector(state: { values: Record<string, unknown> }): Record<
-        string,
-        unknown
-      >
+      selector(state: {
+        values: Record<string, unknown>
+      }): Record<string, unknown>
       children(values: Accessor<Record<string, unknown>>): JSX.Element
     }): JSX.Element
-    useStore<T>(selector: (state: { values: Record<string, unknown> }) => T): Accessor<T>
+    useStore<T>(
+      selector: (state: { values: Record<string, unknown> }) => T,
+    ): Accessor<T>
     setFieldValue(name: string, value: unknown): void
   }
   engine: Umpire<F, C>
@@ -214,27 +217,27 @@ export const UmpireFormContext = createContext<
     fouls: Array<{ field: string }>
     applyStrike(): void
   }
->(
-  () => ({
-    field: () => ({
-      enabled: true,
-      available: true,
-      disabled: false,
-      required: false,
-      satisfied: true,
-      fair: true,
-      reason: null,
-      reasons: [],
-    }),
-    fouls: [],
-    applyStrike: () => {},
+>(() => ({
+  field: () => ({
+    enabled: true,
+    available: true,
+    disabled: false,
+    required: false,
+    satisfied: true,
+    fair: true,
+    reason: null,
+    reasons: [],
   }),
-)
+  fouls: [],
+  applyStrike: () => {},
+}))
 
 const { useFormContext } = createFormHookContexts()
 
 type TanStackSolidForm = {
-  useStore<T>(selector: (state: { values: Record<string, unknown> }) => T): Accessor<T>
+  useStore<T>(
+    selector: (state: { values: Record<string, unknown> }) => T,
+  ): Accessor<T>
   setFieldValue(name: string, value: unknown): void
   Field(props: {
     name: string

@@ -65,10 +65,12 @@ describe('createUmpireForm', () => {
 
     const { value: umpireForm, dispose } = withRoot(() => {
       const form = {
-        useStore: <T,>(selector: Selector<T>) => () =>
-          selector({
-            values: { country: 'Canada', state: 'ON', city: 'Toronto' },
-          }),
+        useStore:
+          <T,>(selector: Selector<T>) =>
+          () =>
+            selector({
+              values: { country: 'Canada', state: 'ON', city: 'Toronto' },
+            }),
         setFieldValue: () => {},
       } satisfies SolidForm
       return createUmpireForm(form, engine)
@@ -92,8 +94,10 @@ describe('createUmpireForm', () => {
 
     const { value: umpireForm, dispose } = withRoot(() => {
       const form = {
-        useStore: <T,>(selector: Selector<T>) => () =>
-          selector({ values: { country: 'US', state: 'CA', city: 'LA' } }),
+        useStore:
+          <T,>(selector: Selector<T>) =>
+          () =>
+            selector({ values: { country: 'US', state: 'CA', city: 'LA' } }),
         setFieldValue: () => {},
       } satisfies SolidForm
       return createUmpireForm(form, engine)
@@ -127,8 +131,10 @@ describe('createUmpireForm', () => {
         city: 'LA',
       })
       const form = {
-        useStore: <T,>(selector: Selector<T>) => () =>
-          selector({ values: storeValues() }),
+        useStore:
+          <T,>(selector: Selector<T>) =>
+          () =>
+            selector({ values: storeValues() }),
         setFieldValue: () => {},
       } satisfies SolidForm
       return {
@@ -166,8 +172,10 @@ describe('createUmpireForm', () => {
       })
       const setFieldValue = mock(() => {})
       const form = {
-        useStore: <T,>(selector: Selector<T>) => () =>
-          selector({ values: storeValues() }),
+        useStore:
+          <T,>(selector: Selector<T>) =>
+          () =>
+            selector({ values: storeValues() }),
         setFieldValue,
       } satisfies SolidForm
       return {

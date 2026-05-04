@@ -139,10 +139,9 @@ type UmpireFormSubscribeProps<
 > = {
   form: {
     Subscribe(props: {
-      selector(state: { values: Record<string, unknown> }): Record<
-        string,
-        unknown
-      >
+      selector(state: {
+        values: Record<string, unknown>
+      }): Record<string, unknown>
       children(values: Record<string, unknown>): ReactNode
     }): ReactNode
     setFieldValue(name: string, value: unknown): void
