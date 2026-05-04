@@ -90,13 +90,13 @@ function fillMissingScorecardValues<F extends Record<string, FieldDef>>(
   fieldNames: Array<keyof F & string>,
   values: InputValues,
   label: string,
-) {
+): InputValues {
   const autoFilled: string[] = []
+  const patched = { ...values }
 
   for (const field of fieldNames) {
     if (!Object.hasOwn(values, field)) {
-      // eslint-disable-next-line no-param-reassign
-      values[field] = null
+      patched[field] = null
       autoFilled.push(field)
     }
   }
@@ -106,6 +106,8 @@ function fillMissingScorecardValues<F extends Record<string, FieldDef>>(
       `[@umpire/core] scorecard() auto-filled missing keys in ${label}.values: ${autoFilled.map((field) => `"${field}"`).join(', ')}. Pass null explicitly to silence this warning.`,
     )
   }
+
+  return patched
 }
 
 function normalizeValidators<F extends Record<string, FieldDef>>(
@@ -1344,11 +1346,25 @@ export function umpire<
     },
     options: ScorecardOptions<C> = {},
   ): ScorecardResult<NormalizeFields<FInput>, C> {
-    const { before, includeChallenge = false } = options
-    fillMissingScorecardValues(fieldNames, snapshot.values, 'snapshot')
-    if (before) {
-      fillMissingScorecardValues(fieldNames, before.values, 'before')
+    const { includeChallenge = false } = options
+    snapshot = {
+      ...snapshot,
+      values: fillMissingScorecardValues(
+        fieldNames,
+        snapshot.values,
+        'snapshot',
+      ),
     }
+    const before = options.before
+      ? {
+          ...options.before,
+          values: fillMissingScorecardValues(
+            fieldNames,
+            options.before.values,
+            'before',
+          ),
+        }
+      : undefined
 
     const typedValues = snapshot.values as FieldValues<NormalizeFields<FInput>>
     const typedPrev = before?.values as

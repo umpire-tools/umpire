@@ -16,7 +16,7 @@ import {
   checkDrizzleModelCreate,
   checkDrizzleModelPatch,
 } from '../src/check-model.js'
-import type { UmpireValidationAdapter } from '../src/result.js'
+import type { WriteValidationAdapter } from '@umpire/write'
 
 const accounts = pgTable('accounts', {
   id: serial().primaryKey(),
@@ -44,7 +44,7 @@ const model = fromDrizzleModel(modelConfig)
 
 function mockAdapter<F extends Record<string, FieldDef>>(
   errors: Array<{ field: string; message: string }>,
-): UmpireValidationAdapter<F> {
+): WriteValidationAdapter<F> {
   return {
     run() {
       return {
