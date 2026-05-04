@@ -1863,6 +1863,7 @@ __metadata:
   dependencies:
     "@umpire/core": "workspace:*"
     "@umpire/store": "workspace:*"
+    "@umpire/write": "workspace:*"
     effect: "npm:4.0.0-beta.59"
   peerDependencies:
     effect: ">=4.0.0-beta.58 <5.0.0"
@@ -2057,12 +2058,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@umpire/write@workspace:^, @umpire/write@workspace:packages/write":
+"@umpire/write@workspace:*, @umpire/write@workspace:^, @umpire/write@workspace:packages/write":
   version: 0.0.0-use.local
   resolution: "@umpire/write@workspace:packages/write"
   dependencies:
     "@umpire/core": "workspace:^"
-    "@umpire/zod": "workspace:^"
   languageName: unknown
   linkType: soft
 
@@ -2072,6 +2072,7 @@ __metadata:
   dependencies:
     "@umpire/core": "workspace:^"
     "@umpire/devtools": "workspace:^"
+    "@umpire/write": "workspace:^"
     zod: "npm:^3.23.8"
   peerDependencies:
     zod: ^3.0.0 || ^4.0.0

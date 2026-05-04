@@ -5,6 +5,11 @@ import type {
   ValidationMap,
 } from '@umpire/core'
 import { isRecord } from '@umpire/core/guards'
+import {
+  flattenFieldErrorPaths,
+  nestNamespacedValues,
+  type NamespacedFieldOptions,
+} from '@umpire/write'
 import type { z } from 'zod'
 import {
   deriveErrors,
@@ -26,6 +31,8 @@ type FieldSchemas<F extends Record<string, FieldDef>> = Partial<
 export type CreateZodAdapterOptions<F extends Record<string, FieldDef>> = {
   schemas: FieldSchemas<F>
   build?(schema: z.ZodObject<Record<string, z.ZodTypeAny>>): ZodSchemaLike
+  valueShape?: 'flat' | 'nested'
+  namespace?: NamespacedFieldOptions
 } & DeriveSchemaOptions
 
 export type ZodAdapterRunResult<F extends Record<string, FieldDef>> = {
@@ -91,10 +98,18 @@ export function createZodAdapter<F extends Record<string, FieldDef>>(
     run(availability, values) {
       const baseSchema = deriveSchema(availability, schemas, { rejectFoul })
       const schema = build ? build(baseSchema) : baseSchema
-      const result = schema.safeParse(values)
-      const normalizedErrors = isFailedParseResult(result)
+      const validationValues =
+        options.valueShape === 'nested'
+          ? nestNamespacedValues(values, options.namespace)
+          : values
+      const result = schema.safeParse(validationValues)
+      const rawErrors = isFailedParseResult(result)
         ? zodErrors(result.error)
         : []
+      const normalizedErrors =
+        options.valueShape === 'nested'
+          ? flattenFieldErrorPaths(rawErrors, options.namespace)
+          : rawErrors
 
       return {
         errors: deriveErrors(availability, normalizedErrors),

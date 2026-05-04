@@ -5,6 +5,8 @@ import {
   checkCreate,
   checkPatch,
   composeWriteResult,
+  flattenFieldErrorPaths,
+  nestNamespacedValues,
   runWriteValidationAdapter,
   type WriteValidationAdapter,
 } from '@umpire/write'
@@ -256,6 +258,46 @@ describe('runWriteValidationAdapter', () => {
 
     expect(result?.schemaIssues).toEqual([])
     expect(result?.validationResult).toEqual({ success: false })
+  })
+})
+
+describe('namespaced validation helpers', () => {
+  test('nests flat dotted values for composed validators', () => {
+    expect(
+      nestNamespacedValues({
+        'account.email': 'a@example.com',
+        'account.companyName': 'Acme',
+        'shipment.hazardous': false,
+        status: 'draft',
+      }),
+    ).toEqual({
+      account: {
+        email: 'a@example.com',
+        companyName: 'Acme',
+      },
+      shipment: {
+        hazardous: false,
+      },
+      status: 'draft',
+    })
+  })
+
+  test('flattens normalized validation paths back to dotted fields', () => {
+    expect(
+      flattenFieldErrorPaths([
+        {
+          field: 'account',
+          path: ['account', 'companyName'],
+          message: 'Company name is required',
+        },
+      ]),
+    ).toEqual([
+      {
+        field: 'account.companyName',
+        path: ['account', 'companyName'],
+        message: 'Company name is required',
+      },
+    ])
   })
 })
 

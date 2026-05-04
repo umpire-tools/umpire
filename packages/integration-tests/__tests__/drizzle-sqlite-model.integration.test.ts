@@ -352,6 +352,104 @@ describe('drizzle sqlite model policy multi-table write', () => {
     }
   })
 
+  it('nested composed zod validation reports child errors as flat namespaced fields', () => {
+    const { sqlite, close } = createMemoryDb()
+    try {
+      createSchema(sqlite)
+
+      const policy = createDrizzleModelPolicy(
+        {
+          account: quoteAccounts,
+          shipment: { table: quoteShipments, exclude: ['accountId'] },
+        },
+        {
+          validation: createZodAdapter({
+            schemas: modelSchemas,
+            valueShape: 'nested',
+            build() {
+              return z.object({
+                account: z.object({
+                  accountType: z.enum(['personal', 'business']),
+                  companyName: z.string().min(1, 'Company name is required'),
+                }),
+                shipment: z.object({
+                  hazardous: z.boolean(),
+                  serviceLevel: z.enum(['standard', 'expedited', 'overnight']),
+                }),
+              })
+            },
+          }),
+        },
+      )
+
+      const result = policy.checkCreate({
+        'account.accountType': 'business',
+        'account.companyName': '',
+        'shipment.hazardous': false,
+        'shipment.serviceLevel': 'standard',
+      })
+
+      expect(result.ok).toBe(false)
+      expect(result.issues.schema.length).toBeGreaterThan(0)
+      expect(result.issues.schema).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            field: 'account.companyName',
+            message: 'Company name is required',
+          }),
+        ]),
+      )
+    } finally {
+      close()
+    }
+  })
+
+  it('default flat zod validation still rejects nested schemas with coarse parent errors', () => {
+    const { sqlite, close } = createMemoryDb()
+    try {
+      createSchema(sqlite)
+
+      const policy = createDrizzleModelPolicy(
+        {
+          account: quoteAccounts,
+          shipment: { table: quoteShipments, exclude: ['accountId'] },
+        },
+        {
+          validation: createZodAdapter({
+            schemas: modelSchemas,
+            build() {
+              return z.object({
+                account: z.object({
+                  accountType: z.enum(['personal', 'business']),
+                  companyName: z.string().min(1, 'Company name is required'),
+                }),
+                shipment: z.object({
+                  hazardous: z.boolean(),
+                  serviceLevel: z.enum(['standard', 'expedited', 'overnight']),
+                }),
+              })
+            },
+          }),
+        },
+      )
+
+      const result = policy.checkCreate({
+        'account.accountType': 'business',
+        'account.companyName': '',
+        'shipment.hazardous': false,
+        'shipment.serviceLevel': 'standard',
+      })
+
+      expect(result.ok).toBe(false)
+      expect(result.issues.schema).toEqual([
+        { field: 'account', message: 'Required' },
+        { field: 'shipment', message: 'Required' },
+      ])
+    } finally {
+      close()
+    }
+  })
+
   // ── WHERE semantics ──
 
   it('model result does not provide WHERE keys in payloads', () => {

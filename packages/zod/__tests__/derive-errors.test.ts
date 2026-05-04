@@ -90,7 +90,11 @@ describe('deriveErrors', () => {
 
     expect(zodErrors(result.error)).toEqual([
       { field: 'name', message: 'Name is required' },
-      { field: 'notes', message: 'Value is required' },
+      {
+        field: 'notes',
+        path: ['notes', 0, 'value'],
+        message: 'Value is required',
+      },
     ])
   })
 

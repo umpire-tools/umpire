@@ -6,6 +6,7 @@ import type {
   ValidationMap,
 } from '@umpire/core'
 import type { WriteCandidate, WriteCheckResult, WriteIssue } from './check.js'
+import type { NormalizedFieldErrorWithPath } from './namespaced.js'
 
 // ── Validation adapter protocol ──
 
@@ -15,7 +16,7 @@ export type WriteValidationAdapter<F extends Record<string, FieldDef>> = {
     values: InputValues,
   ): {
     errors: Partial<Record<keyof F & string, string>>
-    normalizedErrors: Array<{ field: string; message: string }>
+    normalizedErrors: NormalizedFieldErrorWithPath[]
     result: unknown
     schemaFields: Array<keyof F & string>
   }

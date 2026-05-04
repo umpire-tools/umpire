@@ -26,7 +26,8 @@
   ],
   "dependencies": {
     "@umpire/core": "workspace:*",
-    "@umpire/store": "workspace:*"
+    "@umpire/store": "workspace:*",
+    "@umpire/write": "workspace:*"
   },
   "peerDependencies": {
     "effect": ">=4.0.0-beta.58 <5.0.0"

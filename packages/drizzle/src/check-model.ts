@@ -4,6 +4,7 @@ import {
   checkPatch as writeCheckPatch,
   composeWriteResult,
   runWriteValidationAdapter,
+  splitNamespacedField,
   type WriteValidationAdapter,
 } from '@umpire/write'
 
@@ -24,17 +25,6 @@ import {
   type DrizzleModelWriteResult,
   type DrizzleWriteOptions,
 } from './result.js'
-
-// ── Namespace utilities ──
-
-function splitKey(key: string): { namespace: string; localKey: string } | null {
-  const dotIndex = key.indexOf('.')
-  if (dotIndex === -1) return null
-  return {
-    namespace: key.slice(0, dotIndex),
-    localKey: key.slice(dotIndex + 1),
-  }
-}
 
 // ── Options type ──
 
@@ -76,7 +66,7 @@ export function checkDrizzleModelCreate<
   const unknownKeys: DrizzleColumnIssue<F>[] = []
 
   for (const key of Object.keys(data)) {
-    const split = splitKey(key)
+    const split = splitNamespacedField(key)
     if (!split || !namespaceMeta.has(split.namespace)) {
       const reject = !options || options.unknownKeys !== 'strip'
       if (reject) {
@@ -136,7 +126,7 @@ export function checkDrizzleModelCreate<
     // Build accepted input for this namespace (local keys)
     const nsAcceptedInput: Record<string, unknown> = {}
     for (const flatKey of acceptedInputKeys) {
-      const split = splitKey(flatKey)
+      const split = splitNamespacedField(flatKey)
       if (split?.namespace === ns) {
         nsAcceptedInput[split.localKey] = flatShapedData[flatKey]
       }
@@ -145,7 +135,7 @@ export function checkDrizzleModelCreate<
     // Build candidate excerpt for this namespace (local keys from flat candidate)
     const nsCandidate: Record<string, unknown> = {}
     for (const [flatKey, value] of Object.entries(write.candidate)) {
-      const split = splitKey(flatKey)
+      const split = splitNamespacedField(flatKey)
       if (split?.namespace === ns) {
         nsCandidate[split.localKey] = value
       }
@@ -158,7 +148,7 @@ export function checkDrizzleModelCreate<
       { enabled?: boolean }
     >
     for (const flatKey of Object.keys(flatAvail)) {
-      const split = splitKey(flatKey)
+      const split = splitNamespacedField(flatKey)
       if (split?.namespace === ns) {
         nsAvailability[split.localKey] = flatAvail[flatKey]
       }
@@ -219,7 +209,7 @@ export function checkDrizzleModelPatch<
   const unknownKeys: DrizzleColumnIssue<F>[] = []
 
   for (const key of Object.keys(patch)) {
-    const split = splitKey(key)
+    const split = splitNamespacedField(key)
     if (!split || !namespaceMeta.has(split.namespace)) {
       const reject = !options || options.unknownKeys !== 'strip'
       if (reject) {
@@ -307,7 +297,7 @@ export function checkDrizzleModelPatch<
   for (const [ns, meta] of namespaceMeta) {
     const localRawClears: Record<string, null> = {}
     for (const flatKey of Object.keys(rawFlatClears)) {
-      const split = splitKey(flatKey)
+      const split = splitNamespacedField(flatKey)
       if (split?.namespace === ns) {
         localRawClears[split.localKey] = null
       }
@@ -344,13 +334,13 @@ export function checkDrizzleModelPatch<
   for (const [ns] of namespaceMeta) {
     const nsData: Record<string, unknown> = {}
     for (const [flatKey, value] of Object.entries(flatStaleClears)) {
-      const split = splitKey(flatKey)
+      const split = splitNamespacedField(flatKey)
       if (split?.namespace === ns) {
         nsData[split.localKey] = value
       }
     }
     for (const [flatKey, value] of Object.entries(flatShapedPatch)) {
-      const split = splitKey(flatKey)
+      const split = splitNamespacedField(flatKey)
       if (split?.namespace === ns) {
         const status = (
           write.availability as Record<string, { enabled?: boolean }>

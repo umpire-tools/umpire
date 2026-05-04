@@ -1,11 +1,13 @@
 import { Result, Schema } from 'effect'
 import type { SchemaAST, SchemaIssue } from 'effect'
+import type { FieldPathSegment } from '@umpire/write'
 
 export type EffectParseOptions = SchemaAST.ParseOptions
 
 export type NormalizedEffectError = {
   field: string
   message: string
+  path?: readonly FieldPathSegment[]
 }
 
 export type EffectDecodeResult<A> =
@@ -70,9 +72,14 @@ export function formatEffectErrors(
 function formatV4Issue(
   issue: unknown | SchemaIssue.Issue,
   path: ReadonlyArray<PropertyKey> = [],
-): Array<{ field: string; message: string }> {
+): NormalizedEffectError[] {
   if (!isRecord(issue)) {
-    return [{ field: String(path[0] ?? ''), message: String(issue) }]
+    const result: NormalizedEffectError = {
+      field: String(path[0] ?? ''),
+      message: String(issue),
+    }
+    if (path.length > 1) result.path = toFieldPath(path)
+    return [result]
   }
 
   if (issue._tag === 'Pointer') {
@@ -88,12 +95,18 @@ function formatV4Issue(
     return formatV4Issue(issue.issue, path)
   }
 
-  return [
-    {
-      field: String(path[0] ?? ''),
-      message: stripPathSuffix(String(issue)),
-    },
-  ]
+  const result: NormalizedEffectError = {
+    field: String(path[0] ?? ''),
+    message: stripPathSuffix(String(issue)),
+  }
+  if (path.length > 1) result.path = toFieldPath(path)
+  return [result]
+}
+
+function toFieldPath(path: ReadonlyArray<PropertyKey>): FieldPathSegment[] {
+  return path.map((segment) =>
+    typeof segment === 'number' ? segment : String(segment),
+  )
 }
 
 function stripPathSuffix(message: string): string {

@@ -15,3 +15,15 @@ export type {
   WriteValidationAdapter,
   WriteValidationRun,
 } from './validation.js'
+export {
+  flattenFieldErrorPath,
+  flattenFieldErrorPaths,
+  joinFieldPath,
+  nestNamespacedValues,
+  splitNamespacedField,
+} from './namespaced.js'
+export type {
+  FieldPathSegment,
+  NamespacedFieldOptions,
+  NormalizedFieldErrorWithPath,
+} from './namespaced.js'
