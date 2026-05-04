@@ -5,6 +5,7 @@ import {
   composeWriteResult,
   runWriteValidationAdapter,
   splitNamespacedField,
+  type WriteCheckResult,
   type WriteValidationAdapter,
 } from '@umpire/write'
 
@@ -35,6 +36,13 @@ type ModelWriteOptions<
   validation?: WriteValidationAdapter<F>
 }
 
+type NamespaceMeta = {
+  tableMeta: ReturnType<typeof getTableColumnsMeta>
+  exclude: Set<string>
+}
+
+type AvailabilityByField = Record<string, { enabled?: boolean }>
+
 // ── Model write helpers ──
 
 export function checkDrizzleModelCreate<
@@ -47,121 +55,19 @@ export function checkDrizzleModelCreate<
   data: Record<string, unknown>,
   options?: ModelWriteOptions<F, C>,
 ): DrizzleModelWriteResult<F> {
-  const namespaceEntries = Object.entries(modelConfig) as Array<
-    [string, FromDrizzleModelTableEntry]
-  >
-
-  // Build per-namespace metadata
-  const namespaceMeta = new Map(
-    namespaceEntries.map(([ns, entry]) => {
-      const table = getEntryTable(entry)
-      const tableMeta = getTableColumnsMeta(table)
-      const exclude = new Set(getEntryOptions(entry).exclude ?? [])
-      return [ns, { tableMeta, exclude }] as const
-    }),
-  )
-
-  // Split flat data by namespace
-  const byNamespace = new Map<string, Record<string, unknown>>()
-  const unknownKeys: DrizzleColumnIssue<F>[] = []
-
-  for (const key of Object.keys(data)) {
-    const split = splitNamespacedField(key)
-    if (!split || !namespaceMeta.has(split.namespace)) {
-      const reject = !options || options.unknownKeys !== 'strip'
-      if (reject) {
-        unknownKeys.push({
-          kind: 'unknown',
-          field: key,
-          message: `unknown field "${key}"`,
-        })
-      }
-      continue
-    }
-
-    let nsData = byNamespace.get(split.namespace)
-    if (!nsData) {
-      nsData = {}
-      byNamespace.set(split.namespace, nsData)
-    }
-    nsData[split.localKey] = data[key]
-  }
-
-  // Shape per namespace
-  const flatShapedData: Record<string, unknown> = {}
-  const allColumnIssues: DrizzleColumnIssue<F>[] = [...unknownKeys]
-
-  for (const [ns, meta] of namespaceMeta) {
-    const nsData = byNamespace.get(ns) ?? {}
-    const { shapedData, columnIssues } = shapeCreateInput(
-      meta.tableMeta,
-      meta.exclude,
-      nsData,
-      options,
-    )
-
-    // Map local issue fields to flat namespaced names
-    for (const issue of columnIssues) {
-      allColumnIssues.push({
-        kind: issue.kind,
-        field: `${ns}.${issue.field}` as keyof F & string,
-        message: issue.message,
-      })
-    }
-
-    // Re-namespace shaped data back to flat keys
-    for (const [localKey, value] of Object.entries(shapedData)) {
-      flatShapedData[`${ns}.${localKey}`] = value
-    }
-  }
+  const namespaceMeta = buildNamespaceMeta(modelConfig)
+  const { flatData: flatShapedData, columnIssues: allColumnIssues } =
+    shapeNamespacedInput(namespaceMeta, data, options, 'create')
 
   // Run write check on flat data
   const write = writeCheckCreate(ump, flatShapedData, options?.context)
 
   // Build data by table
-  const dataByTable: Record<string, Record<string, unknown>> = {}
-  const acceptedInputKeys = new Set(Object.keys(flatShapedData))
-
-  for (const [ns, meta] of namespaceMeta) {
-    // Build accepted input for this namespace (local keys)
-    const nsAcceptedInput: Record<string, unknown> = {}
-    for (const flatKey of acceptedInputKeys) {
-      const split = splitNamespacedField(flatKey)
-      if (split?.namespace === ns) {
-        nsAcceptedInput[split.localKey] = flatShapedData[flatKey]
-      }
-    }
-
-    // Build candidate excerpt for this namespace (local keys from flat candidate)
-    const nsCandidate: Record<string, unknown> = {}
-    for (const [flatKey, value] of Object.entries(write.candidate)) {
-      const split = splitNamespacedField(flatKey)
-      if (split?.namespace === ns) {
-        nsCandidate[split.localKey] = value
-      }
-    }
-
-    // Build namespaced availability (local keys)
-    const nsAvailability: Record<string, { enabled?: boolean }> = {}
-    const flatAvail = write.availability as Record<
-      string,
-      { enabled?: boolean }
-    >
-    for (const flatKey of Object.keys(flatAvail)) {
-      const split = splitNamespacedField(flatKey)
-      if (split?.namespace === ns) {
-        nsAvailability[split.localKey] = flatAvail[flatKey]
-      }
-    }
-
-    dataByTable[ns] = buildCreateDataFromCandidate(
-      meta.tableMeta,
-      meta.exclude,
-      nsCandidate,
-      nsAcceptedInput,
-      nsAvailability,
-    )
-  }
+  const dataByTable = buildCreateDataByTable(
+    namespaceMeta,
+    flatShapedData,
+    write,
+  )
 
   const validation = options?.validation
     ? runWriteValidationAdapter(
@@ -190,71 +96,9 @@ export function checkDrizzleModelPatch<
   patch: Record<string, unknown>,
   options?: ModelWriteOptions<F, C>,
 ): DrizzleModelWriteResult<F> {
-  const namespaceEntries = Object.entries(modelConfig) as Array<
-    [string, FromDrizzleModelTableEntry]
-  >
-
-  // Build per-namespace metadata
-  const namespaceMeta = new Map(
-    namespaceEntries.map(([ns, entry]) => {
-      const table = getEntryTable(entry)
-      const tableMeta = getTableColumnsMeta(table)
-      const exclude = new Set(getEntryOptions(entry).exclude ?? [])
-      return [ns, { tableMeta, exclude }] as const
-    }),
-  )
-
-  // Split flat patch by namespace
-  const byNamespace = new Map<string, Record<string, unknown>>()
-  const unknownKeys: DrizzleColumnIssue<F>[] = []
-
-  for (const key of Object.keys(patch)) {
-    const split = splitNamespacedField(key)
-    if (!split || !namespaceMeta.has(split.namespace)) {
-      const reject = !options || options.unknownKeys !== 'strip'
-      if (reject) {
-        unknownKeys.push({
-          kind: 'unknown',
-          field: key,
-          message: `unknown field "${key}"`,
-        })
-      }
-      continue
-    }
-
-    let nsData = byNamespace.get(split.namespace)
-    if (!nsData) {
-      nsData = {}
-      byNamespace.set(split.namespace, nsData)
-    }
-    nsData[split.localKey] = patch[key]
-  }
-
-  // Shape per namespace
-  const flatShapedPatch: Record<string, unknown> = {}
-  const allColumnIssues: DrizzleColumnIssue<F>[] = [...unknownKeys]
-
-  for (const [ns, meta] of namespaceMeta) {
-    const nsPatch = byNamespace.get(ns) ?? {}
-    const { shapedData, columnIssues } = shapePatchData(
-      meta.tableMeta,
-      meta.exclude,
-      nsPatch,
-      options,
-    )
-
-    for (const issue of columnIssues) {
-      allColumnIssues.push({
-        kind: issue.kind,
-        field: `${ns}.${issue.field}` as keyof F & string,
-        message: issue.message,
-      })
-    }
-
-    for (const [localKey, value] of Object.entries(shapedData)) {
-      flatShapedPatch[`${ns}.${localKey}`] = value
-    }
-  }
+  const namespaceMeta = buildNamespaceMeta(modelConfig)
+  const { flatData: flatShapedPatch, columnIssues: allColumnIssues } =
+    shapeNamespacedInput(namespaceMeta, patch, options, 'patch')
 
   // Run initial write check on flat patch data
   const initialWrite = writeCheckPatch(
@@ -265,57 +109,12 @@ export function checkDrizzleModelPatch<
   )
 
   // Build stale-value clears from two sources
-  const rawFlatClears: Record<string, null> = {}
-
-  for (const foul of initialWrite.fouls) {
-    const status = (
-      initialWrite.availability as Record<string, { enabled?: boolean }>
-    )[foul.field]
-    if (status?.enabled !== false) continue
-
-    const userSubmittedNonNull =
-      Object.hasOwn(flatShapedPatch, foul.field) &&
-      flatShapedPatch[foul.field] != null
-
-    if (existing[foul.field] != null && !userSubmittedNonNull) {
-      rawFlatClears[foul.field] = null
-    }
-  }
-
-  for (const [field, value] of Object.entries(flatShapedPatch)) {
-    const status = (
-      initialWrite.availability as Record<string, { enabled?: boolean }>
-    )[field]
-    if (status?.enabled === false && value == null && existing[field] != null) {
-      rawFlatClears[field] = null
-    }
-  }
-
-  // Shape per-namespace through column filter
-  const flatStaleClears: Record<string, unknown> = {}
-
-  for (const [ns, meta] of namespaceMeta) {
-    const localRawClears: Record<string, null> = {}
-    for (const flatKey of Object.keys(rawFlatClears)) {
-      const split = splitNamespacedField(flatKey)
-      if (split?.namespace === ns) {
-        localRawClears[split.localKey] = null
-      }
-    }
-
-    if (Object.keys(localRawClears).length === 0) continue
-
-    const { shapedData: localStaleClears } = shapePatchData(
-      meta.tableMeta,
-      meta.exclude,
-      localRawClears,
-      { unknownKeys: 'strip', nonWritableKeys: 'strip' },
-    )
-
-    for (const [localKey, value] of Object.entries(localStaleClears)) {
-      flatStaleClears[`${ns}.${localKey}`] = value
-    }
-  }
+  const rawFlatClears = collectDisabledStaleClears(
+    initialWrite,
+    existing,
+    flatShapedPatch,
+  )
+  const flatStaleClears = shapeNamespacedClears(namespaceMeta, rawFlatClears)
 
   // Re-run write check only when shaped stale clears exist
   const write =
@@ -329,29 +128,12 @@ export function checkDrizzleModelPatch<
         )
 
   // Build data by table (stale clears + enabled user fields)
-  const dataByTable: Record<string, Record<string, unknown>> = {}
-
-  for (const [ns] of namespaceMeta) {
-    const nsData: Record<string, unknown> = {}
-    for (const [flatKey, value] of Object.entries(flatStaleClears)) {
-      const split = splitNamespacedField(flatKey)
-      if (split?.namespace === ns) {
-        nsData[split.localKey] = value
-      }
-    }
-    for (const [flatKey, value] of Object.entries(flatShapedPatch)) {
-      const split = splitNamespacedField(flatKey)
-      if (split?.namespace === ns) {
-        const status = (
-          write.availability as Record<string, { enabled?: boolean }>
-        )[flatKey]
-        if (status?.enabled !== false) {
-          nsData[split.localKey] = value
-        }
-      }
-    }
-    dataByTable[ns] = nsData
-  }
+  const dataByTable = buildPatchDataByTable(
+    namespaceMeta,
+    flatStaleClears,
+    flatShapedPatch,
+    write,
+  )
 
   const validation = options?.validation
     ? runWriteValidationAdapter(
@@ -367,4 +149,244 @@ export function checkDrizzleModelPatch<
     extraIssues: { columns: allColumnIssues },
   })
   return { ...composed, dataByTable }
+}
+
+function buildNamespaceMeta(
+  modelConfig: FromDrizzleModelConfig,
+): Map<string, NamespaceMeta> {
+  const entries = Object.entries(modelConfig) as Array<
+    [string, FromDrizzleModelTableEntry]
+  >
+
+  return new Map(
+    entries.map(([ns, entry]) => {
+      const table = getEntryTable(entry)
+      const tableMeta = getTableColumnsMeta(table)
+      const exclude = new Set(getEntryOptions(entry).exclude ?? [])
+      return [ns, { tableMeta, exclude }] as const
+    }),
+  )
+}
+
+function splitByNamespace<F extends Record<string, FieldDef>>(
+  namespaceMeta: Map<string, NamespaceMeta>,
+  data: Record<string, unknown>,
+  options?: DrizzleWriteOptions,
+): {
+  byNamespace: Map<string, Record<string, unknown>>
+  unknownKeys: DrizzleColumnIssue<F>[]
+} {
+  const byNamespace = new Map<string, Record<string, unknown>>()
+  const unknownKeys: DrizzleColumnIssue<F>[] = []
+
+  for (const [key, value] of Object.entries(data)) {
+    const split = splitNamespacedField(key)
+    if (!split || !namespaceMeta.has(split.namespace)) {
+      if (options?.unknownKeys !== 'strip') {
+        unknownKeys.push({
+          kind: 'unknown',
+          field: key,
+          message: `unknown field "${key}"`,
+        })
+      }
+      continue
+    }
+
+    const nsData = byNamespace.get(split.namespace) ?? {}
+    nsData[split.localKey] = value
+    byNamespace.set(split.namespace, nsData)
+  }
+
+  return { byNamespace, unknownKeys }
+}
+
+function shapeNamespacedInput<F extends Record<string, FieldDef>>(
+  namespaceMeta: Map<string, NamespaceMeta>,
+  data: Record<string, unknown>,
+  options: DrizzleWriteOptions | undefined,
+  mode: 'create' | 'patch',
+): {
+  flatData: Record<string, unknown>
+  columnIssues: DrizzleColumnIssue<F>[]
+} {
+  const { byNamespace, unknownKeys } = splitByNamespace<F>(
+    namespaceMeta,
+    data,
+    options,
+  )
+  const flatData: Record<string, unknown> = {}
+  const columnIssues: DrizzleColumnIssue<F>[] = [...unknownKeys]
+
+  for (const [ns, meta] of namespaceMeta) {
+    const localData = byNamespace.get(ns) ?? {}
+    const shaped =
+      mode === 'create'
+        ? shapeCreateInput(meta.tableMeta, meta.exclude, localData, options)
+        : shapePatchData(meta.tableMeta, meta.exclude, localData, options)
+
+    appendNamespacedIssues(columnIssues, ns, shaped.columnIssues)
+    appendNamespacedData(flatData, ns, shaped.shapedData)
+  }
+
+  return { flatData, columnIssues }
+}
+
+function appendNamespacedIssues<F extends Record<string, FieldDef>>(
+  target: DrizzleColumnIssue<F>[],
+  namespace: string,
+  issues: Array<{
+    kind: 'unknown' | 'nonWritable'
+    field: string
+    message: string
+  }>,
+): void {
+  for (const issue of issues) {
+    target.push({
+      kind: issue.kind,
+      field: `${namespace}.${issue.field}` as keyof F & string,
+      message: issue.message,
+    })
+  }
+}
+
+function appendNamespacedData(
+  target: Record<string, unknown>,
+  namespace: string,
+  data: Record<string, unknown>,
+): void {
+  for (const [localKey, value] of Object.entries(data)) {
+    target[`${namespace}.${localKey}`] = value
+  }
+}
+
+function localRecordForNamespace(
+  namespace: string,
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  const localData: Record<string, unknown> = {}
+
+  for (const [flatKey, value] of Object.entries(data)) {
+    const split = splitNamespacedField(flatKey)
+    if (split?.namespace === namespace) {
+      localData[split.localKey] = value
+    }
+  }
+
+  return localData
+}
+
+function localAvailabilityForNamespace(
+  namespace: string,
+  availability: AvailabilityByField,
+): AvailabilityByField {
+  const localAvailability: AvailabilityByField = {}
+
+  for (const [flatKey, status] of Object.entries(availability)) {
+    const split = splitNamespacedField(flatKey)
+    if (split?.namespace === namespace) {
+      localAvailability[split.localKey] = status
+    }
+  }
+
+  return localAvailability
+}
+
+function buildCreateDataByTable<F extends Record<string, FieldDef>>(
+  namespaceMeta: Map<string, NamespaceMeta>,
+  flatShapedData: Record<string, unknown>,
+  write: WriteCheckResult<F>,
+): Record<string, Record<string, unknown>> {
+  const dataByTable: Record<string, Record<string, unknown>> = {}
+  const availability = write.availability as AvailabilityByField
+
+  for (const [ns, meta] of namespaceMeta) {
+    dataByTable[ns] = buildCreateDataFromCandidate(
+      meta.tableMeta,
+      meta.exclude,
+      localRecordForNamespace(ns, write.candidate),
+      localRecordForNamespace(ns, flatShapedData),
+      localAvailabilityForNamespace(ns, availability),
+    )
+  }
+
+  return dataByTable
+}
+
+function collectDisabledStaleClears<F extends Record<string, FieldDef>>(
+  write: WriteCheckResult<F>,
+  existing: Record<string, unknown>,
+  patch: Record<string, unknown>,
+): Record<string, null> {
+  const availability = write.availability as AvailabilityByField
+  const clears: Record<string, null> = {}
+
+  for (const foul of write.fouls) {
+    if (availability[foul.field]?.enabled !== false) continue
+    if (existing[foul.field] == null) continue
+    if (Object.hasOwn(patch, foul.field) && patch[foul.field] != null) continue
+    clears[foul.field] = null
+  }
+
+  for (const [field, value] of Object.entries(patch)) {
+    if (availability[field]?.enabled !== false) continue
+    if (value != null || existing[field] == null) continue
+    clears[field] = null
+  }
+
+  return clears
+}
+
+function shapeNamespacedClears(
+  namespaceMeta: Map<string, NamespaceMeta>,
+  rawFlatClears: Record<string, null>,
+): Record<string, unknown> {
+  const flatStaleClears: Record<string, unknown> = {}
+
+  for (const [ns, meta] of namespaceMeta) {
+    const localRawClears = localRecordForNamespace(ns, rawFlatClears)
+    if (Object.keys(localRawClears).length === 0) continue
+
+    const { shapedData } = shapePatchData(
+      meta.tableMeta,
+      meta.exclude,
+      localRawClears,
+      { unknownKeys: 'strip', nonWritableKeys: 'strip' },
+    )
+    appendNamespacedData(flatStaleClears, ns, shapedData)
+  }
+
+  return flatStaleClears
+}
+
+function buildPatchDataByTable<F extends Record<string, FieldDef>>(
+  namespaceMeta: Map<string, NamespaceMeta>,
+  flatStaleClears: Record<string, unknown>,
+  flatShapedPatch: Record<string, unknown>,
+  write: WriteCheckResult<F>,
+): Record<string, Record<string, unknown>> {
+  const dataByTable: Record<string, Record<string, unknown>> = {}
+  const enabledPatch = filterEnabledData(write, flatShapedPatch)
+  const flatData = { ...flatStaleClears, ...enabledPatch }
+
+  for (const [ns] of namespaceMeta) {
+    dataByTable[ns] = localRecordForNamespace(ns, flatData)
+  }
+
+  return dataByTable
+}
+
+function filterEnabledData<F extends Record<string, FieldDef>>(
+  write: WriteCheckResult<F>,
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  const availability = write.availability as AvailabilityByField
+  const enabledData: Record<string, unknown> = {}
+
+  for (const [key, value] of Object.entries(data)) {
+    if (availability[key]?.enabled !== false) {
+      enabledData[key] = value
+    }
+  }
+
+  return enabledData
 }

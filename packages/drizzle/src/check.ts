@@ -14,9 +14,12 @@ import {
 import {
   composeWriteResult,
   runWriteValidationAdapter,
+  type WriteCheckResult,
   type WriteValidationAdapter,
 } from '@umpire/write'
 import { type DrizzleWriteOptions, type DrizzleWriteResult } from './result.js'
+
+type AvailabilityByField = Record<string, { enabled?: boolean }>
 
 function deriveExclude<F extends Record<string, FieldDef>>(
   tableMeta: ReturnType<typeof getTableColumnsMeta>,
@@ -111,28 +114,11 @@ export function checkDrizzlePatch<
     options?.context,
   )
 
-  const rawClears: Record<string, null> = {}
-  for (const foul of initialWrite.fouls) {
-    const status = (
-      initialWrite.availability as Record<string, { enabled?: boolean }>
-    )[foul.field]
-    if (status?.enabled !== false) continue
-
-    const userSubmittedNonNull =
-      Object.hasOwn(shapedData, foul.field) && shapedData[foul.field] != null
-
-    if (existing[foul.field] != null && !userSubmittedNonNull) {
-      rawClears[foul.field] = null
-    }
-  }
-  for (const [field, value] of Object.entries(shapedData)) {
-    const status = (
-      initialWrite.availability as Record<string, { enabled?: boolean }>
-    )[field]
-    if (status?.enabled === false && value == null && existing[field] != null) {
-      rawClears[field] = null
-    }
-  }
+  const rawClears = collectDisabledStaleClears(
+    initialWrite,
+    existing,
+    shapedData,
+  )
 
   const { shapedData: staleClears } = shapePatchData(
     tableMeta,
@@ -147,15 +133,7 @@ export function checkDrizzlePatch<
       ? initialWrite
       : writeCheckPatch(ump, existing, shapedPatchWithClears, options?.context)
 
-  const filteredData: Record<string, unknown> = { ...staleClears }
-  for (const key of Object.keys(shapedData)) {
-    const status = (
-      write.availability as Record<string, { enabled?: boolean }>
-    )[key]
-    if (status?.enabled !== false) {
-      filteredData[key] = shapedData[key]
-    }
-  }
+  const filteredData = filterEnabledPatchData(write, shapedData, staleClears)
 
   const validation = options?.validation
     ? runWriteValidationAdapter(
@@ -171,4 +149,45 @@ export function checkDrizzlePatch<
     extraIssues: { columns: columnIssues },
   })
   return { ...composed, data: filteredData as Partial<InferInsertModel<T>> }
+}
+
+function collectDisabledStaleClears<F extends Record<string, FieldDef>>(
+  write: WriteCheckResult<F>,
+  existing: Record<string, unknown>,
+  patch: Record<string, unknown>,
+): Record<string, null> {
+  const availability = write.availability as AvailabilityByField
+  const clears: Record<string, null> = {}
+
+  for (const foul of write.fouls) {
+    if (availability[foul.field]?.enabled !== false) continue
+    if (existing[foul.field] == null) continue
+    if (Object.hasOwn(patch, foul.field) && patch[foul.field] != null) continue
+    clears[foul.field] = null
+  }
+
+  for (const [field, value] of Object.entries(patch)) {
+    if (availability[field]?.enabled !== false) continue
+    if (value != null || existing[field] == null) continue
+    clears[field] = null
+  }
+
+  return clears
+}
+
+function filterEnabledPatchData<F extends Record<string, FieldDef>>(
+  write: WriteCheckResult<F>,
+  patch: Record<string, unknown>,
+  baseData: Record<string, unknown>,
+): Record<string, unknown> {
+  const availability = write.availability as AvailabilityByField
+  const data: Record<string, unknown> = { ...baseData }
+
+  for (const [key, value] of Object.entries(patch)) {
+    if (availability[key]?.enabled !== false) {
+      data[key] = value
+    }
+  }
+
+  return data
 }
