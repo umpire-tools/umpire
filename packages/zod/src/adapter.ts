@@ -71,6 +71,13 @@ export function createZodAdapter<F extends Record<string, FieldDef>>(
   assertFieldSchemas(options.schemas, 'createZodAdapter')
 
   const { schemas, build, rejectFoul } = options
+
+  if (options.valueShape === 'nested' && !build) {
+    throw new Error(
+      '[@umpire/zod] valueShape: "nested" requires a build() callback because the derived per-field schema uses flat field keys.',
+    )
+  }
+
   const validators = {} as ValidationMap<F>
 
   for (const [field, schema] of Object.entries(schemas) as Array<

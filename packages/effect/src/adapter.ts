@@ -54,6 +54,13 @@ export function createEffectAdapter<F extends Record<string, FieldDef>>(
   options: CreateEffectAdapterOptions<F>,
 ): EffectAdapter<F> {
   const { schemas, build, rejectFoul } = options
+
+  if (options.valueShape === 'nested' && !build) {
+    throw new Error(
+      '[@umpire/effect] valueShape: "nested" requires a build() callback because the derived per-field schema uses flat field keys.',
+    )
+  }
+
   const validators = {} as ValidationMap<F>
 
   for (const [field, schema] of Object.entries(schemas) as Array<

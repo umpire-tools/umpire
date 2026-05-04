@@ -133,6 +133,19 @@ describe('createZodAdapter', () => {
     ])
   })
 
+  test('throws when nested value shape is requested without a composed schema', () => {
+    expect(() =>
+      createZodAdapter({
+        schemas: {
+          'account.companyName': z.string().min(1),
+        },
+        valueShape: 'nested',
+      }),
+    ).toThrow(
+      '[@umpire/zod] valueShape: "nested" requires a build() callback because the derived per-field schema uses flat field keys.',
+    )
+  })
+
   test('throws if given a z.object instead of per-field schemas', () => {
     expect(() =>
       createZodAdapter({

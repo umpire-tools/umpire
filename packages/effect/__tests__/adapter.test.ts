@@ -148,6 +148,19 @@ describe('createEffectAdapter', () => {
     ])
   })
 
+  test('throws when nested value shape is requested without a composed schema', () => {
+    expect(() =>
+      createEffectAdapter({
+        schemas: {
+          'account.companyName': Schema.String,
+        },
+        valueShape: 'nested',
+      }),
+    ).toThrow(
+      '[@umpire/effect] valueShape: "nested" requires a build() callback because the derived per-field schema uses flat field keys.',
+    )
+  })
+
   test('excludes disabled fields from schemaFields', () => {
     const fields = { name: {}, extra: {} }
 
