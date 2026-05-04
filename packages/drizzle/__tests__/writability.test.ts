@@ -1,10 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 
 import { umpire } from '@umpire/core'
-import { checkCreate, checkPatch } from '@umpire/write'
-import { sql } from 'drizzle-orm'
+import { checkCreate } from '@umpire/write'
 import {
-  boolean,
   integer,
   pgTable,
   serial,

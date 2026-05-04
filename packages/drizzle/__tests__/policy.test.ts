@@ -2,14 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import type { FieldDef } from '@umpire/core'
 import { enabledWhen, requires } from '@umpire/core'
-import {
-  integer,
-  pgTable,
-  serial,
-  text,
-  timestamp,
-  varchar,
-} from 'drizzle-orm/pg-core'
+import { integer, pgTable, serial, text, varchar } from 'drizzle-orm/pg-core'
 
 import { fromDrizzleModel, fromDrizzleTable } from '../src/index.js'
 import { createDrizzlePolicy, createDrizzleModelPolicy } from '../src/policy.js'

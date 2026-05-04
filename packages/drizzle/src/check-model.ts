@@ -10,7 +10,7 @@ import type {
 } from './model.js'
 import { getEntryTable } from './model.js'
 import { getEntryOptions } from './model.js'
-import { getTableColumnsMeta, type DrizzleColumnMeta } from './table.js'
+import { getTableColumnsMeta } from './table.js'
 import {
   buildCreateDataFromCandidate,
   shapeCreateInput,

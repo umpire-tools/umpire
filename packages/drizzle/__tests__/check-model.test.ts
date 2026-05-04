@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import type { FieldDef } from '@umpire/core'
-import { enabledWhen, requires, umpire } from '@umpire/core'
+import { enabledWhen, umpire } from '@umpire/core'
 import {
   integer,
   pgTable,
