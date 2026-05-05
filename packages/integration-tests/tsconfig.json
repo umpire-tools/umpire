@@ -7,6 +7,10 @@
       "@umpire/core/*": ["../core/src/*"],
       "@umpire/devtools": ["../devtools/src/index.ts"],
       "@umpire/devtools/*": ["../devtools/src/*"],
+      "@umpire/drizzle": ["../drizzle/src/index.ts"],
+      "@umpire/drizzle/*": ["../drizzle/src/*"],
+      "@umpire/effect": ["../effect/src/index.ts"],
+      "@umpire/effect/*": ["../effect/src/*"],
       "@umpire/json": ["../json/src/index.ts"],
       "@umpire/json/*": ["../json/src/*"],
       "@umpire/react": ["../react/src/index.ts"],
@@ -18,6 +22,8 @@
       "@umpire/signals/*": ["../signals/src/*"],
       "@umpire/store": ["../store/src/index.ts"],
       "@umpire/store/*": ["../store/src/*"],
+      "@umpire/write": ["../write/src/index.ts"],
+      "@umpire/write/*": ["../write/src/*"],
       "@umpire/zod": ["../zod/src/index.ts"],
       "@umpire/zod/*": ["../zod/src/*"]
     }

@@ -97,6 +97,70 @@ describe('createEffectAdapter', () => {
     expect(result.result).toMatchObject({ _tag: 'Left' })
   })
 
+  test('can validate nested values from flat dotted field names', () => {
+    const fields = {
+      'account.accountType': { required: true },
+      'account.companyName': { required: true },
+      'shipment.hazardous': { required: true },
+    }
+
+    const companyNameSchema = stringMatching(
+      (s) => s.length > 0,
+      'Company name is required',
+    )
+    const validation = createEffectAdapter({
+      schemas: {
+        'account.accountType': Schema.Literals(['personal', 'business']),
+        'account.companyName': companyNameSchema,
+        'shipment.hazardous': Schema.Boolean,
+      },
+      valueShape: 'nested',
+      build() {
+        return Schema.Struct({
+          account: Schema.Struct({
+            accountType: Schema.Literals(['personal', 'business']),
+            companyName: companyNameSchema,
+          }),
+          shipment: Schema.Struct({
+            hazardous: Schema.Boolean,
+          }),
+        }) as Schema.Decoder<unknown, never>
+      },
+    })
+
+    const ump = umpire({ fields, rules: [] })
+    const values = {
+      'account.accountType': 'business',
+      'account.companyName': '',
+      'shipment.hazardous': false,
+    }
+    const result = validation.run(ump.check(values), values)
+
+    expect(result.errors).toEqual({
+      'account.companyName': 'Company name is required',
+    })
+    expect(result.normalizedErrors).toEqual([
+      {
+        field: 'account.companyName',
+        path: ['account', 'companyName'],
+        message: 'Company name is required',
+      },
+    ])
+  })
+
+  test('throws when nested value shape is requested without a composed schema', () => {
+    expect(() =>
+      createEffectAdapter({
+        schemas: {
+          'account.companyName': Schema.String,
+        },
+        valueShape: 'nested',
+      }),
+    ).toThrow(
+      '[@umpire/effect] valueShape: "nested" requires a build() callback because the derived per-field schema uses flat field keys.',
+    )
+  })
+
   test('excludes disabled fields from schemaFields', () => {
     const fields = { name: {}, extra: {} }
 

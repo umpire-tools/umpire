@@ -7,6 +7,7 @@ import {
   fairWhen,
   oneOf,
   umpire,
+  type AvailabilityMap,
   type FieldDef,
 } from '@umpire/core'
 import * as write from '@umpire/write'
@@ -17,8 +18,6 @@ import type {
   WriteIssue,
   WriteIssueKind,
 } from '@umpire/write'
-import { deriveSchema } from '@umpire/zod'
-import { z } from 'zod'
 
 type WriteFields = {
   name: FieldDef
@@ -29,6 +28,50 @@ type WriteFields = {
   forbidden: FieldDef
   alpha: FieldDef
   beta: FieldDef
+}
+
+type TestValidationSchema = {
+  validate(value: unknown): boolean
+}
+
+const stringSchema: TestValidationSchema = {
+  validate: (value) => typeof value === 'string',
+}
+
+function deriveTestSchema<F extends Record<string, FieldDef>>(
+  availability: AvailabilityMap<F>,
+  schemas: Partial<Record<keyof F & string, TestValidationSchema>>,
+) {
+  const shape: Record<
+    string,
+    { required: boolean; schema: TestValidationSchema }
+  > = {}
+
+  for (const [field, status] of Object.entries(availability) as Array<
+    [keyof F & string, AvailabilityMap<F>[keyof F & string]]
+  >) {
+    const schema = schemas[field]
+    if (!status.enabled || !schema) continue
+    shape[field] = { required: status.required, schema }
+  }
+
+  return {
+    shape,
+    safeParse(values: Record<string, unknown>) {
+      for (const [field, entry] of Object.entries(shape)) {
+        if (!(field in values)) {
+          if (entry.required) return { success: false }
+          continue
+        }
+
+        if (!entry.schema.validate(values[field])) {
+          return { success: false }
+        }
+      }
+
+      return { success: true }
+    },
+  }
 }
 
 describe('checkCreate', () => {
@@ -657,8 +700,8 @@ describe('issue derivation', () => {
   })
 })
 
-describe('zod composition', () => {
-  test('checkCreate output composes with deriveSchema', () => {
+describe('validation schema composition', () => {
+  test('checkCreate output composes with availability-aware validation schemas', () => {
     const ump = umpire<Pick<WriteFields, 'name' | 'dependent' | 'toggle'>>({
       fields: {
         name: { required: true },
@@ -668,24 +711,24 @@ describe('zod composition', () => {
       rules: [enabledWhen('dependent', (values) => values.toggle === true)],
     })
     const result = checkCreate(ump, { name: 'Douglas' })
-    const schema = deriveSchema(result.availability, {
-      name: z.string(),
-      dependent: z.string(),
+    const schema = deriveTestSchema(result.availability, {
+      name: stringSchema,
+      dependent: stringSchema,
     })
 
     expect(schema.safeParse(result.candidate).success).toBe(true)
     expect(Object.keys(schema.shape)).toEqual(['name'])
   })
 
-  test('checkPatch output composes with deriveSchema', () => {
+  test('checkPatch output composes with availability-aware validation schemas', () => {
     const ump = umpire<Pick<WriteFields, 'name' | 'optional'>>({
       fields: { name: { required: true }, optional: {} },
       rules: [],
     })
     const result = checkPatch(ump, { name: 'Douglas' }, { optional: 'notes' })
-    const schema = deriveSchema(result.availability, {
-      name: z.string(),
-      optional: z.string(),
+    const schema = deriveTestSchema(result.availability, {
+      name: stringSchema,
+      optional: stringSchema,
     })
 
     expect(schema.safeParse(result.candidate).success).toBe(true)
@@ -698,7 +741,7 @@ describe('zod composition', () => {
       rules: [],
     })
     const result = checkCreate(ump, {})
-    const schema = deriveSchema(result.availability, { name: z.string() })
+    const schema = deriveTestSchema(result.availability, { name: stringSchema })
 
     expect(Object.keys(schema.shape)).toEqual(['name'])
     expect(schema.safeParse({}).success).toBe(false)
@@ -710,7 +753,9 @@ describe('zod composition', () => {
       rules: [enabledWhen('dependent', (values) => values.toggle === true)],
     })
     const result = checkCreate(ump, { dependent: 'submitted anyway' })
-    const schema = deriveSchema(result.availability, { dependent: z.string() })
+    const schema = deriveTestSchema(result.availability, {
+      dependent: stringSchema,
+    })
 
     expect(result.issues).toEqual([
       { kind: 'disabled', field: 'dependent', message: 'condition not met' },
@@ -747,9 +792,22 @@ describe('exports', () => {
     expect(kind).toBe('required')
   })
 
-  test('exports only the runtime checking helpers', () => {
-    expect(Object.keys(write).sort()).toEqual(['checkCreate', 'checkPatch'])
+  test('exports runtime checking and validation composition helpers', () => {
+    expect(Object.keys(write).sort()).toEqual([
+      'checkCreate',
+      'checkPatch',
+      'composeWriteResult',
+      'flattenFieldErrorPath',
+      'flattenFieldErrorPaths',
+      'joinFieldPath',
+      'nestNamespacedValues',
+      'runWriteValidationAdapter',
+      'splitNamespacedField',
+    ])
     expect(typeof write.checkCreate).toBe('function')
     expect(typeof write.checkPatch).toBe('function')
+    expect(typeof write.composeWriteResult).toBe('function')
+    expect(typeof write.nestNamespacedValues).toBe('function')
+    expect(typeof write.runWriteValidationAdapter).toBe('function')
   })
 })

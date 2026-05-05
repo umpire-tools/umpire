@@ -200,6 +200,88 @@ describe('scorecard', () => {
     expect(card.fields.bio.error).toBeUndefined()
   })
 
+  test('warns when scorecard snapshot values are partial', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const ump = umpire({
+      fields: {
+        accountType: {},
+        companyName: {},
+      },
+      rules: [requires('companyName', 'accountType')],
+    })
+
+    ump.scorecard({
+      values: {
+        accountType: 'business',
+      },
+    })
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'auto-filled missing keys in snapshot.values: "companyName"',
+      ),
+    )
+    warn.mockRestore()
+  })
+
+  test('warns when scorecard before values are partial', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const ump = umpire({
+      fields: {
+        accountType: {},
+        companyName: {},
+      },
+      rules: [requires('companyName', 'accountType')],
+    })
+
+    ump.scorecard(
+      {
+        values: {
+          accountType: 'business',
+          companyName: 'Acme',
+        },
+      },
+      {
+        before: {
+          values: {
+            accountType: 'personal',
+          },
+        },
+      },
+    )
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'auto-filled missing keys in before.values: "companyName"',
+      ),
+    )
+    warn.mockRestore()
+  })
+
+  test('does not warn when all fields are explicitly present', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const ump = umpire({
+      fields: {
+        accountType: {},
+        companyName: {},
+      },
+      rules: [requires('companyName', 'accountType')],
+    })
+
+    ump.scorecard({
+      values: {
+        accountType: 'business',
+        companyName: null,
+      },
+    })
+
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   test('returns a defensive graph copy and null transition.before by default', () => {
     const ump = umpire({
       fields: {

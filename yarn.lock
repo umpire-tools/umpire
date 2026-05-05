@@ -1837,6 +1837,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@umpire/drizzle@workspace:^, @umpire/drizzle@workspace:packages/drizzle":
+  version: 0.0.0-use.local
+  resolution: "@umpire/drizzle@workspace:packages/drizzle"
+  dependencies:
+    "@umpire/core": "workspace:^"
+    "@umpire/write": "workspace:^"
+    drizzle-orm: "npm:1.0.0-rc.1"
+  peerDependencies:
+    drizzle-orm: ">=1.0.0-rc.1 <2"
+  languageName: unknown
+  linkType: soft
+
 "@umpire/dsl@workspace:^, @umpire/dsl@workspace:packages/dsl":
   version: 0.0.0-use.local
   resolution: "@umpire/dsl@workspace:packages/dsl"
@@ -1845,12 +1857,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@umpire/effect@workspace:packages/effect":
+"@umpire/effect@workspace:^, @umpire/effect@workspace:packages/effect":
   version: 0.0.0-use.local
   resolution: "@umpire/effect@workspace:packages/effect"
   dependencies:
     "@umpire/core": "workspace:*"
     "@umpire/store": "workspace:*"
+    "@umpire/write": "workspace:*"
     effect: "npm:4.0.0-beta.59"
   peerDependencies:
     effect: ">=4.0.0-beta.58 <5.0.0"
@@ -1883,6 +1896,8 @@ __metadata:
     "@types/react-dom": "npm:^19.2.3"
     "@umpire/core": "workspace:^"
     "@umpire/devtools": "workspace:^"
+    "@umpire/drizzle": "workspace:^"
+    "@umpire/effect": "workspace:^"
     "@umpire/json": "workspace:^"
     "@umpire/react": "workspace:^"
     "@umpire/reads": "workspace:^"
@@ -1890,6 +1905,8 @@ __metadata:
     "@umpire/store": "workspace:^"
     "@umpire/zod": "workspace:^"
     bun-types: "npm:^1.3.12"
+    drizzle-orm: "npm:1.0.0-rc.1"
+    effect: "npm:4.0.0-beta.59"
     react: "npm:^19.2.4"
     react-dom: "npm:^19.2.4"
     zod: "npm:^3.23.8"
@@ -2041,12 +2058,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@umpire/write@workspace:packages/write":
+"@umpire/write@workspace:*, @umpire/write@workspace:^, @umpire/write@workspace:packages/write":
   version: 0.0.0-use.local
   resolution: "@umpire/write@workspace:packages/write"
   dependencies:
     "@umpire/core": "workspace:^"
-    "@umpire/zod": "workspace:^"
   languageName: unknown
   linkType: soft
 
@@ -2056,6 +2072,7 @@ __metadata:
   dependencies:
     "@umpire/core": "workspace:^"
     "@umpire/devtools": "workspace:^"
+    "@umpire/write": "workspace:^"
     zod: "npm:^3.23.8"
   peerDependencies:
     zod: ^3.0.0 || ^4.0.0
@@ -2744,6 +2761,126 @@ __metadata:
   version: 0.5.16
   resolution: "dom-accessibility-api@npm:0.5.16"
   checksum: 10c0/b2c2eda4fae568977cdac27a9f0c001edf4f95a6a6191dfa611e3721db2478d1badc01db5bb4fa8a848aeee13e442a6c2a4386d65ec65a1436f24715a2f8d053
+  languageName: node
+  linkType: hard
+
+"drizzle-orm@npm:1.0.0-rc.1":
+  version: 1.0.0-rc.1
+  resolution: "drizzle-orm@npm:1.0.0-rc.1"
+  peerDependencies:
+    "@aws-sdk/client-rds-data": ">=3"
+    "@cloudflare/workers-types": ">=4"
+    "@effect/sql-pg": ">=4.0.0-beta.58 || >=4.0.0"
+    "@electric-sql/pglite": ">=0.2.0"
+    "@libsql/client": ">=0.10.0"
+    "@libsql/client-wasm": ">=0.10.0"
+    "@neondatabase/serverless": ">=0.10.0"
+    "@op-engineering/op-sqlite": ">=2"
+    "@opentelemetry/api": ^1.4.1
+    "@planetscale/database": ">=1.13"
+    "@sinclair/typebox": ">=0.34.8"
+    "@sqlitecloud/drivers": ">=1.0.653"
+    "@tidbcloud/serverless": "*"
+    "@tursodatabase/database": ">=0.2.1"
+    "@tursodatabase/database-common": ">=0.2.1"
+    "@tursodatabase/database-wasm": ">=0.2.1"
+    "@types/better-sqlite3": "*"
+    "@types/mssql": ^9.1.4
+    "@types/pg": "*"
+    "@types/sql.js": "*"
+    "@upstash/redis": ">=1.34.7"
+    "@vercel/postgres": ">=0.8.0"
+    "@xata.io/client": "*"
+    arktype: ">=2.0.0"
+    better-sqlite3: ">=9.3.0"
+    bun-types: "*"
+    effect: ">=4.0.0-beta.58 || >=4.0.0"
+    expo-sqlite: ">=14.0.0"
+    mssql: ^11.0.1
+    mysql2: ">=2"
+    pg: ">=8"
+    postgres: ">=3"
+    sql.js: ">=1"
+    sqlite3: ">=5"
+    typebox: ">=1.0.0"
+    valibot: ">=1.0.0-beta.7"
+    zod: ^3.25.0 || ^4.0.0
+  peerDependenciesMeta:
+    "@aws-sdk/client-rds-data":
+      optional: true
+    "@cloudflare/workers-types":
+      optional: true
+    "@effect/sql-pg":
+      optional: true
+    "@electric-sql/pglite":
+      optional: true
+    "@libsql/client":
+      optional: true
+    "@libsql/client-wasm":
+      optional: true
+    "@neondatabase/serverless":
+      optional: true
+    "@op-engineering/op-sqlite":
+      optional: true
+    "@opentelemetry/api":
+      optional: true
+    "@planetscale/database":
+      optional: true
+    "@sinclair/typebox":
+      optional: true
+    "@sqlitecloud/drivers":
+      optional: true
+    "@tidbcloud/serverless":
+      optional: true
+    "@tursodatabase/database":
+      optional: true
+    "@tursodatabase/database-common":
+      optional: true
+    "@tursodatabase/database-wasm":
+      optional: true
+    "@types/better-sqlite3":
+      optional: true
+    "@types/mssql":
+      optional: true
+    "@types/pg":
+      optional: true
+    "@types/sql.js":
+      optional: true
+    "@upstash/redis":
+      optional: true
+    "@vercel/postgres":
+      optional: true
+    "@xata.io/client":
+      optional: true
+    arktype:
+      optional: true
+    better-sqlite3:
+      optional: true
+    bun-types:
+      optional: true
+    effect:
+      optional: true
+    expo-sqlite:
+      optional: true
+    mssql:
+      optional: true
+    mysql2:
+      optional: true
+    pg:
+      optional: true
+    postgres:
+      optional: true
+    sql.js:
+      optional: true
+    sqlite3:
+      optional: true
+    typebox:
+      optional: true
+    valibot:
+      optional: true
+    zod:
+      optional: true
+  checksum: 10c0/8f71d2493b5145213e176af5d52f82020af0f2b772d30bdc6d4f408f7ab64bb2eb4b7f0aa6603ebcda4bea7a5a8cf1907b46fcbca9ba69cf2ee91f0dd333adda
   languageName: node
   linkType: hard
 

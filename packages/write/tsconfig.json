@@ -8,11 +8,9 @@
       "@umpire/core": ["../core/src/index.ts"],
       "@umpire/core/*": ["../core/src/*"],
       "@umpire/write": ["./src/index.ts"],
-      "@umpire/write/*": ["./src/*"],
-      "@umpire/zod": ["../zod/src/index.ts"],
-      "@umpire/zod/*": ["../zod/src/*"]
+      "@umpire/write/*": ["./src/*"]
     }
   },
   "include": ["src"],
-  "references": [{ "path": "../core" }, { "path": "../zod" }]
+  "references": [{ "path": "../core" }]
 }

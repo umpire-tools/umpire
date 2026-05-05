@@ -42,13 +42,23 @@ const ump = umpire({
 If you use the common built-ins often, `@umpire/core` also exports shorthand helpers:
 
 ```ts
-import { isEmptyArray, isEmptyObject, isEmptyString } from '@umpire/core'
+import {
+  isEmptyArray,
+  isEmptyBigInt,
+  isEmptyBoolean,
+  isEmptyNumber,
+  isEmptyObject,
+  isEmptyString,
+} from '@umpire/core'
 
 const ump = umpire({
   fields: {
     startTime: { isEmpty: isEmptyString },
     weekdays: { isEmpty: isEmptyArray },
     shippingAddress: { isEmpty: isEmptyObject },
+    quantity: { isEmpty: isEmptyNumber },
+    flags: { isEmpty: isEmptyBigInt },
+    active: { isEmpty: isEmptyBoolean },
   },
   rules: [],
 })

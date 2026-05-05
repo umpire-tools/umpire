@@ -15,6 +15,8 @@
     "@types/react-dom": "^19.2.3",
     "@umpire/core": "workspace:^",
     "@umpire/devtools": "workspace:^",
+    "@umpire/drizzle": "workspace:^",
+    "@umpire/effect": "workspace:^",
     "@umpire/json": "workspace:^",
     "@umpire/react": "workspace:^",
     "@umpire/reads": "workspace:^",
@@ -22,6 +24,8 @@
     "@umpire/store": "workspace:^",
     "@umpire/zod": "workspace:^",
     "bun-types": "^1.3.12",
+    "drizzle-orm": "1.0.0-rc.1",
+    "effect": "4.0.0-beta.59",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "zod": "^3.23.8"

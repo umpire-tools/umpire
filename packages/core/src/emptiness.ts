@@ -28,3 +28,10 @@ export const isEmptyObject: IsEmptyFn = (value) => {
 
   return true
 }
+
+export const isEmptyNumber: IsEmptyFn = (value) =>
+  typeof value !== 'number' || Number.isNaN(value)
+
+export const isEmptyBigInt: IsEmptyFn = (value) => typeof value !== 'bigint'
+
+export const isEmptyBoolean: IsEmptyFn = (value) => typeof value !== 'boolean'

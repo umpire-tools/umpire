@@ -1,0 +1,45 @@
+{
+  "name": "@umpire/drizzle",
+  "version": "1.0.0-rc.1",
+  "description": "Drizzle table hydration for Umpire availability policies",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepack": "node ../../scripts/materialize-agent-compat.mjs prepack",
+    "postpack": "node ../../scripts/materialize-agent-compat.mjs postpack",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.type-tests.json --noEmit"
+  },
+  "files": [
+    "dist",
+    "AGENTS.md",
+    ".claude"
+  ],
+  "dependencies": {
+    "@umpire/core": "workspace:^",
+    "@umpire/write": "workspace:^"
+  },
+  "peerDependencies": {
+    "drizzle-orm": ">=1.0.0-rc.1 <2"
+  },
+  "devDependencies": {
+    "drizzle-orm": "1.0.0-rc.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdougbrown/umpire.git",
+    "directory": "packages/drizzle"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

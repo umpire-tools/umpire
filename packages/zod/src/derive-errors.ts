@@ -1,9 +1,11 @@
 import type { AvailabilityMap, FieldDef } from '@umpire/core'
+import type { FieldPathSegment } from '@umpire/write'
 import type { ZodErrorLike } from './zod-types.js'
 
 export type NormalizedFieldError = {
   field: string
   message: string
+  path?: readonly FieldPathSegment[]
 }
 
 export function deriveErrors<F extends Record<string, FieldDef>>(
@@ -23,8 +25,16 @@ export function deriveErrors<F extends Record<string, FieldDef>>(
 }
 
 export function zodErrors(error: ZodErrorLike): NormalizedFieldError[] {
-  return error.issues.map((issue) => ({
-    field: String(issue.path[0] ?? ''),
-    message: issue.message,
-  }))
+  return error.issues.map((issue) => {
+    const result: NormalizedFieldError = {
+      field: String(issue.path[0] ?? ''),
+      message: issue.message,
+    }
+
+    if (issue.path.length > 1) {
+      result.path = issue.path
+    }
+
+    return result
+  })
 }

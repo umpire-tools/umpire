@@ -91,7 +91,7 @@ const errors = deriveErrors(availability, effectErrors(result.error))
 // companyName omitted if disabled on the current plan
 ```
 
-### `createEffectAdapter({ schemas, build?, rejectFoul? })`
+### `createEffectAdapter({ schemas, build?, valueShape?, namespace?, rejectFoul? })`
 
 Convenience adapter that bundles the `deriveSchema → decode → deriveErrors` flow:
 
@@ -144,6 +144,41 @@ const validation = createEffectAdapter({
 The root-level refinement error surfaces under `result.errors._root`.
 
 If you need every issue or deeper control, use `deriveSchema()` with either `decodeEffectSchema()` or Effect v4's native decode API.
+
+#### Nested value shape
+
+When field keys are namespaced with a separator — for example `account.email` and `account.name` from Drizzle models — the flat key-value record does not match the nested object structure a schema expects. Set `valueShape: 'nested'` to restructure values before validation:
+
+```ts
+import { createEffectAdapter } from '@umpire/effect'
+import { Schema } from 'effect'
+
+const adapter = createEffectAdapter({
+  schemas: {
+    'account.email': Schema.String,
+    'account.name':  Schema.String,
+  },
+  valueShape: 'nested',           // default: 'flat'
+  namespace: { separator: '.' },  // default separator: '.'
+  build: (base) =>
+    Schema.Struct({
+      account: Schema.Struct({
+        email: Schema.String,
+        name:  Schema.String,
+      }),
+    }),
+})
+```
+
+When `valueShape` is `'nested'`:
+
+1. The flat candidate `{ 'account.email': 'x', 'account.name': 'y' }` is nested into `{ account: { email: 'x', name: 'y' } }` via `nestNamespacedValues` from `@umpire/write`.
+2. The nested object is validated against the schema (after `build` transforms the derived base schema).
+3. Error paths are flattened back to flat field keys via `flattenFieldErrorPaths`.
+
+**`build` is required** when `valueShape` is `'nested'`. The derived per-field schema uses flat field keys (e.g. `'account.email'`), but validation runs against a nested object. The `build` callback is where you create a schema that matches that nested structure. Without it, the adapter throws a configuration error.
+
+`namespace.separator` controls which character splits field names into path segments and defaults to `'.'`.
 
 ## `fromSubscriptionRef()`
 

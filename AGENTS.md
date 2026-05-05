@@ -6,7 +6,7 @@
 
 - Umpire is a declarative field-availability engine for object-shaped state with interdependent options. It is not limited to forms.
 - Root workspaces live in `packages/*`. `docs/` is a separate Astro/Starlight app and is not part of the root Yarn workspaces.
-- Published packages: `core`, `react`, `signals`, `store`, `zustand`, `redux`, `tanstack-store`, `pinia`, `vuex`, `zod`, `json`, `reads`, `testing`, `devtools`.
+- Published packages: `core`, `react`, `signals`, `store`, `zustand`, `redux`, `tanstack-store`, `pinia`, `vuex`, `zod`, `json`, `reads`, `write`, `drizzle`, `testing`, `devtools`.
 
 ## Build And Test
 
@@ -21,7 +21,7 @@ Quick reference (root): `yarn test`, `yarn build`, `yarn typecheck`.
 - `@umpire/core` owns pure logic, graph construction, evaluation, `umpire()`, `scorecard()`, and `challenge()`.
 - `@umpire/store` is the subscription adapter foundation. `redux`, `pinia`, `tanstack-store`, and `vuex` normalize into it; `zustand` re-exports it because Zustand already fits the contract.
 - `@umpire/react` is intentionally thin. `@umpire/signals` is the fine-grained reactive adapter.
-- `@umpire/json`, `@umpire/zod`, `@umpire/reads`, `@umpire/testing`, and `@umpire/devtools` are optional helper packages layered on top of core.
+- `@umpire/json`, `@umpire/zod`, `@umpire/reads`, `@umpire/write`, `@umpire/drizzle`, `@umpire/testing`, and `@umpire/devtools` are optional helper packages layered on top of core.
 
 ## Behavior To Preserve
 
@@ -33,6 +33,39 @@ Quick reference (root): `yarn test`, `yarn build`, `yarn typecheck`.
 - Disabled fields must report `required: false`.
 - `play()` suggests resets only for fields that became disabled and still hold stale values.
 - `challenge()` and `scorecard()` are debugging surfaces, not app-state inputs.
+
+## `requires` vs `required` — Critical Distinction
+
+`requires(target, dep)` controls **`enabled`**, not **`required`**. These are separate axes:
+
+- `enabled` — whether the field is available for input right now.
+- `required` — whether a missing value should be flagged as an issue.
+
+`required` in the availability map only becomes `true` when the **FieldDef itself** has `required: true` (e.g. a Drizzle column with `notNull()` and no default). The `requires` rule makes the target field enabled when its dependency is met — it does not change `required`.
+
+**Consequence for write checks** (`@umpire/write`): a write issue fires only when `enabled && required && !satisfied`. An enabled-but-not-required absent field produces no issue. To block a write on a missing conditional field, the field's FieldDef must have `required: true`.
+
+**Consequence for rule design**: `requires('field', predicate)` is primarily a conditional enable/disable. When the predicate is false the field is disabled; when true it is enabled. Blocking on a missing value additionally requires `required: true` in the FieldDef.
+
+## Debugging With `challenge()` and `scorecard()`
+
+When a rule evaluation produces unexpected results, reach for these tools first — before reading source:
+
+- **`ump.challenge(fieldName, values)`** — explains exactly which rules affected a field and why. Safe to call with a partial values object; pass `null` for fields you don't care about.
+- **`ump.scorecard(values)`** — requires **all field keys** to be present; pass `null` for optional ones. Errors if any key referenced by the evaluator is missing.
+- **`ump.check(values, context?)`** — safe with partial values; returns the full availability map. Use this to inspect the state of every field at once.
+
+The right debug sequence when a result is surprising:
+
+```ts
+// 1. What does umpire think about this specific field?
+console.log(ump.challenge('fieldName', fullValues))
+
+// 2. What is the full availability picture?
+console.log(ump.check(fullValues))
+```
+
+Do not read rule source or `dist/` to guess evaluation behavior — use `challenge()` to get ground truth.
 
 ## Releases and Versioning
 

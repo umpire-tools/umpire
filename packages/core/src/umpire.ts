@@ -13,6 +13,7 @@ import {
 } from './field.js'
 import type { FieldInput, NormalizeFields } from './field.js'
 import { foulMap } from './foul-map.js'
+import { shouldWarnInDev } from './dev.js'
 import {
   buildGraph,
   detectCycles,
@@ -84,6 +85,30 @@ function getChangedFields<F extends Record<string, FieldDef>>(
   return fieldNames.filter(
     (field) => !isEqual(before.values[field], after.values[field]),
   )
+}
+
+function fillMissingScorecardValues<F extends Record<string, FieldDef>>(
+  fieldNames: Array<keyof F & string>,
+  values: InputValues,
+  label: string,
+): InputValues {
+  const autoFilled: string[] = []
+  const patched = { ...values }
+
+  for (const field of fieldNames) {
+    if (!Object.hasOwn(values, field)) {
+      patched[field] = null
+      autoFilled.push(field)
+    }
+  }
+
+  if (autoFilled.length > 0 && shouldWarnInDev()) {
+    console.warn(
+      `[@umpire/core] scorecard() auto-filled missing keys in ${label}.values: ${autoFilled.map((field) => `"${field}"`).join(', ')}. Pass null explicitly to silence this warning.`,
+    )
+  }
+
+  return patched
 }
 
 function normalizeValidators<F extends Record<string, FieldDef>>(
@@ -1322,7 +1347,26 @@ export function umpire<
     },
     options: ScorecardOptions<C> = {},
   ): ScorecardResult<NormalizeFields<FInput>, C> {
-    const { before, includeChallenge = false } = options
+    const { includeChallenge = false } = options
+    snapshot = {
+      ...snapshot,
+      values: fillMissingScorecardValues(
+        fieldNames,
+        snapshot.values,
+        'snapshot',
+      ),
+    }
+    const before = options.before
+      ? {
+          ...options.before,
+          values: fillMissingScorecardValues(
+            fieldNames,
+            options.before.values,
+            'before',
+          ),
+        }
+      : undefined
+
     const typedValues = snapshot.values as FieldValues<NormalizeFields<FInput>>
     const typedPrev = before?.values as
       | FieldValues<NormalizeFields<FInput>>

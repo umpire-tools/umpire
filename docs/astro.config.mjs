@@ -140,6 +140,9 @@ export default defineConfig({
               { label: 'Zod', slug: 'adapters/validation/zod' },
               { label: 'Effect', slug: 'adapters/validation/effect' },
             ] },
+            { label: 'Database', collapsed: false, items: [
+              { label: 'Drizzle', slug: 'adapters/database/drizzle' },
+            ] },
           ],
         },
         {

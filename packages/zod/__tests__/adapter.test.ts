@@ -86,6 +86,66 @@ describe('createZodAdapter', () => {
     expect(result.result.success).toBe(false)
   })
 
+  test('can validate nested values from flat dotted field names', () => {
+    const fields = {
+      'account.accountType': { required: true },
+      'account.companyName': { required: true },
+      'shipment.hazardous': { required: true },
+    }
+
+    const validation = createZodAdapter({
+      schemas: {
+        'account.accountType': z.enum(['personal', 'business']),
+        'account.companyName': z.string().min(1, 'Company name is required'),
+        'shipment.hazardous': z.boolean(),
+      },
+      valueShape: 'nested',
+      build() {
+        return z.object({
+          account: z.object({
+            accountType: z.enum(['personal', 'business']),
+            companyName: z.string().min(1, 'Company name is required'),
+          }),
+          shipment: z.object({
+            hazardous: z.boolean(),
+          }),
+        })
+      },
+    })
+
+    const ump = umpire({ fields, rules: [] })
+    const values = {
+      'account.accountType': 'business',
+      'account.companyName': '',
+      'shipment.hazardous': false,
+    }
+    const result = validation.run(ump.check(values), values)
+
+    expect(result.errors).toEqual({
+      'account.companyName': 'Company name is required',
+    })
+    expect(result.normalizedErrors).toEqual([
+      {
+        field: 'account.companyName',
+        path: ['account', 'companyName'],
+        message: 'Company name is required',
+      },
+    ])
+  })
+
+  test('throws when nested value shape is requested without a composed schema', () => {
+    expect(() =>
+      createZodAdapter({
+        schemas: {
+          'account.companyName': z.string().min(1),
+        },
+        valueShape: 'nested',
+      }),
+    ).toThrow(
+      '[@umpire/zod] valueShape: "nested" requires a build() callback because the derived per-field schema uses flat field keys.',
+    )
+  })
+
   test('throws if given a z.object instead of per-field schemas', () => {
     expect(() =>
       createZodAdapter({

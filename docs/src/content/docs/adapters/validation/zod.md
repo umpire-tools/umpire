@@ -91,6 +91,89 @@ const errors = deriveErrors(availability, zodErrors(result.error))
 // companyName omitted if disabled on the current plan
 ```
 
+### `createZodAdapter({ schemas, build?, valueShape?, namespace?, rejectFoul? })`
+
+Convenience adapter that bundles the `deriveSchema → safeParse → deriveErrors` flow:
+
+- `validators` — per-field validators for `umpire({ validators })`, surfacing the first Zod issue as `error`
+- `run(availability, values)` — full validation returning `{ errors, normalizedErrors, result, schemaFields }`
+
+```ts
+import { createZodAdapter } from '@umpire/zod'
+import { z } from 'zod'
+
+const adapter = createZodAdapter({
+  schemas: {
+    email:       z.string().email('Enter a valid email'),
+    companyName: z.string().min(1, 'Company name required'),
+  },
+})
+
+// Per-field validators for inline validation
+const ump = umpire({
+  fields,
+  rules,
+  validators: adapter.validators,
+})
+
+// Full derived-schema validation
+const result = adapter.run(availability, values)
+if (!result.result.success) {
+  console.log(result.errors)       // { email: 'Enter a valid email' }
+  console.log(result.schemaFields)  // ['email'] — disabled fields excluded
+}
+```
+
+Use `build` to add cross-field refinements on the derived schema:
+
+```ts
+const adapter = createZodAdapter({
+  schemas: {
+    password:        z.string(),
+    confirmPassword: z.string(),
+  },
+  build: (base) =>
+    base.refine(
+      (data) => data.password === data.confirmPassword,
+      { message: 'Passwords do not match', path: ['confirmPassword'] },
+    ),
+})
+```
+
+The refinement error surfaces under the path you specify in `refine` — in the example above, `result.errors.confirmPassword`. If you omit the path, the error has no field and is dropped by `deriveErrors`; use `normalizedErrors` directly if you need unrooted errors.
+
+#### Nested value shape
+
+When field keys are namespaced with a separator — for example `account.email` and `account.name` from Drizzle models — the flat key-value record does not match the nested object structure Zod expects. Set `valueShape: 'nested'` to restructure values before validation:
+
+```ts
+const adapter = createZodAdapter({
+  schemas: {
+    'account.email': z.string().email('Enter a valid email'),
+    'account.name':  z.string().min(1, 'Name is required'),
+  },
+  valueShape: 'nested',           // default: 'flat'
+  namespace: { separator: '.' },  // default separator: '.'
+  build: (base) =>
+    z.object({
+      account: z.object({
+        email: z.string().email(),
+        name:  z.string().min(1),
+      }),
+    }),
+})
+```
+
+When `valueShape` is `'nested'`:
+
+1. The flat candidate `{ 'account.email': 'x', 'account.name': 'y' }` is nested into `{ account: { email: 'x', name: 'y' } }` via `nestNamespacedValues` from `@umpire/write`.
+2. The nested object is validated against the schema (after `build` transforms the derived base schema).
+3. Error paths are flattened back to flat field keys via `flattenFieldErrorPaths`.
+
+**`build` is required** when `valueShape` is `'nested'`. The derived per-field schema uses flat field keys (e.g. `'account.email'`), but validation runs against a nested object. The `build` callback is where you create a Zod schema that matches that nested structure. Without it, the adapter throws a configuration error.
+
+`namespace.separator` controls which character splits field names into path segments and defaults to `'.'`.
+
 ## Blank strings and `isEmpty`
 
 `@umpire/zod` follows Umpire's satisfaction rules. By default, only `null` and
