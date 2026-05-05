@@ -71,6 +71,26 @@ If you add a new exported subpath that sibling package tests import **before** t
 
 Add a changeset with `yarn changeset` for any user-facing change. `.changeset/config.json` is configured with `updateInternalDependencies: "minor"`, so adapter packages get an automatic patch bump and republish when `core` bumps minor or major. You don't need separate changesets for downstream packages unless the change is in that package itself.
 
+## Database Adapters
+
+New database adapters (`@umpire/drizzle` is the reference implementation) must follow the write-helper argument convention so `@umpire/eslint-plugin`'s `no-write-owned-fields` rule can cover them statically:
+
+| Function shape              | Arguments                                                              |
+| --------------------------- | ---------------------------------------------------------------------- |
+| `check[Adapter]Create`      | `(resource, ump, data, options?)` — candidate at index 2               |
+| `check[Adapter]Patch`       | `(resource, ump, existing, patch, options?)` — candidate at index 3    |
+| `check[Adapter]ModelCreate` | `(modelConfig, ump, data, options?)` — candidate at index 2            |
+| `check[Adapter]ModelPatch`  | `(modelConfig, ump, existing, patch, options?)` — candidate at index 3 |
+
+Do not deviate from this order. Consistency is the point — a future adapter that shifts arguments breaks static analysis and surprises users switching between adapters.
+
+When a new adapter ships its write helpers, add two things alongside it:
+
+1. The new function names to `defaultOptions.writeHelpers` in `packages/eslint-plugin/src/rules/no-write-owned-fields.ts`.
+2. Their argument positions to `getCandidateIndex` in the same file (if they match the table above, the existing returns already cover them — just add the names to `defaultOptions`).
+
+See [`@umpire/drizzle`](./packages/drizzle/) for the reference implementation and [`@umpire/eslint-plugin`](./packages/eslint-plugin/) for the rule.
+
 ## Commits
 
 Commits use an emoji prefix plus a descriptive summary. Browse `git log` for the conventions actually in use, but the common prefixes are:

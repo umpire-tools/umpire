@@ -40,7 +40,12 @@
     "@umpire/reads": "portal:../packages/reads",
     "@umpire/devtools": "portal:../packages/devtools",
     "@umpire/json": "portal:../packages/json",
+    "@umpire/react": "portal:../packages/react",
     "@umpire/store": "portal:../packages/store",
+    "@umpire/signals": "portal:../packages/signals",
+    "@umpire/write": "portal:../packages/write",
+    "@umpire/zod": "portal:../packages/zod",
+    "@umpire/zustand": "portal:../packages/zustand",
     "vite": "^6.4.1"
   },
   "devDependencies": {

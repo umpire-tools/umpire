@@ -199,6 +199,8 @@ derived fields.
 
 ## Write Checks
 
+`fromDrizzleTable` already removes primary keys and generated columns from the Umpire field map, so they never participate in policy evaluation. At runtime, if one of those columns appears in `req.body` anyway, the Drizzle-aware checks reject it by default — that's what `nonWritableKeys: 'reject'` enforces. For earlier feedback, the ESLint plugin's [`no-write-owned-fields`](/extensions/eslint-plugin/#no-write-owned-fields) rule flags the same problem at lint time, before the code runs.
+
 Use `checkCreate` and `checkPatch` from `@umpire/write` to check availability policy against any Umpire instance:
 
 ```ts
