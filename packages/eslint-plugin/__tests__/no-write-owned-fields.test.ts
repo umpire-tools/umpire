@@ -48,6 +48,7 @@ tester.run('no-write-owned-fields', rule, {
     {
       code: `
         validateCreate(userUmp, { email: 'a@example.com' })
+        checkCreate(userUmp, { id: 'server-owned' })
       `,
       options: [{ writeHelpers: ['validateCreate'] }],
     },
@@ -60,6 +61,41 @@ tester.run('no-write-owned-fields', rule, {
     {
       code: `
         fromDrizzleModel(model)
+      `,
+    },
+    {
+      code: `
+        fromDrizzleModel(...args)
+      `,
+    },
+    {
+      code: `
+        fromDrizzleModel({
+          account: { schema: accounts },
+        })
+      `,
+    },
+    {
+      code: `
+        checkCreate(userUmp, { [id]: 'server-owned' })
+        checkCreate(userUmp, ...data)
+      `,
+    },
+    {
+      code: `
+        checkDrizzleCreate(users, userUmp, { email: 'a@example.com' }, { id: 'not-a-candidate' })
+      `,
+    },
+    {
+      code: `
+        checkDrizzleCreate(users, userUmp, { email: 'a@example.com' })
+        checkDrizzlePatch(users, userUmp, prev, { email: 'b@example.com' })
+      `,
+    },
+    {
+      code: `
+        checkDrizzleModelCreate(modelConfig, ump, { email: 'a@example.com' })
+        checkDrizzleModelPatch(modelConfig, ump, prev, { email: 'b@example.com' })
       `,
     },
     {
@@ -144,6 +180,28 @@ tester.run('no-write-owned-fields', rule, {
     },
     {
       code: `
+        fromDrizzleTable(users, { exclude: getExcludeList() })
+      `,
+      errors: [
+        {
+          messageId: 'missingExclude',
+          data: { helper: 'fromDrizzleTable', field: 'id' },
+        },
+      ],
+    },
+    {
+      code: `
+        fromDrizzleTable(users, ...options)
+      `,
+      errors: [
+        {
+          messageId: 'missingExclude',
+          data: { helper: 'fromDrizzleTable', field: 'id' },
+        },
+      ],
+    },
+    {
+      code: `
         fromDrizzleModel({
           account: accounts,
           billing: { table: billingProfiles, exclude: ['id'] },
@@ -190,6 +248,62 @@ tester.run('no-write-owned-fields', rule, {
         {
           messageId: 'missingExclude',
           data: { helper: 'hydrateDrizzleModel', field: 'id' },
+        },
+      ],
+    },
+    {
+      code: `
+        hydrateDrizzleModel(tableRef)
+      `,
+      options: [{ drizzleHelpers: ['hydrateDrizzleModel'] }],
+      errors: [
+        {
+          messageId: 'missingExclude',
+          data: { helper: 'hydrateDrizzleModel', field: 'id' },
+        },
+      ],
+    },
+    {
+      code: `
+        checkDrizzleCreate(users, userUmp, { id: 'client-value', email: 'a@example.com' })
+      `,
+      errors: [
+        {
+          messageId: 'ownedWriteField',
+          data: { helper: 'checkDrizzleCreate', field: 'id' },
+        },
+      ],
+    },
+    {
+      code: `
+        checkDrizzlePatch(users, userUmp, prev, { id: 'client-value' })
+      `,
+      errors: [
+        {
+          messageId: 'ownedWriteField',
+          data: { helper: 'checkDrizzlePatch', field: 'id' },
+        },
+      ],
+    },
+    {
+      code: `
+        checkDrizzleModelCreate(modelConfig, ump, { id: 'client-value', email: 'a@example.com' })
+      `,
+      errors: [
+        {
+          messageId: 'ownedWriteField',
+          data: { helper: 'checkDrizzleModelCreate', field: 'id' },
+        },
+      ],
+    },
+    {
+      code: `
+        checkDrizzleModelPatch(modelConfig, ump, prev, { id: 'client-value' })
+      `,
+      errors: [
+        {
+          messageId: 'ownedWriteField',
+          data: { helper: 'checkDrizzleModelPatch', field: 'id' },
         },
       ],
     },

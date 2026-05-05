@@ -3,7 +3,7 @@ title: ESLint Plugin
 description: Catch umpire schema errors, performance pitfalls, and logical impossibilities at lint time.
 ---
 
-`@umpire/eslint-plugin` adds five ESLint rules that catch umpire mistakes before your tests run. Two catch likely bugs (unknown fields, inline instantiation), three catch logical impossibilities that would silently produce fields that can never be enabled.
+`@umpire/eslint-plugin` adds six ESLint rules that catch umpire mistakes before your tests run. Two catch likely bugs (unknown fields, inline instantiation), three catch logical impossibilities that would silently produce fields that can never be enabled, and one catches database-owned fields leaking into write candidates.
 
 ## Compatibility
 
@@ -35,7 +35,7 @@ export default [
 ]
 ```
 
-This enables all five rules with the severities shown in the table below. To customize individual rules, spread the config and override:
+This enables five rules at the severities shown in the table below. The sixth rule (`no-write-owned-fields`) is opt-in because it's Drizzle-specific. To customize individual rules, spread the config and override:
 
 ```js
 import umpire from '@umpire/eslint-plugin'
@@ -89,6 +89,7 @@ Rule names use the `@umpire/eslint-plugin/` prefix in Oxlint, unlike ESLint's `@
 |------|----------|-----------------|
 | `no-unknown-fields` | `warn` | Field names in rules that aren't declared in `fields` |
 | `no-inline-umpire-init` | `warn` | `umpire()` called inside a component or hook body without `useMemo` |
+| `no-write-owned-fields` | opt-in | Database-owned fields (like `id`) submitted through write candidates or missing from Drizzle excludes |
 | `no-self-disable` | `error` | A field listed as both source and target of `disables()` |
 | `no-contradicting-rules` | `error` | `requires`/`disables` pairs that make a field permanently unavailable |
 | `no-circular-requires` | `error` | Circular `requires` chains where fields mutually depend on each other |
@@ -252,7 +253,107 @@ const ump = umpire({
 
 ---
 
+## `no-write-owned-fields`
+
+Drizzle tables have columns the database owns — primary keys, auto-generated timestamps, columns with SQL defaults. These should never appear in write candidates. If you forget, `checkDrizzleCreate` or `checkDrizzlePatch` will catch them at runtime (via `nonWritableKeys`), but runtime errors happen after the damage is done. This rule moves that check to lint time.
+
+The rule performs two checks:
+
+- **Write candidates** — flags literal object properties inside `checkCreate()` and `checkPatch()` calls that match the configured field names (defaults to `id`).
+- **Drizzle helpers** — flags `fromDrizzleTable()` and `fromDrizzleModel()` calls that don't explicitly exclude those fields via the `exclude` option.
+
+### Configuration
+
+This rule is opt-in — it ships with the plugin but is not enabled by the recommended config, because it's Drizzle-specific. Add it explicitly:
+
+```js
+import umpire from '@umpire/eslint-plugin'
+
+export default [
+  umpire.configs.recommended,
+  {
+    rules: {
+      '@umpire/no-write-owned-fields': ['warn', {
+        fieldNames: ['id', 'createdAt', 'updatedAt'],
+      }],
+    },
+  },
+]
+```
+
+### Examples
+
+A Drizzle table with database-owned columns:
+
+```ts
+const users = pgTable('users', {
+  id: serial().primaryKey(),
+  email: varchar({ length: 255 }).notNull(),
+  createdAt: timestamp().notNull().defaultNow(),
+  updatedAt: timestamp().notNull().$onUpdate(() => new Date()),
+  companyName: text(),
+})
+```
+
+**Write candidates** — the rule flags database-owned fields in the candidate object:
+
+```ts
+// ✗ — 'id' is a database-owned field
+const result = checkCreate(userUmp, {
+  id: 123,
+  email: 'alex@example.com',
+  companyName: 'Acme',
+})
+
+// ✓ — database-owned fields are absent
+const result = checkCreate(userUmp, {
+  email: 'alex@example.com',
+  companyName: 'Acme',
+})
+```
+
+**Drizzle helpers** — the rule flags calls that omit the `exclude` option:
+
+```ts
+// ✗ — 'id' is not excluded
+const base = fromDrizzleTable(users)
+
+// ✗ — 'id' is not excluded in the model entry
+const model = fromDrizzleModel({
+  account: accounts,
+  profile: profiles,
+  billing: billingProfiles,
+})
+
+// ✓ — database-owned fields are explicitly excluded
+const base = fromDrizzleTable(users, { exclude: ['id', 'createdAt', 'updatedAt'] })
+
+// ✓ — each entry can have its own exclude
+const model = fromDrizzleModel({
+  account: { table: accounts, exclude: ['id', 'createdAt', 'updatedAt'] },
+  profile: { table: profiles, exclude: ['id'] },
+  billing: { table: billingProfiles, exclude: ['createdAt', 'updatedAt'] },
+})
+```
+
+### Options
+
+All options are optional — the rule ships with sensible defaults:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `fieldNames` | `string[]` | `['id']` | Field names to treat as database-owned |
+| `checkWriteCandidates` | `boolean` | `true` | Flag database-owned fields in write candidate arguments |
+| `checkDrizzleHelpers` | `boolean` | `true` | Flag `fromDrizzleTable`/`fromDrizzleModel` calls missing excludes |
+| `writeHelpers` | `string[]` | `['checkCreate', 'checkPatch', 'checkDrizzleCreate', 'checkDrizzlePatch', 'checkDrizzleModelCreate', 'checkDrizzleModelPatch']` | Function names to check for write candidates |
+| `drizzleHelpers` | `string[]` | `['fromDrizzleTable', 'fromDrizzleModel']` | Function names to check for missing excludes |
+
+`writeHelpers` and `drizzleHelpers` replace the defaults when provided. If you use a wrapper or alias for these functions, include the built-in helper names alongside your custom wrappers when you want both checked.
+
+---
+
 ## See also
 
 - [`umpire()` construction-time checks](/api/#structural-contradiction-detection) — runtime validation that runs when the instance is created
 - [Testing](/extensions/testing/) — `monkeyTest()` for invariant testing across exhaustive input combinations
+- [`@umpire/drizzle`](/adapters/database/drizzle/) — the Drizzle adapter, including `checkDrizzleCreate`, `checkDrizzlePatch`, and the safer write workflow

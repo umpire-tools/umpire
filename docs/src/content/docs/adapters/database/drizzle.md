@@ -21,6 +21,8 @@ yarn add @umpire/core @umpire/write @umpire/drizzle drizzle-orm
 `drizzle-orm` is a peer dependency. This RC targets Drizzle `1.0.0-rc.1` and
 newer 1.x releases.
 
+The ESLint plugin ships an opt-in [`no-write-owned-fields`](/extensions/eslint-plugin/#no-write-owned-fields) rule that catches database-owned fields leaking into write candidates at lint time — catching these before they reach `checkDrizzleCreate` or `checkDrizzlePatch` at runtime.
+
 ## Example
 
 ```ts
@@ -450,3 +452,4 @@ constraints for a complete write pipeline.
 - [`@umpire/effect`](/adapters/validation/effect/) — Effect adapter with the same nested validation support
 - [`umpire()`](/api/umpire/) — the engine constructor that consumes the derived fields
 - [Satisfaction](/concepts/satisfaction/) — how Umpire decides whether a value counts as present
+- [ESLint plugin](/extensions/eslint-plugin/) — the `no-write-owned-fields` rule for catching database-owned field leaks at lint time

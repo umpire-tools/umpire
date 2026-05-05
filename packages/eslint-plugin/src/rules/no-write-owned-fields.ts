@@ -15,7 +15,14 @@ const defaultOptions = {
   fieldNames: ['id'],
   checkWriteCandidates: true,
   checkDrizzleHelpers: true,
-  writeHelpers: ['checkCreate', 'checkPatch'],
+  writeHelpers: [
+    'checkCreate',
+    'checkPatch',
+    'checkDrizzleCreate',
+    'checkDrizzlePatch',
+    'checkDrizzleModelCreate',
+    'checkDrizzleModelPatch',
+  ],
   drizzleHelpers: ['fromDrizzleTable', 'fromDrizzleModel'],
 } satisfies Required<Options>
 
@@ -84,13 +91,26 @@ const rule: Rule.RuleModule = {
 
 export default rule
 
+function getCandidateIndex(helper: string): number {
+  // (table/modelConfig, ump, existing, patch, options?) — patch at index 3
+  if (helper === 'checkDrizzlePatch' || helper === 'checkDrizzleModelPatch')
+    return 3
+  // (table/modelConfig, ump, data, options?) — data at index 2
+  if (helper === 'checkDrizzleCreate' || helper === 'checkDrizzleModelCreate')
+    return 2
+  // (ump, existing, patch, ctx?) — patch at index 2
+  if (helper === 'checkPatch') return 2
+  // (ump, data, ctx?) — data at index 1
+  return 1
+}
+
 function checkWriteCandidate(
   context: Rule.RuleContext,
   helper: string,
   node: estree.CallExpression,
   ownedFields: Set<string>,
 ): void {
-  const candidateIndex = helper === 'checkPatch' ? 2 : 1
+  const candidateIndex = getCandidateIndex(helper)
   const candidate = node.arguments[candidateIndex]
   if (!candidate || candidate.type === 'SpreadElement') return
   if (candidate.type !== 'ObjectExpression') return
@@ -226,6 +246,8 @@ function hasTableProperty(options: estree.ObjectExpression): boolean {
 }
 
 function getCallName(node: estree.CallExpression): string | null {
+  // Intentionally literal-only: member calls would need import/member tracking to
+  // avoid noisy false positives.
   if (node.callee.type === 'Identifier') return node.callee.name
   return null
 }

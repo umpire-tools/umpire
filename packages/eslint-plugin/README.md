@@ -51,9 +51,10 @@ Add the plugin to `jsPlugins`, then enable rules by full name:
 
 ### `no-write-owned-fields`
 
-Flags literal `checkCreate()` and `checkPatch()` candidates that submit
-database-owned fields, and flags `fromDrizzleTable()` / `fromDrizzleModel()`
-calls that do not explicitly exclude those fields.
+Flags database-owned fields in write helper candidate arguments
+(`checkCreate`, `checkPatch`, and their Drizzle-specific variants),
+and flags `fromDrizzleTable()` / `fromDrizzleModel()` calls that do
+not explicitly exclude those fields.
 
 ```js
 {
@@ -62,12 +63,15 @@ calls that do not explicitly exclude those fields.
       fieldNames: ['id', 'createdAt', 'updatedAt'],
       checkWriteCandidates: true,
       checkDrizzleHelpers: true,
-      writeHelpers: ['checkCreate', 'checkPatch'],
+      writeHelpers: ['checkCreate', 'checkPatch', 'checkDrizzleCreate', 'checkDrizzlePatch', 'checkDrizzleModelCreate', 'checkDrizzleModelPatch'],
       drizzleHelpers: ['fromDrizzleTable', 'fromDrizzleModel'],
     }],
   },
 }
 ```
+
+`writeHelpers` and `drizzleHelpers` replace the defaults when provided. Include
+the built-in helper names alongside custom wrappers if you want both checked.
 
 ## Docs
 
