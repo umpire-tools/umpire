@@ -139,14 +139,15 @@ function checkDrizzleHelper(
     return
   }
 
-  if (
-    helper === 'fromDrizzleModel' ||
-    node.arguments[0]?.type === 'ObjectExpression'
-  ) {
+  if (helper === 'fromDrizzleModel') {
     checkFromDrizzleModel(context, helper, node, ownedFields)
     return
   }
 
+  // Custom helpers always use table-style checking (options at arg[1]).
+  // Inferring style from the first arg's AST type produces false positives
+  // when a table-style wrapper takes an object config as its first argument.
+  // A future drizzleHelperKind option will enable model-style for custom helpers.
   checkFromDrizzleTable(context, helper, node, ownedFields)
 }
 

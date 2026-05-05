@@ -100,7 +100,7 @@ tester.run('no-write-owned-fields', rule, {
     },
     {
       code: `
-        hydrateDrizzleModel({ account: { table: accounts, exclude: ['id'] } })
+        hydrateDrizzleModel(usersTable, { exclude: ['id'] })
       `,
       options: [{ drizzleHelpers: ['hydrateDrizzleModel'] }],
     },
