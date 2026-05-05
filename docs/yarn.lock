@@ -1938,11 +1938,20 @@ __metadata:
   languageName: node
   linkType: soft
 
+"@umpire/write@portal:../packages/write::locator=umpire-docs%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@umpire/write@portal:../packages/write::locator=umpire-docs%40workspace%3A."
+  dependencies:
+    "@umpire/core": "workspace:^"
+  languageName: node
+  linkType: soft
+
 "@umpire/zod@portal:../packages/zod::locator=umpire-docs%40workspace%3A.":
   version: 0.0.0-use.local
   resolution: "@umpire/zod@portal:../packages/zod::locator=umpire-docs%40workspace%3A."
   dependencies:
     "@umpire/core": "workspace:^"
+    "@umpire/write": "workspace:^"
   peerDependencies:
     zod: ^3.0.0 || ^4.0.0
   languageName: node
@@ -5830,6 +5839,7 @@ __metadata:
     "@umpire/reads": "portal:../packages/reads"
     "@umpire/signals": "portal:../packages/signals"
     "@umpire/store": "portal:../packages/store"
+    "@umpire/write": "portal:../packages/write"
     "@umpire/zod": "portal:../packages/zod"
     "@umpire/zustand": "portal:../packages/zustand"
     astro: "npm:^5.18.1"

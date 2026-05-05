@@ -209,6 +209,20 @@ export function isStringLiteral(
   return node.type === 'Literal' && typeof node.value === 'string'
 }
 
+export function getPropertyName(prop: estree.Property): string | null {
+  if (prop.computed) return null
+
+  if (prop.key.type === 'Identifier') {
+    return prop.key.name
+  }
+
+  if (prop.key.type === 'Literal' && typeof prop.key.value === 'string') {
+    return prop.key.value
+  }
+
+  return null
+}
+
 function stringLiterals(nodes: (estree.Node | null | undefined)[]): FieldRef[] {
   const refs: FieldRef[] = []
   for (const node of nodes) {

@@ -1,6 +1,6 @@
 # @umpire/eslint-plugin
 
-Lint rules that catch umpire mistakes at lint time: typo'd field names, inline instance creation, and logical impossibilities like self-disabling fields and circular requires chains.
+Lint rules that catch umpire mistakes at lint time: typo'd field names, inline instance creation, database-owned write fields, and logical impossibilities like self-disabling fields and circular requires chains.
 
 Works with **ESLint ≥ 9** (flat config) and Oxlint JS plugins.
 
@@ -44,9 +44,34 @@ Add the plugin to `jsPlugins`, then enable rules by full name:
 | ------------------------ | -------- | --------------------------------------------------------------------- |
 | `no-unknown-fields`      | `warn`   | Field names in rules that aren't declared in `fields`                 |
 | `no-inline-umpire-init`  | `warn`   | `umpire()` called inside a component or hook body without `useMemo`   |
+| `no-write-owned-fields`  | opt-in   | DB-owned fields in write candidates or missing Drizzle excludes       |
 | `no-self-disable`        | `error`  | A field listed as both source and target of `disables()`              |
 | `no-contradicting-rules` | `error`  | `requires`/`disables` pairs that make a field permanently unavailable |
 | `no-circular-requires`   | `error`  | Circular `requires` chains where fields mutually depend on each other |
+
+### `no-write-owned-fields`
+
+Flags database-owned fields in write helper candidate arguments
+(`checkCreate`, `checkPatch`, and their Drizzle-specific variants),
+and flags `fromDrizzleTable()` / `fromDrizzleModel()` calls that do
+not explicitly exclude those fields.
+
+```js
+{
+  rules: {
+    '@umpire/no-write-owned-fields': ['warn', {
+      fieldNames: ['id', 'createdAt', 'updatedAt'],
+      checkWriteCandidates: true,
+      checkDrizzleHelpers: true,
+      writeHelpers: ['checkCreate', 'checkPatch', 'checkDrizzleCreate', 'checkDrizzlePatch', 'checkDrizzleModelCreate', 'checkDrizzleModelPatch'],
+      drizzleHelpers: ['fromDrizzleTable', 'fromDrizzleModel'],
+    }],
+  },
+}
+```
+
+`writeHelpers` and `drizzleHelpers` replace the defaults when provided. Include
+the built-in helper names alongside custom wrappers if you want both checked.
 
 ## Docs
 

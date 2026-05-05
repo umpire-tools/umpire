@@ -21,6 +21,8 @@ yarn add @umpire/core @umpire/write @umpire/drizzle drizzle-orm
 `drizzle-orm` is a peer dependency. This RC targets Drizzle `1.0.0-rc.1` and
 newer 1.x releases.
 
+The ESLint plugin ships an opt-in [`no-write-owned-fields`](/extensions/eslint-plugin/#no-write-owned-fields) rule that catches database-owned fields leaking into write candidates at lint time — catching these before they reach `checkDrizzleCreate` or `checkDrizzlePatch` at runtime.
+
 ## Example
 
 ```ts
@@ -196,6 +198,8 @@ Drizzle column defined as `text('display_name')` appears as `displayName` in the
 derived fields.
 
 ## Write Checks
+
+`fromDrizzleTable` already removes primary keys and generated columns from the Umpire field map, so they never participate in policy evaluation. At runtime, if one of those columns appears in `req.body` anyway, the Drizzle-aware checks reject it by default — that's what `nonWritableKeys: 'reject'` enforces. For earlier feedback, the ESLint plugin's [`no-write-owned-fields`](/extensions/eslint-plugin/#no-write-owned-fields) rule flags the same problem at lint time, before the code runs.
 
 Use `checkCreate` and `checkPatch` from `@umpire/write` to check availability policy against any Umpire instance:
 
@@ -450,3 +454,4 @@ constraints for a complete write pipeline.
 - [`@umpire/effect`](/adapters/validation/effect/) — Effect adapter with the same nested validation support
 - [`umpire()`](/api/umpire/) — the engine constructor that consumes the derived fields
 - [Satisfaction](/concepts/satisfaction/) — how Umpire decides whether a value counts as present
+- [ESLint plugin](/extensions/eslint-plugin/) — the `no-write-owned-fields` rule for catching database-owned field leaks at lint time
