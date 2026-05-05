@@ -1,10 +1,10 @@
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 GlobalRegistrator.register()
 
-import { describe, it, expect } from 'bun:test'
-import { render } from '@testing-library/react'
+import { describe, it, expect, mock } from 'bun:test'
+import { render, waitFor } from '@testing-library/react'
 import React from 'react'
-import { umpire, enabledWhen } from '@umpire/core'
+import { umpire, enabledWhen, fairWhen } from '@umpire/core'
 import {
   useUmpireForm,
   UmpireFormSubscribe,
@@ -182,5 +182,147 @@ describe('UmpireFormSubscribe', () => {
     expect(getByTestId('enabled').textContent).toBe('true')
     expect(getByTestId('required').textContent).toBe('false')
     expect(getByTestId('satisfied').textContent).toBe('true')
+  })
+
+  it('field proxy exposes all availability properties and caches by field name', () => {
+    const engine = umpire({
+      fields: {
+        email: {
+          required: true,
+          validate: (value) =>
+            typeof value === 'string' && value.includes('@')
+              ? true
+              : 'email required',
+        },
+        plan: {},
+      },
+      rules: [
+        enabledWhen('email', (v) => (v as Values).plan === 'pro'),
+        fairWhen('email', (value) => value !== 'blocked', {
+          reason: 'blocked address',
+        }),
+      ],
+    })
+
+    function MockSubscribe({
+      selector,
+      children,
+    }: {
+      selector(state: {
+        values: Record<string, unknown>
+      }): Record<string, unknown>
+      children(values: Record<string, unknown>): React.ReactNode
+    }) {
+      return <>{children(selector({ values: { email: null, plan: 'pro' } }))}</>
+    }
+
+    let firstField: unknown
+    const { getByTestId } = render(
+      <UmpireFormSubscribe
+        form={{ Subscribe: MockSubscribe, setFieldValue: () => {} }}
+        engine={engine}
+      >
+        {(umpireForm) => {
+          const email = umpireForm.field('email')
+          firstField = email as never
+          return (
+            <div>
+              <span data-testid="same">
+                {String(email === umpireForm.field('email'))}
+              </span>
+              <span data-testid="state">
+                {[
+                  email.enabled,
+                  email.available,
+                  email.disabled,
+                  email.required,
+                  email.satisfied,
+                  email.fair,
+                  email.reason,
+                  email.reasons.length,
+                  email.error,
+                ].join('|')}
+              </span>
+              <span data-testid="unknown">
+                {[
+                  umpireForm.field('missing').enabled,
+                  umpireForm.field('missing').available,
+                  umpireForm.field('missing').disabled,
+                  umpireForm.field('missing').satisfied,
+                  umpireForm.field('missing').fair,
+                  umpireForm.field('missing').reason,
+                  umpireForm.field('missing').reasons.length,
+                ].join('|')}
+              </span>
+            </div>
+          )
+        }}
+      </UmpireFormSubscribe>,
+    )
+
+    expect(firstField).toBeDefined()
+    expect(getByTestId('same').textContent).toBe('true')
+    expect(getByTestId('state').textContent).toBe(
+      'true|true|false|true|false|true||0|',
+    )
+    expect(getByTestId('unknown').textContent).toBe(
+      'false|false|true|false|true||0',
+    )
+  })
+
+  it('resolves conditions functions and auto-applies strike transitions', async () => {
+    const engine = umpire({
+      fields: { mode: {}, details: {} },
+      rules: [
+        enabledWhen(
+          'details',
+          (v, ctx) => ctx?.allow === true && (v as Values).mode === 'edit',
+        ),
+      ],
+    } satisfies Parameters<
+      typeof umpire<{ mode: {}; details: {} }, { allow: boolean }>
+    >[0])
+
+    function MockSubscribe({
+      children,
+    }: {
+      selector(state: {
+        values: Record<string, unknown>
+      }): Record<string, unknown>
+      children(values: Record<string, unknown>): React.ReactNode
+    }) {
+      const [values, setValues] = React.useState({
+        mode: 'edit',
+        details: 'stale',
+      })
+
+      React.useEffect(() => {
+        setValues({ mode: 'view', details: 'stale' })
+      }, [])
+
+      return <>{children(values)}</>
+    }
+
+    const setFieldValue = mock(() => {})
+
+    const { findByTestId } = render(
+      <UmpireFormSubscribe
+        form={{ Subscribe: MockSubscribe, setFieldValue }}
+        engine={engine}
+        conditions={() => ({ allow: true })}
+        strike
+      >
+        {(umpireForm) => (
+          <span data-testid="enabled">
+            {String(umpireForm.field('details').enabled)}
+          </span>
+        )}
+      </UmpireFormSubscribe>,
+    )
+
+    expect((await findByTestId('enabled')).textContent).toBe('false')
+    await waitFor(() => {
+      expect(setFieldValue).toHaveBeenCalledWith('details', undefined)
+    })
   })
 })

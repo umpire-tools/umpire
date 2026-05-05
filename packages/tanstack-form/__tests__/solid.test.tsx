@@ -1,7 +1,7 @@
 import { describe, it, expect, mock } from 'bun:test'
 import { createRoot, createSignal } from 'solid-js'
 import type { Accessor, JSX } from 'solid-js'
-import { enabledWhen, requires, umpire } from '@umpire/core'
+import { enabledWhen, fairWhen, requires, umpire } from '@umpire/core'
 import type { FieldDef } from '@umpire/core'
 import {
   createUmpireForm,
@@ -200,6 +200,102 @@ describe('createUmpireForm', () => {
       dispose()
     }
   })
+
+  it('field proxies are cached and expose unknown-field defaults', () => {
+    const engine = umpire({
+      fields: { code: { required: true } },
+      rules: [
+        fairWhen('code', (value) => value !== 'bad', {
+          reason: 'bad code',
+        }),
+      ],
+    })
+
+    const { value: umpireForm, dispose } = withRoot(() => {
+      const form = {
+        useStore:
+          <T,>(selector: Selector<T>) =>
+          () =>
+            selector({ values: { code: 'bad' } }),
+        setFieldValue: () => {},
+      } satisfies SolidForm
+      return createUmpireForm(form, engine)
+    })
+
+    try {
+      const code = umpireForm.field('code')
+      expect(code).toBe(umpireForm.field('code'))
+      expect(code.enabled).toBe(true)
+      expect(code.available).toBe(true)
+      expect(code.disabled).toBe(false)
+      expect(code.required).toBe(true)
+      expect(code.satisfied).toBe(true)
+      expect(code.fair).toBe(false)
+      expect(code.reason).toBe('bad code')
+      expect(code.reasons).toEqual(['bad code'])
+      expect(code.error).toBeUndefined()
+
+      const missing = umpireForm.field('missing')
+      expect(missing.enabled).toBe(false)
+      expect(missing.available).toBe(false)
+      expect(missing.disabled).toBe(true)
+      expect(missing.required).toBe(false)
+      expect(missing.satisfied).toBe(false)
+      expect(missing.fair).toBe(true)
+      expect(missing.reason).toBeNull()
+      expect(missing.reasons).toEqual([])
+    } finally {
+      dispose()
+    }
+  })
+
+  it('resolves conditions accessors and auto-applies strikes', async () => {
+    const engine = umpire({
+      fields,
+      rules: [
+        enabledWhen(
+          'state',
+          (v, ctx) => ctx?.allow === true && (v as Values).country === 'US',
+        ),
+      ],
+    } satisfies Parameters<typeof umpire<typeof fields, { allow: boolean }>>[0])
+
+    const { value, dispose } = withRoot(() => {
+      const [storeValues, setStoreValues] = createSignal({
+        country: 'US',
+        state: 'CA',
+        city: 'LA',
+      })
+      const setFieldValue = mock(() => {})
+      const form = {
+        useStore:
+          <T,>(selector: Selector<T>) =>
+          () =>
+            selector({ values: storeValues() }),
+        setFieldValue,
+      } satisfies SolidForm
+      return {
+        setStoreValues,
+        setFieldValue,
+        form: createUmpireForm(form, engine, {
+          conditions: () => ({ allow: true }),
+          strike: true,
+        }),
+      }
+    })
+
+    try {
+      await Promise.resolve()
+      expect(value.form.field('state').enabled).toBe(true)
+
+      value.setStoreValues({ country: 'Canada', state: 'CA', city: 'LA' })
+      await Promise.resolve()
+
+      expect(value.setFieldValue).toHaveBeenCalledWith('state', undefined)
+    } finally {
+      dispose()
+    }
+  })
 })
 
 describe('createUmpireFormComponents', () => {
@@ -330,6 +426,43 @@ describe('UmpireFormSubscribe', () => {
       expect(capturedUmpireForm).not.toBeNull()
       expect(capturedUmpireForm!.field('a').enabled).toBe(true)
       expect(capturedUmpireForm!.field('a').required).toBe(false)
+    } finally {
+      dispose()
+    }
+  })
+
+  it('auto-applies strikes from subscribed value transitions', async () => {
+    const engine = umpire({
+      fields,
+      rules: [enabledWhen('state', (v) => (v as Values).country === 'US')],
+    })
+
+    const { value: setFieldValue, dispose } = withRoot(() => {
+      const [storeValues, setStoreValues] = createSignal({
+        country: 'US',
+        state: 'CA',
+        city: 'LA',
+      })
+      const setFieldValue = mock(() => {})
+      const Subscribe: Subscribe = (opts) => {
+        const valuesAccessor = () => opts.selector({ values: storeValues() })
+        return opts.children(valuesAccessor)
+      }
+
+      UmpireFormSubscribe({
+        form: { Subscribe, setFieldValue },
+        engine,
+        strike: true,
+        children: () => null,
+      })
+
+      setStoreValues({ country: 'Canada', state: 'CA', city: 'LA' })
+      return setFieldValue
+    })
+
+    try {
+      await Promise.resolve()
+      expect(setFieldValue).toHaveBeenCalledWith('state', undefined)
     } finally {
       dispose()
     }

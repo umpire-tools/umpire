@@ -1,5 +1,5 @@
 import { describe, it, expect, mock } from 'bun:test'
-import { enabledWhen, umpire } from '@umpire/core'
+import { enabledWhen, fairWhen, umpire } from '@umpire/core'
 import { useUmpireForm, UmpireFormSubscribe } from '../src/vue.js'
 
 type Values = Record<string, unknown>
@@ -149,6 +149,70 @@ describe('useUmpireForm', () => {
     umpireForm.applyStrike()
     expect(setFieldCalls).toEqual([])
   })
+
+  it('field proxies are cached and expose fair reasons plus unknown defaults', () => {
+    const engine = umpire({
+      fields: { code: { required: true } },
+      rules: [
+        fairWhen('code', (value) => value !== 'bad', {
+          reason: 'bad code',
+        }),
+      ],
+    })
+
+    const form = {
+      store: createStore({ code: 'bad' }),
+      setFieldValue(_name: string, _value: unknown) {},
+    }
+
+    const umpireForm = useUmpireForm(form, engine)
+    const code = umpireForm.field('code')
+
+    expect(code).toBe(umpireForm.field('code'))
+    expect(code.enabled).toBe(true)
+    expect(code.available).toBe(true)
+    expect(code.disabled).toBe(false)
+    expect(code.required).toBe(true)
+    expect(code.satisfied).toBe(true)
+    expect(code.fair).toBe(false)
+    expect(code.reason).toBe('bad code')
+    expect(code.reasons).toEqual(['bad code'])
+    expect(code.error).toBeUndefined()
+
+    const missing = umpireForm.field('missing')
+    expect(missing.enabled).toBe(false)
+    expect(missing.available).toBe(false)
+    expect(missing.disabled).toBe(true)
+    expect(missing.required).toBe(false)
+    expect(missing.satisfied).toBe(false)
+    expect(missing.fair).toBe(true)
+    expect(missing.reason).toBeNull()
+    expect(missing.reasons).toEqual([])
+  })
+
+  it('resolves condition functions and value containers', () => {
+    const engine = umpire({
+      fields: { state: {} },
+      rules: [enabledWhen('state', (_v, ctx) => ctx?.allow === true)],
+    } satisfies Parameters<typeof umpire<{ state: {} }, { allow: boolean }>>[0])
+
+    const form = {
+      store: createStore({ state: 'CA' }),
+      setFieldValue(_name: string, _value: unknown) {},
+    }
+
+    expect(
+      useUmpireForm(form, engine, {
+        conditions: () => ({ allow: true }),
+      }).field('state').enabled,
+    ).toBe(true)
+
+    expect(
+      useUmpireForm(form, engine, {
+        conditions: { value: { allow: false } },
+      }).field('state').enabled,
+    ).toBe(false)
+  })
 })
 
 describe('UmpireFormSubscribe', () => {
@@ -203,5 +267,21 @@ describe('UmpireFormSubscribe', () => {
     const slotArg = slotFn.mock.calls[0][0]
     expect(slotArg.umpireForm.field('a').enabled).toBe(true)
     expect(slotArg.umpireForm.field('a').required).toBe(false)
+  })
+
+  it('renders null when no default slot is provided', () => {
+    const form = {
+      store: createStore({ a: 'test' }),
+      setFieldValue(_name: string, _value: unknown) {},
+    }
+
+    const setup = (UmpireFormSubscribe as ComponentShape).setup
+    expect(setup).toBeDefined()
+    const renderFn = setup(
+      { form, engine: engineForSetup },
+      { slots: {}, emit: () => {} },
+    )
+
+    expect(renderFn()).toBeNull()
   })
 })
