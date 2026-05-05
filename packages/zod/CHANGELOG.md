@@ -1,5 +1,16 @@
 # @umpire/zod
 
+## 1.0.1
+
+### Patch Changes
+
+- 4ce437f: Add `valueShape: "nested"` to validate composed nested schemas from flat dotted Umpire field keys. Nested validation preserves the default flat behavior, maps nested validation paths back to flat field names such as `account.companyName`, and must be paired with the existing `build()` composition hook so the nested value view is used intentionally.
+- Updated dependencies [4ce437f]
+- Updated dependencies [4ce437f]
+- Updated dependencies [4ce437f]
+  - @umpire/core@1.0.1
+  - @umpire/write@1.1.0
+
 ## 1.0.0
 
 ### Minor Changes

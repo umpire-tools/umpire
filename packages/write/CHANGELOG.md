@@ -1,5 +1,17 @@
 # @umpire/write
 
+## 1.1.0
+
+### Minor Changes
+
+- 4ce437f: Add generic validation composition helpers and types: `composeWriteResult`, `runWriteValidationAdapter`, `WriteValidationAdapter`, `WriteRuleIssue`, `WriteSchemaIssue`, `WriteValidationRun`, `WriteDebug`, `ComposeWriteResultInput`, `WriteComposedResult`. These handle combining write check results with structural validation adapters and extra issue groups — Drizzle, Prisma, or any future ORM adapter can compose on top.
+
+### Patch Changes
+
+- Updated dependencies [4ce437f]
+- Updated dependencies [4ce437f]
+  - @umpire/core@1.0.1
+
 ## 1.0.0
 
 ### Minor Changes

@@ -1,5 +1,12 @@
 # @umpire/core
 
+## 1.0.1
+
+### Patch Changes
+
+- 4ce437f: Export `isEmptyNumber`, `isEmptyBigInt`, and `isEmptyBoolean` from `@umpire/core`. These typed primitive presence helpers (alongside existing `isEmptyPresent`, `isEmptyString`, `isEmptyArray`, `isEmptyObject`) treat `0`, `0n`, and `false` as satisfied values, consistent with database field semantics.
+- 4ce437f: `scorecard()` now auto-fills missing field keys in snapshot values with `null`, with a `console.warn` in development to surface the gap. Callers no longer need to enumerate fields that don't hold state (e.g. submit buttons). Pass `null` explicitly to silence the warning.
+
 ## 1.0.0
 
 ### Minor Changes
