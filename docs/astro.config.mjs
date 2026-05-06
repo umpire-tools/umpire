@@ -148,6 +148,7 @@ export default defineConfig({
         {
           label: 'Examples',
           items: [
+            { label: 'Address Form', slug: 'examples/address-form' },
             { label: 'Minesweeper', slug: 'examples/minesweeper' },
             { label: 'PC Builder', slug: 'examples/pc-builder' },
             { label: 'Calendar Recurrence', slug: 'examples/calendar' },

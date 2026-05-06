@@ -1,0 +1,127 @@
+---
+title: Address Form
+description: A multi-country address form with conditional fields, country-dependent postal code validation, and automatic stale-value cleanup — built with TanStack Form and Umpire.
+---
+
+import DevtoolsPanel from '../../../components/DevtoolsPanel.tsx'
+import AddressFormDemo from '../../../components/AddressFormDemo.tsx'
+
+<DevtoolsPanel defaultTab="fouls" client:only="react" />
+<AddressFormDemo client:only="react" />
+
+## What this demonstrates
+
+A multi-country address form with 6 fields and 5 rules spanning **3 rule types**. Country selection gates which regional fields appear, postal code format validation switches by country, and stale values are automatically cleaned up when their field disappears.
+
+### Rule types in play
+
+| Rule | What it does here |
+|---|---|
+| **`enabledWhen`** | `state` appears only when country is US. `province` appears only when country is CA. |
+| **`requires`** | Both `state` and `province` require `country` to be selected — no selecting a region without first picking a country. |
+| **custom fair rule** | `postalCode` format validation switches based on country, and declares `country` as a graph source so validators re-run when country changes. |
+
+### Things to try
+
+1. **Select "United States"** — State field appears. Pick a state, fill in a zip.
+2. **Switch to "Canada"** — State disappears, Province appears. The stale state value becomes a foul and is automatically cleared (strike-on-transition).
+3. **Enter an invalid postal code** — the inline error message changes based on country. Try "12345" for Canada — it fails. Try "K1A 0B1" for Canada — it passes.
+4. **Switch countries without selecting a region** — see how state and province remain disabled until country is chosen.
+5. **Clear the country** — state and province disable, and any filled stale values become fouls.
+
+### Imperative vs Declarative
+
+Without Umpire, this form would need hand-written logic for country-change effects, conditional rendering gating, cross-field validation wiring, and stale-value cleanup — spread across event handlers, `useEffect`, and component state:
+
+```tsx
+// Without Umpire — imperative orchestration
+function AddressForm() {
+  const [country, setCountry] = useState('')
+  const [state, setState] = useState('')
+  const [province, setProvince] = useState('')
+  const [postalError, setPostalError] = useState('')
+
+  // Manual conditional rendering
+  const showState = country === 'US'
+  const showProvince = country === 'CA'
+
+  // Manual stale-value cleanup
+  useEffect(() => {
+    if (!showState && state) setState('')
+  }, [showState])
+  useEffect(() => {
+    if (!showProvince && province) setProvince('')
+  }, [showProvince])
+
+  // Manual postal code validation
+  const validatePostal = (code: string) => {
+    if (!code) return setPostalError('')
+    switch (country) {
+      case 'US': ...
+      case 'CA': ...
+      case 'UK': ...
+    }
+  }
+  // ... and so on
+}
+```
+
+With Umpire, all of this is 5 declarative rules:
+
+```ts
+function postalCodeMatchesCountry(code: string, country: unknown) {
+  switch (country) {
+    case 'US': return /^\d{5}(-\d{4})?$/.test(code)
+    case 'CA': return /^[A-Z]\d[A-Z]\s?\d[A-Z]\d$/i.test(code)
+    case 'UK': return /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i.test(code)
+    default: return true
+  }
+}
+
+const engine = umpire({
+  fields: {
+    street:     { required: true, isEmpty: (v) => !v },
+    city:       { required: true, isEmpty: (v) => !v },
+    country:    { required: true, isEmpty: (v) => !v },
+    state:      { required: true, isEmpty: (v) => !v },
+    province:   { required: true, isEmpty: (v) => !v },
+    postalCode: { required: true, isEmpty: (v) => !v },
+  },
+  rules: [
+    enabledWhen('state', (v) => v.country === 'US', {
+      reason: 'Only US addresses use states',
+    }),
+    enabledWhen('province', (v) => v.country === 'CA', {
+      reason: 'Only Canadian addresses use provinces',
+    }),
+    requires('state', 'country'),
+    requires('province', 'country'),
+    defineRule({
+      type: 'postalCodeFormat',
+      targets: ['postalCode'],
+      sources: ['country'],
+      constraint: 'fair',
+      evaluate(values) {
+        const code = String(values.postalCode ?? '').trim()
+        const fair = !code || postalCodeMatchesCountry(code, values.country)
+
+        return new Map([
+          ['postalCode', {
+            enabled: true,
+            fair,
+            reason: fair ? null : 'Invalid format for selected country',
+          }],
+        ])
+      },
+    }),
+  ],
+})
+```
+
+No `useEffect`, no manual cleanup, no hand-wired validation wiring. Umpire derives availability, fouls, and validation from the rules alone.
+
+### Implementation
+
+This demo uses [`@umpire/tanstack-form`](/adapters/tanstack-form/) with [TanStack Form](https://tanstack.com/form) and React. Each field component uses TanStack Form's `<form.Field>` with per-field validators auto-wired by `umpireFieldValidator` — Umpire reads its own graph to determine which fields need to revalidate when an upstream changes.
+
+The `useUmpireForm` hook subscribes to the form store, derives availability and fouls, and applies strike-on-transition automatically. Conditional rendering gates on `umpireForm.field('state').enabled` and `umpireForm.field('province').enabled` — no manual visibility logic needed.

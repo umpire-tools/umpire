@@ -58,21 +58,57 @@ The return shape matches what TanStack Form expects on a `Field`'s `validators` 
 }
 ```
 
-Example — a `state` field that's only available when `country` is `'US'`, and a `vatId` field that must pass a fairness check:
+Example — a `state` field gated on US, a `province` field gated on Canada, and a `postalCode` field with country-dependent format validation:
 
 ```ts
-import { enabledWhen, fairWhen, requires, umpire } from '@umpire/core'
+import { defineRule, enabledWhen, requires, umpire } from '@umpire/core'
 import { umpireFieldValidator } from '@umpire/tanstack-form'
+
+function postalCodeMatchesCountry(code: string, country: unknown) {
+  switch (country) {
+    case 'US': return /^\d{5}(-\d{4})?$/.test(code)
+    case 'CA': return /^[A-Z]\d[A-Z]\s?\d[A-Z]\d$/i.test(code)
+    case 'UK': return /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i.test(code)
+    default: return true
+  }
+}
 
 const engine = umpire({
   fields: {
-    country: {},
-    state: { required: true },
-    vatId: {},
+    street:     { required: true, isEmpty: (v: unknown) => !v },
+    city:       { required: true, isEmpty: (v: unknown) => !v },
+    country:    { required: true, isEmpty: (v: unknown) => !v },
+    state:      { required: true, isEmpty: (v: unknown) => !v },
+    province:   { required: true, isEmpty: (v: unknown) => !v },
+    postalCode: { required: true, isEmpty: (v: unknown) => !v },
   },
   rules: [
-    enabledWhen('state', (v) => v.country === 'US', { reason: 'Only US addresses have a state' }),
-    fairWhen('vatId', (v) => /^[A-Z]{2}/.test(String(v.vatId)), { reason: 'VAT ID must start with two letters' }),
+    enabledWhen('state', (v) => v.country === 'US', {
+      reason: 'Only US addresses use states',
+    }),
+    enabledWhen('province', (v) => v.country === 'CA', {
+      reason: 'Only Canadian addresses use provinces',
+    }),
+    requires('state', 'country'),
+    requires('province', 'country'),
+    defineRule({
+      type: 'postalCodeFormat',
+      targets: ['postalCode'],
+      sources: ['country'],
+      constraint: 'fair',
+      evaluate(values) {
+        const code = String(values.postalCode ?? '').trim()
+        const fair = !code || postalCodeMatchesCountry(code, values.country)
+
+        return new Map([
+          ['postalCode', {
+            enabled: true,
+            fair,
+            reason: fair ? null : 'Invalid format for selected country',
+          }],
+        ])
+      },
+    }),
   ],
 })
 
@@ -80,17 +116,22 @@ const engine = umpire({
 const stateValidators = umpireFieldValidator(engine, 'state')
 // → { onChange: fn, onChangeListenTo: ['country'] }
 
-const vatIdValidators = umpireFieldValidator(engine, 'vatId', {
+const postalCodeValidators = umpireFieldValidator(engine, 'postalCode', {
   events: ['onChange', 'onBlur'],
 })
-// → { onChange: fn, onChangeListenTo: [], onBlur: fn, onBlurListenTo: [] }
+// → { onChange: fn, onChangeListenTo: ['country'], onBlur: fn, onBlurListenTo: ['country'] }
 ```
 
 Pass it to a TanStack Form `Field`:
 
 ```tsx
 <form.Field name="state" validators={stateValidators}>
-  {(field) => <input value={field.state.value} onChange={field.handleChange} />}
+  {(field) => (
+    <input
+      value={field.state.value}
+      onChange={(event) => field.handleChange(event.currentTarget.value)}
+    />
+  )}
 </form.Field>
 ```
 
@@ -112,9 +153,9 @@ The `listenTo` option is omitted because each field's listener list is derived f
 ```ts
 const allValidators = umpireFieldValidators(engine)
 
-// allValidators.state  → { onChange: fn, onChangeListenTo: ['country'] }
-// allValidators.vatId  → { onChange: fn, onChangeListenTo: [] }
-// allValidators.country → { onChange: fn, onChangeListenTo: [] }
+// allValidators.state      → { onChange: fn, onChangeListenTo: ['country'] }
+// allValidators.postalCode → { onChange: fn, onChangeListenTo: ['country'] }
+// allValidators.country    → { onChange: fn, onChangeListenTo: [] }
 ```
 
 Each entry is a valid validators object for that field's TanStack Form `Field` component.
@@ -260,40 +301,58 @@ Usage with `useForm`:
 
 ```tsx
 import { useForm } from '@tanstack/react-form'
-import { enabledWhen, requires, umpire } from '@umpire/core'
+import { enabledWhen, umpire } from '@umpire/core'
 import { useUmpireForm } from '@umpire/tanstack-form/react'
+import { umpireFieldValidator } from '@umpire/tanstack-form'
 
 const engine = umpire({
   fields: {
     country: {},
     state: { required: true },
-    vatId: {},
+    province: {},
   },
   rules: [
     enabledWhen('state', (v) => v.country === 'US'),
-    requires('vatId', 'country'),
+    enabledWhen('province', (v) => v.country === 'CA'),
   ],
 })
 
 function AddressForm() {
   const form = useForm({ defaultValues: engine.init() })
-  const umpireForm = useUmpireForm(form, engine)
+  const umpireForm = useUmpireForm(form, engine, { strike: true })
 
   return (
     <form>
       <form.Field name="country">
-        {(field) => <input value={field.state.value} onChange={field.handleChange} />}
+        {(field) => (
+          <input
+            value={field.state.value}
+            onChange={(event) => field.handleChange(event.currentTarget.value)}
+          />
+        )}
       </form.Field>
 
       {umpireForm.field('state').enabled && (
-        <form.Field name="state">
-          {(field) => <input value={field.state.value} onChange={field.handleChange} />}
+        <form.Field name="state" validators={umpireFieldValidator(engine, 'state')}>
+          {(field) => (
+            <input
+              value={field.state.value}
+              onChange={(event) => field.handleChange(event.currentTarget.value)}
+              required
+            />
+          )}
         </form.Field>
       )}
 
-      {umpireForm.field('vatId').enabled && (
-        <form.Field name="vatId">
-          {(field) => <input value={field.state.value} onChange={field.handleChange} />}
+      {umpireForm.field('province').enabled && (
+        <form.Field name="province" validators={umpireFieldValidator(engine, 'province')}>
+          {(field) => (
+            <input
+              value={field.state.value}
+              onChange={(event) => field.handleChange(event.currentTarget.value)}
+              required
+            />
+          )}
         </form.Field>
       )}
     </form>
@@ -344,7 +403,10 @@ function AddressForm() {
       <UmpireScope>
         <UmpireField name="country">
           {(field, availability) => (
-            <input value={field.state.value} onChange={field.handleChange} />
+            <input
+              value={field.state.value}
+              onChange={(event) => field.handleChange(event.currentTarget.value)}
+            />
           )}
         </UmpireField>
 
@@ -352,7 +414,7 @@ function AddressForm() {
           {(field, availability) => (
             <input
               value={field.state.value}
-              onChange={field.handleChange}
+              onChange={(event) => field.handleChange(event.currentTarget.value)}
               required={availability.required}
             />
           )}
@@ -550,3 +612,7 @@ Options:
 
 - `excludeSelf` — exclude the field itself from the result. Defaults to `true`
 - `listenTo` — explicit override; skips graph lookup when provided
+
+:::tip[See it in action]
+A fully interactive address form demo with country-dependent validation, auto-strike, and foul inspection is on the [Address Form example page](/examples/address-form/).
+:::
