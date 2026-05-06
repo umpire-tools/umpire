@@ -227,6 +227,52 @@ function mergeReadTrace<T>(trace: T, existing: T | T[] | undefined) {
     : trace
 }
 
+function createDependencyProbe(): Record<string, unknown> {
+  return new Proxy(Object.create(null) as Record<string, unknown>, {
+    get(_target, property, receiver) {
+      if (property === Symbol.toPrimitive) {
+        return () => 'umpire-read-probe'
+      }
+
+      if (property === 'toString') {
+        return () => 'umpire-read-probe'
+      }
+
+      if (property === 'valueOf') {
+        return () => true
+      }
+
+      return receiver
+    },
+  })
+}
+
+function inferValueReadSources<
+  Input extends Record<string, unknown>,
+  Reads extends Record<string, unknown>,
+  K extends PredicateReadKey<Reads>,
+>(
+  table: ReadTable<Input, Reads>,
+  key: K,
+  target: string,
+  shouldInfer: boolean,
+): string[] {
+  if (!shouldInfer) {
+    return []
+  }
+
+  try {
+    const inspected = table.inspect(createDependencyProbe() as Input)
+    const node = inspected.nodes[key]
+
+    return [
+      ...new Set(node.dependsOnFields.filter((source) => source !== target)),
+    ]
+  } catch {
+    return []
+  }
+}
+
 export function fromRead<
   Input extends Record<string, unknown>,
   Reads extends Record<string, unknown>,
@@ -362,10 +408,18 @@ export function fairWhenRead<
     typeof fairWhen<F, C, unknown>
   >[1]
 
-  return fairWhen(field, predicate, {
+  const rule = fairWhen(field, predicate, {
     ...ruleOptions,
     trace: mergedTrace,
   })
+  rule.sources = inferValueReadSources(
+    table,
+    key,
+    fieldName,
+    !selectInput && inputType === ReadInputType.VALUES,
+  ) as Array<keyof F & string>
+
+  return rule
 }
 
 export function enabledWhenRead<
@@ -471,10 +525,18 @@ export function enabledWhenRead<
     typeof enabledWhen<F, C>
   >[1]
 
-  return enabledWhen(field, predicate, {
+  const rule = enabledWhen(field, predicate, {
     ...ruleOptions,
     trace: mergedTrace,
   })
+  rule.sources = inferValueReadSources(
+    table,
+    key,
+    fieldName,
+    !selectInput && inputType === ReadInputType.VALUES,
+  ) as Array<keyof F & string>
+
+  return rule
 }
 
 export function createReads<
