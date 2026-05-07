@@ -80,8 +80,7 @@ export function createUmpireFormAdapter<
 
   function snapshotsEqual(a: Snapshot<C>, b: Snapshot<C>): boolean {
     return (
-      valuesEqual(a.values, b.values) &&
-      valuesEqual(a.conditions, b.conditions)
+      valuesEqual(a.values, b.values) && valuesEqual(a.conditions, b.conditions)
     )
   }
 
@@ -96,7 +95,9 @@ export function createUmpireFormAdapter<
       return false
     }
     if (a instanceof Date || b instanceof Date) {
-      return a instanceof Date && b instanceof Date && a.getTime() === b.getTime()
+      return (
+        a instanceof Date && b instanceof Date && a.getTime() === b.getTime()
+      )
     }
     if (Array.isArray(a) || Array.isArray(b)) {
       return (
