@@ -325,4 +325,51 @@ describe('UmpireFormSubscribe', () => {
       expect(setFieldValue).toHaveBeenCalledWith('details', undefined)
     })
   })
+
+  it('does not auto-apply strike for enabled fields that become foul', async () => {
+    const engine = umpire({
+      fields: { postalCode: {} },
+      rules: [
+        fairWhen('postalCode', (value) => value === '12345', {
+          reason: 'Invalid postal code',
+        }),
+      ],
+    })
+
+    function MockSubscribe({
+      children,
+    }: {
+      selector(state: {
+        values: Record<string, unknown>
+      }): Record<string, unknown>
+      children(values: Record<string, unknown>): React.ReactNode
+    }) {
+      const [values, setValues] = React.useState({ postalCode: '12345' })
+
+      React.useEffect(() => {
+        setValues({ postalCode: '1' })
+      }, [])
+
+      return <>{children(values)}</>
+    }
+
+    const setFieldValue = mock(() => {})
+
+    const { findByTestId } = render(
+      <UmpireFormSubscribe
+        form={{ Subscribe: MockSubscribe, setFieldValue }}
+        engine={engine}
+        strike
+      >
+        {(umpireForm) => (
+          <span data-testid="fair">
+            {String(umpireForm.field('postalCode').fair)}
+          </span>
+        )}
+      </UmpireFormSubscribe>,
+    )
+
+    expect((await findByTestId('fair')).textContent).toBe('false')
+    expect(setFieldValue).not.toHaveBeenCalled()
+  })
 })

@@ -70,9 +70,18 @@ export function createUmpireFormOptions<
       }
 
       const fouls = engine.play(previousSnapshot, currentSnapshot)
+      const availability = engine.check(
+        currentSnapshot.values,
+        currentSnapshot.conditions,
+        previousSnapshot.values,
+      )
       previousSnapshot = currentSnapshot
 
       for (const foul of fouls) {
+        if (availability[foul.field]?.enabled !== false) {
+          continue
+        }
+
         if (useResetField) {
           ;(
             formApi as unknown as { resetField(name: string): void }

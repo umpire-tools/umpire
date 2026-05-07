@@ -102,13 +102,22 @@ export function useUmpireForm<
       return
     }
 
-    const fouls = engine.play(previousSnapshot.value, current) as Foul<F>[]
+    const previous = previousSnapshot.value
+    const fouls = engine.play(previous, current) as Foul<F>[]
     foulsRef.value = fouls
     previousSnapshot.value = current
 
     if (options?.strike) {
+      const availability = engine.check(
+        current.values,
+        current.conditions,
+        previous.values,
+      )
+
       for (const foul of fouls) {
-        form.setFieldValue(foul.field, foul.suggestedValue)
+        if (availability[foul.field]?.enabled === false) {
+          form.setFieldValue(foul.field, foul.suggestedValue)
+        }
       }
     }
   })

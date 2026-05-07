@@ -315,7 +315,7 @@ Returns:
 }
 ```
 
-When `strike: true`, fouls are applied automatically via `useEffect`.
+When `strike: true`, disabled-field cleanup is applied automatically via `useEffect`. Validation fouls on still-enabled fields remain visible so users can keep editing.
 
 Usage with `useForm`:
 
@@ -473,7 +473,7 @@ import { createUmpireForm } from '@umpire/tanstack-form/solid'
 const umpireForm = createUmpireForm(form, ump, { conditions, strike })
 ```
 
-Returns the same `UmpireForm` surface. When `strike: true`, fouls are applied via `createEffect`.
+Returns the same `UmpireForm` surface. When `strike: true`, disabled-field cleanup is applied via `createEffect`. Validation fouls on still-enabled fields remain visible so users can keep editing.
 
 ```tsx
 import { createForm } from '@tanstack/solid-form'

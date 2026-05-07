@@ -131,7 +131,11 @@ export function createUmpireForm<
   createEffect(
     on(fouls, () => {
       if (options?.strike && fouls().length > 0) {
-        applyStrikeFn()
+        for (const foul of fouls()) {
+          if (check()[foul.field]?.enabled === false) {
+            setFieldValue(foul.field, foul.suggestedValue)
+          }
+        }
       }
     }),
   )
@@ -184,7 +188,11 @@ function buildUmpireFormFromValues<
   createEffect(
     on(fouls, () => {
       if (strike && fouls().length > 0) {
-        applyStrikeFn()
+        for (const foul of fouls()) {
+          if (check()[foul.field]?.enabled === false) {
+            setFieldValue(foul.field, foul.suggestedValue)
+          }
+        }
       }
     }),
   )

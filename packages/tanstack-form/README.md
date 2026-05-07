@@ -184,7 +184,7 @@ All framework hooks and `createUmpireFormAdapter.getField()` return this shape:
 
 #### `useUmpireForm(form, ump, options?)`
 
-Hook that subscribes to form values and returns `{ field(name), fouls, applyStrike }`. When `strike: true`, fouls are applied automatically via `useEffect`. `conditions` can be a value or `() => C`.
+Hook that subscribes to form values and returns `{ field(name), fouls, applyStrike }`. When `strike: true`, disabled-field cleanup is applied automatically via `useEffect`; validation fouls on still-enabled fields remain visible so users can keep editing. `conditions` can be a value or `() => C`.
 
 #### `UmpireFormSubscribe`
 
@@ -200,7 +200,7 @@ Factory producing `UmpireScope`, `UmpireField`, and `UmpireSubmit`. Works with `
 
 #### `createUmpireForm(form, engine, options?)`
 
-Solid equivalent of `useUmpireForm`. Returns the same `{ field, fouls, applyStrike }` surface with Solid accessor semantics. `conditions` can be a value or `Accessor<C>`. Strike is applied via `createEffect`.
+Solid equivalent of `useUmpireForm`. Returns the same `{ field, fouls, applyStrike }` surface with Solid accessor semantics. `conditions` can be a value or `Accessor<C>`. Disabled-field cleanup is applied via `createEffect` when `strike: true`.
 
 #### `UmpireFormSubscribe`
 

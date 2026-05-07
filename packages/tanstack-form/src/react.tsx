@@ -119,9 +119,13 @@ export function useUmpireForm<
 
   useEffect(() => {
     if (strike && fouls.length > 0) {
-      applyStrike()
+      for (const foul of fouls) {
+        if (check?.[foul.field]?.enabled === false) {
+          form.setFieldValue(foul.field, foul.suggestedValue)
+        }
+      }
     }
-  }, [applyStrike, fouls, strike])
+  }, [check, form, fouls, strike])
 
   const umpireForm = useMemo(
     () => ({
@@ -213,9 +217,13 @@ function UmpireFormSnapshot<
 
   useEffect(() => {
     if (strike && fouls.length > 0) {
-      applyStrike()
+      for (const foul of fouls) {
+        if (check?.[foul.field]?.enabled === false) {
+          form.setFieldValue(foul.field, foul.suggestedValue)
+        }
+      }
     }
-  }, [applyStrike, fouls, strike])
+  }, [check, form, fouls, strike])
 
   const umpireForm = useMemo(
     () => ({

@@ -1,4 +1,4 @@
-import { fairWhen, umpire } from '@umpire/core'
+import { enabledWhen, fairWhen, umpire } from '@umpire/core'
 import { describe, it, expect } from 'bun:test'
 import { createUmpireFormOptions } from '../src/options.js'
 
@@ -68,7 +68,39 @@ describe('createUmpireFormOptions', () => {
     expect(setFieldValueCalls).toHaveLength(0)
   })
 
-  it('applies strike on foul transition', () => {
+  it('applies strike on disabled transition', () => {
+    const engine = umpire({
+      fields: { mode: {}, details: {} },
+      rules: [enabledWhen('details', (v) => v.mode === 'edit')],
+    })
+
+    const result = createUmpireFormOptions(engine, { strike: true })
+    let values = { mode: 'edit', details: 'stale' }
+    const setFieldValueCalls: Array<[string, unknown]> = []
+
+    const formApi = {
+      get state() {
+        return { values }
+      },
+      setFieldValue(name: string, value: unknown) {
+        setFieldValueCalls.push([name, value])
+        values = { ...values, [name]: value }
+      },
+    }
+
+    // First call — initializes snapshot, no strike
+    listener(resultWithListeners(result).listeners?.onChange)({ formApi })
+    expect(setFieldValueCalls).toHaveLength(0)
+
+    // Change to a disabled state — should trigger strike restoring to suggested value.
+    values = { mode: 'view', details: 'stale' }
+    listener(resultWithListeners(result).listeners?.onChange)({ formApi })
+    expect(setFieldValueCalls).toHaveLength(1)
+    expect(setFieldValueCalls[0][0]).toBe('details')
+    expect(setFieldValueCalls[0][1]).toBeUndefined()
+  })
+
+  it('does not auto-strike enabled fields that become foul', () => {
     const engine = umpire({
       fields: { email: {} },
       rules: [
@@ -88,20 +120,14 @@ describe('createUmpireFormOptions', () => {
       },
       setFieldValue(name: string, value: unknown) {
         setFieldValueCalls.push([name, value])
-        values = { ...values, [name]: value }
       },
     }
 
-    // First call — initializes snapshot, no strike
     listener(resultWithListeners(result).listeners?.onChange)({ formApi })
-    expect(setFieldValueCalls).toHaveLength(0)
-
-    // Change to a foul value — should trigger strike restoring to suggested value (undefined)
     values = { email: 'bad' }
     listener(resultWithListeners(result).listeners?.onChange)({ formApi })
-    expect(setFieldValueCalls).toHaveLength(1)
-    expect(setFieldValueCalls[0][0]).toBe('email')
-    expect(setFieldValueCalls[0][1]).toBeUndefined()
+
+    expect(setFieldValueCalls).toHaveLength(0)
   })
 
   it('produces onBlur listener instead when events contains onBlur', () => {
@@ -151,18 +177,14 @@ describe('createUmpireFormOptions', () => {
 
   it('calls resetField instead of setFieldValue when mode is resetField', () => {
     const engine = umpire({
-      fields: { email: {} },
-      rules: [
-        fairWhen('email', (v) => String(v).includes('@'), {
-          reason: 'Bad email',
-        }),
-      ],
+      fields: { mode: {}, details: {} },
+      rules: [enabledWhen('details', (v) => v.mode === 'edit')],
     })
 
     const result = createUmpireFormOptions(engine, {
       strike: { mode: 'resetField' },
     })
-    let values = { email: 'test@example.com' }
+    let values = { mode: 'edit', details: 'stale' }
     const resetFieldCalls: string[] = []
     const setFieldValueCalls: Array<[string, unknown]> = []
 
@@ -183,11 +205,11 @@ describe('createUmpireFormOptions', () => {
     listener(resultWithListeners(result).listeners?.onChange)({ formApi })
     expect(resetFieldCalls).toHaveLength(0)
 
-    // Second call triggers foul
-    values = { email: 'bad' }
+    // Second call triggers disabled cleanup
+    values = { mode: 'view', details: 'stale' }
     listener(resultWithListeners(result).listeners?.onChange)({ formApi })
     expect(resetFieldCalls).toHaveLength(1)
-    expect(resetFieldCalls[0]).toBe('email')
+    expect(resetFieldCalls[0]).toBe('details')
     expect(setFieldValueCalls).toHaveLength(0)
   })
 
@@ -275,8 +297,8 @@ describe('createUmpireFormOptions', () => {
 
   it('two separate calls to createUmpireFormOptions do not share snapshots', () => {
     const engine = umpire({
-      fields: { x: {} },
-      rules: [fairWhen('x', (v) => String(v).length > 0, { reason: 'Empty' })],
+      fields: { mode: {}, details: {} },
+      rules: [enabledWhen('details', (v) => v.mode === 'edit')],
     })
 
     const opts1 = createUmpireFormOptions(engine, { strike: true })
@@ -285,7 +307,7 @@ describe('createUmpireFormOptions', () => {
     const calls1: Array<[string, unknown]> = []
     const calls2: Array<[string, unknown]> = []
 
-    let vals1 = { x: 'hello' }
+    let vals1 = { mode: 'edit', details: 'one' }
     const api1 = {
       get state() {
         return { values: vals1 }
@@ -296,7 +318,7 @@ describe('createUmpireFormOptions', () => {
       },
     }
 
-    let vals2 = { x: 'world' }
+    let vals2 = { mode: 'edit', details: 'two' }
     const api2 = {
       get state() {
         return { values: vals2 }
@@ -311,11 +333,11 @@ describe('createUmpireFormOptions', () => {
     listener(resultWithListeners(opts1).listeners?.onChange)({ formApi: api1 })
     listener(resultWithListeners(opts2).listeners?.onChange)({ formApi: api2 })
 
-    // Trigger foul on opts1 only
-    vals1 = { x: '' }
+    // Trigger a disabled cleanup on opts1 only
+    vals1 = { mode: 'view', details: 'one' }
     listener(resultWithListeners(opts1).listeners?.onChange)({ formApi: api1 })
     expect(calls1).toHaveLength(1)
-    expect(calls1[0][0]).toBe('x')
+    expect(calls1[0][0]).toBe('details')
 
     // opts2 should NOT have been affected — its snapshot is independent
     expect(calls2).toHaveLength(0)
