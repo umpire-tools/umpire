@@ -714,9 +714,11 @@ export function getGraphSourceInfo<
   const metadata = getInternalRuleMetadata(rule)
 
   if (metadata?.kind === 'enabledWhen') {
+    const source = getSourceField(metadata.predicate)
+
     return {
-      ordering: [],
-      informational: getSourceFields(metadata.predicate),
+      ordering: source ? [] : [...rule.sources],
+      informational: source ? [source] : [],
     }
   }
 
@@ -725,7 +727,7 @@ export function getGraphSourceInfo<
 
     return {
       ordering: [],
-      informational: source ? [source] : [],
+      informational: source ? [source] : [...rule.sources],
     }
   }
 

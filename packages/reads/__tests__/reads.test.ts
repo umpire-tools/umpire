@@ -461,6 +461,124 @@ describe('@umpire/reads', () => {
       })
     })
 
+    test('fairWhenRead adds value read field dependencies to the umpire graph', () => {
+      const reads = createReads<
+        { country?: string; postalCode?: string },
+        { postalCodeFair: boolean }
+      >({
+        postalCodeFair: ({ input }) => {
+          const code = String(input.postalCode ?? '').trim()
+
+          if (!code) {
+            return true
+          }
+
+          switch (input.country) {
+            case 'US':
+              return /^\d{5}(-\d{4})?$/.test(code)
+            case 'CA':
+              return /^[A-Z]\d[A-Z]\s?\d[A-Z]\d$/i.test(code)
+            default:
+              return true
+          }
+        },
+      })
+      const ump = umpire({
+        fields: {
+          country: {},
+          postalCode: {},
+        },
+        rules: [fairWhenRead('postalCode', 'postalCodeFair', reads)],
+      })
+
+      expect(ump.graph().edges).toEqual(
+        expect.arrayContaining([
+          {
+            from: 'country',
+            to: 'postalCode',
+            type: 'fairWhen',
+          },
+        ]),
+      )
+      expect(ump.graph().edges).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            from: 'postalCode',
+            to: 'postalCode',
+          }),
+        ]),
+      )
+    })
+
+    test('fairWhenRead does not add nested property names as graph dependencies', () => {
+      const reads = createReads<
+        { address?: { street?: string }; quantity?: number; street?: string },
+        { addressFair: boolean }
+      >({
+        addressFair: ({ input }) =>
+          Boolean(
+            input.address?.street?.toString() ||
+            input.quantity?.valueOf() ||
+            String(input),
+          ),
+      })
+      const ump = umpire({
+        fields: {
+          address: {},
+          quantity: {},
+          street: {},
+          deliveryInstructions: {},
+        },
+        rules: [fairWhenRead('deliveryInstructions', 'addressFair', reads)],
+      })
+
+      expect(ump.graph().edges).toEqual(
+        expect.arrayContaining([
+          {
+            from: 'address',
+            to: 'deliveryInstructions',
+            type: 'fairWhen',
+          },
+        ]),
+      )
+      expect(ump.graph().edges).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            from: 'street',
+            to: 'deliveryInstructions',
+          }),
+        ]),
+      )
+    })
+
+    test('fairWhenRead omits graph sources when probe inference cannot evaluate the read', () => {
+      const reads = createReads<
+        { config?: unknown; deliveryInstructions?: string },
+        { configFair: boolean }
+      >({
+        configFair: ({ input }) => {
+          if (!Array.isArray(input.config)) {
+            throw new Error('Expected array config')
+          }
+
+          return true
+        },
+      })
+      const ump = umpire({
+        fields: {
+          config: {},
+          deliveryInstructions: {},
+        },
+        rules: [fairWhenRead('deliveryInstructions', 'configFair', reads)],
+      })
+
+      expect(ump.graph().edges).toEqual([])
+      expect(
+        ump.check({ config: [], deliveryInstructions: 'Leave at door' })
+          .deliveryInstructions.fair,
+      ).toBe(true)
+    })
+
     test('enabledWhenRead passes when the read returns true and fails with the configured reason when false', () => {
       const reads = createReads<
         { cpu?: string },
@@ -498,6 +616,32 @@ describe('@umpire/reads', () => {
         reason: 'Pick a CPU first',
         reasons: ['Pick a CPU first'],
       })
+    })
+
+    test('enabledWhenRead adds value read field dependencies to the umpire graph', () => {
+      const reads = createReads<
+        { cpu?: string },
+        { canSelectMotherboard: boolean }
+      >({
+        canSelectMotherboard: ({ input }) => Boolean(input.cpu),
+      })
+      const ump = umpire({
+        fields: {
+          cpu: {},
+          motherboard: {},
+        },
+        rules: [enabledWhenRead('motherboard', 'canSelectMotherboard', reads)],
+      })
+
+      expect(ump.graph().edges).toEqual(
+        expect.arrayContaining([
+          {
+            from: 'cpu',
+            to: 'motherboard',
+            type: 'enabledWhen',
+          },
+        ]),
+      )
     })
 
     test('inputType CONDITIONS evaluates reads against conditions instead of values', () => {
@@ -540,6 +684,32 @@ describe('@umpire/reads', () => {
         reason: 'Pick a supported platform first',
         reasons: ['Pick a supported platform first'],
       })
+    })
+
+    test('inputType CONDITIONS does not add read input fields to the umpire graph', () => {
+      const reads = createReads<
+        { allowMotherboard: boolean },
+        { canSelectMotherboard: boolean }
+      >({
+        canSelectMotherboard: ({ input }) => input.allowMotherboard,
+      })
+      const ump = umpire<
+        {
+          motherboard: {}
+        },
+        { allowMotherboard: boolean }
+      >({
+        fields: {
+          motherboard: {},
+        },
+        rules: [
+          enabledWhenRead('motherboard', 'canSelectMotherboard', reads, {
+            inputType: ReadInputType.CONDITIONS,
+          }),
+        ],
+      })
+
+      expect(ump.graph().edges).toEqual([])
     })
 
     test('fairWhenRead supports inputType CONDITIONS with a named field builder', () => {
