@@ -31,6 +31,16 @@ type ReadResolvers<
   [K in keyof Reads]: (context: ReadContext<Input, Reads>) => Reads[K]
 }
 
+type AnyReadResolver<Input extends Record<string, unknown>> = (
+  context: ReadContext<Input, Record<string, unknown>>,
+) => unknown
+
+type InferReadValues<
+  Resolvers extends Record<string, AnyReadResolver<Record<string, unknown>>>,
+> = {
+  [K in keyof Resolvers]: ReturnType<Resolvers[K]>
+}
+
 export type PredicateReadKey<Reads extends Record<string, unknown>> = {
   [K in keyof Reads]-?: Reads[K] extends boolean ? K : never
 }[keyof Reads] &
@@ -547,6 +557,18 @@ export function enabledWhenRead<
   return rule
 }
 
+export function createReads<
+  const Resolvers extends Record<
+    string,
+    AnyReadResolver<Record<string, unknown>>
+  >,
+>(
+  resolvers: Resolvers,
+): ReadTable<Record<string, unknown>, InferReadValues<Resolvers>>
+export function createReads<
+  Input extends Record<string, unknown>,
+  Reads extends Record<string, unknown>,
+>(resolvers: ReadResolvers<Input, Reads>): ReadTable<Input, Reads>
 export function createReads<
   Input extends Record<string, unknown>,
   Reads extends Record<string, unknown>,

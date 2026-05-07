@@ -4,7 +4,7 @@ import { createReads, fairWhenRead } from '@umpire/reads'
 import { useUmpireForm } from '@umpire/tanstack-form/react'
 import { umpireFieldValidator } from '@umpire/tanstack-form'
 import { register } from '@umpire/devtools/slim'
-import type { FieldValues, FieldsOf, Foul, NormalizeFields } from '@umpire/core'
+import type { FieldValues, FieldsOf, Foul } from '@umpire/core'
 import type { UmpireForm } from '@umpire/tanstack-form/react'
 import type { ReactNode } from 'react'
 
@@ -51,13 +51,7 @@ const addressFields = {
   postalCode: { required: true, isEmpty: (v: unknown) => !v },
 }
 
-type AddressFieldDefs = NormalizeFields<typeof addressFields>
-type AddressValues = FieldValues<AddressFieldDefs>
-type AddressReads = {
-  postalCodeFair: boolean
-}
-
-const addressReads = createReads<AddressValues, AddressReads>({
+const addressReads = createReads({
   postalCodeFair: ({ input }) => {
     const code = String(input.postalCode ?? '').trim()
     return !code || postalCodeMatchesCountry(code, input.country)
@@ -75,12 +69,7 @@ const addressUmp = umpire({
     }),
     requires('state', 'country'),
     requires('province', 'country'),
-    fairWhenRead<
-      AddressFieldDefs,
-      Record<string, unknown>,
-      AddressReads,
-      'postalCodeFair'
-    >('postalCode', 'postalCodeFair', addressReads, {
+    fairWhenRead('postalCode', 'postalCodeFair', addressReads, {
       reason: 'Invalid format for selected country',
     }),
   ],
@@ -97,6 +86,7 @@ function useAddressForm() {
 }
 
 type AddressFields = FieldsOf<typeof addressUmp>
+type AddressValues = FieldValues<AddressFields>
 type AddressField = keyof AddressValues & string
 type AddressFoul = Foul<AddressFields>
 type AddressUmpireForm = UmpireForm<AddressFields>
