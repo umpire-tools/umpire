@@ -38,6 +38,8 @@ export function umpireFieldValidator<
         {
           enabled?: boolean
           fair?: boolean
+          required?: boolean
+          satisfied?: boolean
           reason?: string | null
           error?: string
         }
@@ -45,6 +47,9 @@ export function umpireFieldValidator<
     )[fieldName]
 
     if (!fieldCheck?.enabled) return undefined
+    if (fieldCheck.required && !fieldCheck.satisfied) {
+      return fieldCheck.reason ?? 'Required'
+    }
     if (options?.rejectFoul !== false && fieldCheck.fair === false) {
       return fieldCheck.reason ?? 'Invalid value'
     }

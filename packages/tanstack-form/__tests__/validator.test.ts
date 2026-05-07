@@ -55,6 +55,21 @@ describe('umpireFieldValidator', () => {
     expect(result).toBe('Invalid email')
   })
 
+  it('required field returns the required reason when unsatisfied', () => {
+    const engine = umpire({
+      fields: { name: { required: true } },
+      rules: [],
+    })
+
+    const validators = umpireFieldValidator(engine, 'name')
+    const result = validator(validators.onChange)({
+      value: null,
+      fieldApi: { form: { state: { values: { name: null } } } },
+    })
+
+    expect(result).toBe('Required')
+  })
+
   it('foul field without a reason returns the invalid value fallback', () => {
     const engine = {
       check: () => ({

@@ -51,6 +51,9 @@ export function createUmpireFormAdapter<
   options?: UmpireFormAdapterOptions<C>,
 ): UmpireFormAdapter<F> {
   let previousSnapshot: Snapshot<C> | null = null
+  let cachedSnapshot: Snapshot<C> | null = null
+  let cachedFouls: Foul<F>[] = []
+  let hasCachedFouls = false
 
   const setFieldValue =
     options?.setFieldValue ?? ((name, value) => form.setFieldValue(name, value))
@@ -66,6 +69,94 @@ export function createUmpireFormAdapter<
     const values = form.state.values
     const conditions = getConditions()
     return engine.check(values, conditions)
+  }
+
+  function getCurrentSnapshot(): Snapshot<C> {
+    return {
+      values: snapshotValue(form.state.values),
+      conditions: snapshotValue(getConditions()) as C | undefined,
+    }
+  }
+
+  function snapshotsEqual(a: Snapshot<C>, b: Snapshot<C>): boolean {
+    return (
+      valuesEqual(a.values, b.values) &&
+      valuesEqual(a.conditions, b.conditions)
+    )
+  }
+
+  function valuesEqual(a: unknown, b: unknown): boolean {
+    if (Object.is(a, b)) return true
+    if (
+      a === null ||
+      b === null ||
+      typeof a !== 'object' ||
+      typeof b !== 'object'
+    ) {
+      return false
+    }
+    if (a instanceof Date || b instanceof Date) {
+      return a instanceof Date && b instanceof Date && a.getTime() === b.getTime()
+    }
+    if (Array.isArray(a) || Array.isArray(b)) {
+      return (
+        Array.isArray(a) &&
+        Array.isArray(b) &&
+        a.length === b.length &&
+        a.every((entry, index) => valuesEqual(entry, b[index]))
+      )
+    }
+    if (a instanceof Map || b instanceof Map) {
+      if (!(a instanceof Map) || !(b instanceof Map) || a.size !== b.size) {
+        return false
+      }
+      for (const [key, value] of a) {
+        if (!b.has(key) || !valuesEqual(value, b.get(key))) return false
+      }
+      return true
+    }
+    if (a instanceof Set || b instanceof Set) {
+      if (!(a instanceof Set) || !(b instanceof Set) || a.size !== b.size) {
+        return false
+      }
+      for (const value of a) {
+        if (!b.has(value)) return false
+      }
+      return true
+    }
+
+    const aEntries = Object.entries(a)
+    const bRecord = b as Record<string, unknown>
+    return (
+      aEntries.length === Object.keys(b).length &&
+      aEntries.every(([key, value]) => valuesEqual(value, bRecord[key]))
+    )
+  }
+
+  function advanceFouls(): Foul<F>[] {
+    const current = getCurrentSnapshot()
+
+    if (!previousSnapshot) {
+      previousSnapshot = current
+      cachedSnapshot = current
+      cachedFouls = []
+      hasCachedFouls = true
+      return cachedFouls
+    }
+
+    if (
+      hasCachedFouls &&
+      cachedSnapshot &&
+      snapshotsEqual(cachedSnapshot, current)
+    ) {
+      return cachedFouls
+    }
+
+    cachedFouls = engine.play(previousSnapshot, current) as Foul<F>[]
+    previousSnapshot = current
+    cachedSnapshot = current
+    hasCachedFouls = true
+    return cachedFouls
   }
 
   function getField(name: string): UmpireFormField {
@@ -92,26 +183,15 @@ export function createUmpireFormAdapter<
   }
 
   function getFouls(): Foul<F>[] {
-    const current: Snapshot<C> = {
-      values: snapshotValue(form.state.values),
-      conditions: snapshotValue(getConditions()) as C | undefined,
-    }
-
-    if (!previousSnapshot) {
-      previousSnapshot = current
-      return []
-    }
-
-    const fouls = engine.play(previousSnapshot, current) as Foul<F>[]
-    previousSnapshot = current
-    return fouls
+    return advanceFouls()
   }
 
   function applyStrike(): void {
-    const fouls = getFouls()
+    const fouls = advanceFouls()
     for (const foul of fouls) {
       setFieldValue(foul.field, foul.suggestedValue)
     }
+    hasCachedFouls = false
   }
 
   function refresh(values: Record<string, unknown>): void {
@@ -119,6 +199,9 @@ export function createUmpireFormAdapter<
       values: snapshotValue(values),
       conditions: snapshotValue(getConditions()) as C | undefined,
     }
+    cachedSnapshot = previousSnapshot
+    cachedFouls = []
+    hasCachedFouls = true
   }
 
   return {

@@ -148,6 +148,37 @@ describe('createUmpireFormAdapter', () => {
     expect(setFieldCalls).toEqual([{ name: 'y', value: undefined }])
   })
 
+  it('applyStrike applies fouls already inspected by getFouls', () => {
+    const engine = umpire({
+      fields: { x: {}, y: {} },
+      rules: [
+        enabledWhen('y', (v) => (v as Record<string, unknown>).x === 'yes'),
+      ],
+    })
+
+    const setFieldCalls: Array<{ name: string; value: unknown }> = []
+    const form = {
+      state: { values: { x: 'yes', y: 'world' } },
+      setFieldValue(name: string, value: unknown) {
+        setFieldCalls.push({ name, value })
+      },
+    }
+
+    const adapter = createUmpireFormAdapter(form as never, engine)
+
+    adapter.getFouls()
+    form.state.values = { x: 'no', y: 'world' }
+
+    const fouls = adapter.getFouls()
+    expect(fouls.map((foul) => foul.field)).toEqual(['y'])
+
+    adapter.applyStrike()
+
+    expect(setFieldCalls).toEqual([{ name: 'y', value: undefined }])
+    adapter.applyStrike()
+    expect(setFieldCalls).toEqual([{ name: 'y', value: undefined }])
+  })
+
   it('applyStrike is a no-op before any transition', () => {
     const engine = umpire({
       fields: { x: {}, y: {} },
