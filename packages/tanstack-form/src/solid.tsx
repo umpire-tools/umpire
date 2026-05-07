@@ -236,7 +236,10 @@ const { useFormContext } = createFormHookContexts()
 
 type TanStackSolidForm = {
   useStore<T>(
-    selector: (state: { values: Record<string, unknown> }) => T,
+    selector: (state: {
+      values: Record<string, unknown>
+      isSubmitting: boolean
+    }) => T,
   ): Accessor<T>
   setFieldValue(name: string, value: unknown): void
   Field(props: {
@@ -326,8 +329,12 @@ export function createUmpireFormComponents<
     disabled?: boolean
   }): JSX.Element {
     const getUmpireForm = useContext(UmpireFormContext)
+    const form = useOptionalFormContext()
+    const isSubmitting =
+      form?.useStore((state) => state.isSubmitting) ?? (() => false)
     const disabled = createMemo(
-      () => props.disabled || (getUmpireForm()?.fouls.length ?? 0) > 0,
+      () =>
+        props.disabled || isSubmitting() || (getUmpireForm()?.fouls.length ?? 0) > 0,
     )
 
     return createDynamic(() => 'button', {
