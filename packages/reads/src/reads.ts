@@ -242,13 +242,13 @@ function getDependencyProbePrimitive(property: string | symbol) {
 }
 
 function createDependencyProbe<Input extends Record<string, unknown>>(): Input {
-  const terminal = new Proxy(Object.create(null) as Record<string, unknown>, {
+  const terminal = new Proxy(Object.create(null), {
     get(_target, property, receiver) {
       return getDependencyProbePrimitive(property) ?? receiver
     },
   })
 
-  return new Proxy(Object.create(null) as Record<string, unknown>, {
+  return new Proxy(Object.create(null), {
     get(_target, property) {
       return getDependencyProbePrimitive(property) ?? terminal
     },
