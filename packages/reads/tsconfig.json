@@ -6,7 +6,8 @@
     "composite": true,
     "paths": {
       "@umpire/core": ["../core/src/index.ts"],
-      "@umpire/core/*": ["../core/src/*"]
+      "@umpire/core/*": ["../core/src/*"],
+      "@umpire/testing": ["../testing/src/index.ts"]
     }
   },
   "include": ["src"],
