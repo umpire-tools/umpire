@@ -19,7 +19,7 @@ A multi-country address form with 6 fields and 5 rules spanning **3 rule types**
 |---|---|
 | **`enabledWhen`** | `state` appears only when country is US. `province` appears only when country is CA. |
 | **`requires`** | Both `state` and `province` require `country` to be selected — no selecting a region without first picking a country. |
-| **custom fair rule** | `postalCode` format validation switches based on country, and declares `country` as a graph source so validators re-run when country changes. |
+| **`fairWhenRead`** | `postalCode` format validation switches based on country, and the read dependency on `country` feeds the graph so validators re-run when country changes. |
 
 ### Things to try
 
@@ -69,6 +69,8 @@ function AddressForm() {
 With Umpire, all of this is 5 declarative rules:
 
 ```ts
+import { createReads, fairWhenRead } from '@umpire/reads'
+
 function postalCodeMatchesCountry(code: string, country: unknown) {
   switch (country) {
     case 'US': return /^\d{5}(-\d{4})?$/.test(code)
@@ -77,6 +79,13 @@ function postalCodeMatchesCountry(code: string, country: unknown) {
     default: return true
   }
 }
+
+const addressReads = createReads({
+  postalCodeFair: ({ input }) => {
+    const code = String(input.postalCode ?? '').trim()
+    return !code || postalCodeMatchesCountry(code, input.country)
+  },
+})
 
 const engine = umpire({
   fields: {
@@ -96,23 +105,8 @@ const engine = umpire({
     }),
     requires('state', 'country'),
     requires('province', 'country'),
-    defineRule({
-      type: 'postalCodeFormat',
-      targets: ['postalCode'],
-      sources: ['country'],
-      constraint: 'fair',
-      evaluate(values) {
-        const code = String(values.postalCode ?? '').trim()
-        const fair = !code || postalCodeMatchesCountry(code, values.country)
-
-        return new Map([
-          ['postalCode', {
-            enabled: true,
-            fair,
-            reason: fair ? null : 'Invalid format for selected country',
-          }],
-        ])
-      },
+    fairWhenRead('postalCode', 'postalCodeFair', addressReads, {
+      reason: 'Invalid format for selected country',
     }),
   ],
 })

@@ -1,5 +1,6 @@
 import { useForm } from '@tanstack/react-form'
-import { defineRule, enabledWhen, requires, umpire } from '@umpire/core'
+import { enabledWhen, requires, umpire } from '@umpire/core'
+import { createReads, fairWhenRead } from '@umpire/reads'
 import { useUmpireForm } from '@umpire/tanstack-form/react'
 import { umpireFieldValidator } from '@umpire/tanstack-form'
 import { register } from '@umpire/devtools/slim'
@@ -38,6 +39,13 @@ function postalCodeMatchesCountry(code: string, country: unknown) {
   }
 }
 
+const addressReads = createReads({
+  postalCodeFair: ({ input }) => {
+    const code = String(input.postalCode ?? '').trim()
+    return !code || postalCodeMatchesCountry(code, input.country)
+  },
+})
+
 const addressEngine = umpire({
   fields: {
     street:     { required: true, isEmpty: (v: unknown) => !v },
@@ -56,23 +64,8 @@ const addressEngine = umpire({
     }),
     requires('state', 'country'),
     requires('province', 'country'),
-    defineRule({
-      type: 'postalCodeFormat',
-      targets: ['postalCode'],
-      sources: ['country'],
-      constraint: 'fair',
-      evaluate(values) {
-        const code = String(values.postalCode ?? '').trim()
-        const fair = !code || postalCodeMatchesCountry(code, values.country)
-
-        return new Map([
-          ['postalCode', {
-            enabled: true,
-            fair,
-            reason: fair ? null : 'Invalid format for selected country',
-          }],
-        ])
-      },
+    fairWhenRead('postalCode', 'postalCodeFair', addressReads, {
+      reason: 'Invalid format for selected country',
     }),
   ],
 })

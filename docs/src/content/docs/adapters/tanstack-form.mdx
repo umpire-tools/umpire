@@ -61,7 +61,8 @@ The return shape matches what TanStack Form expects on a `Field`'s `validators` 
 Example — a `state` field gated on US, a `province` field gated on Canada, and a `postalCode` field with country-dependent format validation:
 
 ```ts
-import { defineRule, enabledWhen, requires, umpire } from '@umpire/core'
+import { enabledWhen, requires, umpire } from '@umpire/core'
+import { createReads, fairWhenRead } from '@umpire/reads'
 import { umpireFieldValidator } from '@umpire/tanstack-form'
 
 function postalCodeMatchesCountry(code: string, country: unknown) {
@@ -72,6 +73,13 @@ function postalCodeMatchesCountry(code: string, country: unknown) {
     default: return true
   }
 }
+
+const addressReads = createReads({
+  postalCodeFair: ({ input }) => {
+    const code = String(input.postalCode ?? '').trim()
+    return !code || postalCodeMatchesCountry(code, input.country)
+  },
+})
 
 const engine = umpire({
   fields: {
@@ -91,23 +99,8 @@ const engine = umpire({
     }),
     requires('state', 'country'),
     requires('province', 'country'),
-    defineRule({
-      type: 'postalCodeFormat',
-      targets: ['postalCode'],
-      sources: ['country'],
-      constraint: 'fair',
-      evaluate(values) {
-        const code = String(values.postalCode ?? '').trim()
-        const fair = !code || postalCodeMatchesCountry(code, values.country)
-
-        return new Map([
-          ['postalCode', {
-            enabled: true,
-            fair,
-            reason: fair ? null : 'Invalid format for selected country',
-          }],
-        ])
-      },
+    fairWhenRead('postalCode', 'postalCodeFair', addressReads, {
+      reason: 'Invalid format for selected country',
     }),
   ],
 })
