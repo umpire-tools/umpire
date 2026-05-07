@@ -10,16 +10,40 @@ Everything starts from the engine — you define your fields and rules once with
 ## Install
 
 ```bash
-# Core + framework-neutral helpers
 yarn add @umpire/core @umpire/tanstack-form @tanstack/form-core
-
-# Plus your framework's form package:
-yarn add @tanstack/react-form react          # React
-yarn add @tanstack/solid-form solid-js       # Solid
-yarn add @tanstack/vue-form vue              # Vue
 ```
 
-The framework-neutral exports (validators, adapter, options, reads, linked fields) come from the root entry. React, Solid, and Vue helpers each have their own subpath:
+That gives you the framework-neutral root import:
+
+```ts
+import { umpireFieldValidator } from '@umpire/tanstack-form'
+```
+
+The root import exports validators, listener helpers, form option helpers, reads integration, linked-field lookup, and the low-level adapter. It does not import React, Solid, or Vue.
+
+Add the peers for the framework subpath you use:
+
+| Import | Add these peers |
+| --- | --- |
+| `@umpire/tanstack-form` | none beyond `@tanstack/form-core` |
+| `@umpire/tanstack-form/react` | `react`, `@tanstack/react-form`, `@umpire/react` |
+| `@umpire/tanstack-form/solid` | `solid-js`, `@tanstack/solid-form`, `@umpire/solid` |
+| `@umpire/tanstack-form/vue` | `vue`, `@tanstack/vue-form` |
+
+```bash
+# React
+yarn add @tanstack/react-form @umpire/react react
+
+# Solid
+yarn add @tanstack/solid-form @umpire/solid solid-js
+
+# Vue
+yarn add @tanstack/vue-form vue
+```
+
+The framework peers are optional at the package level because each framework has its own subpath. Optional at the package level does not mean optional for that subpath: importing `@umpire/tanstack-form/react` requires `react`, `@tanstack/react-form`, and `@umpire/react`; importing `@umpire/tanstack-form/solid` requires `solid-js`, `@tanstack/solid-form`, and `@umpire/solid`; importing `@umpire/tanstack-form/vue` requires `vue` and `@tanstack/vue-form`.
+
+Use the subpath that matches the form package in your app:
 
 ```ts
 import { umpireFieldValidator } from '@umpire/tanstack-form'         // framework-neutral
@@ -100,7 +124,7 @@ const engine = umpire({
     requires('state', 'country'),
     requires('province', 'country'),
     fairWhenRead('postalCode', 'postalCodeFair', addressReads, {
-      reason: 'Invalid format for selected country',
+      reason: 'Postal code does not match selected country',
     }),
   ],
 })
@@ -128,7 +152,7 @@ Pass it to a TanStack Form `Field`:
 </form.Field>
 ```
 
-A disabled field produces no error — the validator returns `undefined` early. A foul field returns its `reason` string. A field with a core `validators` error returns that error instead.
+A disabled field produces no error — the validator returns `undefined` early. A foul field returns its `reason` string, or `'Invalid value'` if no reason was set. A field with an engine-level `error` (from a `validate` function in its `FieldDef`) returns that error string instead.
 
 ### Batch Validation with `umpireFieldValidators()`
 
@@ -232,7 +256,10 @@ function createUmpireFormAdapter<F, C>(
     setFieldValue(name: string, value: unknown): void
   },
   engine: Umpire<F, C>,
-  options?: { conditions?: C | (() => C); setFieldValue?: (form, name, value) => void },
+  options?: {
+    conditions?: C | (() => C)
+    setFieldValue?: (name: string, value: unknown) => void
+  },
 ): UmpireFormAdapter<F>
 ```
 
@@ -377,44 +404,50 @@ Supports `conditions` and `strike` props.
 Factory that produces context-aware components wired to `createFormHook` from TanStack Form. This is the highest-level API — it auto-wires validators, handles conditional rendering, and provides a submit button that disables when fouls exist.
 
 ```tsx
-import { createFormHook } from '@tanstack/react-form'
+import { createFormHookContexts, createFormHook } from '@tanstack/react-form'
 import { createUmpireFormComponents } from '@umpire/tanstack-form/react'
 
-const { Field, Submit, useFormContext } = createFormHook(() => ({
-  fieldContext: {},
-  formContext: {},
-  error: 'form-error',
-}))
+// Typically done once in a shared module alongside your other field components.
+const { fieldContext, formContext } = createFormHookContexts()
+const { useAppForm } = createFormHook({
+  fieldContext,
+  formContext,
+  fieldComponents: {},
+  formComponents: {},
+})
 
 const { UmpireScope, UmpireField, UmpireSubmit } = createUmpireFormComponents(engine)
 
 function AddressForm() {
-  const form = useForm({ defaultValues: engine.init() })
+  const form = useAppForm({ defaultValues: engine.init() })
 
   return (
-    <form>
-      <UmpireScope>
-        <UmpireField name="country">
-          {(field, availability) => (
-            <input
-              value={field.state.value}
-              onChange={(event) => field.handleChange(event.currentTarget.value)}
-            />
-          )}
-        </UmpireField>
+    <form onSubmit={(e) => { e.preventDefault(); form.handleSubmit() }}>
+      {/* form.AppForm provides the form context that UmpireScope reads */}
+      <form.AppForm>
+        <UmpireScope>
+          <UmpireField name="country">
+            {(field, availability) => (
+              <input
+                value={field.state.value}
+                onChange={(event) => field.handleChange(event.currentTarget.value)}
+              />
+            )}
+          </UmpireField>
 
-        <UmpireField name="state">
-          {(field, availability) => (
-            <input
-              value={field.state.value}
-              onChange={(event) => field.handleChange(event.currentTarget.value)}
-              required={availability.required}
-            />
-          )}
-        </UmpireField>
+          <UmpireField name="state">
+            {(field, availability) => (
+              <input
+                value={field.state.value}
+                onChange={(event) => field.handleChange(event.currentTarget.value)}
+                required={availability.required}
+              />
+            )}
+          </UmpireField>
 
-        <UmpireSubmit label="Save" />
-      </UmpireScope>
+          <UmpireSubmit label="Save" />
+        </UmpireScope>
+      </form.AppForm>
     </form>
   )
 }
@@ -426,7 +459,7 @@ function AddressForm() {
 - Applies auto-wired validators from `umpireFieldValidators` unless you pass an explicit `validators` prop
 - Passes both the TanStack Form `field` API and the `UmpireFormField` status to children
 
-`UmpireSubmit` disables itself when fouls exist or the form is submitting.
+`UmpireSubmit` disables itself when fouls exist, when the `disabled` prop is set, or when the form is submitting.
 
 ## Solid
 
@@ -475,16 +508,20 @@ Render-prop component for Solid. Same interface as the React version, adapted to
 Factory producing `UmpireScope`, `UmpireField`, and `UmpireSubmit` for Solid. Works with `createFormHook` from `@tanstack/solid-form`.
 
 ```tsx
-import { createFormHook } from '@tanstack/solid-form'
+import { createFormHookContexts, createFormHook } from '@tanstack/solid-form'
 import { createUmpireFormComponents } from '@umpire/tanstack-form/solid'
 
-const { Field, Submit, useFormContext } = createFormHook(() => ({
-  fieldContext: {},
-  formContext: {},
-  error: 'form-error',
-}))
+const { fieldContext, formContext } = createFormHookContexts()
+const { useAppForm } = createFormHook({
+  fieldContext,
+  formContext,
+  fieldComponents: {},
+  formComponents: {},
+})
 
-const { UmpireScope, UmpireField, UmpireSubmit } = createUmpireFormComponents(engine)
+const { UmpireScope, UmpireField, UmpireSubmit } = createUmpireFormComponents(engine, {
+  strike: true,
+})
 ```
 
 `UmpireField` hides the field when not enabled, auto-wires validators, and passes both the field accessor and availability status to children.
@@ -493,7 +530,7 @@ const { UmpireScope, UmpireField, UmpireSubmit } = createUmpireFormComponents(en
 
 ### `useUmpireForm()`
 
-A composable that tracks form values via `useStore` from `@tanstack/vue-store` and returns a reactive `UmpireForm`.
+A composable that tracks form values via `useStore` from `@tanstack/vue-form` and returns a reactive `UmpireForm`.
 
 ```ts
 import { useUmpireForm } from '@umpire/tanstack-form/vue'
@@ -554,7 +591,7 @@ const reads = createReads({
 })
 
 const listeners = umpireReadListeners(reads, {
-  total: ({ read, previousRead, values }) => {
+  total: ({ read, previousRead, values, previousValues, formApi }) => {
     analytics.track('total_changed', { from: previousRead, to: read })
   },
 })
@@ -565,6 +602,8 @@ const form = useForm({
   listeners,
 })
 ```
+
+Each handler receives `{ read, previousRead, values, previousValues, formApi, fieldApi }`. `previousRead` and `previousValues` are `undefined` on the first call.
 
 Options:
 
@@ -603,7 +642,6 @@ getUmpireLinkedFields(engine, 'country')
 
 Options:
 
-- `excludeSelf` — exclude the field itself from the result. Defaults to `true`
 - `listenTo` — explicit override; skips graph lookup when provided
 
 :::tip[See it in action]
