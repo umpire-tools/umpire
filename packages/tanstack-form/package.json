@@ -36,18 +36,44 @@
   ],
   "dependencies": {
     "@umpire/core": "workspace:^",
-    "@umpire/react": "workspace:^",
-    "@umpire/reads": "workspace:^",
-    "@umpire/solid": "workspace:^"
+    "@umpire/reads": "workspace:^"
   },
   "peerDependencies": {
     "@tanstack/form-core": "^1.0.0",
     "@tanstack/react-form": "^1.0.0",
     "@tanstack/solid-form": "^1.0.0",
     "@tanstack/vue-form": "^1.0.0",
+    "@umpire/react": "workspace:^",
+    "@umpire/solid": "workspace:^",
     "react": "^18.0.0 || ^19.0.0",
     "solid-js": "^1.0.0",
     "vue": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-form": {
+      "optional": true
+    },
+    "@tanstack/solid-form": {
+      "optional": true
+    },
+    "@tanstack/vue-form": {
+      "optional": true
+    },
+    "@umpire/react": {
+      "optional": true
+    },
+    "@umpire/solid": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "solid-js": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
   },
   "repository": {
     "type": "git",
@@ -66,6 +92,8 @@
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@umpire/react": "workspace:^",
+    "@umpire/solid": "workspace:^",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "solid-js": "^1.0.0",

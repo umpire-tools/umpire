@@ -1,6 +1,6 @@
 import { shallowRef, computed, watchEffect, defineComponent } from 'vue'
 import type { PropType } from 'vue'
-import { useStore } from '@tanstack/vue-store'
+import { useStore } from '@tanstack/vue-form'
 import type { Umpire, FieldDef, Foul, Snapshot } from '@umpire/core'
 import { snapshotValue } from '@umpire/core/snapshot'
 import type { UmpireFormField } from './adapter.js'
