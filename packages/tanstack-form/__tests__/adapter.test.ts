@@ -78,6 +78,30 @@ describe('createUmpireFormAdapter', () => {
     expect(field.reasons).toEqual([])
   })
 
+  it('getField fills defaults for partial availability status', () => {
+    const engine = {
+      check: () => ({ a: {} }),
+      graph: () => ({ nodes: ['a'], edges: [] }),
+      play: () => [],
+    }
+    const form = {
+      state: { values: { a: 'hello' } },
+      setFieldValue() {},
+    }
+
+    const adapter = createUmpireFormAdapter(form as never, engine as never)
+    const field = adapter.getField('a')
+
+    expect(field.enabled).toBe(false)
+    expect(field.available).toBe(false)
+    expect(field.disabled).toBe(true)
+    expect(field.required).toBe(false)
+    expect(field.satisfied).toBe(false)
+    expect(field.fair).toBe(true)
+    expect(field.reason).toBeNull()
+    expect(field.reasons).toEqual([])
+  })
+
   it('getFouls returns empty array on first call', () => {
     const engine = umpire({
       fields: { x: {} },
