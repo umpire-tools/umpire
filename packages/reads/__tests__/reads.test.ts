@@ -428,8 +428,8 @@ describe('@umpire/reads', () => {
         .satisfied('motherboard')
         .fair('motherboard')
         .optional('motherboard')
-      expect(pass.motherboard.reason).toBeNull()
-      expect(pass.motherboard.reasons).toEqual([])
+        .reason('motherboard', null)
+        .reasons('motherboard', [])
     })
 
     test('fairWhenRead fails with the configured reason when the read returns false', () => {
@@ -454,12 +454,13 @@ describe('@umpire/reads', () => {
         .satisfied('motherboard')
         .foul('motherboard')
         .optional('motherboard')
-      expect(r.motherboard.reason).toBe(
-        'Selected motherboard no longer matches the CPU socket',
-      )
-      expect(r.motherboard.reasons).toEqual([
-        'Selected motherboard no longer matches the CPU socket',
-      ])
+        .reason(
+          'motherboard',
+          'Selected motherboard no longer matches the CPU socket',
+        )
+        .reasons('motherboard', [
+          'Selected motherboard no longer matches the CPU socket',
+        ])
     })
 
     test('fairWhenRead adds value read field dependencies to the umpire graph', () => {
@@ -605,16 +606,16 @@ describe('@umpire/reads', () => {
         .satisfied('motherboard')
         .fair('motherboard')
         .optional('motherboard')
-      expect(pass.motherboard.reason).toBeNull()
-      expect(pass.motherboard.reasons).toEqual([])
+        .reason('motherboard', null)
+        .reasons('motherboard', [])
       const r = ump.check({ motherboard: 'am5' })
       checkAssert(r)
         .disabled('motherboard')
         .satisfied('motherboard')
         .fair('motherboard')
         .optional('motherboard')
-      expect(r.motherboard.reason).toBe('Pick a CPU first')
-      expect(r.motherboard.reasons).toEqual(['Pick a CPU first'])
+        .reason('motherboard', 'Pick a CPU first')
+        .reasons('motherboard', ['Pick a CPU first'])
     })
 
     test('enabledWhenRead adds value read field dependencies to the umpire graph', () => {
@@ -673,16 +674,16 @@ describe('@umpire/reads', () => {
         .unsatisfied('motherboard')
         .fair('motherboard')
         .optional('motherboard')
-      expect(pass.motherboard.reason).toBeNull()
-      expect(pass.motherboard.reasons).toEqual([])
+        .reason('motherboard', null)
+        .reasons('motherboard', [])
       const r = ump.check({}, { allowMotherboard: false })
       checkAssert(r)
         .disabled('motherboard')
         .unsatisfied('motherboard')
         .fair('motherboard')
         .optional('motherboard')
-      expect(r.motherboard.reason).toBe('Pick a supported platform first')
-      expect(r.motherboard.reasons).toEqual(['Pick a supported platform first'])
+        .reason('motherboard', 'Pick a supported platform first')
+        .reasons('motherboard', ['Pick a supported platform first'])
     })
 
     test('inputType CONDITIONS does not add read input fields to the umpire graph', () => {
@@ -745,8 +746,8 @@ describe('@umpire/reads', () => {
         .satisfied('motherboard')
         .fair('motherboard')
         .optional('motherboard')
-      expect(pass.motherboard.reason).toBeNull()
-      expect(pass.motherboard.reasons).toEqual([])
+        .reason('motherboard', null)
+        .reasons('motherboard', [])
       const r = ump.check(
         { motherboard: 'lga1700' },
         { cpu: 'am5', motherboard: 'lga1700' },
@@ -756,12 +757,13 @@ describe('@umpire/reads', () => {
         .satisfied('motherboard')
         .foul('motherboard')
         .optional('motherboard')
-      expect(r.motherboard.reason).toBe(
-        'Selected motherboard no longer matches the CPU socket',
-      )
-      expect(r.motherboard.reasons).toEqual([
-        'Selected motherboard no longer matches the CPU socket',
-      ])
+        .reason(
+          'motherboard',
+          'Selected motherboard no longer matches the CPU socket',
+        )
+        .reasons('motherboard', [
+          'Selected motherboard no longer matches the CPU socket',
+        ])
     })
 
     test('fairWhenRead supports custom input selection', () => {
@@ -796,20 +798,21 @@ describe('@umpire/reads', () => {
         .satisfied('motherboard')
         .fair('motherboard')
         .optional('motherboard')
-      expect(pass.motherboard.reason).toBeNull()
-      expect(pass.motherboard.reasons).toEqual([])
+        .reason('motherboard', null)
+        .reasons('motherboard', [])
       const r = ump.check({ motherboard: 'lga1700' }, { cpu: 'am5' })
       checkAssert(r)
         .enabled('motherboard')
         .satisfied('motherboard')
         .foul('motherboard')
         .optional('motherboard')
-      expect(r.motherboard.reason).toBe(
-        'Selected motherboard no longer matches the CPU socket',
-      )
-      expect(r.motherboard.reasons).toEqual([
-        'Selected motherboard no longer matches the CPU socket',
-      ])
+        .reason(
+          'motherboard',
+          'Selected motherboard no longer matches the CPU socket',
+        )
+        .reasons('motherboard', [
+          'Selected motherboard no longer matches the CPU socket',
+        ])
     })
 
     test('enabledWhenRead supports custom input selection', () => {
@@ -844,16 +847,16 @@ describe('@umpire/reads', () => {
         .unsatisfied('motherboard')
         .fair('motherboard')
         .optional('motherboard')
-      expect(pass.motherboard.reason).toBeNull()
-      expect(pass.motherboard.reasons).toEqual([])
+        .reason('motherboard', null)
+        .reasons('motherboard', [])
       const r = ump.check({}, {})
       checkAssert(r)
         .disabled('motherboard')
         .unsatisfied('motherboard')
         .fair('motherboard')
         .optional('motherboard')
-      expect(r.motherboard.reason).toBe('Pick a CPU first')
-      expect(r.motherboard.reasons).toEqual(['Pick a CPU first'])
+        .reason('motherboard', 'Pick a CPU first')
+        .reasons('motherboard', ['Pick a CPU first'])
     })
   })
 

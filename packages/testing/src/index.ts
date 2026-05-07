@@ -17,7 +17,8 @@ export type CheckAssertChain<K extends string> = {
   optional(...fields: K[]): CheckAssertChain<K>
   satisfied(...fields: K[]): CheckAssertChain<K>
   unsatisfied(...fields: K[]): CheckAssertChain<K>
-  reason(field: K, expected: string): CheckAssertChain<K>
+  reason(field: K, expected: string | null): CheckAssertChain<K>
+  /** Asserts the exact reasons array, including order. */
   reasons(field: K, expected: string[]): CheckAssertChain<K>
 }
 
@@ -251,7 +252,7 @@ export function checkAssert<K extends string>(
       )
       return chain
     },
-    reason(field, expected) {
+    reason(field, expected: string | null) {
       const status = result[field]
 
       if (status === undefined) {

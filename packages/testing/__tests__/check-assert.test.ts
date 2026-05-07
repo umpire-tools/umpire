@@ -195,6 +195,11 @@ describe('checkAssert', () => {
       )
     })
 
+    test('passes when the field has no reason and null is expected', () => {
+      const result = ump.check({ gate: 'open' })
+      expect(() => checkAssert(result).reason('gate', null)).not.toThrow()
+    })
+
     test('throws for unknown field', () => {
       const result = ump.check({})
       expect(() =>
