@@ -105,7 +105,7 @@ const addressReads = createReads({
   },
 })
 
-const engine = umpire({
+const ump = umpire({
   fields: {
     street:     { required: true, isEmpty: (v: unknown) => !v },
     city:       { required: true, isEmpty: (v: unknown) => !v },
@@ -130,10 +130,10 @@ const engine = umpire({
 })
 
 // state revalidates whenever country changes — the graph edge is automatic
-const stateValidators = umpireFieldValidator(engine, 'state')
+const stateValidators = umpireFieldValidator(ump, 'state')
 // → { onChange: fn, onChangeListenTo: ['country'] }
 
-const postalCodeValidators = umpireFieldValidator(engine, 'postalCode', {
+const postalCodeValidators = umpireFieldValidator(ump, 'postalCode', {
   events: ['onChange', 'onBlur'],
 })
 // → { onChange: fn, onChangeListenTo: ['country'], onBlur: fn, onBlurListenTo: ['country'] }
@@ -168,7 +168,7 @@ function umpireFieldValidators<F, C>(
 The `listenTo` option is omitted because each field's listener list is derived from the graph automatically.
 
 ```ts
-const allValidators = umpireFieldValidators(engine)
+const allValidators = umpireFieldValidators(ump)
 
 // allValidators.state      → { onChange: fn, onChangeListenTo: ['country'] }
 // allValidators.postalCode → { onChange: fn, onChangeListenTo: ['country'] }
@@ -195,10 +195,10 @@ function umpireDynamicValidator<F, C>(
 ```ts
 import { umpireDynamicValidator } from '@umpire/tanstack-form'
 
-const validate = umpireDynamicValidator(engine)
+const validate = umpireDynamicValidator(ump)
 
 const form = useForm({
-  defaultValues: engine.init(),
+  defaultValues: ump.init(),
   validators: { onDynamic: validate },
 })
 
@@ -235,8 +235,8 @@ Spread the result into your `useForm` options:
 import { createUmpireFormOptions } from '@umpire/tanstack-form'
 
 const form = useForm({
-  defaultValues: engine.init(),
-  ...createUmpireFormOptions(engine, { strike: true }),
+  defaultValues: ump.init(),
+  ...createUmpireFormOptions(ump, { strike: true }),
   // → adds { listeners: { onChange: fn } } to the form options
 })
 ```
@@ -302,7 +302,7 @@ A React hook that subscribes to the form's store, derives availability and fouls
 ```ts
 import { useUmpireForm } from '@umpire/tanstack-form/react'
 
-const umpireForm = useUmpireForm(form, engine, { conditions, strike })
+const umpireForm = useUmpireForm(form, ump, { conditions, strike })
 ```
 
 Returns:
@@ -325,7 +325,7 @@ import { enabledWhen, umpire } from '@umpire/core'
 import { useUmpireForm } from '@umpire/tanstack-form/react'
 import { umpireFieldValidator } from '@umpire/tanstack-form'
 
-const engine = umpire({
+const ump = umpire({
   fields: {
     country: {},
     state: { required: true },
@@ -338,8 +338,8 @@ const engine = umpire({
 })
 
 function AddressForm() {
-  const form = useForm({ defaultValues: engine.init() })
-  const umpireForm = useUmpireForm(form, engine, { strike: true })
+  const form = useForm({ defaultValues: ump.init() })
+  const umpireForm = useUmpireForm(form, ump, { strike: true })
 
   return (
     <form>
@@ -353,7 +353,7 @@ function AddressForm() {
       </form.Field>
 
       {umpireForm.field('state').enabled && (
-        <form.Field name="state" validators={umpireFieldValidator(engine, 'state')}>
+        <form.Field name="state" validators={umpireFieldValidator(ump, 'state')}>
           {(field) => (
             <input
               value={field.state.value}
@@ -365,7 +365,7 @@ function AddressForm() {
       )}
 
       {umpireForm.field('province').enabled && (
-        <form.Field name="province" validators={umpireFieldValidator(engine, 'province')}>
+        <form.Field name="province" validators={umpireFieldValidator(ump, 'province')}>
           {(field) => (
             <input
               value={field.state.value}
@@ -387,7 +387,7 @@ A render-prop component that subscribes to the form's values and provides an `Um
 ```tsx
 import { UmpireFormSubscribe } from '@umpire/tanstack-form/react'
 
-<UmpireFormSubscribe form={form} engine={engine}>
+<UmpireFormSubscribe form={form} engine={ump}>
   {(umpireForm) => (
     <>
       {umpireForm.field('state').enabled && <StateInput />}
@@ -416,10 +416,10 @@ const { useAppForm } = createFormHook({
   formComponents: {},
 })
 
-const { UmpireScope, UmpireField, UmpireSubmit } = createUmpireFormComponents(engine)
+const { UmpireScope, UmpireField, UmpireSubmit } = createUmpireFormComponents(ump)
 
 function AddressForm() {
-  const form = useAppForm({ defaultValues: engine.init() })
+  const form = useAppForm({ defaultValues: ump.init() })
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); form.handleSubmit() }}>
@@ -470,7 +470,7 @@ The Solid equivalent of React's `useUmpireForm`. Solid uses accessors instead of
 ```ts
 import { createUmpireForm } from '@umpire/tanstack-form/solid'
 
-const umpireForm = createUmpireForm(form, engine, { conditions, strike })
+const umpireForm = createUmpireForm(form, ump, { conditions, strike })
 ```
 
 Returns the same `UmpireForm` surface. When `strike: true`, fouls are applied via `createEffect`.
@@ -480,8 +480,8 @@ import { createForm } from '@tanstack/solid-form'
 import { createUmpireForm } from '@umpire/tanstack-form/solid'
 
 function AddressForm() {
-  const form = createForm({ defaultValues: engine.init() })
-  const umpireForm = createUmpireForm(form, engine)
+  const form = createForm({ defaultValues: ump.init() })
+  const umpireForm = createUmpireForm(form, ump)
 
   return (
     <form>
@@ -519,7 +519,7 @@ const { useAppForm } = createFormHook({
   formComponents: {},
 })
 
-const { UmpireScope, UmpireField, UmpireSubmit } = createUmpireFormComponents(engine, {
+const { UmpireScope, UmpireField, UmpireSubmit } = createUmpireFormComponents(ump, {
   strike: true,
 })
 ```
@@ -535,7 +535,7 @@ A composable that tracks form values via `useStore` from `@tanstack/vue-form` an
 ```ts
 import { useUmpireForm } from '@umpire/tanstack-form/vue'
 
-const umpireForm = useUmpireForm(form, engine, { conditions, strike })
+const umpireForm = useUmpireForm(form, ump, { conditions, strike })
 ```
 
 `conditions` can be a plain value, a `ref`, a computed, or a function returning `C`.
@@ -545,8 +545,8 @@ const umpireForm = useUmpireForm(form, engine, { conditions, strike })
 import { useForm } from '@tanstack/vue-form'
 import { useUmpireForm } from '@umpire/tanstack-form/vue'
 
-const form = useForm({ defaultValues: engine.init() })
-const umpireForm = useUmpireForm(form, engine)
+const form = useForm({ defaultValues: ump.init() })
+const umpireForm = useUmpireForm(form, ump)
 </script>
 
 <template>
@@ -567,7 +567,7 @@ const umpireForm = useUmpireForm(form, engine)
 A Vue component (defined via `defineComponent`) that provides the `UmpireForm` through a scoped slot.
 
 ```vue
-<UmpireFormSubscribe :form="form" :engine="engine" v-slot="{ umpireForm }">
+<UmpireFormSubscribe :form="form" :engine="ump" v-slot="{ umpireForm }">
   <div v-if="umpireForm.field('state').enabled">
     <!-- state field -->
   </div>
@@ -622,7 +622,7 @@ Returns the upstream dependency names for a field, derived from the engine's gra
 ```ts
 import { getUmpireLinkedFields } from '@umpire/tanstack-form'
 
-const engine = umpire({
+const ump = umpire({
   fields: { country: {}, state: {}, vatId: {} },
   rules: [
     enabledWhen('state', (v) => v.country === 'US'),
@@ -630,13 +630,13 @@ const engine = umpire({
   ],
 })
 
-getUmpireLinkedFields(engine, 'state')
+getUmpireLinkedFields(ump, 'state')
 // → ['country']
 
-getUmpireLinkedFields(engine, 'vatId')
+getUmpireLinkedFields(ump, 'vatId')
 // → ['country']
 
-getUmpireLinkedFields(engine, 'country')
+getUmpireLinkedFields(ump, 'country')
 // → []
 ```
 

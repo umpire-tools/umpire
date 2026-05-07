@@ -49,7 +49,7 @@ import { enabledWhen, umpire } from '@umpire/core'
 import { useUmpireForm } from '@umpire/tanstack-form/react'
 import { umpireFieldValidator } from '@umpire/tanstack-form'
 
-const engine = umpire({
+const ump = umpire({
   fields: {
     country: {},
     state: { required: true },
@@ -62,8 +62,8 @@ const engine = umpire({
 })
 
 function AddressForm() {
-  const form = useForm({ defaultValues: engine.init() })
-  const umpireForm = useUmpireForm(form, engine, { strike: true })
+  const form = useForm({ defaultValues: ump.init() })
+  const umpireForm = useUmpireForm(form, ump, { strike: true })
 
   return (
     <form>
@@ -79,7 +79,7 @@ function AddressForm() {
       {umpireForm.field('state').enabled && (
         <form.Field
           name="state"
-          validators={umpireFieldValidator(engine, 'state')}
+          validators={umpireFieldValidator(ump, 'state')}
         >
           {(field) => (
             <input
@@ -93,7 +93,7 @@ function AddressForm() {
       {umpireForm.field('province').enabled && (
         <form.Field
           name="province"
-          validators={umpireFieldValidator(engine, 'province')}
+          validators={umpireFieldValidator(ump, 'province')}
         >
           {(field) => (
             <input
@@ -128,7 +128,7 @@ import {
 } from '@umpire/tanstack-form'
 ```
 
-#### `umpireFieldValidator(engine, fieldName, options?)`
+#### `umpireFieldValidator(ump, fieldName, options?)`
 
 Produces a `validators` object for a TanStack Form `Field`. Automatically derives `onChangeListenTo` from the dependency graph.
 
@@ -182,7 +182,7 @@ All framework hooks and `createUmpireFormAdapter.getField()` return this shape:
 
 ### React (`@umpire/tanstack-form/react`)
 
-#### `useUmpireForm(form, engine, options?)`
+#### `useUmpireForm(form, ump, options?)`
 
 Hook that subscribes to form values and returns `{ field(name), fouls, applyStrike }`. When `strike: true`, fouls are applied automatically via `useEffect`. `conditions` can be a value or `() => C`.
 
@@ -212,7 +212,7 @@ Factory producing `UmpireScope`, `UmpireField`, and `UmpireSubmit` for Solid. Wo
 
 ### Vue (`@umpire/tanstack-form/vue`)
 
-#### `useUmpireForm(form, engine, options?)`
+#### `useUmpireForm(form, ump, options?)`
 
 Composable that tracks form values reactively. `conditions` can be a plain value, a `ref`, a computed, or a function returning `C`. Strike is applied via `watchEffect`.
 

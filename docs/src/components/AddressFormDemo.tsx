@@ -46,7 +46,7 @@ const addressReads = createReads({
   },
 })
 
-const addressEngine = umpire({
+const addressUmp = umpire({
   fields: {
     street:     { required: true, isEmpty: (v: unknown) => !v },
     city:       { required: true, isEmpty: (v: unknown) => !v },
@@ -76,14 +76,14 @@ function pretty(value: unknown) {
 
 export default function AddressFormDemo() {
   const form = useForm({
-    defaultValues: addressEngine.init(),
+    defaultValues: addressUmp.init(),
   })
 
-  const umpireForm = useUmpireForm(form, addressEngine, { strike: true })
+  const umpireForm = useUmpireForm(form, addressUmp, { strike: true })
 
   const liveValues = form.useStore((s) => s.values)
 
-  register('address-form', addressEngine, liveValues)
+  register('address-form', addressUmp, liveValues)
 
   const fouls = umpireForm.fouls
 
@@ -128,7 +128,7 @@ export default function AddressFormDemo() {
             {/* Country — always visible */}
             <form.Field
               name="country"
-              validators={umpireFieldValidator(addressEngine, 'country')}
+              validators={umpireFieldValidator(addressUmp, 'country')}
             >
               {(field) => {
                 const avail = umpireForm.field('country')
@@ -169,7 +169,7 @@ export default function AddressFormDemo() {
             {umpireForm.field('state').enabled && (
               <form.Field
                 name="state"
-                validators={umpireFieldValidator(addressEngine, 'state')}
+                validators={umpireFieldValidator(addressUmp, 'state')}
               >
                 {(field) => {
                   const avail = umpireForm.field('state')
@@ -240,7 +240,7 @@ export default function AddressFormDemo() {
             {umpireForm.field('province').enabled && (
               <form.Field
                 name="province"
-                validators={umpireFieldValidator(addressEngine, 'province')}
+                validators={umpireFieldValidator(addressUmp, 'province')}
               >
                 {(field) => {
                   const avail = umpireForm.field('province')
@@ -311,7 +311,7 @@ export default function AddressFormDemo() {
             <div class="c-address-demo__row">
             <form.Field
               name="street"
-              validators={umpireFieldValidator(addressEngine, 'street')}
+              validators={umpireFieldValidator(addressUmp, 'street')}
             >
               {(field) => {
                 const avail = umpireForm.field('street')
@@ -347,7 +347,7 @@ export default function AddressFormDemo() {
             {/* City */}
             <form.Field
               name="city"
-              validators={umpireFieldValidator(addressEngine, 'city')}
+              validators={umpireFieldValidator(addressUmp, 'city')}
             >
               {(field) => {
                 const avail = umpireForm.field('city')
@@ -384,7 +384,7 @@ export default function AddressFormDemo() {
             {/* Postal Code */}
             <form.Field
               name="postalCode"
-              validators={umpireFieldValidator(addressEngine, 'postalCode')}
+              validators={umpireFieldValidator(addressUmp, 'postalCode')}
             >
               {(field) => {
                 const avail = umpireForm.field('postalCode')
