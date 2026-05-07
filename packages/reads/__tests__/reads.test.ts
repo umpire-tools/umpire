@@ -512,14 +512,20 @@ describe('@umpire/reads', () => {
 
     test('fairWhenRead does not add nested property names as graph dependencies', () => {
       const reads = createReads<
-        { address?: { street?: string }; street?: string },
+        { address?: { street?: string }; quantity?: number; street?: string },
         { addressFair: boolean }
       >({
-        addressFair: ({ input }) => Boolean(input.address?.street),
+        addressFair: ({ input }) =>
+          Boolean(
+            input.address?.street?.toString() ||
+            input.quantity?.valueOf() ||
+            String(input),
+          ),
       })
       const ump = umpire({
         fields: {
           address: {},
+          quantity: {},
           street: {},
           deliveryInstructions: {},
         },
@@ -543,6 +549,34 @@ describe('@umpire/reads', () => {
           }),
         ]),
       )
+    })
+
+    test('fairWhenRead omits graph sources when probe inference cannot evaluate the read', () => {
+      const reads = createReads<
+        { config?: unknown; deliveryInstructions?: string },
+        { configFair: boolean }
+      >({
+        configFair: ({ input }) => {
+          if (!Array.isArray(input.config)) {
+            throw new Error('Expected array config')
+          }
+
+          return true
+        },
+      })
+      const ump = umpire({
+        fields: {
+          config: {},
+          deliveryInstructions: {},
+        },
+        rules: [fairWhenRead('deliveryInstructions', 'configFair', reads)],
+      })
+
+      expect(ump.graph().edges).toEqual([])
+      expect(
+        ump.check({ config: [], deliveryInstructions: 'Leave at door' })
+          .deliveryInstructions.fair,
+      ).toBe(true)
     })
 
     test('enabledWhenRead passes when the read returns true and fails with the configured reason when false', () => {
