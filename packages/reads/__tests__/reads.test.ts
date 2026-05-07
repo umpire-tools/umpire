@@ -1,4 +1,5 @@
 import { field, umpire } from '@umpire/core'
+import { checkAssert } from '@umpire/testing'
 import {
   ReadInputType,
   createReads,
@@ -421,16 +422,14 @@ describe('@umpire/reads', () => {
         ],
       })
 
-      expect(ump.check({ cpu: 'am5', motherboard: 'am5' }).motherboard).toEqual(
-        {
-          enabled: true,
-          satisfied: true,
-          fair: true,
-          required: false,
-          reason: null,
-          reasons: [],
-        },
-      )
+      const pass = ump.check({ cpu: 'am5', motherboard: 'am5' })
+      checkAssert(pass)
+        .enabled('motherboard')
+        .satisfied('motherboard')
+        .fair('motherboard')
+        .optional('motherboard')
+        .reason('motherboard', null)
+        .reasons('motherboard', [])
     })
 
     test('fairWhenRead fails with the configured reason when the read returns false', () => {
@@ -449,16 +448,19 @@ describe('@umpire/reads', () => {
         ],
       })
 
-      expect(
-        ump.check({ cpu: 'am5', motherboard: 'lga1700' }).motherboard,
-      ).toEqual({
-        enabled: true,
-        satisfied: true,
-        fair: false,
-        required: false,
-        reason: 'Selected motherboard no longer matches the CPU socket',
-        reasons: ['Selected motherboard no longer matches the CPU socket'],
-      })
+      const r = ump.check({ cpu: 'am5', motherboard: 'lga1700' })
+      checkAssert(r)
+        .enabled('motherboard')
+        .satisfied('motherboard')
+        .foul('motherboard')
+        .optional('motherboard')
+        .reason(
+          'motherboard',
+          'Selected motherboard no longer matches the CPU socket',
+        )
+        .reasons('motherboard', [
+          'Selected motherboard no longer matches the CPU socket',
+        ])
     })
 
     test('fairWhenRead adds value read field dependencies to the umpire graph', () => {
@@ -598,24 +600,22 @@ describe('@umpire/reads', () => {
         ],
       })
 
-      expect(ump.check({ cpu: 'am5', motherboard: 'am5' }).motherboard).toEqual(
-        {
-          enabled: true,
-          satisfied: true,
-          fair: true,
-          required: false,
-          reason: null,
-          reasons: [],
-        },
-      )
-      expect(ump.check({ motherboard: 'am5' }).motherboard).toEqual({
-        enabled: false,
-        satisfied: true,
-        fair: true,
-        required: false,
-        reason: 'Pick a CPU first',
-        reasons: ['Pick a CPU first'],
-      })
+      const pass = ump.check({ cpu: 'am5', motherboard: 'am5' })
+      checkAssert(pass)
+        .enabled('motherboard')
+        .satisfied('motherboard')
+        .fair('motherboard')
+        .optional('motherboard')
+        .reason('motherboard', null)
+        .reasons('motherboard', [])
+      const r = ump.check({ motherboard: 'am5' })
+      checkAssert(r)
+        .disabled('motherboard')
+        .satisfied('motherboard')
+        .fair('motherboard')
+        .optional('motherboard')
+        .reason('motherboard', 'Pick a CPU first')
+        .reasons('motherboard', ['Pick a CPU first'])
     })
 
     test('enabledWhenRead adds value read field dependencies to the umpire graph', () => {
@@ -668,22 +668,22 @@ describe('@umpire/reads', () => {
         ],
       })
 
-      expect(ump.check({}, { allowMotherboard: true }).motherboard).toEqual({
-        enabled: true,
-        satisfied: false,
-        fair: true,
-        required: false,
-        reason: null,
-        reasons: [],
-      })
-      expect(ump.check({}, { allowMotherboard: false }).motherboard).toEqual({
-        enabled: false,
-        satisfied: false,
-        fair: true,
-        required: false,
-        reason: 'Pick a supported platform first',
-        reasons: ['Pick a supported platform first'],
-      })
+      const pass = ump.check({}, { allowMotherboard: true })
+      checkAssert(pass)
+        .enabled('motherboard')
+        .unsatisfied('motherboard')
+        .fair('motherboard')
+        .optional('motherboard')
+        .reason('motherboard', null)
+        .reasons('motherboard', [])
+      const r = ump.check({}, { allowMotherboard: false })
+      checkAssert(r)
+        .disabled('motherboard')
+        .unsatisfied('motherboard')
+        .fair('motherboard')
+        .optional('motherboard')
+        .reason('motherboard', 'Pick a supported platform first')
+        .reasons('motherboard', ['Pick a supported platform first'])
     })
 
     test('inputType CONDITIONS does not add read input fields to the umpire graph', () => {
@@ -737,30 +737,33 @@ describe('@umpire/reads', () => {
         ],
       })
 
-      expect(
-        ump.check({ motherboard: 'am5' }, { cpu: 'am5', motherboard: 'am5' })
-          .motherboard,
-      ).toEqual({
-        enabled: true,
-        satisfied: true,
-        fair: true,
-        required: false,
-        reason: null,
-        reasons: [],
-      })
-      expect(
-        ump.check(
-          { motherboard: 'lga1700' },
-          { cpu: 'am5', motherboard: 'lga1700' },
-        ).motherboard,
-      ).toEqual({
-        enabled: true,
-        satisfied: true,
-        fair: false,
-        required: false,
-        reason: 'Selected motherboard no longer matches the CPU socket',
-        reasons: ['Selected motherboard no longer matches the CPU socket'],
-      })
+      const pass = ump.check(
+        { motherboard: 'am5' },
+        { cpu: 'am5', motherboard: 'am5' },
+      )
+      checkAssert(pass)
+        .enabled('motherboard')
+        .satisfied('motherboard')
+        .fair('motherboard')
+        .optional('motherboard')
+        .reason('motherboard', null)
+        .reasons('motherboard', [])
+      const r = ump.check(
+        { motherboard: 'lga1700' },
+        { cpu: 'am5', motherboard: 'lga1700' },
+      )
+      checkAssert(r)
+        .enabled('motherboard')
+        .satisfied('motherboard')
+        .foul('motherboard')
+        .optional('motherboard')
+        .reason(
+          'motherboard',
+          'Selected motherboard no longer matches the CPU socket',
+        )
+        .reasons('motherboard', [
+          'Selected motherboard no longer matches the CPU socket',
+        ])
     })
 
     test('fairWhenRead supports custom input selection', () => {
@@ -789,26 +792,27 @@ describe('@umpire/reads', () => {
         ],
       })
 
-      expect(
-        ump.check({ motherboard: 'am5' }, { cpu: 'am5' }).motherboard,
-      ).toEqual({
-        enabled: true,
-        satisfied: true,
-        fair: true,
-        required: false,
-        reason: null,
-        reasons: [],
-      })
-      expect(
-        ump.check({ motherboard: 'lga1700' }, { cpu: 'am5' }).motherboard,
-      ).toEqual({
-        enabled: true,
-        satisfied: true,
-        fair: false,
-        required: false,
-        reason: 'Selected motherboard no longer matches the CPU socket',
-        reasons: ['Selected motherboard no longer matches the CPU socket'],
-      })
+      const pass = ump.check({ motherboard: 'am5' }, { cpu: 'am5' })
+      checkAssert(pass)
+        .enabled('motherboard')
+        .satisfied('motherboard')
+        .fair('motherboard')
+        .optional('motherboard')
+        .reason('motherboard', null)
+        .reasons('motherboard', [])
+      const r = ump.check({ motherboard: 'lga1700' }, { cpu: 'am5' })
+      checkAssert(r)
+        .enabled('motherboard')
+        .satisfied('motherboard')
+        .foul('motherboard')
+        .optional('motherboard')
+        .reason(
+          'motherboard',
+          'Selected motherboard no longer matches the CPU socket',
+        )
+        .reasons('motherboard', [
+          'Selected motherboard no longer matches the CPU socket',
+        ])
     })
 
     test('enabledWhenRead supports custom input selection', () => {
@@ -837,22 +841,22 @@ describe('@umpire/reads', () => {
         ],
       })
 
-      expect(ump.check({}, { selectedCpu: 'am5' }).motherboard).toEqual({
-        enabled: true,
-        satisfied: false,
-        fair: true,
-        required: false,
-        reason: null,
-        reasons: [],
-      })
-      expect(ump.check({}, {}).motherboard).toEqual({
-        enabled: false,
-        satisfied: false,
-        fair: true,
-        required: false,
-        reason: 'Pick a CPU first',
-        reasons: ['Pick a CPU first'],
-      })
+      const pass = ump.check({}, { selectedCpu: 'am5' })
+      checkAssert(pass)
+        .enabled('motherboard')
+        .unsatisfied('motherboard')
+        .fair('motherboard')
+        .optional('motherboard')
+        .reason('motherboard', null)
+        .reasons('motherboard', [])
+      const r = ump.check({}, {})
+      checkAssert(r)
+        .disabled('motherboard')
+        .unsatisfied('motherboard')
+        .fair('motherboard')
+        .optional('motherboard')
+        .reason('motherboard', 'Pick a CPU first')
+        .reasons('motherboard', ['Pick a CPU first'])
     })
   })
 

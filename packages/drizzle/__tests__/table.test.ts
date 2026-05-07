@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { enabledWhen, umpire } from '@umpire/core'
 import { checkCreate, checkPatch } from '@umpire/write'
+import { checkAssert } from '@umpire/testing'
 import * as drizzleAdapter from '@umpire/drizzle'
 import { fromDrizzleModel, fromDrizzleTable } from '@umpire/drizzle'
 import { sql } from 'drizzle-orm'
@@ -413,23 +414,17 @@ describe('fromDrizzleModel', () => {
 
     expect(taxId).toBe('billing.taxId')
     expect(model.fields['billing.taxId']).toMatchObject({ required: false })
-    expect(ump.check({ 'account.accountType': 'personal' })[taxId]).toEqual(
-      expect.objectContaining({
-        enabled: false,
-        reason: 'condition not met',
-      }),
-    )
-    expect(
+    checkAssert(ump.check({ 'account.accountType': 'personal' }))
+      .disabled(taxId)
+      .reason(taxId, 'condition not met')
+    checkAssert(
       ump.check({
         'account.accountType': 'business',
         'billing.taxId': '12-3456789',
-      })[taxId],
-    ).toEqual(
-      expect.objectContaining({
-        enabled: true,
-        satisfied: true,
       }),
     )
+      .enabled(taxId)
+      .satisfied(taxId)
   })
 
   test('throws when dotted namespaces and field names collide', () => {

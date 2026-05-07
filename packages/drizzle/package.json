@@ -32,6 +32,7 @@
     "drizzle-orm": ">=1.0.0-rc.1 <2"
   },
   "devDependencies": {
+    "@umpire/testing": "workspace:^",
     "drizzle-orm": "1.0.0-rc.1"
   },
   "repository": {

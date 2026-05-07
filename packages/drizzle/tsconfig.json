@@ -10,7 +10,8 @@
       "@umpire/write": ["../write/src/index.ts"],
       "@umpire/write/*": ["../write/src/*"],
       "@umpire/drizzle": ["./src/index.ts"],
-      "@umpire/drizzle/*": ["./src/*"]
+      "@umpire/drizzle/*": ["./src/*"],
+      "@umpire/testing": ["../testing/src/index.ts"]
     }
   },
   "include": ["src"],

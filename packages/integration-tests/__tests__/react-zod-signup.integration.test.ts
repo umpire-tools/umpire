@@ -7,6 +7,7 @@ import {
   umpire,
 } from '@umpire/core'
 import { createZodAdapter } from '@umpire/zod'
+import { checkAssert } from '@umpire/testing'
 import { z } from 'zod'
 import { useUmpire } from '@umpire/react'
 import { describe, it, expect } from 'bun:test'
@@ -86,8 +87,7 @@ describe('react + zod signup flow', () => {
       conditions: { sso: true },
     })
 
-    expect(result.current.check.password.enabled).toBe(false)
-    expect(result.current.check.confirmPassword.enabled).toBe(false)
+    checkAssert(result.current.check).disabled('password', 'confirmPassword')
     expect(result.current.fouls.map((foul) => foul.field).sort()).toEqual([
       'confirmPassword',
       'password',
@@ -133,7 +133,7 @@ describe('react + zod signup flow', () => {
       confirmPassword: 'mismatch',
     })
 
-    expect(result.current.check.confirmPassword.enabled).toBe(true)
+    checkAssert(result.current.check).enabled('confirmPassword')
     expect(result.current.fouls).toHaveLength(1)
     expect(result.current.fouls[0]?.field).toBe('confirmPassword')
     expect(parsed.result.success).toBe(false)

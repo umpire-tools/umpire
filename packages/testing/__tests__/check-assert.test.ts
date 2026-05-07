@@ -171,6 +171,87 @@ describe('checkAssert', () => {
     })
   })
 
+  describe('.reason()', () => {
+    test('passes when the reason matches', () => {
+      const result = ump.check({})
+      expect(() =>
+        checkAssert(result).reason('guarded', 'requires gate'),
+      ).not.toThrow()
+    })
+
+    test('throws when the reason differs', () => {
+      const result = ump.check({})
+      expect(() =>
+        checkAssert(result).reason('guarded', 'wrong reason'),
+      ).toThrow(
+        'checkAssert: expected "guarded" reason to be "wrong reason" — was "requires gate"',
+      )
+    })
+
+    test('throws when the field has no reason but expected a string', () => {
+      const result = ump.check({ gate: 'open' })
+      expect(() => checkAssert(result).reason('gate', 'some reason')).toThrow(
+        'checkAssert: expected "gate" reason to be "some reason" — was null',
+      )
+    })
+
+    test('passes when the field has no reason and null is expected', () => {
+      const result = ump.check({ gate: 'open' })
+      expect(() => checkAssert(result).reason('gate', null)).not.toThrow()
+    })
+
+    test('throws for unknown field', () => {
+      const result = ump.check({})
+      expect(() =>
+        checkAssert(result).reason('nonexistent' as 'gate', 'foo'),
+      ).toThrow('checkAssert: unknown field "nonexistent"')
+    })
+  })
+
+  describe('.reasons()', () => {
+    function multiReasonUmp() {
+      return umpire({
+        fields: { a: {}, b: {}, c: {} },
+        rules: [requires('c', 'a'), requires('c', 'b')],
+      })
+    }
+
+    test('passes when the reasons array matches', () => {
+      const result = multiReasonUmp().check({})
+      expect(() =>
+        checkAssert(result).reasons('c', ['requires a', 'requires b']),
+      ).not.toThrow()
+    })
+
+    test('throws when the reasons array has different length', () => {
+      const result = multiReasonUmp().check({})
+      expect(() => checkAssert(result).reasons('c', ['requires a'])).toThrow(
+        'checkAssert: expected "c" reasons to be ["requires a"] — was ["requires a","requires b"]',
+      )
+    })
+
+    test('throws when the reasons array has different elements', () => {
+      const result = multiReasonUmp().check({})
+      expect(() =>
+        checkAssert(result).reasons('c', ['requires x', 'requires y']),
+      ).toThrow(
+        'checkAssert: expected "c" reasons to be ["requires x","requires y"] — was ["requires a","requires b"]',
+      )
+    })
+
+    test('passes with empty reasons when field has no failing rules', () => {
+      const result = ump.check({ gate: 'open' })
+      expect(() => checkAssert(result).reasons('gate', [])).not.toThrow()
+    })
+
+    test('throws for unknown field', () => {
+      const result = ump.check({})
+      expect(() =>
+        checkAssert(result).reasons('nonexistent' as 'gate', []),
+      ).toThrow('checkAssert: unknown field "nonexistent"')
+    })
+  })
+
   describe('chaining', () => {
     test('multiple assertions can be chained on a single result', () => {
       const result = ump.check({ gate: 'open', flagged: 'good' })
@@ -180,6 +261,16 @@ describe('checkAssert', () => {
           .fair('flagged')
           .optional('gate')
           .required('pinned'),
+      ).not.toThrow()
+    })
+
+    test('reason and reasons can be chained with other assertions', () => {
+      const result = ump.check({})
+      expect(() =>
+        checkAssert(result)
+          .disabled('guarded')
+          .reason('guarded', 'requires gate')
+          .reasons('guarded', ['requires gate']),
       ).not.toThrow()
     })
   })
