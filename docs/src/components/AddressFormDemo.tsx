@@ -1,9 +1,12 @@
-import { useForm } from '@tanstack/react-form'
+import { useForm, useStore } from '@tanstack/react-form'
 import { enabledWhen, requires, umpire } from '@umpire/core'
 import { createReads, fairWhenRead } from '@umpire/reads'
 import { useUmpireForm } from '@umpire/tanstack-form/react'
 import { umpireFieldValidator } from '@umpire/tanstack-form'
 import { register } from '@umpire/devtools/slim'
+import type { FieldValues, FieldsOf, Foul, NormalizeFields } from '@umpire/core'
+import type { UmpireForm } from '@umpire/tanstack-form/react'
+import type { ReactNode } from 'react'
 
 const countryOptions = [
   { value: '',  label: 'Select country...' },
@@ -39,7 +42,22 @@ function postalCodeMatchesCountry(code: string, country: unknown) {
   }
 }
 
-const addressReads = createReads({
+const addressFields = {
+  street:     { required: true, isEmpty: (v: unknown) => !v },
+  city:       { required: true, isEmpty: (v: unknown) => !v },
+  country:    { required: true, isEmpty: (v: unknown) => !v },
+  state:      { required: true, isEmpty: (v: unknown) => !v },
+  province:   { required: true, isEmpty: (v: unknown) => !v },
+  postalCode: { required: true, isEmpty: (v: unknown) => !v },
+}
+
+type AddressFieldDefs = NormalizeFields<typeof addressFields>
+type AddressValues = FieldValues<AddressFieldDefs>
+type AddressReads = {
+  postalCodeFair: boolean
+}
+
+const addressReads = createReads<AddressValues, AddressReads>({
   postalCodeFair: ({ input }) => {
     const code = String(input.postalCode ?? '').trim()
     return !code || postalCodeMatchesCountry(code, input.country)
@@ -47,14 +65,7 @@ const addressReads = createReads({
 })
 
 const addressUmp = umpire({
-  fields: {
-    street:     { required: true, isEmpty: (v: unknown) => !v },
-    city:       { required: true, isEmpty: (v: unknown) => !v },
-    country:    { required: true, isEmpty: (v: unknown) => !v },
-    state:      { required: true, isEmpty: (v: unknown) => !v },
-    province:   { required: true, isEmpty: (v: unknown) => !v },
-    postalCode: { required: true, isEmpty: (v: unknown) => !v },
-  },
+  fields: addressFields,
   rules: [
     enabledWhen('state', (v) => v.country === 'US', {
       reason: 'Only US addresses use states',
@@ -64,7 +75,12 @@ const addressUmp = umpire({
     }),
     requires('state', 'country'),
     requires('province', 'country'),
-    fairWhenRead('postalCode', 'postalCodeFair', addressReads, {
+    fairWhenRead<
+      AddressFieldDefs,
+      Record<string, unknown>,
+      AddressReads,
+      'postalCodeFair'
+    >('postalCode', 'postalCodeFair', addressReads, {
       reason: 'Invalid format for selected country',
     }),
   ],
@@ -74,361 +90,338 @@ function pretty(value: unknown) {
   return JSON.stringify(value, null, 2)
 }
 
-export default function AddressFormDemo() {
-  const form = useForm({
+function useAddressForm() {
+  return useForm({
     defaultValues: addressUmp.init(),
   })
+}
 
-  const umpireForm = useUmpireForm(form, addressUmp, { strike: true })
+type AddressFields = FieldsOf<typeof addressUmp>
+type AddressField = keyof AddressValues & string
+type AddressFoul = Foul<AddressFields>
+type AddressUmpireForm = UmpireForm<AddressFields>
+type AddressForm = ReturnType<typeof useAddressForm>
 
-  const liveValues = form.useStore((s) => s.values)
+type Option = {
+  value: string
+  label: string
+}
+
+type DemoFieldProps = {
+  id: string
+  label: string
+  required: boolean
+  foul?: AddressFoul
+  error?: ReactNode
+  children: ReactNode
+  onReset?: (value: unknown) => void
+}
+
+function DemoStatus({ foul }: { foul?: AddressFoul }) {
+  const state = foul ? 'fouled' : 'enabled'
+
+  return (
+    <span className={`c-umpire-demo__status is-${state}`}>
+      <span className="c-umpire-demo__status-dot" />
+      <span className="c-umpire-demo__status-text">{state}</span>
+    </span>
+  )
+}
+
+function DemoField({
+  id,
+  label,
+  required,
+  foul,
+  error,
+  children,
+  onReset,
+}: DemoFieldProps) {
+  return (
+    <div className={`c-umpire-demo__field${foul ? ' is-fouled' : ''}`}>
+      <div className="c-umpire-demo__field-header">
+        <div className="c-umpire-demo__field-label">
+          <label htmlFor={id}>{label}</label>
+          {required && (
+            <span className="c-umpire-demo__required-pill">required</span>
+          )}
+        </div>
+        <DemoStatus foul={foul} />
+      </div>
+
+      {children}
+
+      {foul && (
+        <div className="c-umpire-demo__field-foul">
+          <span className="c-umpire-demo__field-foul-reason">{foul.reason}</span>
+          {onReset && (
+            <button
+              type="button"
+              className="c-umpire-demo__field-foul-reset"
+              onClick={() => onReset(foul.suggestedValue)}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      )}
+
+      {error && <div className="c-umpire-demo__field-reason">{error}</div>}
+    </div>
+  )
+}
+
+type BoundFieldProps = {
+  form: AddressForm
+  ump: AddressUmpireForm
+  fouls: AddressFoul[]
+}
+
+type SelectFieldProps = BoundFieldProps & {
+  name: AddressField
+  id: string
+  label: string
+  options: Option[]
+}
+
+function SelectField({
+  form,
+  ump,
+  fouls,
+  name,
+  id,
+  label,
+  options,
+}: SelectFieldProps) {
+  const avail = ump.field(name)
+  const foul = fouls.find((item) => item.field === name)
+
+  if (!avail.enabled) return null
+
+  return (
+    <form.Field name={name} validators={umpireFieldValidator(addressUmp, name)}>
+      {(field) => (
+        <DemoField
+          id={id}
+          label={label}
+          required={avail.required}
+          foul={foul}
+          onReset={(value) => form.setFieldValue(name, value)}
+        >
+          <select
+            id={id}
+            className="c-umpire-demo__input"
+            value={String(field.state.value ?? '')}
+            onChange={(event) => field.handleChange(event.currentTarget.value)}
+          >
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </DemoField>
+      )}
+    </form.Field>
+  )
+}
+
+type TextFieldProps = BoundFieldProps & {
+  name: AddressField
+  id: string
+  label: string
+  placeholder: string
+}
+
+function TextField({
+  form,
+  ump,
+  fouls,
+  name,
+  id,
+  label,
+  placeholder,
+}: TextFieldProps) {
+  const avail = ump.field(name)
+  const foul = fouls.find((item) => item.field === name)
+
+  return (
+    <form.Field name={name} validators={umpireFieldValidator(addressUmp, name)}>
+      {(field) => (
+        <DemoField
+          id={id}
+          label={label}
+          required={avail.required}
+          foul={foul}
+          error={field.state.meta.errors?.[0]}
+          onReset={(value) => form.setFieldValue(name, value)}
+        >
+          <input
+            id={id}
+            className="c-umpire-demo__input"
+            type="text"
+            placeholder={placeholder}
+            value={String(field.state.value ?? '')}
+            onChange={(event) => field.handleChange(event.currentTarget.value)}
+          />
+        </DemoField>
+      )}
+    </form.Field>
+  )
+}
+
+function AddressDemoIntro() {
+  return (
+    <div className="c-address-demo__summary">
+      <div className="c-address-demo__summary-item">
+        <span className="c-address-demo__summary-kicker">enables</span>
+        <strong>Country gates region fields</strong>
+      </div>
+      <div className="c-address-demo__summary-item">
+        <span className="c-address-demo__summary-kicker">validates</span>
+        <strong>Postal format follows country</strong>
+      </div>
+      <div className="c-address-demo__summary-item">
+        <span className="c-address-demo__summary-kicker">cleans</span>
+        <strong>Stale values get reset suggestions</strong>
+      </div>
+    </div>
+  )
+}
+
+function FoulsPanel({ fouls }: { fouls: AddressFoul[] }) {
+  if (fouls.length === 0) return null
+
+  return (
+    <div className="c-umpire-demo__fouls">
+      <div className="c-umpire-demo__fouls-copy">
+        <div className="c-umpire-demo__fouls-kicker">Fouls</div>
+        <div className="c-umpire-demo__fouls-list">
+          {fouls.map((foul) => (
+            <div key={foul.field} className="c-umpire-demo__foul">
+              <span className="c-umpire-demo__foul-field">{foul.field}</span>
+              <span className="c-umpire-demo__foul-reason">{foul.reason}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function JsonStatePanel({
+  liveValues,
+  fouls,
+}: {
+  liveValues: AddressValues
+  fouls: AddressFoul[]
+}) {
+  return (
+    <section className="c-umpire-demo__json-shell">
+      <div className="c-umpire-demo__json-header">
+        <span className="c-umpire-demo__json-title">form state</span>
+        <span className="c-umpire-demo__json-meta">@tanstack/react-form</span>
+      </div>
+      <pre className="c-umpire-demo__code-block">
+        <code>{pretty({ values: liveValues, fouls })}</code>
+      </pre>
+    </section>
+  )
+}
+
+export default function AddressFormDemo() {
+  const form = useAddressForm()
+
+  const ump = useUmpireForm(form, addressUmp, { strike: true })
+
+  const liveValues = useStore(form.store, (state) => state.values)
 
   register('address-form', addressUmp, liveValues)
 
-  const fouls = umpireForm.fouls
+  const fouls = ump.fouls
 
   return (
-    <div class="c-address-demo c-umpire-demo">
-      <div class="c-address-demo__panel">
-        <div class="c-umpire-demo__panel-header">
+    <div className="c-address-demo c-umpire-demo">
+      <div className="c-address-demo__panel">
+        <div className="c-umpire-demo__panel-header">
           <div>
-            <div class="c-umpire-demo__eyebrow">TanStack Form + Umpire</div>
-            <h2 class="c-umpire-demo__title">Address Form</h2>
+            <div className="c-umpire-demo__eyebrow">TanStack Form + Umpire</div>
+            <h2 className="c-umpire-demo__title">Address Form</h2>
           </div>
-          <span class="c-umpire-demo__panel-accent">@umpire/tanstack-form</span>
+          <span className="c-umpire-demo__panel-accent">@umpire/tanstack-form</span>
         </div>
 
-        <div class="c-umpire-demo__panel-body">
-          <div class="c-address-demo__callout">
-            <span class="c-address-demo__badge">3 rule types</span>
-            <p class="c-address-demo__callout-text">
-              Conditional fields, country-dependent postal code validation, and automatic stale-value cleanup — all without hand-written orchestration code.
-            </p>
-          </div>
+        <div className="c-umpire-demo__panel-body">
+          <AddressDemoIntro />
+          <FoulsPanel fouls={fouls} />
 
-          {fouls.length > 0 && (
-            <div class="c-umpire-demo__fouls">
-              <div class="c-umpire-demo__fouls-copy">
-                <div class="c-umpire-demo__fouls-kicker">Fouls</div>
-                <div class="c-umpire-demo__fouls-list">
-                  {fouls.map((foul) => (
-                    <div key={foul.field} class="c-umpire-demo__foul">
-                      <span class="c-umpire-demo__foul-field">
-                        {foul.field}
-                      </span>
-                      <span class="c-umpire-demo__foul-reason">{foul.reason}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div class="c-umpire-demo__fields">
-            {/* Country — always visible */}
-            <form.Field
+          <div className="c-umpire-demo__fields">
+            <SelectField
+              form={form}
+              ump={ump}
+              fouls={fouls}
               name="country"
-              validators={umpireFieldValidator(addressUmp, 'country')}
-            >
-              {(field) => {
-                const avail = umpireForm.field('country')
-                return (
-                  <div class="c-umpire-demo__field">
-                    <div class="c-umpire-demo__field-header">
-                      <div class="c-umpire-demo__field-label">
-                        <label for="address-country">Country</label>
-                        {avail.required && (
-                          <span class="c-umpire-demo__required-pill">required</span>
-                        )}
-                      </div>
-                      <span class="c-umpire-demo__status is-enabled">
-                        <span class="c-umpire-demo__status-dot" />
-                        <span class="c-umpire-demo__status-text">enabled</span>
-                      </span>
-                    </div>
-                    <select
-                      id="address-country"
-                      class="c-umpire-demo__input"
-                      value={String(field.state.value ?? '')}
-                      onChange={(event) =>
-                        field.handleChange(event.currentTarget.value)
-                      }
-                    >
-                      {countryOptions.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )
-              }}
-            </form.Field>
+              id="address-country"
+              label="Country"
+              options={countryOptions}
+            />
 
-            {/* State — conditional on US */}
-            {umpireForm.field('state').enabled && (
-              <form.Field
-                name="state"
-                validators={umpireFieldValidator(addressUmp, 'state')}
-              >
-                {(field) => {
-                  const avail = umpireForm.field('state')
-                  const foul = fouls.find((f) => f.field === 'state')
-                  return (
-                    <div
-                      class={`c-umpire-demo__field${
-                        foul ? ' c-umpire-demo__field is-fouled' : ''
-                      }`}
-                    >
-                      <div class="c-umpire-demo__field-header">
-                        <div class="c-umpire-demo__field-label">
-                          <label for="address-state">State</label>
-                          {avail.required && (
-                            <span class="c-umpire-demo__required-pill">required</span>
-                          )}
-                        </div>
-                        <span
-                          class={`c-umpire-demo__status ${
-                            foul
-                              ? 'c-umpire-demo__status is-fouled'
-                              : 'c-umpire-demo__status is-enabled'
-                          }`}
-                        >
-                          <span class="c-umpire-demo__status-dot" />
-                          <span class="c-umpire-demo__status-text">
-                            {foul ? 'fouled' : 'enabled'}
-                          </span>
-                        </span>
-                      </div>
-                      <select
-                        id="address-state"
-                        class="c-umpire-demo__input"
-                        value={String(field.state.value ?? '')}
-                        onChange={(event) =>
-                          field.handleChange(event.currentTarget.value)
-                        }
-                      >
-                        {stateOptions.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                      {foul && (
-                        <div class="c-umpire-demo__field-foul">
-                          <span class="c-umpire-demo__field-foul-reason">
-                            {foul.reason}
-                          </span>
-                          <button
-                            type="button"
-                            class="c-umpire-demo__field-foul-reset"
-                            onClick={() =>
-                              form.setFieldValue('state', foul.suggestedValue)
-                            }
-                          >
-                            Reset
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                }}
-              </form.Field>
-            )}
+            <SelectField
+              form={form}
+              ump={ump}
+              fouls={fouls}
+              name="state"
+              id="address-state"
+              label="State"
+              options={stateOptions}
+            />
 
-            {/* Province — conditional on CA */}
-            {umpireForm.field('province').enabled && (
-              <form.Field
-                name="province"
-                validators={umpireFieldValidator(addressUmp, 'province')}
-              >
-                {(field) => {
-                  const avail = umpireForm.field('province')
-                  const foul = fouls.find((f) => f.field === 'province')
-                  return (
-                    <div
-                      class={`c-umpire-demo__field${
-                        foul ? ' c-umpire-demo__field is-fouled' : ''
-                      }`}
-                    >
-                      <div class="c-umpire-demo__field-header">
-                        <div class="c-umpire-demo__field-label">
-                          <label for="address-province">Province</label>
-                          {avail.required && (
-                            <span class="c-umpire-demo__required-pill">required</span>
-                          )}
-                        </div>
-                        <span
-                          class={`c-umpire-demo__status ${
-                            foul
-                              ? 'c-umpire-demo__status is-fouled'
-                              : 'c-umpire-demo__status is-enabled'
-                          }`}
-                        >
-                          <span class="c-umpire-demo__status-dot" />
-                          <span class="c-umpire-demo__status-text">
-                            {foul ? 'fouled' : 'enabled'}
-                          </span>
-                        </span>
-                      </div>
-                      <select
-                        id="address-province"
-                        class="c-umpire-demo__input"
-                        value={String(field.state.value ?? '')}
-                        onChange={(event) =>
-                          field.handleChange(event.currentTarget.value)
-                        }
-                      >
-                        {provinceOptions.map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                      {foul && (
-                        <div class="c-umpire-demo__field-foul">
-                          <span class="c-umpire-demo__field-foul-reason">
-                            {foul.reason}
-                          </span>
-                          <button
-                            type="button"
-                            class="c-umpire-demo__field-foul-reset"
-                            onClick={() =>
-                              form.setFieldValue('province', foul.suggestedValue)
-                            }
-                          >
-                            Reset
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                }}
-              </form.Field>
-            )}
+            <SelectField
+              form={form}
+              ump={ump}
+              fouls={fouls}
+              name="province"
+              id="address-province"
+              label="Province"
+              options={provinceOptions}
+            />
 
-            {/* Street + City */}
-            <div class="c-address-demo__row">
-            <form.Field
-              name="street"
-              validators={umpireFieldValidator(addressUmp, 'street')}
-            >
-              {(field) => {
-                const avail = umpireForm.field('street')
-                return (
-                  <div class="c-umpire-demo__field">
-                    <div class="c-umpire-demo__field-header">
-                      <div class="c-umpire-demo__field-label">
-                        <label for="address-street">Street</label>
-                        {avail.required && (
-                          <span class="c-umpire-demo__required-pill">required</span>
-                        )}
-                      </div>
-                      <span class="c-umpire-demo__status is-enabled">
-                        <span class="c-umpire-demo__status-dot" />
-                        <span class="c-umpire-demo__status-text">enabled</span>
-                      </span>
-                    </div>
-                    <input
-                      id="address-street"
-                      class="c-umpire-demo__input"
-                      type="text"
-                      placeholder="123 Main St"
-                      value={String(field.state.value ?? '')}
-                      onChange={(event) =>
-                        field.handleChange(event.currentTarget.value)
-                      }
-                    />
-                  </div>
-                )
-              }}
-            </form.Field>
-
-            {/* City */}
-            <form.Field
-              name="city"
-              validators={umpireFieldValidator(addressUmp, 'city')}
-            >
-              {(field) => {
-                const avail = umpireForm.field('city')
-                return (
-                  <div class="c-umpire-demo__field">
-                    <div class="c-umpire-demo__field-header">
-                      <div class="c-umpire-demo__field-label">
-                        <label for="address-city">City</label>
-                        {avail.required && (
-                          <span class="c-umpire-demo__required-pill">required</span>
-                        )}
-                      </div>
-                      <span class="c-umpire-demo__status is-enabled">
-                        <span class="c-umpire-demo__status-dot" />
-                        <span class="c-umpire-demo__status-text">enabled</span>
-                      </span>
-                    </div>
-                    <input
-                      id="address-city"
-                      class="c-umpire-demo__input"
-                      type="text"
-                      placeholder="Springfield"
-                      value={String(field.state.value ?? '')}
-                      onChange={(event) =>
-                        field.handleChange(event.currentTarget.value)
-                      }
-                    />
-                  </div>
-                )
-              }}
-            </form.Field>
+            <div className="c-address-demo__row">
+              <TextField
+                form={form}
+                ump={ump}
+                fouls={fouls}
+                name="street"
+                id="address-street"
+                label="Street"
+                placeholder="123 Main St"
+              />
+              <TextField
+                form={form}
+                ump={ump}
+                fouls={fouls}
+                name="city"
+                id="address-city"
+                label="City"
+                placeholder="Springfield"
+              />
             </div>
 
-            {/* Postal Code */}
-            <form.Field
+            <TextField
+              form={form}
+              ump={ump}
+              fouls={fouls}
               name="postalCode"
-              validators={umpireFieldValidator(addressUmp, 'postalCode')}
-            >
-              {(field) => {
-                const avail = umpireForm.field('postalCode')
-                const error = field.state.meta.errors?.[0]
-                return (
-                  <div class="c-umpire-demo__field">
-                    <div class="c-umpire-demo__field-header">
-                      <div class="c-umpire-demo__field-label">
-                        <label for="address-postal">Postal Code</label>
-                        {avail.required && (
-                          <span class="c-umpire-demo__required-pill">required</span>
-                        )}
-                      </div>
-                      <span class="c-umpire-demo__status is-enabled">
-                        <span class="c-umpire-demo__status-dot" />
-                        <span class="c-umpire-demo__status-text">enabled</span>
-                      </span>
-                    </div>
-                    <input
-                      id="address-postal"
-                      class="c-umpire-demo__input"
-                      type="text"
-                      placeholder="12345"
-                      value={String(field.state.value ?? '')}
-                      onChange={(event) =>
-                        field.handleChange(event.currentTarget.value)
-                      }
-                    />
-                    {error && (
-                      <div class="c-umpire-demo__field-reason">
-                        {error}
-                      </div>
-                    )}
-                  </div>
-                )
-              }}
-            </form.Field>
+              id="address-postal"
+              label="Postal Code"
+              placeholder="12345"
+            />
 
-            {/* Submit button */}
             <form.Subscribe selector={(state) => state.canSubmit}>
               {(canSubmit) => (
                 <button
                   type="button"
-                  class="c-umpire-demo__reset-button"
+                  className="c-umpire-demo__reset-button"
                   onClick={() => form.handleSubmit()}
                   disabled={!canSubmit}
                 >
@@ -438,16 +431,7 @@ export default function AddressFormDemo() {
             </form.Subscribe>
           </div>
 
-          {/* JSON shell */}
-          <section class="c-umpire-demo__json-shell">
-            <div class="c-umpire-demo__json-header">
-              <span class="c-umpire-demo__json-title">form state</span>
-              <span class="c-umpire-demo__json-meta">@tanstack/react-form</span>
-            </div>
-            <pre class="c-umpire-demo__code-block">
-              <code>{pretty({ values: liveValues, fouls })}</code>
-            </pre>
-          </section>
+          <JsonStatePanel liveValues={liveValues} fouls={fouls} />
         </div>
       </div>
     </div>

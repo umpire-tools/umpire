@@ -118,4 +118,4 @@ No `useEffect`, no manual cleanup, no hand-wired validation wiring. Umpire deriv
 
 This demo uses [`@umpire/tanstack-form`](/adapters/tanstack-form/) with [TanStack Form](https://tanstack.com/form) and React. Each field component uses TanStack Form's `<form.Field>` with per-field validators auto-wired by `umpireFieldValidator` — Umpire reads its own graph to determine which fields need to revalidate when an upstream changes.
 
-The `useUmpireForm` hook subscribes to the form store, derives availability and fouls, and applies strike-on-transition automatically. Conditional rendering gates on `umpireForm.field('state').enabled` and `umpireForm.field('province').enabled` — no manual visibility logic needed.
+The `useUmpireForm` hook subscribes to the form store, derives availability and fouls, and applies strike-on-transition automatically. This demo passes that derived surface into small field components, which render `null` when `ump.field(name).enabled` is false. You can also gate fields at the parent level with `ump.field('state').enabled`; it is the same availability signal, so choose the composition style that reads best in your app.
