@@ -1842,6 +1842,7 @@ __metadata:
   resolution: "@umpire/drizzle@workspace:packages/drizzle"
   dependencies:
     "@umpire/core": "workspace:^"
+    "@umpire/testing": "workspace:^"
     "@umpire/write": "workspace:^"
     drizzle-orm: "npm:1.0.0-rc.1"
   peerDependencies:
@@ -1903,6 +1904,7 @@ __metadata:
     "@umpire/reads": "workspace:^"
     "@umpire/signals": "workspace:^"
     "@umpire/store": "workspace:^"
+    "@umpire/testing": "workspace:^"
     "@umpire/zod": "workspace:^"
     bun-types: "npm:^1.3.12"
     drizzle-orm: "npm:1.0.0-rc.1"
@@ -1957,6 +1959,7 @@ __metadata:
   resolution: "@umpire/reads@workspace:packages/reads"
   dependencies:
     "@umpire/core": "workspace:^"
+    "@umpire/testing": "workspace:^"
   languageName: unknown
   linkType: soft
 
@@ -2037,7 +2040,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@umpire/testing@workspace:packages/testing":
+"@umpire/testing@workspace:^, @umpire/testing@workspace:packages/testing":
   version: 0.0.0-use.local
   resolution: "@umpire/testing@workspace:packages/testing"
   peerDependencies:
