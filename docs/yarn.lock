@@ -1992,17 +1992,6 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@umpire/solid@portal:../packages/solid::locator=umpire-docs%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@umpire/solid@portal:../packages/solid::locator=umpire-docs%40workspace%3A."
-  dependencies:
-    "@umpire/core": "workspace:^"
-    "@umpire/signals": "workspace:^"
-  peerDependencies:
-    solid-js: ^1.0.0
-  languageName: node
-  linkType: soft
-
 "@umpire/store@portal:../packages/store::locator=umpire-docs%40workspace%3A.":
   version: 0.0.0-use.local
   resolution: "@umpire/store@portal:../packages/store::locator=umpire-docs%40workspace%3A."
@@ -2016,18 +2005,34 @@ __metadata:
   resolution: "@umpire/tanstack-form@portal:../packages/tanstack-form::locator=umpire-docs%40workspace%3A."
   dependencies:
     "@umpire/core": "workspace:^"
-    "@umpire/react": "workspace:^"
     "@umpire/reads": "workspace:^"
-    "@umpire/signals": "workspace:^"
-    "@umpire/solid": "workspace:^"
   peerDependencies:
     "@tanstack/form-core": ^1.0.0
     "@tanstack/react-form": ^1.0.0
     "@tanstack/solid-form": ^1.0.0
     "@tanstack/vue-form": ^1.0.0
+    "@umpire/react": "workspace:^"
+    "@umpire/solid": "workspace:^"
     react: ^18.0.0 || ^19.0.0
     solid-js: ^1.0.0
     vue: ^3.0.0
+  peerDependenciesMeta:
+    "@tanstack/react-form":
+      optional: true
+    "@tanstack/solid-form":
+      optional: true
+    "@tanstack/vue-form":
+      optional: true
+    "@umpire/react":
+      optional: true
+    "@umpire/solid":
+      optional: true
+    react:
+      optional: true
+    solid-js:
+      optional: true
+    vue:
+      optional: true
   languageName: node
   linkType: soft
 
