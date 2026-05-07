@@ -17,6 +17,8 @@ export type CheckAssertChain<K extends string> = {
   optional(...fields: K[]): CheckAssertChain<K>
   satisfied(...fields: K[]): CheckAssertChain<K>
   unsatisfied(...fields: K[]): CheckAssertChain<K>
+  reason(field: K, expected: string): CheckAssertChain<K>
+  reasons(field: K, expected: string[]): CheckAssertChain<K>
 }
 
 export type ScorecardAssertChain<K extends string> = {
@@ -247,6 +249,39 @@ export function checkAssert<K extends string>(
         'unsatisfied',
         () => 'was satisfied (has a value)',
       )
+      return chain
+    },
+    reason(field, expected) {
+      const status = result[field]
+
+      if (status === undefined) {
+        throw new Error(`checkAssert: unknown field "${field}"`)
+      }
+
+      if (status.reason !== expected) {
+        throw new Error(
+          `checkAssert: expected "${field}" reason to be ${JSON.stringify(expected)} — was ${JSON.stringify(status.reason)}`,
+        )
+      }
+
+      return chain
+    },
+    reasons(field, expected) {
+      const status = result[field]
+
+      if (status === undefined) {
+        throw new Error(`checkAssert: unknown field "${field}"`)
+      }
+
+      if (
+        status.reasons.length !== expected.length ||
+        !expected.every((r, i) => r === status.reasons[i])
+      ) {
+        throw new Error(
+          `checkAssert: expected "${field}" reasons to be ${JSON.stringify(expected)} — was ${JSON.stringify(status.reasons)}`,
+        )
+      }
+
       return chain
     },
   }

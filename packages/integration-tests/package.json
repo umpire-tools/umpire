@@ -22,6 +22,7 @@
     "@umpire/reads": "workspace:^",
     "@umpire/signals": "workspace:^",
     "@umpire/store": "workspace:^",
+    "@umpire/testing": "workspace:^",
     "@umpire/zod": "workspace:^",
     "bun-types": "^1.3.12",
     "drizzle-orm": "1.0.0-rc.1",

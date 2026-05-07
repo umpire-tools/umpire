@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test'
 import { umpire } from '@umpire/core'
 import { fromJson, toJson, type UmpireJsonSchema } from '@umpire/json'
 import { deriveErrors, deriveSchema, zodErrors } from '@umpire/zod'
+import { checkAssert } from '@umpire/testing'
 import { z } from 'zod'
 
 describe('json + zod pipeline', () => {
@@ -41,11 +42,10 @@ describe('json + zod pipeline', () => {
       { accountType: 'guest' },
     )
 
-    expect(guestAvailability.inviteCode).toMatchObject({
-      enabled: false,
-      required: false,
-      reason: 'Invite codes are only available for members',
-    })
+    checkAssert(guestAvailability)
+      .disabled('inviteCode')
+      .optional('inviteCode')
+      .reason('inviteCode', 'Invite codes are only available for members')
 
     const derived = deriveSchema(guestAvailability, {
       accountType: z.string(),
