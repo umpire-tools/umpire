@@ -164,13 +164,15 @@ describe('createUmpireFormOptions', () => {
     })
     let values = { email: 'test@example.com' }
     const resetFieldCalls: string[] = []
+    const setFieldValueCalls: Array<[string, unknown]> = []
 
     const formApi = {
       get state() {
         return { values }
       },
-      setFieldValue(_name: string, _value: unknown) {
+      setFieldValue(name: string, value: unknown) {
         // should NOT be called in resetField mode
+        setFieldValueCalls.push([name, value])
       },
       resetField(name: string) {
         resetFieldCalls.push(name)
@@ -186,6 +188,7 @@ describe('createUmpireFormOptions', () => {
     listener(resultWithListeners(result).listeners?.onChange)({ formApi })
     expect(resetFieldCalls).toHaveLength(1)
     expect(resetFieldCalls[0]).toBe('email')
+    expect(setFieldValueCalls).toHaveLength(0)
   })
 
   it('conditions function is called with formApi to resolve conditions', () => {

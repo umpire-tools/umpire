@@ -103,7 +103,11 @@ export function useUmpireForm<
     form.store as never,
     (state: { values: Record<string, unknown> }) => state.values,
   ) as Record<string, unknown>
-  const conditions = resolveConditions(options?.conditions)
+  const conditions = useMemo(
+    () => resolveConditions(options?.conditions),
+    [options?.conditions],
+  )
+  const strike = options?.strike
 
   const { check, fouls } = useUmpire(engine, values, conditions)
 
@@ -114,10 +118,10 @@ export function useUmpireForm<
   }, [form, fouls])
 
   useEffect(() => {
-    if (options?.strike && fouls.length > 0) {
+    if (strike && fouls.length > 0) {
       applyStrike()
     }
-  }, [applyStrike, fouls, options?.strike])
+  }, [applyStrike, fouls, strike])
 
   const umpireForm = useMemo(
     () => ({
@@ -194,7 +198,10 @@ function UmpireFormSnapshot<
   strike?: boolean
   children: (umpireForm: UmpireForm<F>) => ReactNode
 }) {
-  const conditions = resolveConditions(conditionsInput)
+  const conditions = useMemo(
+    () => resolveConditions(conditionsInput),
+    [conditionsInput],
+  )
 
   const { check, fouls } = useUmpire(engine, values, conditions)
 

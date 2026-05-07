@@ -396,6 +396,50 @@ describe('createUmpireFormComponents', () => {
       dispose()
     })
   })
+
+  it('UmpireField falls back when no TanStack form context exists', () => {
+    const engine = umpire({ fields: { a: {} }, rules: [] })
+    const { UmpireField } = createUmpireFormComponents(engine)
+
+    createRoot((dispose) => {
+      let childField: unknown
+      let childAvailability: ReturnType<UmpireFormLike['field']> | undefined
+
+      const memo = UmpireFormContext.Provider({
+        value: () => ({
+          field: () => ({
+            enabled: true,
+            available: true,
+            disabled: false,
+            required: false,
+            satisfied: true,
+            fair: true,
+            reason: null,
+            reasons: [],
+          }),
+          fouls: [],
+          applyStrike: () => {},
+        }),
+        children: () =>
+          UmpireField({
+            name: 'a',
+            children: (field, availability) => {
+              childField = field()
+              childAvailability = availability
+              return undefined
+            },
+          }),
+      })
+
+      if (typeof memo === 'function') {
+        memo()
+      }
+
+      expect(childField).toEqual({})
+      expect(childAvailability?.enabled).toBe(true)
+      dispose()
+    })
+  })
 })
 
 describe('UmpireFormSubscribe', () => {

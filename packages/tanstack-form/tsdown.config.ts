@@ -55,7 +55,7 @@ export default defineConfig([
     format: ['esm'],
     platform: 'browser',
     deps: {
-      neverBundle: ['vue', '@umpire/core', '@umpire/signals'],
+      neverBundle: ['vue', '@umpire/core'],
     },
     outDir: 'dist',
     clean: false,

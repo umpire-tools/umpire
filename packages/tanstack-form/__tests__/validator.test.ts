@@ -55,6 +55,23 @@ describe('umpireFieldValidator', () => {
     expect(result).toBe('Invalid email')
   })
 
+  it('foul field without a reason returns the invalid value fallback', () => {
+    const engine = {
+      check: () => ({
+        email: { enabled: true, fair: false, reason: null },
+      }),
+      graph: () => ({ nodes: ['email'], edges: [] }),
+    }
+
+    const validators = umpireFieldValidator(engine as never, 'email')
+    const result = validator(validators.onChange)({
+      value: 'not-an-email',
+      fieldApi: { form: { state: { values: { email: 'not-an-email' } } } },
+    })
+
+    expect(result).toBe('Invalid value')
+  })
+
   it('foul field with rejectFoul: false produces no error', () => {
     const engine = umpire({
       fields: { email: {} },

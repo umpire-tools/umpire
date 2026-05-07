@@ -1,13 +1,15 @@
 import { describe, it, expect, mock } from 'bun:test'
 import { enabledWhen, fairWhen, umpire } from '@umpire/core'
+import { nextTick } from 'vue'
 import { useUmpireForm, UmpireFormSubscribe } from '../src/vue.js'
 
 type Values = Record<string, unknown>
-type StoreListener = () => void
+type StoreListener = (state: { values: Values }) => void
 type Store = {
   state: { values: Values }
   get(): { values: Values }
   subscribe(listener: StoreListener): { unsubscribe(): void }
+  setValues(values: Values): void
 }
 type Form = {
   store: Store
@@ -36,11 +38,19 @@ const engineForSetup = umpire({ fields: { a: {} }, rules: [] })
 function createStore(values: Values): Store {
   return new (class {
     state = { values }
+    listeners = new Set<StoreListener>()
     get() {
       return this.state
     }
-    subscribe(_listener: StoreListener) {
-      return { unsubscribe: () => {} }
+    subscribe(listener: StoreListener) {
+      this.listeners.add(listener)
+      return { unsubscribe: () => this.listeners.delete(listener) }
+    }
+    setValues(nextValues: Values) {
+      this.state = { values: nextValues }
+      for (const listener of this.listeners) {
+        listener(this.state as never)
+      }
     }
   })()
 }
@@ -148,6 +158,36 @@ describe('useUmpireForm', () => {
 
     umpireForm.applyStrike()
     expect(setFieldCalls).toEqual([])
+  })
+
+  it('tracks fouls without automatically applying strikes when strike is omitted', async () => {
+    const engine = umpire({
+      fields: { x: { required: true }, y: {} },
+      rules: [enabledWhen('y', (v) => (v as Values).x !== null)],
+    })
+
+    const setFieldCalls: Array<{ name: string; value: unknown }> = []
+    const store = createStore({ x: 'hello', y: 'world' })
+    const form = {
+      store,
+      setFieldValue(name: string, value: unknown) {
+        setFieldCalls.push({ name, value })
+      },
+    }
+
+    const umpireForm = useUmpireForm(form, engine)
+    expect(umpireForm.fouls).toEqual([])
+
+    store.setValues({ x: null, y: 'world' })
+    await nextTick()
+
+    expect(umpireForm.fouls).toEqual([
+      expect.objectContaining({ field: 'y', suggestedValue: undefined }),
+    ])
+    expect(setFieldCalls).toEqual([])
+
+    umpireForm.applyStrike()
+    expect(setFieldCalls).toEqual([{ name: 'y', value: undefined }])
   })
 
   it('field proxies are cached and expose fair reasons plus unknown defaults', () => {

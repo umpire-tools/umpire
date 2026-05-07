@@ -143,10 +143,31 @@ describe('createUmpireFormAdapter', () => {
 
     adapter.applyStrike()
 
-    expect(setFieldCalls.length).toBeGreaterThan(0)
-    for (const call of setFieldCalls) {
-      expect(call.name).toBe('y')
+    expect(setFieldCalls).toEqual([{ name: 'y', value: undefined }])
+    adapter.applyStrike()
+    expect(setFieldCalls).toEqual([{ name: 'y', value: undefined }])
+  })
+
+  it('applyStrike is a no-op before any transition', () => {
+    const engine = umpire({
+      fields: { x: {}, y: {} },
+      rules: [
+        enabledWhen('y', (v) => (v as Record<string, unknown>).x === 'yes'),
+      ],
+    })
+
+    const setFieldCalls: Array<{ name: string; value: unknown }> = []
+    const form = {
+      state: { values: { x: 'no', y: 'world' } },
+      setFieldValue(name: string, value: unknown) {
+        setFieldCalls.push({ name, value })
+      },
     }
+
+    const adapter = createUmpireFormAdapter(form as never, engine)
+    adapter.applyStrike()
+
+    expect(setFieldCalls).toEqual([])
   })
 
   it('adapters do not share snapshot state', () => {
@@ -176,10 +197,9 @@ describe('createUmpireFormAdapter', () => {
       ],
     })
 
-    const customCalls: Array<{ form: unknown; name: string; value: unknown }> =
-      []
-    const customSetFieldValue = (f: unknown, name: string, value: unknown) => {
-      customCalls.push({ form: f, name, value })
+    const customCalls: Array<{ name: string; value: unknown }> = []
+    const customSetFieldValue = (name: string, value: unknown) => {
+      customCalls.push({ name, value })
     }
 
     const form = {
@@ -195,11 +215,7 @@ describe('createUmpireFormAdapter', () => {
     form.state.values = { x: 'no', y: 'world' }
     adapter.applyStrike()
 
-    expect(customCalls.length).toBeGreaterThan(0)
-    for (const call of customCalls) {
-      expect(call.name).toBe('y')
-      expect(call.form).toBe(form)
-    }
+    expect(customCalls).toEqual([{ name: 'y', value: undefined }])
   })
 
   it('custom conditions function is called to resolve conditions', () => {

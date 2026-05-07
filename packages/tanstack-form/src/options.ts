@@ -70,6 +70,7 @@ export function createUmpireFormOptions<
       }
 
       const fouls = engine.play(previousSnapshot, currentSnapshot)
+      previousSnapshot = currentSnapshot
 
       for (const foul of fouls) {
         if (useResetField) {
@@ -79,11 +80,6 @@ export function createUmpireFormOptions<
         } else {
           formApi.setFieldValue(foul.field, foul.suggestedValue)
         }
-      }
-
-      previousSnapshot = {
-        values: snapshotValue(formApi.state.values),
-        conditions: currentSnapshot.conditions,
       }
     }
 

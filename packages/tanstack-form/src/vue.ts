@@ -91,31 +91,27 @@ export function useUmpireForm<
   const previousSnapshot = shallowRef<Snapshot<C> | null>(null)
   const foulsRef = shallowRef<Foul<F>[]>([])
 
-  if (options?.strike) {
-    watchEffect(() => {
-      const current: Snapshot<C> = {
-        values: snapshotValue(values.value),
-        conditions: snapshotValue(conditions.value),
-      }
+  watchEffect(() => {
+    const current: Snapshot<C> = {
+      values: snapshotValue(values.value),
+      conditions: snapshotValue(conditions.value),
+    }
 
-      if (!previousSnapshot.value) {
-        previousSnapshot.value = current
-        return
-      }
+    if (!previousSnapshot.value) {
+      previousSnapshot.value = current
+      return
+    }
 
-      const fouls = engine.play(previousSnapshot.value, current) as Foul<F>[]
-      foulsRef.value = fouls
+    const fouls = engine.play(previousSnapshot.value, current) as Foul<F>[]
+    foulsRef.value = fouls
+    previousSnapshot.value = current
 
+    if (options?.strike) {
       for (const foul of fouls) {
         form.setFieldValue(foul.field, foul.suggestedValue)
       }
-
-      previousSnapshot.value = {
-        values: snapshotValue(values.value),
-        conditions: current.conditions,
-      }
-    })
-  }
+    }
+  })
 
   return {
     field,

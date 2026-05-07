@@ -10,10 +10,7 @@
       "@umpire/core/*": ["../core/src/*"],
       "@umpire/reads": ["../reads/src/index.ts"],
       "@umpire/react": ["../react/src/index.ts"],
-      "@umpire/solid": ["../solid/src/index.ts"],
-      "@umpire/signals": ["../signals/src/index.ts"],
-      "@umpire/signals/*": ["../signals/src/*"],
-      "@umpire/signals/vue": ["../signals/src/adapters/vue.ts"]
+      "@umpire/solid": ["../solid/src/index.ts"]
     }
   },
   "include": ["src"],
@@ -21,7 +18,6 @@
     { "path": "../core" },
     { "path": "../reads" },
     { "path": "../react" },
-    { "path": "../signals" },
     { "path": "../solid" }
   ]
 }

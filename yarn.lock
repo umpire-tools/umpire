@@ -2158,7 +2158,6 @@ __metadata:
     "@umpire/core": "workspace:^"
     "@umpire/react": "workspace:^"
     "@umpire/reads": "workspace:^"
-    "@umpire/signals": "workspace:^"
     "@umpire/solid": "workspace:^"
     react: "npm:^19.2.4"
     react-dom: "npm:^19.2.4"

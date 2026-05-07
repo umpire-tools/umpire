@@ -133,20 +133,6 @@ describe('getUmpireLinkedFields', () => {
     expect(result).not.toContain('b')
   })
 
-  it('excludeSelf: false without self-edge returns same result as default', () => {
-    const engine = umpire({
-      fields: { a: {}, b: {} },
-      rules: [requires('b', 'a')],
-    })
-
-    const defaultResult = getUmpireLinkedFields(engine, 'b')
-    const explicitResult = getUmpireLinkedFields(engine, 'b', {
-      excludeSelf: false,
-    })
-    expect(explicitResult).toEqual(defaultResult)
-    expect(explicitResult).not.toContain('b')
-  })
-
   it('uses listenTo explicit override and skips graph lookup', () => {
     const engine = umpire({
       fields: { a: {}, b: {}, c: {} },

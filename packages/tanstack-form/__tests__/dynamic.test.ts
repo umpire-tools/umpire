@@ -74,6 +74,22 @@ describe('umpireDynamicValidator', () => {
     expect(result).toEqual({ email: 'Invalid email' })
   })
 
+  it('foul field without a reason returns the invalid value fallback', () => {
+    const engine = {
+      check: () => ({
+        email: { enabled: true, fair: false, reason: null },
+      }),
+    }
+
+    const validate = umpireDynamicValidator(engine as never)
+    const result = validate({
+      value: { email: 'not-an-email' },
+      formApi: {},
+    })
+
+    expect(result).toEqual({ email: 'Invalid value' })
+  })
+
   it('foul field with rejectFoul: false produces no error', () => {
     const engine = umpire({
       fields: { email: {} },

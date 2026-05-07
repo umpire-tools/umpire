@@ -123,6 +123,31 @@ describe('umpireReadListeners', () => {
     expect(listeners.onBlur).toBeDefined()
   })
 
+  it('onChange and onBlur share previous read state', () => {
+    const reads = createReads<{ x: number }, { doubled: number }>({
+      doubled: ({ input }) => input.x * 2,
+    })
+
+    const handler = mock(() => {})
+    const listeners = umpireReadListeners(
+      reads,
+      { doubled: handler },
+      { events: ['onChange', 'onBlur'] },
+    )
+
+    listener(listeners.onChange)({
+      formApi: { state: { values: { x: 1 } } },
+    })
+    listener(listeners.onBlur)({
+      formApi: { state: { values: { x: 2 } } },
+    })
+
+    expect(handler).toHaveBeenCalledTimes(2)
+    expect(handler.mock.calls[1][0].read).toBe(4)
+    expect(handler.mock.calls[1][0].previousRead).toBe(2)
+    expect(handler.mock.calls[1][0].previousValues).toEqual({ x: 1 })
+  })
+
   it('debounceMs option is included in result', () => {
     const reads = createReads<{ x: number }, { doubled: number }>({
       doubled: ({ input }) => input.x * 2,

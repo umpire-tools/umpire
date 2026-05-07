@@ -3,7 +3,7 @@ import { snapshotValue } from '@umpire/core/snapshot'
 
 type UmpireFormAdapterOptions<C> = {
   conditions?: C | (() => C)
-  setFieldValue?: (form: unknown, name: string, value: unknown) => void
+  setFieldValue?: (name: string, value: unknown) => void
 }
 
 export type UmpireFormField = {
@@ -18,7 +18,7 @@ export type UmpireFormField = {
   error?: string
 }
 
-type UmpireFormAdapter<F extends Record<string, FieldDef>> = {
+export type UmpireFormAdapter<F extends Record<string, FieldDef>> = {
   getField(name: string): UmpireFormField
   getAvailability(): Record<string, unknown>
   getFouls(): Foul<F>[]
@@ -53,10 +53,7 @@ export function createUmpireFormAdapter<
   let previousSnapshot: Snapshot<C> | null = null
 
   const setFieldValue =
-    options?.setFieldValue ??
-    ((_form: unknown, name: string, value: unknown) => {
-      form.setFieldValue(name, value)
-    })
+    options?.setFieldValue ?? ((name, value) => form.setFieldValue(name, value))
 
   function getConditions(): C | undefined {
     if (typeof options?.conditions === 'function') {
@@ -113,7 +110,7 @@ export function createUmpireFormAdapter<
   function applyStrike(): void {
     const fouls = getFouls()
     for (const foul of fouls) {
-      setFieldValue(form, foul.field, foul.suggestedValue)
+      setFieldValue(foul.field, foul.suggestedValue)
     }
   }
 

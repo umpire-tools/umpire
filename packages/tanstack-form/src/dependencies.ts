@@ -7,7 +7,6 @@ export function getUmpireLinkedFields<
   engine: Umpire<F, C>,
   fieldName: string,
   options?: {
-    excludeSelf?: boolean
     listenTo?: string[]
   },
 ): string[] {
@@ -24,9 +23,7 @@ export function getUmpireLinkedFields<
     }
   }
 
-  if (options?.excludeSelf !== false) {
-    result.delete(fieldName)
-  }
+  result.delete(fieldName)
 
   return [...result].sort()
 }
