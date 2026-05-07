@@ -16,12 +16,12 @@ yarn add @umpire/core @umpire/tanstack-form @tanstack/form-core
 
 Then add the peers for the subpath you import:
 
-| Import | Add these peers |
-| --- | --- |
-| `@umpire/tanstack-form` | none beyond `@tanstack/form-core` |
-| `@umpire/tanstack-form/react` | `react`, `@tanstack/react-form`, `@umpire/react` |
+| Import                        | Add these peers                                     |
+| ----------------------------- | --------------------------------------------------- |
+| `@umpire/tanstack-form`       | none beyond `@tanstack/form-core`                   |
+| `@umpire/tanstack-form/react` | `react`, `@tanstack/react-form`, `@umpire/react`    |
 | `@umpire/tanstack-form/solid` | `solid-js`, `@tanstack/solid-form`, `@umpire/solid` |
-| `@umpire/tanstack-form/vue` | `vue`, `@tanstack/vue-form` |
+| `@umpire/tanstack-form/vue`   | `vue`, `@tanstack/vue-form`                         |
 
 For React:
 
@@ -77,7 +77,10 @@ function AddressForm() {
       </form.Field>
 
       {umpireForm.field('state').enabled && (
-        <form.Field name="state" validators={umpireFieldValidator(engine, 'state')}>
+        <form.Field
+          name="state"
+          validators={umpireFieldValidator(engine, 'state')}
+        >
           {(field) => (
             <input
               value={field.state.value}
@@ -88,7 +91,10 @@ function AddressForm() {
       )}
 
       {umpireForm.field('province').enabled && (
-        <form.Field name="province" validators={umpireFieldValidator(engine, 'province')}>
+        <form.Field
+          name="province"
+          validators={umpireFieldValidator(engine, 'province')}
+        >
           {(field) => (
             <input
               value={field.state.value}
@@ -112,13 +118,13 @@ function AddressForm() {
 
 ```ts
 import {
-  umpireFieldValidator,    // validators object for a single field
-  umpireFieldValidators,   // validators for every field at once
-  umpireDynamicValidator,  // whole-form validator (form.state.errorMap.onDynamic)
+  umpireFieldValidator, // validators object for a single field
+  umpireFieldValidators, // validators for every field at once
+  umpireDynamicValidator, // whole-form validator (form.state.errorMap.onDynamic)
   createUmpireFormOptions, // spread into useForm options for strike-on-transition
   createUmpireFormAdapter, // low-level adapter, no framework dependency
-  umpireReadListeners,     // wire @umpire/reads to TanStack Form listeners
-  getUmpireLinkedFields,   // upstream dependency names for a field
+  umpireReadListeners, // wire @umpire/reads to TanStack Form listeners
+  getUmpireLinkedFields, // upstream dependency names for a field
 } from '@umpire/tanstack-form'
 ```
 

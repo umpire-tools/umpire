@@ -334,7 +334,9 @@ export function createUmpireFormComponents<
       form?.useStore((state) => state.isSubmitting) ?? (() => false)
     const disabled = createMemo(
       () =>
-        props.disabled || isSubmitting() || (getUmpireForm()?.fouls.length ?? 0) > 0,
+        props.disabled ||
+        isSubmitting() ||
+        (getUmpireForm()?.fouls.length ?? 0) > 0,
     )
 
     return createDynamic(() => 'button', {
