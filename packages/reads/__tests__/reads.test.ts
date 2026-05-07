@@ -510,6 +510,41 @@ describe('@umpire/reads', () => {
       )
     })
 
+    test('fairWhenRead does not add nested property names as graph dependencies', () => {
+      const reads = createReads<
+        { address?: { street?: string }; street?: string },
+        { addressFair: boolean }
+      >({
+        addressFair: ({ input }) => Boolean(input.address?.street),
+      })
+      const ump = umpire({
+        fields: {
+          address: {},
+          street: {},
+          deliveryInstructions: {},
+        },
+        rules: [fairWhenRead('deliveryInstructions', 'addressFair', reads)],
+      })
+
+      expect(ump.graph().edges).toEqual(
+        expect.arrayContaining([
+          {
+            from: 'address',
+            to: 'deliveryInstructions',
+            type: 'fairWhen',
+          },
+        ]),
+      )
+      expect(ump.graph().edges).not.toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            from: 'street',
+            to: 'deliveryInstructions',
+          }),
+        ]),
+      )
+    })
+
     test('enabledWhenRead passes when the read returns true and fails with the configured reason when false', () => {
       const reads = createReads<
         { cpu?: string },

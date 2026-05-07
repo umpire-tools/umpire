@@ -227,24 +227,32 @@ function mergeReadTrace<T>(trace: T, existing: T | T[] | undefined) {
     : trace
 }
 
-function createDependencyProbe(): Record<string, unknown> {
-  return new Proxy(Object.create(null) as Record<string, unknown>, {
+function getDependencyProbePrimitive(property: string | symbol) {
+  if (property === Symbol.toPrimitive) {
+    return () => 'umpire-read-probe'
+  }
+
+  if (property === 'toString') {
+    return () => 'umpire-read-probe'
+  }
+
+  if (property === 'valueOf') {
+    return () => true
+  }
+}
+
+function createDependencyProbe<Input extends Record<string, unknown>>(): Input {
+  const terminal = new Proxy(Object.create(null) as Record<string, unknown>, {
     get(_target, property, receiver) {
-      if (property === Symbol.toPrimitive) {
-        return () => 'umpire-read-probe'
-      }
-
-      if (property === 'toString') {
-        return () => 'umpire-read-probe'
-      }
-
-      if (property === 'valueOf') {
-        return () => true
-      }
-
-      return receiver
+      return getDependencyProbePrimitive(property) ?? receiver
     },
   })
+
+  return new Proxy(Object.create(null) as Record<string, unknown>, {
+    get(_target, property) {
+      return getDependencyProbePrimitive(property) ?? terminal
+    },
+  }) as Input
 }
 
 function inferValueReadSources<
@@ -262,7 +270,7 @@ function inferValueReadSources<
   }
 
   try {
-    const inspected = table.inspect(createDependencyProbe() as Input)
+    const inspected = table.inspect(createDependencyProbe<Input>())
     const node = inspected.nodes[key]
 
     return [
