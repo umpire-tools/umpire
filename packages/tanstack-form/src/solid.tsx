@@ -15,6 +15,7 @@ import type { FieldDef, Foul, Umpire, AvailabilityMap } from '@umpire/core'
 import { useUmpire } from '@umpire/solid'
 import { umpireFieldValidators } from './validator.js'
 import type { UmpireFormField } from './adapter.js'
+import { formStrike, formStrikeDisabled } from './strikes.js'
 
 type SolidUmpireForm<F extends Record<string, FieldDef>> = {
   field(name: string): UmpireFormField
@@ -123,19 +124,13 @@ export function createUmpireForm<
   const setFieldValue = form.setFieldValue
 
   const applyStrikeFn = () => {
-    for (const foul of fouls()) {
-      setFieldValue(foul.field, foul.suggestedValue)
-    }
+    formStrike(fouls(), setFieldValue)
   }
 
   createEffect(
     on(fouls, () => {
       if (options?.strike && fouls().length > 0) {
-        for (const foul of fouls()) {
-          if (check()[foul.field]?.enabled === false) {
-            setFieldValue(foul.field, foul.suggestedValue)
-          }
-        }
+        formStrikeDisabled(fouls(), check(), setFieldValue)
       }
     }),
   )
@@ -180,19 +175,13 @@ function buildUmpireFormFromValues<
   const setFieldValue = form.setFieldValue
 
   const applyStrikeFn = () => {
-    for (const foul of fouls()) {
-      setFieldValue(foul.field, foul.suggestedValue)
-    }
+    formStrike(fouls(), setFieldValue)
   }
 
   createEffect(
     on(fouls, () => {
       if (strike && fouls().length > 0) {
-        for (const foul of fouls()) {
-          if (check()[foul.field]?.enabled === false) {
-            setFieldValue(foul.field, foul.suggestedValue)
-          }
-        }
+        formStrikeDisabled(fouls(), check(), setFieldValue)
       }
     }),
   )

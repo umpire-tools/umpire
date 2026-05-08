@@ -4,6 +4,7 @@ import { useStore } from '@tanstack/vue-form'
 import type { Umpire, FieldDef, Foul, Snapshot } from '@umpire/core'
 import { snapshotValue } from '@umpire/core/snapshot'
 import type { UmpireFormField } from './adapter.js'
+import { formStrike, formStrikeDisabled } from './strikes.js'
 
 interface ValueContainer<T> {
   value: T
@@ -114,11 +115,7 @@ export function useUmpireForm<
         previous.values,
       )
 
-      for (const foul of fouls) {
-        if (availability[foul.field]?.enabled === false) {
-          form.setFieldValue(foul.field, foul.suggestedValue)
-        }
-      }
+      formStrikeDisabled(fouls, availability, form.setFieldValue)
     }
   })
 
@@ -128,9 +125,7 @@ export function useUmpireForm<
       return foulsRef.value
     },
     applyStrike() {
-      for (const foul of foulsRef.value) {
-        form.setFieldValue(foul.field, foul.suggestedValue)
-      }
+      formStrike(foulsRef.value, form.setFieldValue)
     },
   }
 }

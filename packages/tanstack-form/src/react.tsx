@@ -12,6 +12,7 @@ import { useUmpire } from '@umpire/react'
 import type { Umpire, FieldDef, Foul, AvailabilityMap } from '@umpire/core'
 import { umpireFieldValidators } from './validator.js'
 import type { UmpireFormField } from './adapter.js'
+import { formStrike, formStrikeDisabled } from './strikes.js'
 
 // --- Types ---
 
@@ -112,18 +113,12 @@ export function useUmpireForm<
   const { check, fouls } = useUmpire(engine, values, conditions)
 
   const applyStrike = useCallback(() => {
-    for (const foul of fouls) {
-      form.setFieldValue(foul.field, foul.suggestedValue)
-    }
+    formStrike(fouls, form.setFieldValue)
   }, [form, fouls])
 
   useEffect(() => {
     if (strike && fouls.length > 0) {
-      for (const foul of fouls) {
-        if (check?.[foul.field]?.enabled === false) {
-          form.setFieldValue(foul.field, foul.suggestedValue)
-        }
-      }
+      formStrikeDisabled(fouls, check, form.setFieldValue)
     }
   }, [check, form, fouls, strike])
 
@@ -210,18 +205,12 @@ function UmpireFormSnapshot<
   const { check, fouls } = useUmpire(engine, values, conditions)
 
   const applyStrike = useCallback(() => {
-    for (const foul of fouls) {
-      form.setFieldValue(foul.field, foul.suggestedValue)
-    }
+    formStrike(fouls, form.setFieldValue)
   }, [form, fouls])
 
   useEffect(() => {
     if (strike && fouls.length > 0) {
-      for (const foul of fouls) {
-        if (check?.[foul.field]?.enabled === false) {
-          form.setFieldValue(foul.field, foul.suggestedValue)
-        }
-      }
+      formStrikeDisabled(fouls, check, form.setFieldValue)
     }
   }, [check, form, fouls, strike])
 

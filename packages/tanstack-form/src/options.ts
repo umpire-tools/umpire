@@ -1,5 +1,6 @@
 import type { FieldDef, Umpire, Snapshot } from '@umpire/core'
 import { snapshotValue } from '@umpire/core/snapshot'
+import { formStrikeDisabled } from './strikes.js'
 
 export type UmpireFormOptionsConfig<C> = {
   conditions?: C | ((formApi: unknown) => C)
@@ -77,19 +78,15 @@ export function createUmpireFormOptions<
       )
       previousSnapshot = currentSnapshot
 
-      for (const foul of fouls) {
-        if (availability[foul.field]?.enabled !== false) {
-          continue
-        }
-
+      formStrikeDisabled(fouls, availability, (name, value) => {
         if (useResetField) {
           ;(
             formApi as unknown as { resetField(name: string): void }
-          ).resetField(foul.field)
+          ).resetField(name)
         } else {
-          formApi.setFieldValue(foul.field, foul.suggestedValue)
+          formApi.setFieldValue(name, value)
         }
-      }
+      })
     }
 
     if (strikeConfig.debounceMs && strikeConfig.debounceMs > 0) {

@@ -1,5 +1,6 @@
 import type { Umpire, FieldDef, Snapshot, Foul } from '@umpire/core'
 import { snapshotValue } from '@umpire/core/snapshot'
+import { formStrike } from './strikes.js'
 
 type UmpireFormAdapterOptions<C> = {
   conditions?: C | (() => C)
@@ -122,9 +123,7 @@ export function createUmpireFormAdapter<
 
   function applyStrike(): void {
     const fouls = hasCachedFouls ? cachedFouls : advanceFouls()
-    for (const foul of fouls) {
-      setFieldValue(foul.field, foul.suggestedValue)
-    }
+    formStrike(fouls, setFieldValue)
     hasCachedFouls = false
   }
 
