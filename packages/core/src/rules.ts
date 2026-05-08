@@ -11,6 +11,7 @@ import {
   runFieldValidator,
 } from './validation.js'
 import type {
+  AvailabilityMap,
   FieldValidator,
   FieldDef,
   FieldValues,
@@ -322,6 +323,15 @@ function createResultMap<F extends Record<string, FieldDef>>(
     results.set(target, resultForTarget(target))
   }
 
+  return results
+}
+
+function createSingleResultMap<F extends Record<string, FieldDef>>(
+  target: keyof F & string,
+  result: RuleResult,
+): Map<string, RuleEvaluation> {
+  const results = new Map<string, RuleEvaluation>()
+  results.set(target, result)
   return results
 }
 
@@ -803,12 +813,7 @@ function getFairSourceFields<
 function getSourceLabel<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
->(source: Source<F, C>): string {
-  // Stryker disable next-line ConditionalExpression,StringLiteral,BlockStatement: equivalent mutant — getSourceLabel is only called for non-string sources (disables() guards string sources at the call site); this branch is never reachable for string inputs
-  if (typeof source === 'string') {
-    return source
-  }
-
+>(source: Predicate<F, C>): string {
   return getCheckField(source) ?? 'condition'
 }
 
@@ -826,6 +831,38 @@ function isSourceActive<
   }
 
   return source(values, conditions)
+}
+
+function isRequiredDependencySatisfied<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  dependency: Source<F, C>,
+  values: FieldValues<F>,
+  conditions: C,
+  fields: F | undefined,
+  availability: Partial<AvailabilityMap<F>> | undefined,
+): boolean {
+  if (typeof dependency !== 'string') {
+    return dependency(values, conditions)
+  }
+
+  return (
+    isSatisfied(values[dependency], fields?.[dependency]) &&
+    (availability?.[dependency]?.enabled ?? true) &&
+    (availability?.[dependency]?.fair ?? true)
+  )
+}
+
+function getRequiredDependencyFallback<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(dependency: Source<F, C>): string {
+  if (typeof dependency === 'string') {
+    return `requires ${dependency}`
+  }
+
+  return `required condition not met`
 }
 
 function isRuleOptions<
@@ -1064,15 +1101,7 @@ export function resolveOneOfState<
       }
     }
 
-    // Stryker disable next-line ConditionalExpression,EqualityOperator,BlockStatement: equivalent mutant — the >1 block body and the post-block fallback are identical (same warn + same return shape with satisfiedBranches[0])
-    if (newlySatisfiedBranches.length > 1) {
-      warnAmbiguousOneOf(groupName, satisfiedBranches)
-      return {
-        activeBranch: satisfiedBranches[0],
-        method: ONE_OF_METHOD.fallbackFirstBranch,
-        branches: branchStates,
-      }
-    }
+    // Multiple newly satisfied branches use the same ambiguous fallback below.
   }
 
   warnAmbiguousOneOf(groupName, satisfiedBranches)
@@ -1100,7 +1129,7 @@ export function enabledWhen<
     evaluate(values, conditions) {
       const passed = predicate(values, conditions)
 
-      return createResultMap([target], () => ({
+      return createSingleResultMap(target, {
         enabled: passed,
         reason: passed
           ? null
@@ -1110,7 +1139,7 @@ export function enabledWhen<
               conditions,
               'condition not met',
             ),
-      }))
+      })
     },
   }
 
@@ -1142,16 +1171,16 @@ export function fairWhen<
       const value = values[target]
 
       if (!isSatisfied(value, fields?.[target])) {
-        return createResultMap([target], () => ({
+        return createSingleResultMap(target, {
           enabled: true,
           fair: true,
           reason: null,
-        }))
+        })
       }
 
       const passed = predicate(value as NonNullable<V>, values, conditions)
 
-      return createResultMap([target], () => ({
+      return createSingleResultMap(target, {
         enabled: true,
         fair: passed,
         reason: passed
@@ -1162,7 +1191,7 @@ export function fairWhen<
               conditions,
               'selection is no longer valid',
             ),
-      }))
+      })
     },
   }
 
@@ -1244,44 +1273,41 @@ export function requires<
     ),
     evaluate(values, conditions, _prev, fields, availability) {
       let reason: string | null = null
-      const reasons: string[] = []
+      let reasons: string[] | undefined
 
       for (const dependency of dependencies) {
-        const passed =
-          typeof dependency === 'string'
-            ? isSatisfied(values[dependency], fields?.[dependency]) &&
-              (availability?.[dependency]?.enabled ?? true) &&
-              (availability?.[dependency]?.fair ?? true)
-            : dependency(values, conditions)
-
-        if (passed) {
+        if (
+          isRequiredDependencySatisfied(
+            dependency,
+            values,
+            conditions,
+            fields,
+            availability,
+          )
+        ) {
           continue
         }
-
-        const fallback =
-          typeof dependency === 'string'
-            ? `requires ${dependency}`
-            : `required condition not met`
 
         const resolvedReason = resolveReason(
           options?.reason,
           values,
           conditions,
-          fallback,
+          getRequiredDependencyFallback(dependency),
         )
 
         if (reason === null) {
           reason = resolvedReason
         }
 
+        reasons ??= []
         reasons.push(resolvedReason)
       }
 
-      return createResultMap([target], () => ({
-        enabled: reasons.length === 0,
+      return createSingleResultMap(target, {
+        enabled: reasons === undefined,
         reason,
-        reasons: reasons.length === 0 ? undefined : reasons,
-      }))
+        reasons,
+      })
     },
   }
 

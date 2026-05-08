@@ -388,259 +388,339 @@ function normalizeConfig<
   }
 }
 
+type DescribeRuleContext<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+> = {
+  field: keyof F & string
+  fields: F
+  values: FieldValues<F>
+  conditions: C
+  prev: FieldValues<F> | undefined
+  availability: AvailabilityMap<F>
+  baseRuleCache: Map<Rule<F, C>, Map<string, RuleEvaluation>>
+  ruleEntry?: RuleEntry<F, C>
+}
+
+type RuleMetadataOfKind<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+  Kind extends InternalRuleMetadata<F, C>['kind'],
+> = Extract<InternalRuleMetadata<F, C>, { kind: Kind }>
+
+function describeEnabledWhenRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  metadata: RuleMetadataOfKind<F, C, 'enabledWhen'>,
+  evaluation: RuleEvaluation,
+  context: DescribeRuleContext<F, C>,
+): ChallengeTrace['directReasons'][number] {
+  const source = getSourceField(metadata.predicate)
+
+  return withRuleTrace(
+    {
+      rule: 'enabledWhen',
+      ruleIndex: context.ruleEntry?.index,
+      ruleId: context.ruleEntry?.id,
+      passed: evaluation.enabled,
+      reason: evaluation.reason,
+      predicate: metadata.predicate.toString(),
+      source,
+      sourceValue: source ? context.values[source] : undefined,
+    },
+    metadata,
+    context.values,
+    context.conditions,
+    context.prev,
+  )
+}
+
+function describeDisablesRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  metadata: RuleMetadataOfKind<F, C, 'disables'>,
+  evaluation: RuleEvaluation,
+  context: DescribeRuleContext<F, C>,
+): ChallengeTrace['directReasons'][number] {
+  const sourceField = getSourceField(metadata.source)
+  const sourceSatisfied =
+    typeof metadata.source === 'string'
+      ? isSatisfied(
+          context.values[metadata.source],
+          context.fields[metadata.source],
+        )
+      : metadata.source(context.values, context.conditions)
+  const source = sourceField ?? metadata.source.toString()
+
+  return withRuleTrace(
+    {
+      rule: 'disables',
+      ruleIndex: context.ruleEntry?.index,
+      ruleId: context.ruleEntry?.id,
+      passed: evaluation.enabled,
+      reason: evaluation.reason,
+      source,
+      sourceValue: sourceField ? context.values[sourceField] : sourceSatisfied,
+      sourceSatisfied,
+    },
+    metadata,
+    context.values,
+    context.conditions,
+    context.prev,
+  )
+}
+
+function describeFairWhenRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  metadata: RuleMetadataOfKind<F, C, 'fairWhen'>,
+  evaluation: RuleEvaluation,
+  context: DescribeRuleContext<F, C>,
+): ChallengeTrace['directReasons'][number] {
+  return withRuleTrace(
+    {
+      rule: 'fair',
+      ruleIndex: context.ruleEntry?.index,
+      ruleId: context.ruleEntry?.id,
+      passed: evaluation.fair !== false,
+      reason: evaluation.reason,
+      predicate: metadata.predicate.toString(),
+      value: context.values[context.field],
+    },
+    metadata,
+    context.values,
+    context.conditions,
+    context.prev,
+  )
+}
+
+function describeRequiresRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  metadata: RuleMetadataOfKind<F, C, 'requires'>,
+  evaluation: RuleEvaluation,
+  context: DescribeRuleContext<F, C>,
+): ChallengeTrace['directReasons'][number] {
+  const dependencies = metadata.dependencies.map((dependency) => {
+    const dependencyField = getSourceField(dependency)
+
+    if (typeof dependency !== 'string') {
+      return {
+        dependency: dependencyField ?? dependency.toString(),
+        dependencyValue: dependencyField
+          ? context.values[dependencyField]
+          : undefined,
+        satisfied: dependency(context.values, context.conditions),
+      }
+    }
+
+    return {
+      dependency,
+      satisfied: isSatisfied(
+        context.values[dependency],
+        context.fields[dependency],
+      ),
+      dependencyEnabled: context.availability[dependency].enabled,
+      dependencyFair: context.availability[dependency].fair,
+    }
+  })
+
+  return withRuleTrace(
+    {
+      rule: 'requires',
+      ruleIndex: context.ruleEntry?.index,
+      ruleId: context.ruleEntry?.id,
+      passed: evaluation.enabled,
+      reason: evaluation.reason,
+      dependency: dependencies[0]?.dependency,
+      dependencyValue: dependencies[0]?.dependencyValue,
+      satisfied: dependencies[0]?.satisfied,
+      dependencyEnabled: dependencies[0]?.dependencyEnabled,
+      dependencyFair: dependencies[0]?.dependencyFair,
+      dependencies,
+    },
+    metadata,
+    context.values,
+    context.conditions,
+    context.prev,
+  )
+}
+
+function describeOneOfRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  metadata: RuleMetadataOfKind<F, C, 'oneOf'>,
+  evaluation: RuleEvaluation,
+  context: DescribeRuleContext<F, C>,
+): ChallengeTrace['directReasons'][number] {
+  const resolution = resolveOneOfState(
+    metadata.groupName,
+    metadata.branches,
+    context.values,
+    context.prev,
+    metadata.options?.activeBranch,
+    context.fields,
+    context.conditions,
+  )
+  const thisBranch =
+    Object.entries(metadata.branches).find(([, branchFields]) =>
+      branchFields.includes(context.field),
+    )?.[0] ??
+    /* istanbul ignore next: oneOf rules target exactly their branch fields after construction validation. */
+    null
+
+  return withRuleTrace(
+    {
+      rule: 'oneOf',
+      ruleIndex: context.ruleEntry?.index,
+      ruleId: context.ruleEntry?.id,
+      passed: evaluation.enabled,
+      reason: evaluation.reason,
+      group: metadata.groupName,
+      activeBranch: resolution.activeBranch,
+      thisBranch,
+    },
+    metadata,
+    context.values,
+    context.conditions,
+    context.prev,
+  )
+}
+
+function describeAnyOfRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  rule: Rule<F, C>,
+  metadata: RuleMetadataOfKind<F, C, 'anyOf'>,
+  evaluation: RuleEvaluation,
+  context: DescribeRuleContext<F, C>,
+): ChallengeTrace['directReasons'][number] {
+  const inner: ChallengeTrace['directReasons'] = metadata.rules.map(
+    (innerRule) => describeRuleForField(innerRule, context),
+  )
+
+  return {
+    rule: 'anyOf',
+    ruleIndex: context.ruleEntry?.index,
+    ruleId: context.ruleEntry?.id,
+    passed: didRulePass(rule, evaluation),
+    reason: evaluation.reason,
+    inner,
+  }
+}
+
+function describeEitherOfRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  rule: Rule<F, C>,
+  metadata: RuleMetadataOfKind<F, C, 'eitherOf'>,
+  evaluation: RuleEvaluation,
+  context: DescribeRuleContext<F, C>,
+): ChallengeTrace['directReasons'][number] {
+  const branches = Object.fromEntries(
+    Object.entries(metadata.branches).map(([branchName, branchRules]) => {
+      const inner = branchRules.map((innerRule) =>
+        describeRuleForField(innerRule, context),
+      )
+
+      return [
+        branchName,
+        {
+          passed: inner.every((entry) => entry.passed),
+          inner,
+        },
+      ]
+    }),
+  ) as Record<
+    string,
+    { passed: boolean; inner: ChallengeTrace['directReasons'] }
+  >
+
+  const matchedBranches = Object.entries(branches)
+    .filter(([, branch]) => branch.passed)
+    .map(([branchName]) => branchName)
+
+  return {
+    rule: 'eitherOf',
+    ruleIndex: context.ruleEntry?.index,
+    ruleId: context.ruleEntry?.id,
+    passed: didRulePass(rule, evaluation),
+    reason: evaluation.reason,
+    group: metadata.groupName,
+    constraint: metadata.constraint,
+    matchedBranches,
+    branches,
+  }
+}
+
+function describeFallbackRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  rule: Rule<F, C>,
+  metadata: InternalRuleMetadata<F, C> | undefined,
+  evaluation: RuleEvaluation,
+  context: DescribeRuleContext<F, C>,
+): ChallengeTrace['directReasons'][number] {
+  return withRuleTrace(
+    {
+      rule: rule.type,
+      ruleIndex: context.ruleEntry?.index,
+      ruleId: context.ruleEntry?.id,
+      passed: didRulePass(rule, evaluation),
+      reason: evaluation.reason,
+    },
+    metadata,
+    context.values,
+    context.conditions,
+    context.prev,
+  )
+}
+
 function describeRuleForField<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 >(
   rule: Rule<F, C>,
-  field: keyof F & string,
-  fields: F,
-  values: FieldValues<F>,
-  conditions: C,
-  prev: FieldValues<F> | undefined,
-  availability: AvailabilityMap<F>,
-  baseRuleCache: Map<Rule<F, C>, Map<string, RuleEvaluation>>,
-  ruleEntry?: RuleEntry<F, C>,
+  context: DescribeRuleContext<F, C>,
 ): ChallengeTrace['directReasons'][number] {
   const metadata = getInternalRuleMetadata(rule)
   const evaluation = evaluateRuleForField(
     rule,
-    field,
-    fields,
-    values,
-    conditions,
-    prev,
-    availability,
-    baseRuleCache,
+    context.field,
+    context.fields,
+    context.values,
+    context.conditions,
+    context.prev,
+    context.availability,
+    context.baseRuleCache,
   )
 
-  if (metadata?.kind === 'enabledWhen') {
-    const source = getSourceField(metadata.predicate)
-
-    return withRuleTrace(
-      {
-        rule: 'enabledWhen',
-        ruleIndex: ruleEntry?.index,
-        ruleId: ruleEntry?.id,
-        passed: evaluation.enabled,
-        reason: evaluation.reason,
-        predicate: metadata.predicate.toString(),
-        source,
-        sourceValue: source ? values[source] : undefined,
-      },
-      metadata,
-      values,
-      conditions,
-      prev,
-    )
+  switch (metadata?.kind) {
+    case 'enabledWhen':
+      return describeEnabledWhenRule(metadata, evaluation, context)
+    case 'disables':
+      return describeDisablesRule(metadata, evaluation, context)
+    case 'fairWhen':
+      return describeFairWhenRule(metadata, evaluation, context)
+    case 'requires':
+      return describeRequiresRule(metadata, evaluation, context)
+    case 'oneOf':
+      return describeOneOfRule(metadata, evaluation, context)
+    case 'anyOf':
+      return describeAnyOfRule(rule, metadata, evaluation, context)
+    case 'eitherOf':
+      return describeEitherOfRule(rule, metadata, evaluation, context)
+    default:
+      return describeFallbackRule(rule, metadata, evaluation, context)
   }
-
-  if (metadata?.kind === 'disables') {
-    const sourceField = getSourceField(metadata.source)
-    const sourceSatisfied =
-      typeof metadata.source === 'string'
-        ? isSatisfied(values[metadata.source], fields[metadata.source])
-        : metadata.source(values, conditions)
-    const source = sourceField ?? metadata.source.toString()
-
-    return withRuleTrace(
-      {
-        rule: 'disables',
-        ruleIndex: ruleEntry?.index,
-        ruleId: ruleEntry?.id,
-        passed: evaluation.enabled,
-        reason: evaluation.reason,
-        source,
-        sourceValue: sourceField ? values[sourceField] : sourceSatisfied,
-        sourceSatisfied,
-      },
-      metadata,
-      values,
-      conditions,
-      prev,
-    )
-  }
-
-  if (metadata?.kind === 'fairWhen') {
-    return withRuleTrace(
-      {
-        rule: 'fair',
-        ruleIndex: ruleEntry?.index,
-        ruleId: ruleEntry?.id,
-        passed: evaluation.fair !== false,
-        reason: evaluation.reason,
-        predicate: metadata.predicate.toString(),
-        value: values[field],
-      },
-      metadata,
-      values,
-      conditions,
-      prev,
-    )
-  }
-
-  if (metadata?.kind === 'requires') {
-    const dependencies = metadata.dependencies.map((dependency) => {
-      const dependencyField = getSourceField(dependency)
-
-      if (typeof dependency !== 'string') {
-        return {
-          dependency: dependencyField ?? dependency.toString(),
-          dependencyValue: dependencyField
-            ? values[dependencyField]
-            : undefined,
-          satisfied: dependency(values, conditions),
-        }
-      }
-
-      return {
-        dependency,
-        satisfied: isSatisfied(values[dependency], fields[dependency]),
-        dependencyEnabled: availability[dependency].enabled,
-        dependencyFair: availability[dependency].fair,
-      }
-    })
-
-    return withRuleTrace(
-      {
-        rule: 'requires',
-        ruleIndex: ruleEntry?.index,
-        ruleId: ruleEntry?.id,
-        passed: evaluation.enabled,
-        reason: evaluation.reason,
-        dependency: dependencies[0]?.dependency,
-        dependencyValue: dependencies[0]?.dependencyValue,
-        satisfied: dependencies[0]?.satisfied,
-        dependencyEnabled: dependencies[0]?.dependencyEnabled,
-        dependencyFair: dependencies[0]?.dependencyFair,
-        dependencies,
-      },
-      metadata,
-      values,
-      conditions,
-      prev,
-    )
-  }
-
-  if (metadata?.kind === 'oneOf') {
-    const resolution = resolveOneOfState(
-      metadata.groupName,
-      metadata.branches,
-      values,
-      prev,
-      metadata.options?.activeBranch,
-      fields,
-      conditions,
-    )
-    const thisBranch =
-      Object.entries(metadata.branches).find(([, branchFields]) =>
-        branchFields.includes(field),
-      )?.[0] ?? null
-
-    return withRuleTrace(
-      {
-        rule: 'oneOf',
-        ruleIndex: ruleEntry?.index,
-        ruleId: ruleEntry?.id,
-        passed: evaluation.enabled,
-        reason: evaluation.reason,
-        group: metadata.groupName,
-        activeBranch: resolution.activeBranch,
-        thisBranch,
-      },
-      metadata,
-      values,
-      conditions,
-      prev,
-    )
-  }
-
-  if (metadata?.kind === 'anyOf') {
-    const inner: ChallengeTrace['directReasons'] = metadata.rules.map(
-      (innerRule) =>
-        describeRuleForField(
-          innerRule,
-          field,
-          fields,
-          values,
-          conditions,
-          prev,
-          availability,
-          baseRuleCache,
-          ruleEntry,
-        ),
-    )
-
-    return {
-      rule: 'anyOf',
-      ruleIndex: ruleEntry?.index,
-      ruleId: ruleEntry?.id,
-      passed: didRulePass(rule, evaluation),
-      reason: evaluation.reason,
-      inner,
-    }
-  }
-
-  if (metadata?.kind === 'eitherOf') {
-    const branches = Object.fromEntries(
-      Object.entries(metadata.branches).map(([branchName, branchRules]) => {
-        const inner = branchRules.map((innerRule) =>
-          describeRuleForField(
-            innerRule,
-            field,
-            fields,
-            values,
-            conditions,
-            prev,
-            availability,
-            baseRuleCache,
-            ruleEntry,
-          ),
-        )
-
-        return [
-          branchName,
-          {
-            passed: inner.every((entry) => entry.passed),
-            inner,
-          },
-        ]
-      }),
-    ) as Record<
-      string,
-      { passed: boolean; inner: ChallengeTrace['directReasons'] }
-    >
-
-    const matchedBranches = Object.entries(branches)
-      .filter(([, branch]) => branch.passed)
-      .map(([branchName]) => branchName)
-
-    return {
-      rule: 'eitherOf',
-      ruleIndex: ruleEntry?.index,
-      ruleId: ruleEntry?.id,
-      passed: didRulePass(rule, evaluation),
-      reason: evaluation.reason,
-      group: metadata.groupName,
-      constraint: metadata.constraint,
-      matchedBranches,
-      branches,
-    }
-  }
-
-  return withRuleTrace(
-    {
-      rule: rule.type,
-      ruleIndex: ruleEntry?.index,
-      ruleId: ruleEntry?.id,
-      passed: didRulePass(rule, evaluation),
-      reason: evaluation.reason,
-    },
-    metadata,
-    values,
-    conditions,
-    prev,
-  )
 }
 
 function collectFailedDependenciesForRule<
@@ -671,6 +751,7 @@ function collectFailedDependenciesForRule<
     )
 
     if (
+      /* istanbul ignore next: fair anyOf rules cannot currently contribute transitive field dependencies. */
       metadata.constraint === 'fair'
         ? evaluation.fair !== false
         : evaluation.enabled
@@ -711,6 +792,7 @@ function collectFailedDependenciesForRule<
     )
 
     if (
+      /* istanbul ignore next: fair eitherOf rules cannot currently contribute transitive field dependencies. */
       metadata.constraint === 'fair'
         ? evaluation.fair !== false
         : evaluation.enabled
@@ -797,8 +879,7 @@ function describeCausedBy<
   const causedBy: ChallengeTrace['transitiveDeps'][number]['causedBy'] = []
 
   for (const rule of rulesByTarget.get(field) ?? []) {
-    const entry = describeRuleForField(
-      rule,
+    const entry = describeRuleForField(rule, {
       field,
       fields,
       values,
@@ -806,8 +887,8 @@ function describeCausedBy<
       prev,
       availability,
       baseRuleCache,
-      ruleEntryByRule.get(rule),
-    )
+      ruleEntry: ruleEntryByRule.get(rule),
+    })
 
     if (entry.passed) {
       continue
@@ -1284,17 +1365,16 @@ export function umpire<
     >()
     const targetRules = rulesByTarget.get(field) ?? []
     const directReasons = targetRules.map((rule) =>
-      describeRuleForField(
-        rule,
+      describeRuleForField(rule, {
         field,
         fields,
-        typedValues,
-        resolvedConditions,
-        typedPrev,
+        values: typedValues,
+        conditions: resolvedConditions,
+        prev: typedPrev,
         availability,
         baseRuleCache,
-        ruleEntryByRule.get(rule),
-      ),
+        ruleEntry: ruleEntryByRule.get(rule),
+      }),
     )
 
     const oneOfRule = targetRules.find((rule) => {

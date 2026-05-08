@@ -288,6 +288,20 @@ describe('edge cases', () => {
     ).not.toThrow()
   })
 
+  test('does not treat predicate-only requires dependencies as structural requirements', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        alpha: {},
+        beta: {},
+        gamma: {},
+        delta: {},
+      },
+      rules: [requires<TestFields>('alpha', () => true)],
+    })
+
+    expect(ump.check({}).alpha.enabled).toBe(true)
+  })
+
   test('does not reject dynamic oneOf branches with an activeBranch function', () => {
     expect(() =>
       umpire<TestFields>({
@@ -336,6 +350,27 @@ describe('edge cases', () => {
             },
           ),
           requires<TestFields, { mode: string }>('alpha', 'beta'),
+        ],
+      }),
+    ).not.toThrow()
+  })
+
+  test('allows structural requirements inside a static oneOf branch or outside the group', () => {
+    expect(() =>
+      umpire<TestFields>({
+        fields: {
+          alpha: {},
+          beta: {},
+          gamma: {},
+          delta: {},
+        },
+        rules: [
+          oneOf<TestFields>('mode', {
+            first: ['alpha', 'beta'],
+            second: ['gamma'],
+          }),
+          requires<TestFields>('alpha', 'beta'),
+          requires<TestFields>('delta', 'beta'),
         ],
       }),
     ).not.toThrow()

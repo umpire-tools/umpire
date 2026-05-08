@@ -25,6 +25,13 @@ describe('surface validation metadata', () => {
       validate: expect.any(Function),
       error: 'Bad value',
     })
+    expect(
+      normalizeValidationEntry({
+        validator: (value: string) => value.length > 0,
+      }),
+    ).toMatchObject({
+      validate: expect.any(Function),
+    })
     expect(normalizeValidationEntry({ validator: { nope: true } })).toBeNull()
   })
 
@@ -236,6 +243,30 @@ describe('surface validation metadata', () => {
       })
       expect(warn).toHaveBeenCalledTimes(1)
     } finally {
+      warn.mockRestore()
+    }
+  })
+
+  test('does not warn in production for unsupported validation results', () => {
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
+    const previousEnv = process.env.NODE_ENV
+    process.env.NODE_ENV = 'production'
+
+    try {
+      const ump = umpire({
+        fields: {
+          username: { required: true, isEmpty: (value: unknown) => !value },
+        },
+        rules: [],
+        validators: {
+          username: (() => undefined) as never,
+        },
+      })
+
+      expect(ump.check({ username: 'doug' }).username.valid).toBe(false)
+      expect(warn).not.toHaveBeenCalled()
+    } finally {
+      process.env.NODE_ENV = previousEnv
       warn.mockRestore()
     }
   })

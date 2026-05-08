@@ -109,6 +109,170 @@ describe('challenge', () => {
     ])
   })
 
+  test('evaluates single trace attachments in challenge output', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        requires('submit', 'email', {
+          trace: {
+            kind: 'read',
+            id: 'emailRequirement',
+            label: 'email requirement',
+            inspect(values) {
+              return {
+                label: 'email requirement',
+                reason: values.email ? 'email present' : 'email missing',
+              }
+            },
+          },
+        }),
+      ],
+    })
+
+    expect(ump.challenge('submit', {}).directReasons[0]?.trace).toEqual([
+      {
+        kind: 'read',
+        id: 'emailRequirement',
+        label: 'email requirement',
+        reason: 'email missing',
+      },
+    ])
+  })
+
+  test('evaluates array trace attachments in challenge output', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        requires('submit', 'email', {
+          trace: [
+            {
+              kind: 'read',
+              id: 'emailPresent',
+              inspect(values) {
+                return { value: Boolean(values.email) }
+              },
+            },
+          ],
+        }),
+      ],
+    })
+
+    expect(ump.challenge('submit', {}).directReasons[0]?.trace).toEqual([
+      {
+        kind: 'read',
+        id: 'emailPresent',
+        value: false,
+      },
+    ])
+  })
+
+  test('describes predicate-backed disables and requires dependencies', () => {
+    const blocked = (values: Partial<TestFields>) => values.email === 'stop'
+    const hasCaptcha = check<TestFields, TestConditions>('password', (value) =>
+      Boolean(value),
+    )
+    const ump = umpire<TestFields, TestConditions>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        disables<TestFields, TestConditions>(blocked, ['submit']),
+        requires<TestFields, TestConditions>('submit', hasCaptcha),
+      ],
+    })
+
+    expect(ump.challenge('submit', { email: 'stop' }).directReasons).toEqual([
+      expect.objectContaining({
+        rule: 'disables',
+        source: expect.stringContaining('values.email'),
+        sourceValue: true,
+      }),
+      expect.objectContaining({
+        rule: 'requires',
+        dependency: 'password',
+        dependencyValue: undefined,
+      }),
+    ])
+  })
+
+  test('describes predicate-only requires dependencies without a field value', () => {
+    const hasCaptcha = (
+      _values: Partial<TestFields>,
+      conditions: TestConditions,
+    ) => Boolean(conditions.captchaToken)
+    const ump = umpire<TestFields, TestConditions>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [requires<TestFields, TestConditions>('submit', hasCaptcha)],
+    })
+
+    expect(ump.challenge('submit', {}).directReasons).toEqual([
+      expect.objectContaining({
+        rule: 'requires',
+        dependency: expect.stringContaining('conditions.captchaToken'),
+        dependencyValue: undefined,
+      }),
+    ])
+  })
+
+  test('does not duplicate transitive dependencies reached through multiple failed rules', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        requires('submit', 'email'),
+        requires('submit', 'email', { reason: 'still needs email' }),
+        requires('email', 'password'),
+      ],
+    })
+
+    expect(ump.challenge('submit', {}).transitiveDeps).toEqual([
+      expect.objectContaining({ field: 'email' }),
+      expect.objectContaining({ field: 'password' }),
+    ])
+  })
+
   test('exposes undefined inspection for uninspectable rules', () => {
     const opaqueRule: Rule<TestFields> = {
       type: 'opaque',
@@ -366,6 +530,42 @@ describe('challenge', () => {
         reason: 'overridden by dates',
       }),
     ])
+  })
+
+  test('stops transitive dependency collection when anyOf and requires rules pass', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        email: {},
+        password: {},
+        submit: {},
+        dates: {},
+        startTime: {},
+        endTime: {},
+        everyHour: {},
+        repeatEvery: {},
+      },
+      rules: [
+        anyOf<TestFields>(
+          requires('password', 'email'),
+          enabledWhen('password', () => false, { reason: 'fallback failed' }),
+        ),
+        requires<TestFields>('submit', 'password'),
+      ],
+    })
+
+    expect(
+      ump.challenge('password', {
+        email: 'reader@example.com',
+        password: 'secret',
+      }).transitiveDeps,
+    ).toEqual([])
+    expect(
+      ump.challenge('submit', {
+        email: 'reader@example.com',
+        password: 'secret',
+        submit: true,
+      }).transitiveDeps,
+    ).toEqual([])
   })
 
   test('reports oneOf resolution state', () => {
@@ -948,6 +1148,39 @@ describe('challenge', () => {
             ],
           },
         ],
+      }),
+    ])
+  })
+
+  test('omits trace attachments whose inspector returns nothing', () => {
+    const ump = umpire<{
+      cpu: {}
+      motherboard: {}
+    }>({
+      fields: {
+        cpu: {},
+        motherboard: {},
+      },
+      rules: [
+        fairWhen('motherboard', (value, values) => value === values.cpu, {
+          reason: 'Selected motherboard no longer matches the CPU socket',
+          trace: {
+            kind: 'read',
+            id: 'motherboardFair',
+            inspect: () => undefined,
+          },
+        }),
+      ],
+    })
+
+    expect(
+      ump.challenge('motherboard', {
+        cpu: 'amd-r7',
+        motherboard: 'intel-z790',
+      }).directReasons,
+    ).toEqual([
+      expect.not.objectContaining({
+        trace: expect.anything(),
       }),
     ])
   })
