@@ -133,6 +133,7 @@ export default defineConfig({
               { label: 'Pinia', slug: 'adapters/pinia' },
               { label: 'Redux', slug: 'adapters/redux' },
               { label: 'TanStack Store', slug: 'adapters/tanstack-store' },
+              { label: 'TanStack Form', slug: 'adapters/tanstack-form' },
               { label: 'Vuex', slug: 'adapters/vuex' },
             ] },
             { label: 'Validation', collapsed: false, items: [
