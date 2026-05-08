@@ -42,6 +42,19 @@ function postalCodeMatchesCountry(code: string, country: unknown) {
   }
 }
 
+function postalCodeExample(country: unknown) {
+  switch (country) {
+    case 'US': return '12345'
+    case 'CA': return 'A1B 2C3'
+    case 'UK': return 'SW1A 1AA'
+    default: return 'Postal code'
+  }
+}
+
+function postalCodeLabel(country: unknown) {
+  return country === 'US' ? 'Zip' : 'Postal Code'
+}
+
 const addressFields = {
   street:     { required: true, isEmpty: (v: unknown) => !v },
   city:       { required: true, isEmpty: (v: unknown) => !v },
@@ -56,6 +69,8 @@ const addressReads = createReads({
     const code = String(input.postalCode ?? '').trim()
     return !code || postalCodeMatchesCountry(code, input.country)
   },
+  postalCodeExample: ({ input }) => postalCodeExample(input.country),
+  postalCodeLabel: ({ input }) => postalCodeLabel(input.country),
 })
 
 const addressUmp = umpire({
@@ -325,6 +340,8 @@ export default function AddressFormDemo() {
   const ump = useUmpireForm(form, addressUmp, { strike: true })
 
   const liveValues = useStore(form.store, (state) => state.values)
+  const postalCodePlaceholder = addressReads.postalCodeExample(liveValues)
+  const postalCodeFieldLabel = addressReads.postalCodeLabel(liveValues)
 
   register('address-form', addressUmp, liveValues)
 
@@ -403,8 +420,8 @@ export default function AddressFormDemo() {
               fouls={fouls}
               name="postalCode"
               id="address-postal"
-              label="Postal Code"
-              placeholder="12345"
+              label={postalCodeFieldLabel}
+              placeholder={postalCodePlaceholder}
             />
 
             <form.Subscribe selector={(state) => state.canSubmit}>

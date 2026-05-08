@@ -42,6 +42,7 @@
 
 .c-address-demo__summary-item + .c-address-demo__summary-item {
   border-left: 1px solid var(--umpire-demo-green-10);
+  margin-top: 0;
 }
 
 .c-address-demo__summary-kicker {
