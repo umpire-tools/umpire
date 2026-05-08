@@ -1,4 +1,5 @@
 import { performance } from 'node:perf_hooks'
+import { spawnSync } from 'node:child_process'
 import { mkdir } from 'node:fs/promises'
 import { heapStats } from 'bun:jsc'
 import { generateHeapSnapshot } from 'bun'
@@ -19,6 +20,11 @@ if (!process.env.NODE_ENV) {
 const memoryEnabled = process.env.BENCH_MEMORY !== '0'
 const heapSnapshotEnabled = process.env.BENCH_HEAP_SNAPSHOT === '1'
 const profileDir = process.env.BENCH_PROFILE_DIR ?? './benchmark-profiles'
+const isolatedMemoryEnabled = process.env.BENCH_ISOLATED_MEMORY === '1'
+const isolatedMemoryChild = process.env.BENCH_ISOLATED_MEMORY_CHILD === '1'
+const isolatedMemorySamples = Number(process.env.BENCH_MEMORY_SAMPLES ?? '7')
+const isolatedMemoryWarmup = Number(process.env.BENCH_MEMORY_WARMUP ?? '5')
+const isolatedResultPrefix = '__UMPIRE_BENCH_MEMORY__'
 
 function forceGc() {
   if (typeof globalThis.Bun?.gc === 'function') {
@@ -100,6 +106,33 @@ function average(values) {
   return values.reduce((sum, value) => sum + value, 0) / values.length
 }
 
+function median(values) {
+  if (values.length === 0) {
+    return 0
+  }
+
+  const sorted = [...values].sort((a, b) => a - b)
+  const middle = Math.floor(sorted.length / 2)
+
+  return sorted.length % 2 === 0
+    ? (sorted[middle - 1] + sorted[middle]) / 2
+    : sorted[middle]
+}
+
+function percentile(values, percentileValue) {
+  if (values.length === 0) {
+    return 0
+  }
+
+  const sorted = [...values].sort((a, b) => a - b)
+  const index = Math.min(
+    sorted.length - 1,
+    Math.ceil((percentileValue / 100) * sorted.length) - 1,
+  )
+
+  return sorted[index]
+}
+
 function variance(values, mean) {
   if (values.length === 0) {
     return 0
@@ -111,6 +144,16 @@ function variance(values, mean) {
       return sum + delta * delta
     }, 0) / values.length
   )
+}
+
+function runScenarioLoop(scenario, iterations) {
+  let checksum = 0
+
+  for (let i = 0; i < iterations; i += 1) {
+    checksum += scenario.run()
+  }
+
+  return checksum
 }
 
 function summarizeScenarioRuns(scenario, runCount) {
@@ -229,6 +272,112 @@ function printCategoryTotals(results, runCount) {
   })
 
   console.table(table)
+}
+
+function measureIsolatedScenario(scenario) {
+  runScenarioLoop(scenario, isolatedMemoryWarmup)
+  let checksum = scenario.run()
+
+  const before = readMemoryStats()
+  const start = performance.now()
+  checksum += runScenarioLoop(scenario, scenario.iterations)
+  const totalMs = performance.now() - start
+  const after = readMemoryStats()
+
+  return {
+    name: scenario.name,
+    category: scenario.category,
+    iterations: scenario.iterations,
+    totalMs,
+    avgMs: totalMs / scenario.iterations,
+    opsPerSec: (scenario.iterations * 1000) / totalMs,
+    checksum,
+    memory: diffMemoryStats(before, after),
+  }
+}
+
+function printIsolatedMemoryResults(results) {
+  const table = results.map((result) => {
+    const heapValues = result.samples.map(
+      (sample) => sample.memory?.heapSizeBytes ?? 0,
+    )
+    const heapCapacityValues = result.samples.map(
+      (sample) => sample.memory?.heapCapacityBytes ?? 0,
+    )
+    const objectValues = result.samples.map(
+      (sample) => sample.memory?.objectCount ?? 0,
+    )
+    const totalMsValues = result.samples.map((sample) => sample.totalMs)
+
+    return {
+      benchmark: result.name,
+      category: result.category,
+      samples: result.samples.length,
+      iterations: result.iterations,
+      median_heap_delta: formatBytes(median(heapValues)),
+      p95_heap_delta: formatBytes(percentile(heapValues, 95)),
+      median_heap_capacity_delta: formatBytes(median(heapCapacityValues)),
+      median_objects_delta: median(objectValues).toFixed(1),
+      p95_objects_delta: percentile(objectValues, 95).toFixed(1),
+      median_total_ms: median(totalMsValues).toFixed(2),
+      checksum: result.samples[0]?.checksum ?? 0,
+    }
+  })
+
+  console.table(table)
+}
+
+function runIsolatedMemoryParent() {
+  const results = scenarios.map((scenario) => {
+    const samples = []
+
+    for (let sample = 0; sample < isolatedMemorySamples; sample += 1) {
+      const child = spawnSync(
+        process.execPath,
+        [new URL(import.meta.url).pathname],
+        {
+          cwd: process.cwd(),
+          env: {
+            ...process.env,
+            BENCH_ISOLATED_MEMORY: undefined,
+            BENCH_ISOLATED_MEMORY_CHILD: '1',
+            BENCH_ISOLATED_SCENARIO: scenario.name,
+            BENCH_MEMORY: '1',
+            BENCH_HEAP_SNAPSHOT: '0',
+          },
+          encoding: 'utf8',
+        },
+      )
+
+      if (child.status !== 0) {
+        process.stdout.write(child.stdout)
+        process.stderr.write(child.stderr)
+        throw new Error(
+          `Isolated memory sample failed for ${scenario.name} with exit code ${child.status}`,
+        )
+      }
+
+      const resultLine = child.stdout
+        .split('\n')
+        .find((line) => line.startsWith(isolatedResultPrefix))
+
+      if (!resultLine) {
+        process.stdout.write(child.stdout)
+        throw new Error(`Missing isolated memory result for ${scenario.name}`)
+      }
+
+      samples.push(JSON.parse(resultLine.slice(isolatedResultPrefix.length)))
+    }
+
+    return {
+      name: scenario.name,
+      category: scenario.category,
+      iterations: scenario.iterations,
+      samples,
+    }
+  })
+
+  printIsolatedMemoryResults(results)
 }
 
 function sumAvailability(availability) {
@@ -633,17 +782,35 @@ const scenarios = [
   },
 ]
 
-const results = scenarios.map((scenario) =>
-  summarizeScenarioRuns(scenario, runCount),
-)
+if (isolatedMemoryChild) {
+  const scenario = scenarios.find(
+    (candidate) => candidate.name === process.env.BENCH_ISOLATED_SCENARIO,
+  )
 
-printScenarioResults(results, runCount)
-printCategoryTotals(results, runCount)
+  if (!scenario) {
+    throw new Error(
+      `Unknown isolated memory scenario: ${process.env.BENCH_ISOLATED_SCENARIO}`,
+    )
+  }
 
-if (heapSnapshotEnabled) {
-  await mkdir(profileDir, { recursive: true })
-  const snapshot = generateHeapSnapshot()
-  const snapshotPath = `${profileDir}/core-benchmark-${Date.now()}.heapsnapshot.json`
-  await Bun.write(snapshotPath, JSON.stringify(snapshot))
-  console.log(`Wrote heap snapshot: ${snapshotPath}`)
+  console.log(
+    `${isolatedResultPrefix}${JSON.stringify(measureIsolatedScenario(scenario))}`,
+  )
+} else if (isolatedMemoryEnabled) {
+  runIsolatedMemoryParent()
+} else {
+  const results = scenarios.map((scenario) =>
+    summarizeScenarioRuns(scenario, runCount),
+  )
+
+  printScenarioResults(results, runCount)
+  printCategoryTotals(results, runCount)
+
+  if (heapSnapshotEnabled) {
+    await mkdir(profileDir, { recursive: true })
+    const snapshot = generateHeapSnapshot()
+    const snapshotPath = `${profileDir}/core-benchmark-${Date.now()}.heapsnapshot.json`
+    await Bun.write(snapshotPath, JSON.stringify(snapshot))
+    console.log(`Wrote heap snapshot: ${snapshotPath}`)
+  }
 }

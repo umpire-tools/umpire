@@ -19,12 +19,15 @@ allocation counter; short-lived allocation churn can still be hidden by GC.
 For investigation mode, run:
 
 ```bash
+yarn workspace @umpire/core bench:memory
 yarn workspace @umpire/core bench:profile
 ```
 
-That enables Bun's markdown heap profiler, writes a heap snapshot under
-`packages/core/benchmark-profiles/`, and prints mimalloc native heap stats on
-exit. Use it when the normal heap deltas regress or a benchmark needs deeper
+`bench:memory` measures each scenario in isolated Bun child processes and
+summarizes median and p95 heap/object deltas. Use it when the normal heap deltas
+regress or look noisy. `bench:profile` enables Bun's markdown heap profiler,
+writes a heap snapshot under `packages/core/benchmark-profiles/`, and prints
+mimalloc native heap stats on exit. Use it when a scenario needs deeper
 allocation attribution.
 
 ## Baseline
