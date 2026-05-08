@@ -10,6 +10,23 @@ yarn workspace @umpire/core bench
 
 The benchmark script lives at `packages/core/scripts/benchmark.mjs` and builds the package before running.
 
+The normal benchmark output includes lightweight retained JavaScript heap
+deltas. Each measured run forces a synchronous Bun GC before and after the timed
+loop, then reports average retained `heapSize` and object-count deltas from
+`bun:jsc` `heapStats()`. These columns are a progress signal, not a precise
+allocation counter; short-lived allocation churn can still be hidden by GC.
+
+For investigation mode, run:
+
+```bash
+yarn workspace @umpire/core bench:profile
+```
+
+That enables Bun's markdown heap profiler, writes a heap snapshot under
+`packages/core/benchmark-profiles/`, and prints mimalloc native heap stats on
+exit. Use it when the normal heap deltas regress or a benchmark needs deeper
+allocation attribution.
+
 ## Baseline
 
 Observed on April 3, 2026 from a local development run.

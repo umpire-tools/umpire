@@ -24,6 +24,7 @@
   "scripts": {
     "build": "tsc && tsdown",
     "bench": "yarn build && bun ./scripts/benchmark.mjs",
+    "bench:profile": "yarn build && MIMALLOC_SHOW_STATS=1 BENCH_HEAP_SNAPSHOT=1 bun --heap-prof-md --heap-prof-dir ./benchmark-profiles ./scripts/benchmark.mjs",
     "prepack": "node ../../scripts/materialize-agent-compat.mjs prepack",
     "postpack": "node ../../scripts/materialize-agent-compat.mjs postpack",
     "test": "bun test",

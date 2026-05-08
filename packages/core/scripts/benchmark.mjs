@@ -1,4 +1,7 @@
 import { performance } from 'node:perf_hooks'
+import { mkdir } from 'node:fs/promises'
+import { heapStats } from 'bun:jsc'
+import { generateHeapSnapshot } from 'bun'
 import {
   check,
   disables,
@@ -13,16 +16,70 @@ if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = 'production'
 }
 
+const memoryEnabled = process.env.BENCH_MEMORY !== '0'
+const heapSnapshotEnabled = process.env.BENCH_HEAP_SNAPSHOT === '1'
+const profileDir = process.env.BENCH_PROFILE_DIR ?? './benchmark-profiles'
+
+function forceGc() {
+  if (typeof globalThis.Bun?.gc === 'function') {
+    globalThis.Bun.gc(true)
+  }
+}
+
+function readMemoryStats() {
+  if (!memoryEnabled) {
+    return null
+  }
+
+  forceGc()
+  const stats = heapStats()
+
+  return {
+    heapSize: stats.heapSize,
+    heapCapacity: stats.heapCapacity,
+    objectCount: stats.objectCount,
+  }
+}
+
+function diffMemoryStats(before, after) {
+  if (!before || !after) {
+    return null
+  }
+
+  return {
+    heapSizeBytes: after.heapSize - before.heapSize,
+    heapCapacityBytes: after.heapCapacity - before.heapCapacity,
+    objectCount: after.objectCount - before.objectCount,
+  }
+}
+
+function formatBytes(value) {
+  const sign = value < 0 ? '-' : ''
+  const absolute = Math.abs(value)
+
+  if (absolute < 1024) {
+    return `${value} B`
+  }
+
+  if (absolute < 1024 * 1024) {
+    return `${sign}${(absolute / 1024).toFixed(2)} KiB`
+  }
+
+  return `${sign}${(absolute / (1024 * 1024)).toFixed(2)} MiB`
+}
+
 function benchmark(name, iterations, fn) {
   let checksum = 0
 
   checksum += fn()
+  const memoryBefore = readMemoryStats()
 
   const start = performance.now()
   for (let i = 0; i < iterations; i += 1) {
     checksum += fn()
   }
   const totalMs = performance.now() - start
+  const memoryAfter = readMemoryStats()
 
   return {
     name,
@@ -31,6 +88,7 @@ function benchmark(name, iterations, fn) {
     avgMs: totalMs / iterations,
     opsPerSec: (iterations * 1000) / totalMs,
     checksum,
+    memory: diffMemoryStats(memoryBefore, memoryAfter),
   }
 }
 
@@ -65,7 +123,16 @@ function summarizeScenarioRuns(scenario, runCount) {
   const totalMsValues = runs.map((result) => result.totalMs)
   const avgMsValues = runs.map((result) => result.avgMs)
   const opsPerSecValues = runs.map((result) => result.opsPerSec)
+  const heapSizeValues = runs.map((result) => result.memory?.heapSizeBytes ?? 0)
+  const heapCapacityValues = runs.map(
+    (result) => result.memory?.heapCapacityBytes ?? 0,
+  )
+  const objectCountValues = runs.map(
+    (result) => result.memory?.objectCount ?? 0,
+  )
   const meanTotalMs = average(totalMsValues)
+  const meanHeapSizeBytes = average(heapSizeValues)
+  const meanObjectCount = average(objectCountValues)
 
   return {
     name: scenario.name,
@@ -77,21 +144,34 @@ function summarizeScenarioRuns(scenario, runCount) {
     varTotalMs: variance(totalMsValues, meanTotalMs),
     avgMs: average(avgMsValues),
     avgOpsPerSec: average(opsPerSecValues),
+    avgHeapSizeBytes: meanHeapSizeBytes,
+    avgHeapCapacityBytes: average(heapCapacityValues),
+    avgObjectCount: meanObjectCount,
   }
 }
 
 function printScenarioResults(results, runCount) {
-  const table = results.map((result) => ({
-    benchmark: result.name,
-    category: result.category,
-    runs: runCount,
-    iterations: result.iterations,
-    avg_total_ms: result.avgTotalMs.toFixed(2),
-    var_total_ms: result.varTotalMs.toFixed(4),
-    avg_ms: result.avgMs.toFixed(3),
-    avg_ops_sec: result.avgOpsPerSec.toFixed(2),
-    checksum: result.checksum,
-  }))
+  const table = results.map((result) => {
+    const row = {
+      benchmark: result.name,
+      category: result.category,
+      runs: runCount,
+      iterations: result.iterations,
+      avg_total_ms: result.avgTotalMs.toFixed(2),
+      var_total_ms: result.varTotalMs.toFixed(4),
+      avg_ms: result.avgMs.toFixed(3),
+      avg_ops_sec: result.avgOpsPerSec.toFixed(2),
+    }
+
+    if (memoryEnabled) {
+      row.avg_heap_delta = formatBytes(result.avgHeapSizeBytes)
+      row.avg_objects_delta = result.avgObjectCount.toFixed(1)
+    }
+
+    row.checksum = result.checksum
+
+    return row
+  })
 
   console.table(table)
 }
@@ -100,9 +180,15 @@ function printCategoryTotals(results, runCount) {
   const categories = ['construction-heavy', 'runtime-heavy']
   const table = categories.map((category) => {
     const totalsByRun = []
+    const heapTotalsByRun = []
+    const heapCapacityTotalsByRun = []
+    const objectTotalsByRun = []
 
     for (let run = 0; run < runCount; run += 1) {
       let total = 0
+      let heapTotal = 0
+      let heapCapacityTotal = 0
+      let objectTotal = 0
 
       for (const result of results) {
         if (result.category !== category) {
@@ -110,19 +196,36 @@ function printCategoryTotals(results, runCount) {
         }
 
         total += result.runs[run]?.totalMs ?? 0
+        heapTotal += result.runs[run]?.memory?.heapSizeBytes ?? 0
+        heapCapacityTotal += result.runs[run]?.memory?.heapCapacityBytes ?? 0
+        objectTotal += result.runs[run]?.memory?.objectCount ?? 0
       }
 
       totalsByRun.push(total)
+      heapTotalsByRun.push(heapTotal)
+      heapCapacityTotalsByRun.push(heapCapacityTotal)
+      objectTotalsByRun.push(objectTotal)
     }
 
     const avgTotalMs = average(totalsByRun)
+    const avgHeapBytes = average(heapTotalsByRun)
+    const avgHeapCapacityBytes = average(heapCapacityTotalsByRun)
+    const avgObjectCount = average(objectTotalsByRun)
 
-    return {
+    const row = {
       category,
       runs: runCount,
       avg_total_ms: avgTotalMs.toFixed(2),
       var_total_ms: variance(totalsByRun, avgTotalMs).toFixed(4),
     }
+
+    if (memoryEnabled) {
+      row.avg_heap_delta = formatBytes(avgHeapBytes)
+      row.avg_heap_capacity_delta = formatBytes(avgHeapCapacityBytes)
+      row.avg_objects_delta = avgObjectCount.toFixed(1)
+    }
+
+    return row
   })
 
   console.table(table)
@@ -536,3 +639,11 @@ const results = scenarios.map((scenario) =>
 
 printScenarioResults(results, runCount)
 printCategoryTotals(results, runCount)
+
+if (heapSnapshotEnabled) {
+  await mkdir(profileDir, { recursive: true })
+  const snapshot = generateHeapSnapshot()
+  const snapshotPath = `${profileDir}/core-benchmark-${Date.now()}.heapsnapshot.json`
+  await Bun.write(snapshotPath, JSON.stringify(snapshot))
+  console.log(`Wrote heap snapshot: ${snapshotPath}`)
+}
