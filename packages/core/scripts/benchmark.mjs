@@ -25,6 +25,10 @@ const isolatedMemoryChild = process.env.BENCH_ISOLATED_MEMORY_CHILD === '1'
 const isolatedMemorySamples = Number(process.env.BENCH_MEMORY_SAMPLES ?? '7')
 const isolatedMemoryWarmup = Number(process.env.BENCH_MEMORY_WARMUP ?? '5')
 const isolatedResultPrefix = '__UMPIRE_BENCH_MEMORY__'
+const leakBenchmarkEnabled = process.env.BENCH_LEAK === '1'
+const leakBatches = Number(process.env.BENCH_LEAK_BATCHES ?? '20')
+const leakIterations = Number(process.env.BENCH_LEAK_ITERATIONS ?? '1000')
+const leakWarmup = Number(process.env.BENCH_LEAK_WARMUP ?? '100')
 
 function forceGc() {
   if (typeof globalThis.Bun?.gc === 'function') {
@@ -64,7 +68,7 @@ function formatBytes(value) {
   const absolute = Math.abs(value)
 
   if (absolute < 1024) {
-    return `${value} B`
+    return `${Math.round(value)} B`
   }
 
   if (absolute < 1024 * 1024) {
@@ -144,6 +148,25 @@ function variance(values, mean) {
       return sum + delta * delta
     }, 0) / values.length
   )
+}
+
+function linearSlope(values) {
+  if (values.length < 2) {
+    return 0
+  }
+
+  const xMean = (values.length - 1) / 2
+  const yMean = average(values)
+  let numerator = 0
+  let denominator = 0
+
+  for (let index = 0; index < values.length; index += 1) {
+    const xDelta = index - xMean
+    numerator += xDelta * (values[index] - yMean)
+    denominator += xDelta * xDelta
+  }
+
+  return denominator === 0 ? 0 : numerator / denominator
 }
 
 function runScenarioLoop(scenario, iterations) {
@@ -378,6 +401,70 @@ function runIsolatedMemoryParent() {
   })
 
   printIsolatedMemoryResults(results)
+}
+
+function measureLeakScenario(scenario) {
+  runScenarioLoop(scenario, leakWarmup)
+
+  const baseline = readMemoryStats()
+  const samples = []
+  let checksum = 0
+
+  for (let batch = 0; batch < leakBatches; batch += 1) {
+    const start = performance.now()
+    checksum += runScenarioLoop(scenario, leakIterations)
+    const totalMs = performance.now() - start
+    const memory = readMemoryStats()
+
+    samples.push({
+      batch: batch + 1,
+      totalMs,
+      heapSizeBytes: memory.heapSize - baseline.heapSize,
+      heapCapacityBytes: memory.heapCapacity - baseline.heapCapacity,
+      objectCount: memory.objectCount - baseline.objectCount,
+    })
+  }
+
+  return {
+    name: scenario.name,
+    batches: leakBatches,
+    iterations: leakIterations,
+    checksum,
+    samples,
+  }
+}
+
+function printLeakResults(results) {
+  const table = results.map((result) => {
+    const heapValues = result.samples.map((sample) => sample.heapSizeBytes)
+    const capacityValues = result.samples.map(
+      (sample) => sample.heapCapacityBytes,
+    )
+    const objectValues = result.samples.map((sample) => sample.objectCount)
+    const totalMsValues = result.samples.map((sample) => sample.totalMs)
+    const first = result.samples[0]
+    const last = result.samples[result.samples.length - 1]
+
+    return {
+      benchmark: result.name,
+      batches: result.batches,
+      iterations_per_batch: result.iterations,
+      total_iterations: result.batches * result.iterations,
+      first_heap_delta: formatBytes(first.heapSizeBytes),
+      last_heap_delta: formatBytes(last.heapSizeBytes),
+      max_heap_delta: formatBytes(Math.max(...heapValues)),
+      heap_slope_per_batch: formatBytes(linearSlope(heapValues)),
+      last_capacity_delta: formatBytes(last.heapCapacityBytes),
+      capacity_slope_per_batch: formatBytes(linearSlope(capacityValues)),
+      first_objects_delta: first.objectCount,
+      last_objects_delta: last.objectCount,
+      objects_slope_per_batch: linearSlope(objectValues).toFixed(2),
+      median_batch_ms: median(totalMsValues).toFixed(2),
+      checksum: result.checksum,
+    }
+  })
+
+  console.table(table)
 }
 
 function sumAvailability(availability) {
@@ -782,6 +869,14 @@ const scenarios = [
   },
 ]
 
+const leakScenarios = scenarios.filter(
+  (scenario) =>
+    scenario.name === 'check/scheduler/pro-plan' ||
+    scenario.name === 'check/scheduler/basic-readonly' ||
+    scenario.name === 'play/plan-downgrade' ||
+    scenario.name === 'check/minesweeper-expert-board',
+)
+
 if (isolatedMemoryChild) {
   const scenario = scenarios.find(
     (candidate) => candidate.name === process.env.BENCH_ISOLATED_SCENARIO,
@@ -798,6 +893,10 @@ if (isolatedMemoryChild) {
   )
 } else if (isolatedMemoryEnabled) {
   runIsolatedMemoryParent()
+} else if (leakBenchmarkEnabled) {
+  printLeakResults(
+    leakScenarios.map((scenario) => measureLeakScenario(scenario)),
+  )
 } else {
   const results = scenarios.map((scenario) =>
     summarizeScenarioRuns(scenario, runCount),

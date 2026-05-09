@@ -20,15 +20,20 @@ For investigation mode, run:
 
 ```bash
 yarn workspace @umpire/core bench:memory
+yarn workspace @umpire/core bench:leak
 yarn workspace @umpire/core bench:profile
 ```
 
 `bench:memory` measures each scenario in isolated Bun child processes and
 summarizes median and p95 heap/object deltas. Use it when the normal heap deltas
-regress or look noisy. `bench:profile` enables Bun's markdown heap profiler,
-writes a heap snapshot under `packages/core/benchmark-profiles/`, and prints
-mimalloc native heap stats on exit. Use it when a scenario needs deeper
-allocation attribution.
+regress or look noisy. `bench:leak` repeatedly runs the `check()` and `play()`
+hot-path scenarios in batches, forces GC between batches, and reports retained
+heap/object trends from the same compiled engines. Use it to distinguish stable
+long-lived fixture memory from leak-shaped per-call retained growth. By default
+it warms each scenario for 100 calls, then measures 20 batches of 1000 calls.
+`bench:profile` enables Bun's markdown heap profiler, writes a heap snapshot
+under `packages/core/benchmark-profiles/`, and prints mimalloc native heap stats
+on exit. Use it when a scenario needs deeper allocation attribution.
 
 ## Baseline
 
