@@ -25,6 +25,11 @@ const EMPTY_RULE_PHASE_BUCKETS = {
   fairRules: [],
 } as const
 
+const DEFAULT_RULE_EVALUATION: RuleEvaluation = Object.freeze({
+  enabled: true,
+  reason: null,
+})
+
 type CompositeConstraint = 'enabled' | 'fair'
 
 function isCompositePassed(
@@ -246,15 +251,18 @@ export function evaluateRuleForField<
   const result = evaluation.get(field)
 
   if (!result) {
-    return { enabled: true, reason: null }
+    return DEFAULT_RULE_EVALUATION
+  }
+
+  if (!result.reasons || result.reasons.length > 0) {
+    return result
   }
 
   return {
     enabled: result.enabled,
     fair: result.fair,
     reason: result.reason,
-    reasons:
-      result.reasons && result.reasons.length > 0 ? result.reasons : undefined,
+    reasons: undefined,
   }
 }
 
