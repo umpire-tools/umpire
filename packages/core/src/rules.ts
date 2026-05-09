@@ -134,6 +134,17 @@ type RuleOptions<
     | RuleTraceAttachment<FieldValues<F>, C>[]
 }
 
+export type InternalRuleTargetEvaluator<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+> = (
+  field: keyof F & string,
+  values: FieldValues<F>,
+  conditions: C,
+  fields?: F,
+  availability?: Partial<AvailabilityMap<F>>,
+) => RuleEvaluation
+
 type Source<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -203,7 +214,7 @@ export type InternalFairPredicate<
 export type InternalRuleMetadata<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-> =
+> = (
   | {
       kind: 'enabledWhen'
       predicate: Predicate<F, C>
@@ -245,6 +256,9 @@ export type InternalRuleMetadata<
       kind: 'custom'
       constraint: RuleConstraint
     }
+) & {
+  evaluateTarget?: InternalRuleTargetEvaluator<F, C>
+}
 
 type InternalRuleMetadataWithOptions<
   F extends Record<string, FieldDef>,
@@ -1121,25 +1135,35 @@ export function enabledWhen<
   options?: RuleOptions<F, C>,
 ): Rule<F, C> {
   const target = getFieldNameOrThrow(field)
+  const evaluateTarget: InternalRuleTargetEvaluator<F, C> = (
+    _field,
+    values,
+    conditions,
+  ) => {
+    const passed = predicate(values, conditions)
+
+    return {
+      enabled: passed,
+      reason: passed
+        ? null
+        : resolveReason(
+            options?.reason,
+            values,
+            conditions,
+            'condition not met',
+          ),
+    }
+  }
 
   const rule: InternalRuleCarrier<F, C> = {
     type: 'enabledWhen',
     targets: [target],
     sources: [],
     evaluate(values, conditions) {
-      const passed = predicate(values, conditions)
-
-      return createSingleResultMap(target, {
-        enabled: passed,
-        reason: passed
-          ? null
-          : resolveReason(
-              options?.reason,
-              values,
-              conditions,
-              'condition not met',
-            ),
-      })
+      return createSingleResultMap(
+        target,
+        evaluateTarget(target, values, conditions),
+      )
     },
   }
 
@@ -1147,6 +1171,7 @@ export function enabledWhen<
     kind: 'enabledWhen',
     predicate,
     options,
+    evaluateTarget,
   }
 
   return rule
@@ -1162,36 +1187,47 @@ export function fairWhen<
   options?: RuleOptions<F, C>,
 ): Rule<F, C> {
   const target = getFieldNameOrThrow(field)
+  const evaluateTarget: InternalRuleTargetEvaluator<F, C> = (
+    field,
+    values,
+    conditions,
+    fields,
+  ) => {
+    const value = values[field]
+
+    if (!isSatisfied(value, fields?.[field])) {
+      return {
+        enabled: true,
+        fair: true,
+        reason: null,
+      }
+    }
+
+    const passed = predicate(value as NonNullable<V>, values, conditions)
+
+    return {
+      enabled: true,
+      fair: passed,
+      reason: passed
+        ? null
+        : resolveReason(
+            options?.reason,
+            values,
+            conditions,
+            'selection is no longer valid',
+          ),
+    }
+  }
 
   const rule: InternalRuleCarrier<F, C> = {
     type: 'fairWhen',
     targets: [target],
     sources: getFairSourceFields(predicate),
     evaluate(values, conditions, _prev, fields) {
-      const value = values[target]
-
-      if (!isSatisfied(value, fields?.[target])) {
-        return createSingleResultMap(target, {
-          enabled: true,
-          fair: true,
-          reason: null,
-        })
-      }
-
-      const passed = predicate(value as NonNullable<V>, values, conditions)
-
-      return createSingleResultMap(target, {
-        enabled: true,
-        fair: passed,
-        reason: passed
-          ? null
-          : resolveReason(
-              options?.reason,
-              values,
-              conditions,
-              'selection is no longer valid',
-            ),
-      })
+      return createSingleResultMap(
+        target,
+        evaluateTarget(target, values, conditions, fields),
+      )
     },
   }
 
@@ -1199,6 +1235,7 @@ export function fairWhen<
     kind: 'fairWhen',
     predicate: predicate as FairPredicate<unknown, F, C>,
     options,
+    evaluateTarget,
   }
 
   return rule
@@ -1265,6 +1302,51 @@ export function requires<
     )
   }
 
+  const evaluateTarget: InternalRuleTargetEvaluator<F, C> = (
+    _field,
+    values,
+    conditions,
+    fields,
+    availability,
+  ) => {
+    let reason: string | null = null
+    let reasons: string[] | undefined
+
+    for (const dependency of dependencies) {
+      if (
+        isRequiredDependencySatisfied(
+          dependency,
+          values,
+          conditions,
+          fields,
+          availability,
+        )
+      ) {
+        continue
+      }
+
+      const resolvedReason = resolveReason(
+        options?.reason,
+        values,
+        conditions,
+        getRequiredDependencyFallback(dependency),
+      )
+
+      if (reason === null) {
+        reason = resolvedReason
+      }
+
+      reasons ??= []
+      reasons.push(resolvedReason)
+    }
+
+    return {
+      enabled: reasons === undefined,
+      reason,
+      reasons,
+    }
+  }
+
   const rule: InternalRuleCarrier<F, C> = {
     type: 'requires',
     targets: [target],
@@ -1272,42 +1354,10 @@ export function requires<
       dependencies.flatMap((dependency) => getSourceFields(dependency)),
     ),
     evaluate(values, conditions, _prev, fields, availability) {
-      let reason: string | null = null
-      let reasons: string[] | undefined
-
-      for (const dependency of dependencies) {
-        if (
-          isRequiredDependencySatisfied(
-            dependency,
-            values,
-            conditions,
-            fields,
-            availability,
-          )
-        ) {
-          continue
-        }
-
-        const resolvedReason = resolveReason(
-          options?.reason,
-          values,
-          conditions,
-          getRequiredDependencyFallback(dependency),
-        )
-
-        if (reason === null) {
-          reason = resolvedReason
-        }
-
-        reasons ??= []
-        reasons.push(resolvedReason)
-      }
-
-      return createSingleResultMap(target, {
-        enabled: reasons === undefined,
-        reason,
-        reasons,
-      })
+      return createSingleResultMap(
+        target,
+        evaluateTarget(target, values, conditions, fields, availability),
+      )
     },
   }
 
@@ -1315,6 +1365,7 @@ export function requires<
     kind: 'requires',
     dependencies,
     options,
+    evaluateTarget,
   }
 
   return rule

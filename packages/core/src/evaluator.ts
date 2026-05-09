@@ -2,8 +2,7 @@ import {
   appendCompositeFailureReasons,
   combineCompositeResults,
 } from './composite.js'
-import { getInternalRuleMetadata, isFairRule, resolveReason } from './rules.js'
-import type { InternalRuleMetadata } from './rules.js'
+import { getInternalRuleMetadata, isFairRule } from './rules.js'
 import { isSatisfied } from './satisfaction.js'
 import type {
   AvailabilityMap,
@@ -123,121 +122,6 @@ function evaluateAnyOfRule<
   return passed
     ? createCompositePassResult(constraint)
     : createCompositeFailureResult(constraint, reasons)
-}
-
-function evaluateRequiresRule<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown>,
->(
-  metadata: Extract<InternalRuleMetadata<F, C>, { kind: 'requires' }>,
-  fields: F,
-  values: FieldValues<F>,
-  conditions: C,
-  availability: Partial<AvailabilityMap<F>>,
-): RuleEvaluation {
-  let reasons: string[] | undefined
-
-  for (const dependency of metadata.dependencies) {
-    const dependencyAvailability =
-      typeof dependency === 'string' ? availability[dependency] : undefined
-    const satisfied =
-      typeof dependency === 'string'
-        ? isSatisfied(values[dependency], fields[dependency]) &&
-          (!dependencyAvailability ||
-            (dependencyAvailability.enabled && dependencyAvailability.fair))
-        : dependency(values, conditions)
-
-    if (satisfied) {
-      continue
-    }
-
-    const resolvedReason = resolveReason(
-      metadata.options?.reason,
-      values,
-      conditions,
-      typeof dependency === 'string'
-        ? `requires ${dependency}`
-        : 'required condition not met',
-    )
-
-    reasons ??= []
-    reasons.push(resolvedReason)
-  }
-
-  return {
-    enabled: reasons === undefined,
-    reason: reasons?.[0] ?? null,
-    reasons,
-  }
-}
-
-function evaluateSingleTargetBuiltinRule<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown>,
->(
-  rule: Rule<F, C>,
-  metadata: InternalRuleMetadata<F, C> | undefined,
-  field: keyof F & string,
-  fields: F,
-  values: FieldValues<F>,
-  conditions: C,
-  availability: Partial<AvailabilityMap<F>>,
-): RuleEvaluation | undefined {
-  if (!metadata || metadata.kind !== rule.type) {
-    return undefined
-  }
-
-  if (metadata.kind === 'enabledWhen') {
-    const passed = metadata.predicate(values, conditions)
-    return {
-      enabled: passed,
-      reason: passed
-        ? null
-        : resolveReason(
-            metadata.options?.reason,
-            values,
-            conditions,
-            'condition not met',
-          ),
-    }
-  }
-
-  if (metadata.kind === 'fairWhen') {
-    const value = values[field]
-    if (!isSatisfied(value, fields[field])) {
-      return { enabled: true, fair: true, reason: null }
-    }
-
-    const passed = metadata.predicate(
-      value as NonNullable<typeof value>,
-      values,
-      conditions,
-    )
-    return {
-      enabled: true,
-      fair: passed,
-      reason: passed
-        ? null
-        : resolveReason(
-            metadata.options?.reason,
-            values,
-            conditions,
-            'selection is no longer valid',
-          ),
-    }
-  }
-
-  if (metadata.kind === 'requires') {
-    return evaluateRequiresRule(
-      metadata,
-      fields,
-      values,
-      conditions,
-      availability,
-    )
-  }
-
-  return undefined
 }
 
 function partitionRulesByPhase<
@@ -395,26 +279,27 @@ function evaluateRuleForTarget<
   availability: Partial<AvailabilityMap<F>>,
   baseRuleCache: Map<Rule<F, C>, Map<string, RuleEvaluation>>,
 ): RuleEvaluation {
-  return (
-    evaluateSingleTargetBuiltinRule(
-      rule,
-      getInternalRuleMetadata(rule),
+  const metadata = getInternalRuleMetadata(rule)
+
+  if (metadata?.kind === rule.type && metadata.evaluateTarget) {
+    return metadata.evaluateTarget(
       field,
-      fields,
       values,
       conditions,
-      availability,
-    ) ??
-    evaluateRuleForField(
-      rule,
-      field,
       fields,
-      values,
-      conditions,
-      prev,
       availability,
-      baseRuleCache,
     )
+  }
+
+  return evaluateRuleForField(
+    rule,
+    field,
+    fields,
+    values,
+    conditions,
+    prev,
+    availability,
+    baseRuleCache,
   )
 }
 
