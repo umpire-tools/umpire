@@ -1,6 +1,7 @@
 import { describe, it, expect, mock } from 'bun:test'
 import { createRoot, createSignal } from 'solid-js'
 import type { Accessor, JSX } from 'solid-js'
+import { createFormHookContexts } from '@tanstack/solid-form'
 import { enabledWhen, fairWhen, requires, umpire } from '@umpire/core'
 import type { FieldDef } from '@umpire/core'
 import {
@@ -441,6 +442,35 @@ describe('createUmpireFormComponents', () => {
     })
   })
 
+  it('UmpireField uses disabled defaults when Umpire context is empty', () => {
+    const engine = umpire({ fields: { a: {} }, rules: [] })
+    const { UmpireField } = createUmpireFormComponents(engine)
+
+    createRoot((dispose) => {
+      let childRendered = false
+      const result = UmpireFormContext.Provider({
+        value: () => null as never,
+        children: () => {
+          const field = UmpireField({
+            name: 'a',
+            children: () => {
+              childRendered = true
+              return undefined
+            },
+          })
+          return field
+        },
+      })
+
+      if (typeof result === 'function') {
+        result()
+      }
+
+      expect(childRendered).toBe(false)
+      dispose()
+    })
+  })
+
   it('UmpireSubmit renders a submit button without TanStack form context', () => {
     const engine = umpire({ fields: { a: {} }, rules: [] })
     const { UmpireSubmit } = createUmpireFormComponents(engine)
@@ -455,6 +485,75 @@ describe('createUmpireFormComponents', () => {
       expect(button.t).toContain('type="submit"')
       expect(button.t).toContain('disabled')
       expect(button.t).toContain('Save')
+      dispose()
+    })
+  })
+
+  it('uses injected TanStack form hook contexts for scope, field, and submit', () => {
+    const engine = umpire({
+      fields: { state: {} },
+      rules: [enabledWhen('state', (_v, ctx) => ctx?.allow === true)],
+    } satisfies Parameters<typeof umpire<{ state: {} }, { allow: boolean }>>[0])
+    const formHookContexts = createFormHookContexts()
+    const { UmpireScope, UmpireField, UmpireSubmit } =
+      createUmpireFormComponents(engine, {
+        conditions: () => ({ allow: true }),
+        formHookContexts,
+      })
+
+    createRoot((dispose) => {
+      let childField: unknown
+      let childAvailability: ReturnType<UmpireFormLike['field']> | undefined
+      let submit: { t: string } | undefined
+      const Field = mock(
+        (props: {
+          name: string
+          validators?: Record<string, unknown>
+          children(field: Accessor<unknown>): JSX.Element
+        }) => {
+          expect(props.name).toBe('state')
+          expect(typeof props.validators?.onChange).toBe('function')
+          return props.children(() => 'field-value')
+        },
+      )
+      const form = {
+        useStore:
+          <T,>(selector: (state: { values: Values; isSubmitting: boolean }) => T) =>
+          () =>
+            selector({
+              values: { state: 'CA' },
+              isSubmitting: true,
+            }),
+        setFieldValue: () => {},
+        Field,
+      }
+
+      const provided = formHookContexts.formContext.Provider({
+        value: form as never,
+        children: () =>
+          UmpireScope({
+            children: UmpireField({
+              name: 'state',
+              children: (field, availability) => {
+                childField = field()
+                childAvailability = availability
+                submit = UmpireSubmit({ label: 'Save' }) as { t: string }
+                return undefined
+              },
+            }),
+          }),
+      })
+
+      if (typeof provided === 'function') {
+        provided()
+      }
+
+      expect(Field).toHaveBeenCalled()
+      expect(childField).toBe('field-value')
+      expect(childAvailability?.enabled).toBe(true)
+      expect(submit?.t).toContain('<button')
+      expect(submit?.t).toContain('disabled')
+      expect(submit?.t).toContain('Save')
       dispose()
     })
   })

@@ -31,7 +31,10 @@ type CreateUmpireFormOptions<C> = {
 type CreateUmpireFormComponentsOptions<C> = {
   conditions?: C | ((form: unknown) => C)
   strike?: boolean
+  formHookContexts?: SolidFormHookContexts
 }
+
+type SolidFormHookContexts = ReturnType<typeof createFormHookContexts>
 
 function getDefaultFieldStatus(): UmpireFormField {
   return {
@@ -229,7 +232,7 @@ export const UmpireFormContext = createContext<
   applyStrike: () => {},
 }))
 
-const { useFormContext } = createFormHookContexts()
+const defaultFormHookContexts = createFormHookContexts()
 
 type TanStackSolidForm = {
   useStore<T>(
@@ -251,7 +254,9 @@ type BooleanShow = (props: {
   children: JSX.Element
 }) => JSX.Element
 
-function useOptionalFormContext(): TanStackSolidForm | null {
+function useOptionalFormContext(
+  useFormContext: SolidFormHookContexts['useFormContext'],
+): TanStackSolidForm | null {
   try {
     return useFormContext() as TanStackSolidForm
   } catch {
@@ -264,6 +269,8 @@ export function createUmpireFormComponents<
   C extends Record<string, unknown>,
 >(engine: Umpire<F, C>, options?: CreateUmpireFormComponentsOptions<C>) {
   const autoValidators = umpireFieldValidators(engine)
+  const { useFormContext } =
+    options?.formHookContexts ?? defaultFormHookContexts
 
   function UmpireScope(props: { children: JSX.Element }): JSX.Element {
     const form = useFormContext()
@@ -294,7 +301,7 @@ export function createUmpireFormComponents<
     ) => JSX.Element
   }): JSX.Element {
     const getUmpireForm = useContext(UmpireFormContext)
-    const form = useOptionalFormContext()
+    const form = useOptionalFormContext(useFormContext)
     const avail = createMemo(() => {
       return getUmpireForm()?.field(props.name) ?? getDefaultFieldStatus()
     })
@@ -326,7 +333,7 @@ export function createUmpireFormComponents<
     disabled?: boolean
   }): JSX.Element {
     const getUmpireForm = useContext(UmpireFormContext)
-    const form = useOptionalFormContext()
+    const form = useOptionalFormContext(useFormContext)
     const isSubmitting =
       form?.useStore((state) => state.isSubmitting) ?? (() => false)
     const disabled = createMemo(
