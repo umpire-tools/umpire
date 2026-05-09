@@ -190,6 +190,33 @@ describe('useUmpireForm', () => {
     expect(setFieldCalls).toEqual([{ name: 'y', value: undefined }])
   })
 
+  it('auto-applies strikes when a field becomes disabled', async () => {
+    const engine = umpire({
+      fields: { x: { required: true }, y: {} },
+      rules: [enabledWhen('y', (v) => (v as Values).x !== null)],
+    })
+
+    const setFieldCalls: Array<{ name: string; value: unknown }> = []
+    const store = createStore({ x: 'hello', y: 'world' })
+    const form = {
+      store,
+      setFieldValue(name: string, value: unknown) {
+        setFieldCalls.push({ name, value })
+      },
+    }
+
+    const umpireForm = useUmpireForm(form, engine, { strike: true })
+    expect(umpireForm.fouls).toEqual([])
+
+    store.setValues({ x: null, y: 'world' })
+    await nextTick()
+
+    expect(umpireForm.fouls).toEqual([
+      expect.objectContaining({ field: 'y', suggestedValue: undefined }),
+    ])
+    expect(setFieldCalls).toEqual([{ name: 'y', value: undefined }])
+  })
+
   it('field proxies are cached and expose fair reasons plus unknown defaults', () => {
     const engine = umpire({
       fields: { code: { required: true } },
