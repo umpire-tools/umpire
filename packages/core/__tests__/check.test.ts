@@ -5,6 +5,7 @@ import {
   defineRule,
   eitherOf,
   enabledWhen,
+  fairWhen,
   requires,
 } from '../src/rules.js'
 import type { AvailabilityMap, Rule } from '../src/types.js'
@@ -192,6 +193,41 @@ describe('evaluate', () => {
     })
   })
 
+  test('requires fails when dependencies are disabled or fouled in compiled evaluation', () => {
+    const fields: TestFields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+      delta: {},
+    }
+    const rules = [
+      enabledWhen<TestFields, TestConditions>('beta', () => false, {
+        reason: 'beta closed',
+      }),
+      fairWhen<TestFields, TestConditions>('gamma', () => false, {
+        reason: 'gamma fouled',
+      }),
+      requires<TestFields, TestConditions>('alpha', 'beta', 'gamma'),
+    ]
+    const topoOrder = createOrder(fields, rules)
+    const result = evaluate(
+      fields,
+      rules,
+      topoOrder,
+      { beta: 'set', gamma: 'set' },
+      {} as TestConditions,
+    )
+
+    expect(result.alpha).toEqual({
+      enabled: false,
+      satisfied: false,
+      fair: true,
+      required: false,
+      reason: 'requires beta',
+      reasons: ['requires beta', 'requires gamma'],
+    })
+  })
+
   test('treats fair custom rules as fairness checks instead of gate rules', () => {
     const fields: TestFields = {
       alpha: {},
@@ -339,6 +375,7 @@ describe('evaluate', () => {
         undefined,
         {},
         new Map(),
+        true,
       ),
     ).toEqual({
       enabled: true,
@@ -387,6 +424,7 @@ describe('evaluate', () => {
         undefined,
         {},
         new Map(),
+        true,
       ),
     ).toEqual({
       enabled: true,
@@ -491,6 +529,7 @@ describe('evaluate', () => {
         undefined,
         {},
         new Map(),
+        true,
       ),
     ).toEqual({
       enabled: true,
