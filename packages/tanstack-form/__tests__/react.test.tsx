@@ -2,8 +2,10 @@ import { GlobalRegistrator } from '@happy-dom/global-registrator'
 GlobalRegistrator.register()
 
 import { describe, it, expect, mock } from 'bun:test'
-import { render, waitFor } from '@testing-library/react'
+import { act, render, waitFor } from '@testing-library/react'
 import React from 'react'
+import { Store } from '@tanstack/store'
+import { createFormHookContexts } from '@tanstack/react-form'
 import { umpire, enabledWhen, fairWhen } from '@umpire/core'
 import {
   useUmpireForm,
@@ -79,6 +81,48 @@ describe('useUmpireForm', () => {
     expect(avail.b.enabled).toBe(false)
     expect(avail.b.required).toBe(false)
   })
+
+  it('applies manual and automatic strikes from the mounted hook', async () => {
+    const engine = umpire({
+      fields: { country: {}, state: {} },
+      rules: [enabledWhen('state', (v) => (v as Values).country === 'US')],
+    })
+    const store = new Store({
+      values: { country: 'US', state: 'CA' },
+    })
+    const setFieldValue = mock(() => {})
+
+    function HookHarness() {
+      const umpireForm = useUmpireForm(
+        { store, setFieldValue },
+        engine,
+        { strike: true },
+      )
+
+      return (
+        <button type="button" onClick={() => umpireForm.applyStrike()}>
+          {String(umpireForm.field('state').enabled)}
+        </button>
+      )
+    }
+
+    const { getByRole } = render(<HookHarness />)
+    expect(getByRole('button').textContent).toBe('true')
+
+    act(() => {
+      store.setState(() => ({
+        values: { country: 'Canada', state: 'CA' },
+      }))
+    })
+
+    await waitFor(() => {
+      expect(getByRole('button').textContent).toBe('false')
+      expect(setFieldValue).toHaveBeenCalledWith('state', undefined)
+    })
+
+    getByRole('button').click()
+    expect(setFieldValue).toHaveBeenCalledWith('state', undefined)
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -132,6 +176,122 @@ describe('createUmpireFormComponents', () => {
 
     const avail2 = engine.check({ role: 'admin' }, { mode: 'view' })
     expect(avail2.role.enabled).toBe(false)
+  })
+
+  it('wires scope, field, validators, conditions, and submit state through form context', () => {
+    const engine = umpire({
+      fields: { details: {} },
+      rules: [enabledWhen('details', (_v, ctx) => ctx?.mode === 'edit')],
+    } satisfies Parameters<
+      typeof umpire<{ details: {} }, Conditions>
+    >[0])
+
+    const { UmpireScope, UmpireField, UmpireSubmit } =
+      createUmpireFormComponents(engine, {
+        conditions: () => ({ mode: 'edit' }),
+      })
+    const { formContext } = createFormHookContexts()
+    const store = new Store({
+      values: { details: 'visible' },
+      isSubmitting: true,
+    })
+    const fieldRender = mock((field: unknown, availability: unknown) => (
+      <span data-testid="field">
+        {String((availability as { enabled: boolean }).enabled)}
+      </span>
+    ))
+    const Field = mock(
+      ({
+        name,
+        validators,
+        children,
+      }: {
+        name: string
+        validators?: Record<string, unknown>
+        children(field: unknown): React.ReactNode
+      }) => (
+        <label data-testid="field-shell" data-name={name}>
+          {String(typeof validators?.onChange)}
+          {children({ name })}
+        </label>
+      ),
+    )
+    const Subscribe = ({
+      selector,
+      children,
+    }: {
+      selector(state: { isSubmitting: boolean }): boolean
+      children(isSubmitting: boolean): React.ReactNode
+    }) => <>{children(selector(store.get()))}</>
+    const form = {
+      store,
+      setFieldValue: () => {},
+      Field,
+      Subscribe,
+    }
+
+    const { getByTestId } = render(
+      <formContext.Provider value={form as never}>
+        <UmpireScope>
+          <UmpireField name="details">{fieldRender}</UmpireField>
+          <UmpireSubmit label="Save" />
+        </UmpireScope>
+      </formContext.Provider>,
+    )
+
+    expect(getByTestId('field').textContent).toBe('true')
+    expect(getByTestId('field-shell').textContent).toContain('function')
+    expect(Field).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'details' }),
+      undefined,
+    )
+    expect(fieldRender).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'details' }),
+      expect.objectContaining({ enabled: true }),
+    )
+    expect(getByTestId('field-shell').getAttribute('data-name')).toBe(
+      'details',
+    )
+    expect(document.querySelector('button')?.disabled).toBe(true)
+    expect(document.querySelector('button')?.textContent).toBe('Save')
+  })
+
+  it('does not render scoped fields when availability disables them', () => {
+    const engine = umpire({
+      fields: { details: {} },
+      rules: [enabledWhen('details', (_v, ctx) => ctx?.mode === 'edit')],
+    } satisfies Parameters<
+      typeof umpire<{ details: {} }, Conditions>
+    >[0])
+
+    const { UmpireScope, UmpireField } = createUmpireFormComponents(engine, {
+      conditions: () => ({ mode: 'view' }),
+    })
+    const { formContext } = createFormHookContexts()
+    const store = new Store({
+      values: { details: 'hidden' },
+      isSubmitting: false,
+    })
+    const Field = mock(() => <span data-testid="field-shell" />)
+    const form = {
+      store,
+      setFieldValue: () => {},
+      Field,
+      Subscribe: () => null,
+    }
+
+    const { queryByTestId } = render(
+      <formContext.Provider value={form as never}>
+        <UmpireScope>
+          <UmpireField name="details">
+            {() => <span data-testid="field" />}
+          </UmpireField>
+        </UmpireScope>
+      </formContext.Provider>,
+    )
+
+    expect(queryByTestId('field')).toBeNull()
+    expect(Field).not.toHaveBeenCalled()
   })
 })
 

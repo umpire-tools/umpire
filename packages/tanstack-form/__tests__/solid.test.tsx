@@ -440,6 +440,24 @@ describe('createUmpireFormComponents', () => {
       dispose()
     })
   })
+
+  it('UmpireSubmit renders a submit button without TanStack form context', () => {
+    const engine = umpire({ fields: { a: {} }, rules: [] })
+    const { UmpireSubmit } = createUmpireFormComponents(engine)
+
+    createRoot((dispose) => {
+      const button = UmpireSubmit({
+        label: 'Save',
+        disabled: true,
+      }) as { t: string }
+
+      expect(button.t).toContain('<button')
+      expect(button.t).toContain('type="submit"')
+      expect(button.t).toContain('disabled')
+      expect(button.t).toContain('Save')
+      dispose()
+    })
+  })
 })
 
 describe('UmpireFormSubscribe', () => {
