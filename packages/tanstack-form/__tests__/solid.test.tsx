@@ -518,7 +518,9 @@ describe('createUmpireFormComponents', () => {
       )
       const form = {
         useStore:
-          <T,>(selector: (state: { values: Values; isSubmitting: boolean }) => T) =>
+          <T,>(
+            selector: (state: { values: Values; isSubmitting: boolean }) => T,
+          ) =>
           () =>
             selector({
               values: { state: 'CA' },

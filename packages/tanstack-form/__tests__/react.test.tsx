@@ -93,11 +93,9 @@ describe('useUmpireForm', () => {
     const setFieldValue = mock(() => {})
 
     function HookHarness() {
-      const umpireForm = useUmpireForm(
-        { store, setFieldValue },
-        engine,
-        { strike: true },
-      )
+      const umpireForm = useUmpireForm({ store, setFieldValue }, engine, {
+        strike: true,
+      })
 
       return (
         <button type="button" onClick={() => umpireForm.applyStrike()}>
@@ -182,9 +180,7 @@ describe('createUmpireFormComponents', () => {
     const engine = umpire({
       fields: { details: {} },
       rules: [enabledWhen('details', (_v, ctx) => ctx?.mode === 'edit')],
-    } satisfies Parameters<
-      typeof umpire<{ details: {} }, Conditions>
-    >[0])
+    } satisfies Parameters<typeof umpire<{ details: {} }, Conditions>>[0])
 
     const { UmpireScope, UmpireField, UmpireSubmit } =
       createUmpireFormComponents(engine, {
@@ -249,9 +245,7 @@ describe('createUmpireFormComponents', () => {
       expect.objectContaining({ name: 'details' }),
       expect.objectContaining({ enabled: true }),
     )
-    expect(getByTestId('field-shell').getAttribute('data-name')).toBe(
-      'details',
-    )
+    expect(getByTestId('field-shell').getAttribute('data-name')).toBe('details')
     expect(document.querySelector('button')?.disabled).toBe(true)
     expect(document.querySelector('button')?.textContent).toBe('Save')
   })
@@ -260,9 +254,7 @@ describe('createUmpireFormComponents', () => {
     const engine = umpire({
       fields: { details: {} },
       rules: [enabledWhen('details', (_v, ctx) => ctx?.mode === 'edit')],
-    } satisfies Parameters<
-      typeof umpire<{ details: {} }, Conditions>
-    >[0])
+    } satisfies Parameters<typeof umpire<{ details: {} }, Conditions>>[0])
 
     const { UmpireScope, UmpireField } = createUmpireFormComponents(engine, {
       conditions: () => ({ mode: 'view' }),
