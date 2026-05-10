@@ -20,3 +20,5 @@ export type {
 } from './adapter.js'
 export { UmpireValidationError } from './errors.js'
 export { fromSubscriptionRef } from './from-subscription-ref.js'
+export { availabilityStream } from './availability-stream.js'
+export { umpireLayer } from './layer.js'
