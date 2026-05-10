@@ -30,7 +30,10 @@ regress or look noisy. `bench:leak` repeatedly runs the `check()` and `play()`
 hot-path scenarios in batches, forces GC between batches, and reports retained
 heap/object trends from the same compiled engines. Use it to distinguish stable
 long-lived fixture memory from leak-shaped per-call retained growth. By default
-it warms each scenario for 100 calls, then measures 20 batches of 1000 calls.
+it warms each scenario for 100 calls, then measures 20 batches of 1000 calls
+over a prebuilt ring of 16 input objects. Set `BENCH_LEAK_ROTATE_INPUTS=0` to
+reuse one fixed input per scenario, or `BENCH_LEAK_INPUTS=<n>` to change the
+ring size.
 `bench:profile` enables Bun's markdown heap profiler, writes a heap snapshot
 under `packages/core/benchmark-profiles/`, and prints mimalloc native heap stats
 on exit. Use it when a scenario needs deeper allocation attribution.

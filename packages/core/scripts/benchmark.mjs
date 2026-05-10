@@ -17,6 +17,17 @@ if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = 'production'
 }
 
+function parsePositiveIntegerEnv(name, fallback) {
+  const raw = process.env[name] ?? String(fallback)
+  const value = Number(raw)
+
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${name} must be a positive integer. Received: ${raw}`)
+  }
+
+  return value
+}
+
 const memoryEnabled = process.env.BENCH_MEMORY !== '0'
 const heapSnapshotEnabled = process.env.BENCH_HEAP_SNAPSHOT === '1'
 const profileDir = process.env.BENCH_PROFILE_DIR ?? './benchmark-profiles'
@@ -26,9 +37,19 @@ const isolatedMemorySamples = Number(process.env.BENCH_MEMORY_SAMPLES ?? '7')
 const isolatedMemoryWarmup = Number(process.env.BENCH_MEMORY_WARMUP ?? '5')
 const isolatedResultPrefix = '__UMPIRE_BENCH_MEMORY__'
 const leakBenchmarkEnabled = process.env.BENCH_LEAK === '1'
-const leakBatches = Number(process.env.BENCH_LEAK_BATCHES ?? '20')
-const leakIterations = Number(process.env.BENCH_LEAK_ITERATIONS ?? '1000')
-const leakWarmup = Number(process.env.BENCH_LEAK_WARMUP ?? '100')
+const leakBatches = leakBenchmarkEnabled
+  ? parsePositiveIntegerEnv('BENCH_LEAK_BATCHES', 20)
+  : 20
+const leakIterations = leakBenchmarkEnabled
+  ? parsePositiveIntegerEnv('BENCH_LEAK_ITERATIONS', 1000)
+  : 1000
+const leakWarmup = leakBenchmarkEnabled
+  ? parsePositiveIntegerEnv('BENCH_LEAK_WARMUP', 100)
+  : 100
+const leakInputCount = leakBenchmarkEnabled
+  ? parsePositiveIntegerEnv('BENCH_LEAK_INPUTS', 16)
+  : 16
+const leakRotateInputs = process.env.BENCH_LEAK_ROTATE_INPUTS !== '0'
 
 function forceGc() {
   if (typeof globalThis.Bun?.gc === 'function') {
@@ -49,6 +70,16 @@ function readMemoryStats() {
     heapCapacity: stats.heapCapacity,
     objectCount: stats.objectCount,
   }
+}
+
+function readRequiredMemoryStats() {
+  const stats = readMemoryStats()
+
+  if (!stats) {
+    throw new Error('BENCH_LEAK requires BENCH_MEMORY=1')
+  }
+
+  return stats
 }
 
 function diffMemoryStats(before, after) {
@@ -406,7 +437,7 @@ function runIsolatedMemoryParent() {
 function measureLeakScenario(scenario) {
   runScenarioLoop(scenario, leakWarmup)
 
-  const baseline = readMemoryStats()
+  const baseline = readRequiredMemoryStats()
   const samples = []
   let checksum = 0
 
@@ -414,7 +445,7 @@ function measureLeakScenario(scenario) {
     const start = performance.now()
     checksum += runScenarioLoop(scenario, leakIterations)
     const totalMs = performance.now() - start
-    const memory = readMemoryStats()
+    const memory = readRequiredMemoryStats()
 
     samples.push({
       batch: batch + 1,
@@ -427,6 +458,8 @@ function measureLeakScenario(scenario) {
 
   return {
     name: scenario.name,
+    inputMode: scenario.inputMode ?? 'fixed',
+    inputCount: scenario.inputCount ?? 1,
     batches: leakBatches,
     iterations: leakIterations,
     checksum,
@@ -447,6 +480,8 @@ function printLeakResults(results) {
 
     return {
       benchmark: result.name,
+      input_mode: result.inputMode,
+      input_count: result.inputCount,
       batches: result.batches,
       iterations_per_batch: result.iterations,
       total_iterations: result.batches * result.iterations,
@@ -760,6 +795,41 @@ function createExpertMinesweeperScenario() {
   }
 }
 
+function createValueVariants(values, count, mutate) {
+  const variants = []
+
+  for (let index = 0; index < count; index += 1) {
+    const variant = structuredClone(values)
+    mutate?.(variant, index)
+    variants.push(variant)
+  }
+
+  return variants
+}
+
+function createConditionVariants(conditions, count, mutate) {
+  const variants = []
+
+  for (let index = 0; index < count; index += 1) {
+    const variant = { ...conditions }
+    mutate?.(variant, index)
+    variants.push(variant)
+  }
+
+  return variants
+}
+
+function createRotatingRunner(inputs, run) {
+  let index = 0
+
+  return () => {
+    const currentIndex = index
+    const input = inputs[currentIndex]
+    index = (index + 1) % inputs.length
+    return run(input, currentIndex)
+  }
+}
+
 const schedulerConstructionFields = makeSchedulerScenario(60)
 const schedulerRuntime = makeSchedulerScenario(60)
 const challengeField = 'review_28'
@@ -869,13 +939,116 @@ const scenarios = [
   },
 ]
 
-const leakScenarios = scenarios.filter(
-  (scenario) =>
-    scenario.name === 'check/scheduler/pro-plan' ||
-    scenario.name === 'check/scheduler/basic-readonly' ||
-    scenario.name === 'play/plan-downgrade' ||
-    scenario.name === 'check/minesweeper-expert-board',
-)
+function createLeakScenarios() {
+  if (!leakRotateInputs) {
+    return scenarios
+      .filter(
+        (scenario) =>
+          scenario.name === 'check/scheduler/pro-plan' ||
+          scenario.name === 'check/scheduler/basic-readonly' ||
+          scenario.name === 'play/plan-downgrade' ||
+          scenario.name === 'check/minesweeper-expert-board',
+      )
+      .map((scenario) => ({
+        ...scenario,
+        inputMode: 'fixed',
+        inputCount: 1,
+      }))
+  }
+
+  const beforeValues = createValueVariants(
+    schedulerRuntime.beforeValues,
+    leakInputCount,
+    (variant, index) => {
+      variant[`contact_${index % 60}`] = `leak${index}@example.com`
+      variant[`notes_${(index * 7) % 60}`] = `notes-leak-${index}`
+    },
+  )
+  const afterValues = createValueVariants(
+    schedulerRuntime.afterValues,
+    leakInputCount,
+    (variant, index) => {
+      variant[`notes_${(index * 5) % 60}`] = `readonly-leak-${index}`
+    },
+  )
+  const beforeConditions = createConditionVariants(
+    schedulerRuntime.beforeConditions,
+    leakInputCount,
+  )
+  const afterConditions = createConditionVariants(
+    schedulerRuntime.afterConditions,
+    leakInputCount,
+  )
+  const minesweeperValues = createValueVariants(
+    minesweeper.values,
+    leakInputCount,
+  )
+  const minesweeperConditions = createConditionVariants(
+    minesweeper.conditions,
+    leakInputCount,
+  )
+
+  return [
+    {
+      name: 'check/scheduler/pro-plan',
+      inputMode: 'rotating',
+      inputCount: leakInputCount,
+      run: createRotatingRunner(beforeValues, (values, index) => {
+        const availability = schedulerRuntime.engine.check(
+          values,
+          beforeConditions[index],
+        )
+        return sumAvailability(availability)
+      }),
+    },
+    {
+      name: 'check/scheduler/basic-readonly',
+      inputMode: 'rotating',
+      inputCount: leakInputCount,
+      run: createRotatingRunner(afterValues, (values, index) => {
+        const availability = schedulerRuntime.engine.check(
+          values,
+          afterConditions[index],
+          beforeValues[index],
+        )
+        return sumAvailability(availability)
+      }),
+    },
+    {
+      name: 'play/plan-downgrade',
+      inputMode: 'rotating',
+      inputCount: leakInputCount,
+      run: createRotatingRunner(afterValues, (values, index) => {
+        const fouls = schedulerRuntime.engine.play(
+          {
+            values: beforeValues[index],
+            conditions: beforeConditions[index],
+          },
+          {
+            values,
+            conditions: afterConditions[index],
+          },
+        )
+
+        return (
+          fouls.length + fouls.reduce((sum, foul) => sum + foul.field.length, 0)
+        )
+      }),
+    },
+    {
+      name: 'check/minesweeper-expert-board',
+      inputMode: 'rotating',
+      inputCount: leakInputCount,
+      run: createRotatingRunner(minesweeperValues, (values, index) => {
+        const availability = minesweeper.engine.check(
+          values,
+          minesweeperConditions[index],
+        )
+        return sumAvailability(availability)
+      }),
+    },
+  ]
+}
 
 if (isolatedMemoryChild) {
   const scenario = scenarios.find(
@@ -895,7 +1068,7 @@ if (isolatedMemoryChild) {
   runIsolatedMemoryParent()
 } else if (leakBenchmarkEnabled) {
   printLeakResults(
-    leakScenarios.map((scenario) => measureLeakScenario(scenario)),
+    createLeakScenarios().map((scenario) => measureLeakScenario(scenario)),
   )
 } else {
   const results = scenarios.map((scenario) =>

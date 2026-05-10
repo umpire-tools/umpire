@@ -25,7 +25,7 @@
     "build": "tsc && tsdown",
     "bench": "yarn build && bun ./scripts/benchmark.mjs",
     "bench:memory": "yarn build && BENCH_ISOLATED_MEMORY=1 bun ./scripts/benchmark.mjs",
-    "bench:leak": "yarn build && BENCH_LEAK=1 bun ./scripts/benchmark.mjs",
+    "bench:leak": "yarn build && BENCH_MEMORY=1 BENCH_LEAK=1 bun ./scripts/benchmark.mjs",
     "bench:profile": "yarn build && MIMALLOC_SHOW_STATS=1 BENCH_HEAP_SNAPSHOT=1 bun --heap-prof-md --heap-prof-dir ./benchmark-profiles ./scripts/benchmark.mjs",
     "prepack": "node ../../scripts/materialize-agent-compat.mjs prepack",
     "postpack": "node ../../scripts/materialize-agent-compat.mjs postpack",
