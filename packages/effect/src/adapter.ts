@@ -54,10 +54,10 @@ export type EffectAdapter<F extends Record<string, FieldDef>> = {
     availability: AvailabilityMap<F>,
     values: InputValues,
   ): Effect.Effect<EffectAdapterRunResult<F>, never, never>
-  runValidate(
+  runValidate<T = Record<string, unknown>>(
     availability: AvailabilityMap<F>,
     values: InputValues,
-  ): Effect.Effect<Record<string, unknown>, UmpireValidationError, never>
+  ): Effect.Effect<T, UmpireValidationError, never>
 }
 
 export function createEffectAdapter<F extends Record<string, FieldDef>>(
@@ -151,6 +151,6 @@ export function createEffectAdapter<F extends Record<string, FieldDef>>(
     validators,
     run: runImpl,
     runEffect: runEffectFn,
-    runValidate: runValidateFn,
+    runValidate: runValidateFn as EffectAdapter<F>['runValidate'],
   }
 }

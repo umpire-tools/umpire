@@ -1,4 +1,4 @@
-import { Layer } from 'effect'
+import { Context, Layer } from 'effect'
 import { umpire } from '@umpire/core'
 import type {
   FieldInput,
@@ -20,12 +20,10 @@ type UmpireDefinition<
 export function umpireLayer<
   FInput extends Record<string, FieldInput>,
   C extends Record<string, unknown> = Record<string, unknown>,
+  I = Umpire<NormalizeFields<FInput>, C>,
 >(
-  // Effect v4 beta 59: Context.Service returns ServiceClass but Layer.sync
-  // expects Key — they are compatible at runtime but the types don't align.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tag: any,
+  tag: Context.Key<I, Umpire<NormalizeFields<FInput>, C>>,
   definition: UmpireDefinition<FInput, C>,
-): Layer.Layer<Umpire<NormalizeFields<FInput>, C>, never, never> {
+): Layer.Layer<I, never, never> {
   return Layer.sync(tag, () => umpire(definition))
 }

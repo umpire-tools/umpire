@@ -7,8 +7,7 @@ import type {
 } from '@umpire/core'
 import type { FromStoreOptions } from '@umpire/store'
 
-type AvailabilityStreamState<S> = {
-  readonly state: S
+type AvailabilityStreamState = {
   readonly prevValues: InputValues | undefined
 }
 
@@ -23,7 +22,7 @@ export function availabilityStream<
 ): Stream.Stream<AvailabilityMap<F>, never, never> {
   return SubscriptionRef.changes(ref).pipe(
     Stream.mapAccum(
-      () => undefined as AvailabilityStreamState<S> | undefined,
+      () => undefined as AvailabilityStreamState | undefined,
       (prev, state) => {
         const values = options.select(state)
         const conditions = options.conditions?.(state)
@@ -31,7 +30,9 @@ export function availabilityStream<
           ? ump.check(values, conditions, prev.prevValues)
           : ump.check(values, conditions)
 
-        return [{ state, prevValues: values }, [availability]]
+        // Effect v4 Stream.mapAccum emits from an iterable, so wrap the single
+        // availability snapshot in a one-item array.
+        return [{ prevValues: values }, [availability]]
       },
     ),
   )

@@ -1,6 +1,7 @@
 import { enabledWhen, fairWhen, umpire } from '@umpire/core'
 import { Effect, Schema } from 'effect'
 import { createEffectAdapter } from '../src/adapter.js'
+import { UmpireValidationError } from '../src/errors.js'
 
 const emailSchema = stringMatching(
   (s) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s),
@@ -356,8 +357,36 @@ describe('createEffectAdapter', () => {
 
     expect(effectResult.errors).toEqual(syncResult.errors)
     expect(effectResult.normalizedErrors).toEqual(syncResult.normalizedErrors)
-    expect(effectResult.result).toMatchObject(syncResult.result)
+    expect(effectResult.result).toEqual(syncResult.result)
     expect(effectResult.schemaFields).toEqual(syncResult.schemaFields)
+  })
+
+  test('runEffect returns a successful decode result with schema fields', async () => {
+    const validation = createEffectAdapter({
+      schemas: {
+        email: emailSchema,
+        name: Schema.String,
+      },
+    })
+    const ump = umpire({
+      fields: { email: { required: true }, name: {} },
+      rules: [],
+      validators: validation.validators,
+    })
+    const availability = ump.check({
+      email: 'ok@example.com',
+      name: 'Alice',
+    })
+
+    const result = await Effect.runPromise(
+      validation.runEffect(availability, {
+        email: 'ok@example.com',
+        name: 'Alice',
+      }),
+    )
+
+    expect(result.result._tag).toBe('Right')
+    expect(result.schemaFields).toEqual(['email', 'name'])
   })
 
   test('runValidate returns the decoded value on success (not the decode wrapper)', async () => {
@@ -390,7 +419,7 @@ describe('createEffectAdapter', () => {
     const availability = ump.check({ age: '42' })
 
     const result = await Effect.runPromise(
-      validation.runValidate(availability, { age: '42' }),
+      validation.runValidate<{ age: number }>(availability, { age: '42' }),
     )
 
     // Schema.NumberFromString coerces string "42" to number 42
@@ -413,11 +442,54 @@ describe('createEffectAdapter', () => {
       Effect.flip(validation.runValidate(availability, { email: 'bad' })),
     )
 
+    expect(error).toBeInstanceOf(Error)
     expect(error._tag).toBe('UmpireValidationError')
     expect(error.errors).toEqual({ email: 'Enter a valid email' })
     expect(error.normalizedErrors).toEqual([
       { field: 'email', message: 'Enter a valid email' },
     ])
+    expect(error.message).toBe('Validation failed: email')
+  })
+
+  test('runValidate rejects foul values when rejectFoul is enabled', async () => {
+    const fields = { spotType: {}, vehicleType: {} }
+    const validation = createEffectAdapter({
+      schemas: {
+        spotType: Schema.Literals(['electric', 'standard']),
+        vehicleType: Schema.Literals(['electric', 'gas']),
+      },
+      rejectFoul: true,
+    })
+    const ump = umpire({
+      fields,
+      rules: [
+        fairWhen(
+          'vehicleType',
+          (value, values) =>
+            value === values.spotType || values.spotType === 'standard',
+          { reason: 'Vehicle type does not match the reserved spot' },
+        ),
+      ],
+    })
+    const availability = ump.check({
+      spotType: 'electric',
+      vehicleType: 'gas',
+    })
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        validation.runValidate(availability, {
+          spotType: 'electric',
+          vehicleType: 'gas',
+        }),
+      ),
+    )
+
+    expect(error).toBeInstanceOf(UmpireValidationError)
+    expect(error.errors).toEqual({
+      vehicleType: 'Vehicle type does not match the reserved spot',
+    })
+    expect(error.message).toBe('Validation failed: vehicleType')
   })
 
   test('can catch UmpireValidationError with Effect.catchTag', async () => {
