@@ -2049,6 +2049,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@umpire/jsx@workspace:packages/jsx":
+  version: 0.0.0-use.local
+  resolution: "@umpire/jsx@workspace:packages/jsx"
+  dependencies:
+    "@umpire/core": "workspace:^"
+  languageName: unknown
+  linkType: soft
+
 "@umpire/pinia@workspace:packages/pinia":
   version: 0.0.0-use.local
   resolution: "@umpire/pinia@workspace:packages/pinia"
