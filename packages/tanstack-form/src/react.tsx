@@ -266,10 +266,13 @@ export function createUmpireFormComponents<
 
   function UmpireScope({ children }: { children: ReactNode }) {
     const form = useFormContext()
-    const resolvedConditions =
-      typeof options?.conditions === 'function'
-        ? (options.conditions as (form: unknown) => C)(form)
-        : options?.conditions
+    const resolvedConditions = useMemo(
+      () =>
+        typeof options?.conditions === 'function'
+          ? (options.conditions as (form: unknown) => C)(form)
+          : options?.conditions,
+      [form, options?.conditions],
+    )
 
     const umpireForm = useUmpireForm(form as TanStackReactForm, engine, {
       conditions: resolvedConditions,
