@@ -28,15 +28,20 @@ function parsePositiveIntegerEnv(name, fallback) {
   return value
 }
 
-const memoryEnabled = process.env.BENCH_MEMORY !== '0'
 const heapSnapshotEnabled = process.env.BENCH_HEAP_SNAPSHOT === '1'
 const profileDir = process.env.BENCH_PROFILE_DIR ?? './benchmark-profiles'
 const isolatedMemoryEnabled = process.env.BENCH_ISOLATED_MEMORY === '1'
 const isolatedMemoryChild = process.env.BENCH_ISOLATED_MEMORY_CHILD === '1'
+const leakBenchmarkEnabled = process.env.BENCH_LEAK === '1'
+const memoryEnabled =
+  process.env.BENCH_MEMORY === '1' ||
+  heapSnapshotEnabled ||
+  isolatedMemoryEnabled ||
+  isolatedMemoryChild ||
+  leakBenchmarkEnabled
 const isolatedMemorySamples = Number(process.env.BENCH_MEMORY_SAMPLES ?? '7')
 const isolatedMemoryWarmup = Number(process.env.BENCH_MEMORY_WARMUP ?? '5')
 const isolatedResultPrefix = '__UMPIRE_BENCH_MEMORY__'
-const leakBenchmarkEnabled = process.env.BENCH_LEAK === '1'
 const leakBatches = leakBenchmarkEnabled
   ? parsePositiveIntegerEnv('BENCH_LEAK_BATCHES', 20)
   : 20
@@ -50,6 +55,25 @@ const leakInputCount = leakBenchmarkEnabled
   ? parsePositiveIntegerEnv('BENCH_LEAK_INPUTS', 16)
   : 16
 const leakRotateInputs = process.env.BENCH_LEAK_ROTATE_INPUTS !== '0'
+const leakEnvNames = [
+  'BENCH_LEAK_BATCHES',
+  'BENCH_LEAK_ITERATIONS',
+  'BENCH_LEAK_WARMUP',
+  'BENCH_LEAK_INPUTS',
+  'BENCH_LEAK_ROTATE_INPUTS',
+]
+
+if (!leakBenchmarkEnabled) {
+  const configuredLeakEnvNames = leakEnvNames.filter(
+    (name) => process.env[name] !== undefined,
+  )
+
+  if (configuredLeakEnvNames.length > 0) {
+    console.warn(
+      `[benchmark] Ignoring leak benchmark env vars without BENCH_LEAK=1: ${configuredLeakEnvNames.join(', ')}`,
+    )
+  }
+}
 
 function forceGc() {
   if (typeof globalThis.Bun?.gc === 'function') {
@@ -76,7 +100,7 @@ function readRequiredMemoryStats() {
   const stats = readMemoryStats()
 
   if (!stats) {
-    throw new Error('BENCH_LEAK requires BENCH_MEMORY=1')
+    throw new Error('BENCH_LEAK requires memory stats to be enabled')
   }
 
   return stats
