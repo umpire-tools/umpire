@@ -96,7 +96,7 @@ function evaluateAnyOfRule<
   let reasons: string[] | undefined
 
   for (const innerRule of rules) {
-    const result = evaluateRuleForField(
+    const result = evaluateRuleForTarget(
       innerRule,
       field,
       fields,
@@ -220,7 +220,7 @@ export function evaluateRuleForField<
 
       for (const innerRule of branchRules) {
         innerResults.push(
-          evaluateRuleForField(
+          evaluateRuleForTarget(
             innerRule,
             field,
             fields,
