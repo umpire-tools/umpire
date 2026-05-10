@@ -18,4 +18,5 @@ export type {
   EffectAdapter,
   EffectAdapterRunResult,
 } from './adapter.js'
+export { UmpireValidationError } from './errors.js'
 export { fromSubscriptionRef } from './from-subscription-ref.js'

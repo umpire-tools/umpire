@@ -1,5 +1,5 @@
 import { enabledWhen, fairWhen, umpire } from '@umpire/core'
-import { Schema } from 'effect'
+import { Effect, Schema } from 'effect'
 import { createEffectAdapter } from '../src/adapter.js'
 
 const emailSchema = stringMatching(
@@ -335,5 +335,113 @@ describe('createEffectAdapter', () => {
 
     expect(result.result).toMatchObject({ _tag: 'Left' })
     expect(result.errors).toEqual({ _root: 'Passwords do not match' })
+  })
+
+  test('runEffect returns the same result shape as run()', async () => {
+    const validation = createEffectAdapter({
+      schemas: { email: emailSchema },
+    })
+    const ump = umpire({
+      fields: { email: { required: true } },
+      rules: [],
+      validators: validation.validators,
+    })
+    const availability = ump.check({ email: 'bad' })
+    const values = { email: 'bad' }
+
+    const syncResult = validation.run(availability, values)
+    const effectResult = await Effect.runPromise(
+      validation.runEffect(availability, values),
+    )
+
+    expect(effectResult.errors).toEqual(syncResult.errors)
+    expect(effectResult.normalizedErrors).toEqual(syncResult.normalizedErrors)
+    expect(effectResult.result).toMatchObject(syncResult.result)
+    expect(effectResult.schemaFields).toEqual(syncResult.schemaFields)
+  })
+
+  test('runValidate returns the decoded value on success (not the decode wrapper)', async () => {
+    const validation = createEffectAdapter({
+      schemas: { name: Schema.String },
+    })
+    const ump = umpire({
+      fields: { name: { required: true } },
+      rules: [],
+      validators: validation.validators,
+    })
+    const availability = ump.check({ name: 'Alice' })
+
+    const result = await Effect.runPromise(
+      validation.runValidate(availability, { name: 'Alice' }),
+    )
+
+    expect(result).toEqual({ name: 'Alice' })
+  })
+
+  test('runValidate returns the transformed/decoded value for coercing schemas', async () => {
+    const validation = createEffectAdapter({
+      schemas: { age: Schema.NumberFromString },
+    })
+    const ump = umpire({
+      fields: { age: { required: true } },
+      rules: [],
+      validators: validation.validators,
+    })
+    const availability = ump.check({ age: '42' })
+
+    const result = await Effect.runPromise(
+      validation.runValidate(availability, { age: '42' }),
+    )
+
+    // Schema.NumberFromString coerces string "42" to number 42
+    expect(result).toEqual({ age: 42 })
+    expect(typeof result.age).toBe('number')
+  })
+
+  test('runValidate fails with UmpireValidationError on validation errors', async () => {
+    const validation = createEffectAdapter({
+      schemas: { email: emailSchema },
+    })
+    const ump = umpire({
+      fields: { email: { required: true } },
+      rules: [],
+      validators: validation.validators,
+    })
+    const availability = ump.check({ email: 'bad' })
+
+    const error = await Effect.runPromise(
+      Effect.flip(validation.runValidate(availability, { email: 'bad' })),
+    )
+
+    expect(error._tag).toBe('UmpireValidationError')
+    expect(error.errors).toEqual({ email: 'Enter a valid email' })
+    expect(error.normalizedErrors).toEqual([
+      { field: 'email', message: 'Enter a valid email' },
+    ])
+  })
+
+  test('can catch UmpireValidationError with Effect.catchTag', async () => {
+    const validation = createEffectAdapter({
+      schemas: { email: emailSchema },
+    })
+    const ump = umpire({
+      fields: { email: { required: true } },
+      rules: [],
+      validators: validation.validators,
+    })
+    const availability = ump.check({ email: 'bad' })
+
+    const result = await Effect.runPromise(
+      Effect.gen(function* () {
+        yield* validation.runValidate(availability, { email: 'bad' })
+        return 'success'
+      }).pipe(
+        Effect.catchTag('UmpireValidationError', (error) =>
+          Effect.succeed(`caught: ${error.errors.email}`),
+        ),
+      ),
+    )
+
+    expect(result).toBe('caught: Enter a valid email')
   })
 })
