@@ -11,6 +11,7 @@ import {
   runFieldValidator,
 } from './validation.js'
 import type {
+  AvailabilityMap,
   FieldValidator,
   FieldDef,
   FieldValues,
@@ -133,6 +134,17 @@ type RuleOptions<
     | RuleTraceAttachment<FieldValues<F>, C>[]
 }
 
+export type InternalRuleTargetEvaluator<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+> = (
+  field: keyof F & string,
+  values: FieldValues<F>,
+  conditions: C,
+  fields?: F,
+  availability?: Partial<AvailabilityMap<F>>,
+) => RuleEvaluation
+
 type Source<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -202,7 +214,7 @@ export type InternalFairPredicate<
 export type InternalRuleMetadata<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-> =
+> = (
   | {
       kind: 'enabledWhen'
       predicate: Predicate<F, C>
@@ -244,6 +256,9 @@ export type InternalRuleMetadata<
       kind: 'custom'
       constraint: RuleConstraint
     }
+) & {
+  evaluateTarget?: InternalRuleTargetEvaluator<F, C>
+}
 
 type InternalRuleMetadataWithOptions<
   F extends Record<string, FieldDef>,
@@ -322,6 +337,15 @@ function createResultMap<F extends Record<string, FieldDef>>(
     results.set(target, resultForTarget(target))
   }
 
+  return results
+}
+
+function createSingleResultMap<F extends Record<string, FieldDef>>(
+  target: keyof F & string,
+  result: RuleResult,
+): Map<string, RuleEvaluation> {
+  const results = new Map<string, RuleEvaluation>()
+  results.set(target, result)
   return results
 }
 
@@ -803,12 +827,7 @@ function getFairSourceFields<
 function getSourceLabel<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
->(source: Source<F, C>): string {
-  // Stryker disable next-line ConditionalExpression,StringLiteral,BlockStatement: equivalent mutant — getSourceLabel is only called for non-string sources (disables() guards string sources at the call site); this branch is never reachable for string inputs
-  if (typeof source === 'string') {
-    return source
-  }
-
+>(source: Predicate<F, C>): string {
   return getCheckField(source) ?? 'condition'
 }
 
@@ -826,6 +845,38 @@ function isSourceActive<
   }
 
   return source(values, conditions)
+}
+
+function isRequiredDependencySatisfied<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  dependency: Source<F, C>,
+  values: FieldValues<F>,
+  conditions: C,
+  fields: F | undefined,
+  availability: Partial<AvailabilityMap<F>> | undefined,
+): boolean {
+  if (typeof dependency !== 'string') {
+    return dependency(values, conditions)
+  }
+
+  return (
+    isSatisfied(values[dependency], fields?.[dependency]) &&
+    (availability?.[dependency]?.enabled ?? true) &&
+    (availability?.[dependency]?.fair ?? true)
+  )
+}
+
+function getRequiredDependencyFallback<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(dependency: Source<F, C>): string {
+  if (typeof dependency === 'string') {
+    return `requires ${dependency}`
+  }
+
+  return `required condition not met`
 }
 
 function isRuleOptions<
@@ -1064,15 +1115,7 @@ export function resolveOneOfState<
       }
     }
 
-    // Stryker disable next-line ConditionalExpression,EqualityOperator,BlockStatement: equivalent mutant — the >1 block body and the post-block fallback are identical (same warn + same return shape with satisfiedBranches[0])
-    if (newlySatisfiedBranches.length > 1) {
-      warnAmbiguousOneOf(groupName, satisfiedBranches)
-      return {
-        activeBranch: satisfiedBranches[0],
-        method: ONE_OF_METHOD.fallbackFirstBranch,
-        branches: branchStates,
-      }
-    }
+    // Multiple newly satisfied branches use the same ambiguous fallback below.
   }
 
   warnAmbiguousOneOf(groupName, satisfiedBranches)
@@ -1092,25 +1135,35 @@ export function enabledWhen<
   options?: RuleOptions<F, C>,
 ): Rule<F, C> {
   const target = getFieldNameOrThrow(field)
+  const evaluateTarget: InternalRuleTargetEvaluator<F, C> = (
+    _field,
+    values,
+    conditions,
+  ) => {
+    const passed = predicate(values, conditions)
+
+    return {
+      enabled: passed,
+      reason: passed
+        ? null
+        : resolveReason(
+            options?.reason,
+            values,
+            conditions,
+            'condition not met',
+          ),
+    }
+  }
 
   const rule: InternalRuleCarrier<F, C> = {
     type: 'enabledWhen',
     targets: [target],
     sources: [],
     evaluate(values, conditions) {
-      const passed = predicate(values, conditions)
-
-      return createResultMap([target], () => ({
-        enabled: passed,
-        reason: passed
-          ? null
-          : resolveReason(
-              options?.reason,
-              values,
-              conditions,
-              'condition not met',
-            ),
-      }))
+      return createSingleResultMap(
+        target,
+        evaluateTarget(target, values, conditions),
+      )
     },
   }
 
@@ -1118,6 +1171,7 @@ export function enabledWhen<
     kind: 'enabledWhen',
     predicate,
     options,
+    evaluateTarget,
   }
 
   return rule
@@ -1133,36 +1187,47 @@ export function fairWhen<
   options?: RuleOptions<F, C>,
 ): Rule<F, C> {
   const target = getFieldNameOrThrow(field)
+  const evaluateTarget: InternalRuleTargetEvaluator<F, C> = (
+    field,
+    values,
+    conditions,
+    fields,
+  ) => {
+    const value = values[field]
+
+    if (!isSatisfied(value, fields?.[field])) {
+      return {
+        enabled: true,
+        fair: true,
+        reason: null,
+      }
+    }
+
+    const passed = predicate(value as NonNullable<V>, values, conditions)
+
+    return {
+      enabled: true,
+      fair: passed,
+      reason: passed
+        ? null
+        : resolveReason(
+            options?.reason,
+            values,
+            conditions,
+            'selection is no longer valid',
+          ),
+    }
+  }
 
   const rule: InternalRuleCarrier<F, C> = {
     type: 'fairWhen',
     targets: [target],
     sources: getFairSourceFields(predicate),
     evaluate(values, conditions, _prev, fields) {
-      const value = values[target]
-
-      if (!isSatisfied(value, fields?.[target])) {
-        return createResultMap([target], () => ({
-          enabled: true,
-          fair: true,
-          reason: null,
-        }))
-      }
-
-      const passed = predicate(value as NonNullable<V>, values, conditions)
-
-      return createResultMap([target], () => ({
-        enabled: true,
-        fair: passed,
-        reason: passed
-          ? null
-          : resolveReason(
-              options?.reason,
-              values,
-              conditions,
-              'selection is no longer valid',
-            ),
-      }))
+      return createSingleResultMap(
+        target,
+        evaluateTarget(target, values, conditions, fields),
+      )
     },
   }
 
@@ -1170,6 +1235,7 @@ export function fairWhen<
     kind: 'fairWhen',
     predicate: predicate as FairPredicate<unknown, F, C>,
     options,
+    evaluateTarget,
   }
 
   return rule
@@ -1236,6 +1302,51 @@ export function requires<
     )
   }
 
+  const evaluateTarget: InternalRuleTargetEvaluator<F, C> = (
+    _field,
+    values,
+    conditions,
+    fields,
+    availability,
+  ) => {
+    let reason: string | null = null
+    let reasons: string[] | undefined
+
+    for (const dependency of dependencies) {
+      if (
+        isRequiredDependencySatisfied(
+          dependency,
+          values,
+          conditions,
+          fields,
+          availability,
+        )
+      ) {
+        continue
+      }
+
+      const resolvedReason = resolveReason(
+        options?.reason,
+        values,
+        conditions,
+        getRequiredDependencyFallback(dependency),
+      )
+
+      if (reason === null) {
+        reason = resolvedReason
+      }
+
+      reasons ??= []
+      reasons.push(resolvedReason)
+    }
+
+    return {
+      enabled: reasons === undefined,
+      reason,
+      reasons,
+    }
+  }
+
   const rule: InternalRuleCarrier<F, C> = {
     type: 'requires',
     targets: [target],
@@ -1243,45 +1354,10 @@ export function requires<
       dependencies.flatMap((dependency) => getSourceFields(dependency)),
     ),
     evaluate(values, conditions, _prev, fields, availability) {
-      let reason: string | null = null
-      const reasons: string[] = []
-
-      for (const dependency of dependencies) {
-        const passed =
-          typeof dependency === 'string'
-            ? isSatisfied(values[dependency], fields?.[dependency]) &&
-              (availability?.[dependency]?.enabled ?? true) &&
-              (availability?.[dependency]?.fair ?? true)
-            : dependency(values, conditions)
-
-        if (passed) {
-          continue
-        }
-
-        const fallback =
-          typeof dependency === 'string'
-            ? `requires ${dependency}`
-            : `required condition not met`
-
-        const resolvedReason = resolveReason(
-          options?.reason,
-          values,
-          conditions,
-          fallback,
-        )
-
-        if (reason === null) {
-          reason = resolvedReason
-        }
-
-        reasons.push(resolvedReason)
-      }
-
-      return createResultMap([target], () => ({
-        enabled: reasons.length === 0,
-        reason,
-        reasons: reasons.length === 0 ? undefined : reasons,
-      }))
+      return createSingleResultMap(
+        target,
+        evaluateTarget(target, values, conditions, fields, availability),
+      )
     },
   }
 
@@ -1289,6 +1365,7 @@ export function requires<
     kind: 'requires',
     dependencies,
     options,
+    evaluateTarget,
   }
 
   return rule

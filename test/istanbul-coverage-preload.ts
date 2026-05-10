@@ -38,6 +38,7 @@ function shouldInstrument(filePath: string) {
 
   if (
     relativePath.includes('/__tests__/') ||
+    relativePath.includes('/scripts/') ||
     relativePath.includes('/smoke/') ||
     relativePath.includes('/dist/') ||
     relativePath.includes('/coverage-istanbul/')

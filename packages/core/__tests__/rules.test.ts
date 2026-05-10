@@ -15,6 +15,7 @@ import {
   getInternalRuleOptions,
   getNamedCheckMetadata,
   getRuleConstraint,
+  isGateRule,
   inspectPredicate,
   inspectRule,
   oneOf,
@@ -1006,6 +1007,24 @@ describe('defineRule', () => {
       enabled: false,
       reason: 'custom blocked',
     })
+  })
+
+  test('classifies non-fair rules as gate rules', () => {
+    const gateRule = defineRule<TestFields>({
+      type: 'gate',
+      targets: ['alpha'],
+      evaluate: () => new Map([['alpha', { enabled: true, reason: null }]]),
+    })
+    const fairRule = defineRule<TestFields>({
+      type: 'fair',
+      targets: ['alpha'],
+      constraint: 'fair',
+      evaluate: () =>
+        new Map([['alpha', { enabled: true, fair: true, reason: null }]]),
+    })
+
+    expect(isGateRule(gateRule)).toBe(true)
+    expect(isGateRule(fairRule)).toBe(false)
   })
 
   test('lets anyOf combine fair custom rules when constraint is fair', () => {

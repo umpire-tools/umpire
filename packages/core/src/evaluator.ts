@@ -2,7 +2,7 @@ import {
   appendCompositeFailureReasons,
   combineCompositeResults,
 } from './composite.js'
-import { getInternalRuleMetadata, isFairRule, isGateRule } from './rules.js'
+import { getInternalRuleMetadata, isFairRule } from './rules.js'
 import { isSatisfied } from './satisfaction.js'
 import type {
   AvailabilityMap,
@@ -25,6 +25,105 @@ const EMPTY_RULE_PHASE_BUCKETS = {
   fairRules: [],
 } as const
 
+const DEFAULT_RULE_EVALUATION: RuleEvaluation = Object.freeze({
+  enabled: true,
+  reason: null,
+})
+
+type CompositeConstraint = 'enabled' | 'fair'
+
+function isCompositePassed(
+  constraint: CompositeConstraint,
+  result: RuleEvaluation,
+): boolean {
+  return constraint === 'fair' ? result.fair !== false : result.enabled
+}
+
+function createCompositePassResult(
+  constraint: CompositeConstraint,
+): RuleEvaluation {
+  if (constraint === 'fair') {
+    return {
+      enabled: true,
+      fair: true,
+      reason: null,
+    }
+  }
+
+  return {
+    enabled: true,
+    reason: null,
+  }
+}
+
+function createCompositeFailureResult(
+  constraint: CompositeConstraint,
+  reasons: string[] | undefined,
+): RuleEvaluation {
+  const normalizedReasons = reasons && reasons.length > 0 ? reasons : undefined
+
+  if (constraint === 'fair') {
+    return {
+      enabled: true,
+      fair: false,
+      reason: normalizedReasons?.[0] ?? null,
+      reasons: normalizedReasons,
+    }
+  }
+
+  return {
+    enabled: false,
+    reason: normalizedReasons?.[0] ?? null,
+    reasons: normalizedReasons,
+  }
+}
+
+function evaluateAnyOfRule<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  rules: Rule<F, C>[],
+  constraint: CompositeConstraint,
+  field: keyof F & string,
+  fields: F,
+  values: FieldValues<F>,
+  conditions: C,
+  prev: FieldValues<F> | undefined,
+  availability: Partial<AvailabilityMap<F>>,
+  baseRuleCache: Map<Rule<F, C>, Map<string, RuleEvaluation>>,
+): RuleEvaluation {
+  let passed = false
+  let reasons: string[] | undefined
+
+  for (const innerRule of rules) {
+    const result = evaluateRuleForTarget(
+      innerRule,
+      field,
+      fields,
+      values,
+      conditions,
+      prev,
+      availability,
+      baseRuleCache,
+    )
+
+    if (isCompositePassed(constraint, result)) {
+      passed = true
+      reasons = undefined
+      continue
+    }
+
+    if (!passed) {
+      reasons ??= []
+      appendCompositeFailureReasons(result, reasons)
+    }
+  }
+
+  return passed
+    ? createCompositePassResult(constraint)
+    : createCompositeFailureResult(constraint, reasons)
+}
+
 function partitionRulesByPhase<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -38,10 +137,7 @@ function partitionRulesByPhase<
       continue
     }
 
-    // Stryker disable next-line ConditionalExpression: equivalent mutant — isGateRule is !isFairRule, so every non-fair rule is a gate rule; the check can never be false at this point
-    if (isGateRule(rule)) {
-      gateRules.push(rule)
-    }
+    gateRules.push(rule)
   }
 
   return {
@@ -103,24 +199,17 @@ export function evaluateRuleForField<
 
   // Stryker disable ConditionalExpression,BlockStatement,StringLiteral: equivalent mutant — anyOf/eitherOf implement their own evaluate() that mirrors these paths exactly; bypassing the metadata branch produces identical results; 'or'→'' is equivalent because '' falls through to the OR branch in combineCompositeResults
   if (metadata?.kind === 'anyOf') {
-    const innerResults: RuleEvaluation[] = []
-
-    for (const innerRule of metadata.rules) {
-      innerResults.push(
-        evaluateRuleForField(
-          innerRule,
-          field,
-          fields,
-          values,
-          conditions,
-          prev,
-          availability,
-          baseRuleCache,
-        ),
-      )
-    }
-
-    return combineCompositeResults(metadata.constraint, 'or', innerResults)
+    return evaluateAnyOfRule(
+      metadata.rules,
+      metadata.constraint,
+      field,
+      fields,
+      values,
+      conditions,
+      prev,
+      availability,
+      baseRuleCache,
+    )
   }
 
   if (metadata?.kind === 'eitherOf') {
@@ -131,7 +220,7 @@ export function evaluateRuleForField<
 
       for (const innerRule of branchRules) {
         innerResults.push(
-          evaluateRuleForField(
+          evaluateRuleForTarget(
             innerRule,
             field,
             fields,
@@ -162,16 +251,56 @@ export function evaluateRuleForField<
   const result = evaluation.get(field)
 
   if (!result) {
-    return { enabled: true, reason: null }
+    return DEFAULT_RULE_EVALUATION
+  }
+
+  if (!result.reasons || result.reasons.length > 0) {
+    return result
   }
 
   return {
     enabled: result.enabled,
     fair: result.fair,
     reason: result.reason,
-    reasons:
-      result.reasons && result.reasons.length > 0 ? result.reasons : undefined,
+    reasons: undefined,
   }
+}
+
+function evaluateRuleForTarget<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  rule: Rule<F, C>,
+  field: keyof F & string,
+  fields: F,
+  values: FieldValues<F>,
+  conditions: C,
+  prev: FieldValues<F> | undefined,
+  availability: Partial<AvailabilityMap<F>>,
+  baseRuleCache: Map<Rule<F, C>, Map<string, RuleEvaluation>>,
+): RuleEvaluation {
+  const metadata = getInternalRuleMetadata(rule)
+
+  if (metadata?.kind === rule.type && metadata.evaluateTarget) {
+    return metadata.evaluateTarget(
+      field,
+      values,
+      conditions,
+      fields,
+      availability,
+    )
+  }
+
+  return evaluateRuleForField(
+    rule,
+    field,
+    fields,
+    values,
+    conditions,
+    prev,
+    availability,
+    baseRuleCache,
+  )
 }
 
 export function evaluate<
@@ -202,7 +331,7 @@ export function evaluate<
     let reason: string | null = null
 
     for (const rule of gateRules) {
-      const result = evaluateRuleForField(
+      const result = evaluateRuleForTarget(
         rule,
         field,
         fields,
@@ -228,7 +357,7 @@ export function evaluate<
 
     if (enabled) {
       for (const rule of fairRules) {
-        const result = evaluateRuleForField(
+        const result = evaluateRuleForTarget(
           rule,
           field,
           fields,

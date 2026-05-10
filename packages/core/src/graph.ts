@@ -179,7 +179,7 @@ export function topologicalSort(
   }
 
   const queue = orderedFields.filter(
-    (field) => (incomingCounts.get(field) ?? 0) === 0,
+    (field) => incomingCounts.get(field)! === 0,
   )
   const result: string[] = []
 

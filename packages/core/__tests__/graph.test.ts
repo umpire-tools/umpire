@@ -548,6 +548,42 @@ describe('graph utilities', () => {
     expect(topologicalSort(graph, ['alpha', 'beta'])).toEqual(['alpha', 'beta'])
   })
 
+  test('topologicalSort treats missing ordering bookkeeping as empty', () => {
+    const graph = {
+      nodes: ['alpha'],
+      edges: [],
+      adjacency: new Map<string, string[]>(),
+      incomingCounts: new Map<string, number>(),
+      deferredEdgeGroups: [],
+    }
+
+    expect(topologicalSort(graph, ['alpha'])).toEqual(['alpha'])
+  })
+
+  test('topologicalSort handles missing incoming counts for queued and adjacent nodes', () => {
+    const graph = {
+      adjacency: new Map([['alpha', new Set(['beta'])]]),
+      incomingCounts: new Map<string, number>(),
+      orderingAdjacency: new Map<string, Set<string>>(),
+      orderingIncomingCounts: new Map<string, number>(),
+      edges: [],
+    }
+
+    expect(topologicalSort(graph, ['alpha', 'beta'])).toEqual(['alpha', 'beta'])
+  })
+
+  test('topologicalSort tolerates adjacency entries outside the requested fields', () => {
+    const graph = {
+      adjacency: new Map([['alpha', new Set(['beta'])]]),
+      incomingCounts: new Map([['alpha', 0]]),
+      orderingAdjacency: new Map<string, Set<string>>(),
+      orderingIncomingCounts: new Map<string, number>(),
+      edges: [],
+    }
+
+    expect(topologicalSort(graph, ['alpha'])).toEqual(['alpha'])
+  })
+
   test('exportGraph deduplicates repeated raw edges', () => {
     expect(
       exportGraph({

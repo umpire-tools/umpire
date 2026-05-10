@@ -1,4 +1,4 @@
-import { enabledWhen, fairWhen } from '../src/rules.js'
+import { defineRule, enabledWhen, fairWhen } from '../src/rules.js'
 import { umpire } from '../src/umpire.js'
 
 type TestFields = {
@@ -122,6 +122,86 @@ describe('play', () => {
       {
         field: 'dependent',
         reason: 'condition not met',
+        suggestedValue: undefined,
+      },
+    ])
+  })
+
+  test('uses the disabled fallback reason when a silent rule disables a field', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        toggle: {},
+        dependent: {},
+        other: {},
+      },
+      rules: [
+        defineRule<TestFields>({
+          type: 'silent-disable',
+          targets: ['dependent'],
+          evaluate: (values) =>
+            new Map([
+              [
+                'dependent',
+                {
+                  enabled: values.toggle === true,
+                  reason: null,
+                },
+              ],
+            ]),
+        }),
+      ],
+    })
+
+    expect(
+      ump.play(
+        { values: { toggle: true, dependent: 'keep me' } },
+        { values: { toggle: false, dependent: 'keep me' } },
+      ),
+    ).toEqual([
+      {
+        field: 'dependent',
+        reason: 'field disabled',
+        suggestedValue: undefined,
+      },
+    ])
+  })
+
+  test('uses the fouled fallback reason when a silent fair rule fouls a field', () => {
+    const ump = umpire<TestFields>({
+      fields: {
+        toggle: {},
+        dependent: {},
+        other: {},
+      },
+      rules: [
+        defineRule<TestFields>({
+          type: 'silent-fair',
+          constraint: 'fair',
+          targets: ['dependent'],
+          evaluate: (values) =>
+            new Map([
+              [
+                'dependent',
+                {
+                  enabled: true,
+                  fair: values.toggle === true,
+                  reason: null,
+                },
+              ],
+            ]),
+        }),
+      ],
+    })
+
+    expect(
+      ump.play(
+        { values: { toggle: true, dependent: 'keep me' } },
+        { values: { toggle: false, dependent: 'keep me' } },
+      ),
+    ).toEqual([
+      {
+        field: 'dependent',
+        reason: 'field fouled',
         suggestedValue: undefined,
       },
     ])
