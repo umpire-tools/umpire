@@ -160,7 +160,11 @@ describe('Umpire JSX — Disables', () => {
         <Field name="password" />
       </Umpire>
     )
-    const result = ump.check({ guestCheckout: true, email: null, password: null })
+    const result = ump.check({
+      guestCheckout: true,
+      email: null,
+      password: null,
+    })
     expect(result.email.enabled).toBe(false)
     expect(result.email.reason).toBe('Guest mode disables account fields')
     expect(result.password.enabled).toBe(false)
