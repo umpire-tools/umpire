@@ -133,6 +133,7 @@ export default defineConfig({
               { label: 'Pinia', slug: 'adapters/pinia' },
               { label: 'Redux', slug: 'adapters/redux' },
               { label: 'TanStack Store', slug: 'adapters/tanstack-store' },
+              { label: 'TanStack Form', slug: 'adapters/tanstack-form' },
               { label: 'Vuex', slug: 'adapters/vuex' },
             ] },
             { label: 'Validation', collapsed: false, items: [
@@ -148,6 +149,7 @@ export default defineConfig({
         {
           label: 'Examples',
           items: [
+            { label: 'Address Form', slug: 'examples/address-form' },
             { label: 'Minesweeper', slug: 'examples/minesweeper' },
             { label: 'PC Builder', slug: 'examples/pc-builder' },
             { label: 'Calendar Recurrence', slug: 'examples/calendar' },

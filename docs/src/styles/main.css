@@ -38,5 +38,6 @@
 @import './components/_components.config-driven-demo.css';
 @import './components/_components.minefield-callout.css';
 @import './components/_components.divider.css';
+@import './components/_components.address-demo.css';
 
 /* Utilities */

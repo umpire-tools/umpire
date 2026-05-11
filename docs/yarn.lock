@@ -1674,6 +1674,68 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/devtools-event-client@npm:^0.4.1":
+  version: 0.4.3
+  resolution: "@tanstack/devtools-event-client@npm:0.4.3"
+  bin:
+    intent: bin/intent.js
+  checksum: 10c0/e49eb4b884e20de655a7cf463898bf6eba7e7470ed65b32f4079c886d700500078a9d6deac47dbf799f83500c7e14ae140e304eb840fe11ae7f255932c4f600b
+  languageName: node
+  linkType: hard
+
+"@tanstack/form-core@npm:1.29.1, @tanstack/form-core@npm:^1.29.1":
+  version: 1.29.1
+  resolution: "@tanstack/form-core@npm:1.29.1"
+  dependencies:
+    "@tanstack/devtools-event-client": "npm:^0.4.1"
+    "@tanstack/pacer-lite": "npm:^0.1.1"
+    "@tanstack/store": "npm:^0.9.1"
+  checksum: 10c0/909b66103a86a45048647570dafbe8615c539c6283e9f58ed82e4f148e1a92988c45c97064a084905d43a0c5aca7a3c1a8fd4577afb94afc2245152b62393946
+  languageName: node
+  linkType: hard
+
+"@tanstack/pacer-lite@npm:^0.1.1":
+  version: 0.1.1
+  resolution: "@tanstack/pacer-lite@npm:0.1.1"
+  checksum: 10c0/c74c2e67dba3a14cd14134c27cff4856977c9019cf4dbe6a545a06960f4c9c8edad846e526595206aa01c42cc5cd5ee217761547ab6d2a3edec6fb3d69864686
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-form@npm:^1.29.1":
+  version: 1.29.1
+  resolution: "@tanstack/react-form@npm:1.29.1"
+  dependencies:
+    "@tanstack/form-core": "npm:1.29.1"
+    "@tanstack/react-store": "npm:^0.9.1"
+  peerDependencies:
+    react: ^17.0.0 || ^18.0.0 || ^19.0.0
+  peerDependenciesMeta:
+    "@tanstack/react-start":
+      optional: true
+  checksum: 10c0/3ca29c2f569cf99fa817c52e43303df3ade9b409f32550eee70dd6ca25e50a3a3b8bb31ce3b96e7767e388e7667e16291700181b48dacc52b673f059d80dbdc5
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-store@npm:^0.9.1":
+  version: 0.9.3
+  resolution: "@tanstack/react-store@npm:0.9.3"
+  dependencies:
+    "@tanstack/store": "npm:0.9.3"
+    use-sync-external-store: "npm:^1.6.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/4d043b7211129418efa5ec1fafec7315b46b7ef92658f434b8e7a9a5dbf7687418c70f3c11f9d1636f304fa868a6d969380444d2042442ef94fc5517d19c5e4c
+  languageName: node
+  linkType: hard
+
+"@tanstack/store@npm:0.9.3, @tanstack/store@npm:^0.9.1":
+  version: 0.9.3
+  resolution: "@tanstack/store@npm:0.9.3"
+  checksum: 10c0/ec022c792c298be0717d7a2d06d6db4459077db775a27d86a2a248f446257e133c5d7c77a74bf6a4fa6993cfaef09b6f58a68a601c3becca834ed0b457ebe824
+  languageName: node
+  linkType: hard
+
 "@types/babel__core@npm:^7.20.5":
   version: 7.20.5
   resolution: "@types/babel__core@npm:7.20.5"
@@ -1935,6 +1997,42 @@ __metadata:
   resolution: "@umpire/store@portal:../packages/store::locator=umpire-docs%40workspace%3A."
   dependencies:
     "@umpire/core": "workspace:^"
+  languageName: node
+  linkType: soft
+
+"@umpire/tanstack-form@portal:../packages/tanstack-form::locator=umpire-docs%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@umpire/tanstack-form@portal:../packages/tanstack-form::locator=umpire-docs%40workspace%3A."
+  dependencies:
+    "@umpire/core": "workspace:^"
+    "@umpire/reads": "workspace:^"
+  peerDependencies:
+    "@tanstack/form-core": ^1.0.0
+    "@tanstack/react-form": ^1.0.0
+    "@tanstack/solid-form": ^1.0.0
+    "@tanstack/vue-form": ^1.0.0
+    "@umpire/react": "workspace:^"
+    "@umpire/solid": "workspace:^"
+    react: ^18.0.0 || ^19.0.0
+    solid-js: ^1.0.0
+    vue: ^3.0.0
+  peerDependenciesMeta:
+    "@tanstack/react-form":
+      optional: true
+    "@tanstack/solid-form":
+      optional: true
+    "@tanstack/vue-form":
+      optional: true
+    "@umpire/react":
+      optional: true
+    "@umpire/solid":
+      optional: true
+    react:
+      optional: true
+    solid-js:
+      optional: true
+    vue:
+      optional: true
   languageName: node
   linkType: soft
 
@@ -5829,6 +5927,8 @@ __metadata:
     "@daywatch/cal-react": "npm:0.1.1"
     "@preact/signals": "npm:^1.0.0"
     "@preact/signals-core": "npm:^1.0.0"
+    "@tanstack/form-core": "npm:^1.29.1"
+    "@tanstack/react-form": "npm:^1.29.1"
     "@types/react": "npm:^19.2.14"
     "@types/react-dom": "npm:^19.2.3"
     "@umpire/core": "portal:../packages/core"
@@ -5839,6 +5939,7 @@ __metadata:
     "@umpire/reads": "portal:../packages/reads"
     "@umpire/signals": "portal:../packages/signals"
     "@umpire/store": "portal:../packages/store"
+    "@umpire/tanstack-form": "portal:../packages/tanstack-form"
     "@umpire/write": "portal:../packages/write"
     "@umpire/zod": "portal:../packages/zod"
     "@umpire/zustand": "portal:../packages/zustand"
@@ -6081,6 +6182,15 @@ __metadata:
   bin:
     update-browserslist-db: cli.js
   checksum: 10c0/13a00355ea822388f68af57410ce3255941d5fb9b7c49342c4709a07c9f230bbef7f7499ae0ca7e0de532e79a82cc0c4edbd125f1a323a1845bf914efddf8bec
+  languageName: node
+  linkType: hard
+
+"use-sync-external-store@npm:^1.6.0":
+  version: 1.6.0
+  resolution: "use-sync-external-store@npm:1.6.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/35e1179f872a53227bdf8a827f7911da4c37c0f4091c29b76b1e32473d1670ebe7bcd880b808b7549ba9a5605c233350f800ffab963ee4a4ee346ee983b6019b
   languageName: node
   linkType: hard
 

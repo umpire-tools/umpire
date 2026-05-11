@@ -720,6 +720,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@happy-dom/global-registrator@npm:^17.4.4":
+  version: 17.6.3
+  resolution: "@happy-dom/global-registrator@npm:17.6.3"
+  dependencies:
+    happy-dom: "npm:^17.6.3"
+  checksum: 10c0/99b96da82eb7d91447d06f33706f7edf8b43c1d843282d49fe372d849983e2b07e34072839e66739b9273d2bb048dffe4ed32c867a9bbaa74e67f2eaa79b3a50
+  languageName: node
+  linkType: hard
+
 "@happy-dom/global-registrator@npm:^20.0.10":
   version: 20.8.9
   resolution: "@happy-dom/global-registrator@npm:20.8.9"
@@ -1446,10 +1455,116 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/store@npm:^0.9.3":
+"@tanstack/devtools-event-client@npm:^0.4.1":
+  version: 0.4.3
+  resolution: "@tanstack/devtools-event-client@npm:0.4.3"
+  bin:
+    intent: bin/intent.js
+  checksum: 10c0/e49eb4b884e20de655a7cf463898bf6eba7e7470ed65b32f4079c886d700500078a9d6deac47dbf799f83500c7e14ae140e304eb840fe11ae7f255932c4f600b
+  languageName: node
+  linkType: hard
+
+"@tanstack/form-core@npm:1.29.1, @tanstack/form-core@npm:^1.29.1":
+  version: 1.29.1
+  resolution: "@tanstack/form-core@npm:1.29.1"
+  dependencies:
+    "@tanstack/devtools-event-client": "npm:^0.4.1"
+    "@tanstack/pacer-lite": "npm:^0.1.1"
+    "@tanstack/store": "npm:^0.9.1"
+  checksum: 10c0/909b66103a86a45048647570dafbe8615c539c6283e9f58ed82e4f148e1a92988c45c97064a084905d43a0c5aca7a3c1a8fd4577afb94afc2245152b62393946
+  languageName: node
+  linkType: hard
+
+"@tanstack/pacer-lite@npm:^0.1.1":
+  version: 0.1.1
+  resolution: "@tanstack/pacer-lite@npm:0.1.1"
+  checksum: 10c0/c74c2e67dba3a14cd14134c27cff4856977c9019cf4dbe6a545a06960f4c9c8edad846e526595206aa01c42cc5cd5ee217761547ab6d2a3edec6fb3d69864686
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-form@npm:^1.29.1":
+  version: 1.29.1
+  resolution: "@tanstack/react-form@npm:1.29.1"
+  dependencies:
+    "@tanstack/form-core": "npm:1.29.1"
+    "@tanstack/react-store": "npm:^0.9.1"
+  peerDependencies:
+    react: ^17.0.0 || ^18.0.0 || ^19.0.0
+  peerDependenciesMeta:
+    "@tanstack/react-start":
+      optional: true
+  checksum: 10c0/3ca29c2f569cf99fa817c52e43303df3ade9b409f32550eee70dd6ca25e50a3a3b8bb31ce3b96e7767e388e7667e16291700181b48dacc52b673f059d80dbdc5
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-store@npm:^0.9.1":
+  version: 0.9.3
+  resolution: "@tanstack/react-store@npm:0.9.3"
+  dependencies:
+    "@tanstack/store": "npm:0.9.3"
+    use-sync-external-store: "npm:^1.6.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/4d043b7211129418efa5ec1fafec7315b46b7ef92658f434b8e7a9a5dbf7687418c70f3c11f9d1636f304fa868a6d969380444d2042442ef94fc5517d19c5e4c
+  languageName: node
+  linkType: hard
+
+"@tanstack/solid-form@npm:^1.29.1":
+  version: 1.29.1
+  resolution: "@tanstack/solid-form@npm:1.29.1"
+  dependencies:
+    "@tanstack/form-core": "npm:1.29.1"
+    "@tanstack/solid-store": "npm:^0.9.1"
+  peerDependencies:
+    solid-js: ">=1.9.9"
+  checksum: 10c0/17b7b8451fa61064cd39dbfedd23450ec18e3c86a8cbe280e5614f7c3804aa3e5ef70300ead73b108dcc419a9c701add772725444e093f486664e50d0f81ac03
+  languageName: node
+  linkType: hard
+
+"@tanstack/solid-store@npm:^0.9.1":
+  version: 0.9.3
+  resolution: "@tanstack/solid-store@npm:0.9.3"
+  dependencies:
+    "@tanstack/store": "npm:0.9.3"
+  peerDependencies:
+    solid-js: ^1.6.0
+  checksum: 10c0/4806287a74e4278896869ff89b03ac991db6ee064d5a6b1d2870922e519b40b4810cffdf0bf8c00ea817e4c79187d98b958ad14083ef36b982e303d71baf45c1
+  languageName: node
+  linkType: hard
+
+"@tanstack/store@npm:0.9.3, @tanstack/store@npm:^0.9.1, @tanstack/store@npm:^0.9.3":
   version: 0.9.3
   resolution: "@tanstack/store@npm:0.9.3"
   checksum: 10c0/ec022c792c298be0717d7a2d06d6db4459077db775a27d86a2a248f446257e133c5d7c77a74bf6a4fa6993cfaef09b6f58a68a601c3becca834ed0b457ebe824
+  languageName: node
+  linkType: hard
+
+"@tanstack/vue-form@npm:^1.29.1":
+  version: 1.29.1
+  resolution: "@tanstack/vue-form@npm:1.29.1"
+  dependencies:
+    "@tanstack/form-core": "npm:1.29.1"
+    "@tanstack/vue-store": "npm:^0.9.1"
+  peerDependencies:
+    vue: ^3.4.0
+  checksum: 10c0/f4d0721357ea883f21c1b2c98d15e3c66ff14f711507f7e5e48a57e9f329d5a9c1add7937cc87811a1782ab8ceb280751b3e5b4a7f0beb47f88842c6c9a15691
+  languageName: node
+  linkType: hard
+
+"@tanstack/vue-store@npm:^0.9.1":
+  version: 0.9.3
+  resolution: "@tanstack/vue-store@npm:0.9.3"
+  dependencies:
+    "@tanstack/store": "npm:0.9.3"
+    vue-demi: "npm:^0.14.10"
+  peerDependencies:
+    "@vue/composition-api": ^1.2.1
+    vue: ^2.5.0 || ^3.0.0
+  peerDependenciesMeta:
+    "@vue/composition-api":
+      optional: true
+  checksum: 10c0/cf9191b9f26545f1f997a23ed1943b984cc1bd3905ea96b5f05647430a302020ed5ebdae6655029ebcf96e3c361e9cb7b9ca0861d082f5642896ea6fd00b6762
   languageName: node
   linkType: hard
 
@@ -2006,7 +2121,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@umpire/solid@workspace:packages/solid":
+"@umpire/solid@workspace:^, @umpire/solid@workspace:packages/solid":
   version: 0.0.0-use.local
   resolution: "@umpire/solid@workspace:packages/solid"
   dependencies:
@@ -2025,6 +2140,57 @@ __metadata:
   dependencies:
     "@umpire/core": "workspace:^"
     zustand: "npm:^5.0.12"
+  languageName: unknown
+  linkType: soft
+
+"@umpire/tanstack-form@workspace:packages/tanstack-form":
+  version: 0.0.0-use.local
+  resolution: "@umpire/tanstack-form@workspace:packages/tanstack-form"
+  dependencies:
+    "@happy-dom/global-registrator": "npm:^17.4.4"
+    "@tanstack/form-core": "npm:^1.29.1"
+    "@tanstack/react-form": "npm:^1.29.1"
+    "@tanstack/solid-form": "npm:^1.29.1"
+    "@tanstack/vue-form": "npm:^1.29.1"
+    "@testing-library/react": "npm:^16.3.2"
+    "@types/react": "npm:^19.2.14"
+    "@types/react-dom": "npm:^19.2.3"
+    "@umpire/core": "workspace:^"
+    "@umpire/react": "workspace:^"
+    "@umpire/reads": "workspace:^"
+    "@umpire/solid": "workspace:^"
+    react: "npm:^19.2.4"
+    react-dom: "npm:^19.2.4"
+    solid-js: "npm:^1.0.0"
+    tsdown: "npm:^0.21.7"
+    vue: "npm:^3.0.0"
+  peerDependencies:
+    "@tanstack/form-core": ^1.0.0
+    "@tanstack/react-form": ^1.0.0
+    "@tanstack/solid-form": ^1.0.0
+    "@tanstack/vue-form": ^1.0.0
+    "@umpire/react": "workspace:^"
+    "@umpire/solid": "workspace:^"
+    react: ^18.0.0 || ^19.0.0
+    solid-js: ^1.0.0
+    vue: ^3.0.0
+  peerDependenciesMeta:
+    "@tanstack/react-form":
+      optional: true
+    "@tanstack/solid-form":
+      optional: true
+    "@tanstack/vue-form":
+      optional: true
+    "@umpire/react":
+      optional: true
+    "@umpire/solid":
+      optional: true
+    react:
+      optional: true
+    solid-js:
+      optional: true
+    vue:
+      optional: true
   languageName: unknown
   linkType: soft
 
@@ -3531,6 +3697,16 @@ __metadata:
   version: 4.2.11
   resolution: "graceful-fs@npm:4.2.11"
   checksum: 10c0/386d011a553e02bc594ac2ca0bd6d9e4c22d7fa8cfbfc448a6d148c59ea881b092db9dbe3547ae4b88e55f1b01f7c4a2ecc53b310c042793e63aa44cf6c257f2
+  languageName: node
+  linkType: hard
+
+"happy-dom@npm:^17.6.3":
+  version: 17.6.3
+  resolution: "happy-dom@npm:17.6.3"
+  dependencies:
+    webidl-conversions: "npm:^7.0.0"
+    whatwg-mimetype: "npm:^3.0.0"
+  checksum: 10c0/bf29e0cd4c39412476ac3e44b86f2f97345241237e902ca822021e030ad475dd5517a0eabffdc4ecbfa3d4becbdd60bcbe9279dab625712930b0c612593335f5
   languageName: node
   linkType: hard
 
@@ -5494,6 +5670,10 @@ __metadata:
   dependencies:
     "@changesets/cli": "npm:^2.30.0"
     "@happy-dom/global-registrator": "npm:^20.0.10"
+    "@tanstack/form-core": "npm:^1.29.1"
+    "@tanstack/react-form": "npm:^1.29.1"
+    "@tanstack/solid-form": "npm:^1.29.1"
+    "@tanstack/vue-form": "npm:^1.29.1"
     "@types/bun": "npm:^1.3.12"
     "@umpire/eslint-plugin": "workspace:^"
     eslint: "npm:^10.2.1"
@@ -5601,12 +5781,37 @@ __metadata:
   languageName: node
   linkType: hard
 
+"use-sync-external-store@npm:^1.6.0":
+  version: 1.6.0
+  resolution: "use-sync-external-store@npm:1.6.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+  checksum: 10c0/35e1179f872a53227bdf8a827f7911da4c37c0f4091c29b76b1e32473d1670ebe7bcd880b808b7549ba9a5605c233350f800ffab963ee4a4ee346ee983b6019b
+  languageName: node
+  linkType: hard
+
 "uuid@npm:^13.0.0":
   version: 13.0.1
   resolution: "uuid@npm:13.0.1"
   bin:
     uuid: dist-node/bin/uuid
   checksum: 10c0/7bb8ad18b11871b7bd1b9161a60610c2b6ce8f7300d93932f92117a2ab9b40479dd23e81929ac848e8a7c45f78b8ed3333f88694b71c17ff3265e443f8684642
+  languageName: node
+  linkType: hard
+
+"vue-demi@npm:^0.14.10":
+  version: 0.14.10
+  resolution: "vue-demi@npm:0.14.10"
+  peerDependencies:
+    "@vue/composition-api": ^1.0.0-rc.1
+    vue: ^3.0.0-0 || ^2.6.0
+  peerDependenciesMeta:
+    "@vue/composition-api":
+      optional: true
+  bin:
+    vue-demi-fix: bin/vue-demi-fix.js
+    vue-demi-switch: bin/vue-demi-switch.js
+  checksum: 10c0/a9ed8712fa36d01bc13c39757f95f30cebf42d557b99e94bff86d8660c81f2911b41220f7affc023d1ffcc19e13999e4a83019991e264787cca2c616e83aea48
   languageName: node
   linkType: hard
 
@@ -5643,6 +5848,13 @@ __metadata:
   version: 1.3.6
   resolution: "weapon-regex@npm:1.3.6"
   checksum: 10c0/3a844f657e483530f9d041d7f0a516ac54e1edfd9d384ea94760c64685ed9d176da996c35b039beb2e8a94b740135a6b667306f554f708ae2f836372cd53bd64
+  languageName: node
+  linkType: hard
+
+"webidl-conversions@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "webidl-conversions@npm:7.0.0"
+  checksum: 10c0/228d8cb6d270c23b0720cb2d95c579202db3aaf8f633b4e9dd94ec2000a04e7e6e43b76a94509cdb30479bd00ae253ab2371a2da9f81446cc313f89a4213a2c4
   languageName: node
   linkType: hard
 

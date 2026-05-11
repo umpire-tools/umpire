@@ -1,0 +1,103 @@
+{
+  "name": "@umpire/tanstack-form",
+  "version": "0.0.0",
+  "description": "TanStack Form adapter for @umpire/core",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    },
+    "./solid": {
+      "types": "./dist/solid.d.ts",
+      "import": "./dist/solid.js"
+    },
+    "./vue": {
+      "types": "./dist/vue.d.ts",
+      "import": "./dist/vue.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepack": "node ../../scripts/materialize-agent-compat.mjs prepack",
+    "postpack": "node ../../scripts/materialize-agent-compat.mjs postpack",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    "AGENTS.md",
+    ".claude"
+  ],
+  "dependencies": {
+    "@umpire/core": "workspace:^",
+    "@umpire/reads": "workspace:^"
+  },
+  "peerDependencies": {
+    "@tanstack/form-core": "^1.0.0",
+    "@tanstack/react-form": "^1.0.0",
+    "@tanstack/solid-form": "^1.0.0",
+    "@tanstack/vue-form": "^1.0.0",
+    "@umpire/react": "workspace:^",
+    "@umpire/solid": "workspace:^",
+    "react": "^18.0.0 || ^19.0.0",
+    "solid-js": "^1.0.0",
+    "vue": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-form": {
+      "optional": true
+    },
+    "@tanstack/solid-form": {
+      "optional": true
+    },
+    "@tanstack/vue-form": {
+      "optional": true
+    },
+    "@umpire/react": {
+      "optional": true
+    },
+    "@umpire/solid": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "solid-js": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdougbrown/umpire.git",
+    "directory": "packages/tanstack-form"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "^17.4.4",
+    "@tanstack/form-core": "^1.29.1",
+    "@tanstack/react-form": "^1.29.1",
+    "@tanstack/solid-form": "^1.29.1",
+    "@tanstack/vue-form": "^1.29.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@umpire/react": "workspace:^",
+    "@umpire/solid": "workspace:^",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "solid-js": "^1.0.0",
+    "tsdown": "^0.21.7",
+    "vue": "^3.0.0"
+  }
+}

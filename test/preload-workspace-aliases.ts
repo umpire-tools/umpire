@@ -47,6 +47,9 @@ if (process.env.BUN_DISABLE_WORKSPACE_MOCKS !== 'true') {
   )
   mock.module('@umpire/redux', () => require('../packages/redux/src/index.js'))
   mock.module('@umpire/pinia', () => require('../packages/pinia/src/index.js'))
+  mock.module('@umpire/tanstack-form', () =>
+    require('../packages/tanstack-form/src/index.js'),
+  )
   mock.module('@umpire/tanstack-store', () =>
     require('../packages/tanstack-store/src/index.js'),
   )

@@ -1,0 +1,23 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@umpire/core": ["../core/src/index.ts"],
+      "@umpire/core/*": ["../core/src/*"],
+      "@umpire/reads": ["../reads/src/index.ts"],
+      "@umpire/react": ["../react/src/index.ts"],
+      "@umpire/solid": ["../solid/src/index.ts"]
+    }
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../core" },
+    { "path": "../reads" },
+    { "path": "../react" },
+    { "path": "../solid" }
+  ]
+}
