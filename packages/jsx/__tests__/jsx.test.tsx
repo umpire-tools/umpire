@@ -146,6 +146,26 @@ describe('Umpire JSX — Disables', () => {
     expect(asGuest.accountEmail.enabled).toBe(false)
     expect(asGuest.accountPassword.enabled).toBe(false)
   })
+
+  test('reason prop propagates to all disabled targets', () => {
+    const ump = (
+      <Umpire>
+        <Field name="guestCheckout">
+          <Disables
+            fields={['email', 'password']}
+            reason="Guest mode disables account fields"
+          />
+        </Field>
+        <Field name="email" />
+        <Field name="password" />
+      </Umpire>
+    )
+    const result = ump.check({ guestCheckout: true, email: null, password: null })
+    expect(result.email.enabled).toBe(false)
+    expect(result.email.reason).toBe('Guest mode disables account fields')
+    expect(result.password.enabled).toBe(false)
+    expect(result.password.reason).toBe('Guest mode disables account fields')
+  })
 })
 
 describe('Umpire JSX — combined rules', () => {
@@ -218,6 +238,29 @@ describe('Umpire JSX — error cases', () => {
       const badChild = { _ump: 'requires', dep: 'x' }
       // @ts-expect-error — intentionally wrong child type
       Umpire({ children: badChild })
+    }).toThrow('@umpire/jsx')
+  })
+
+  test('throws if Requires has value props but no dep', () => {
+    expect(() => {
+      const badField = Field({
+        name: 'target',
+        children: Requires({ eq: 'premium' }),
+      })
+      Umpire({ children: [Field({ name: 'source' }), badField] })
+    }).toThrow('@umpire/jsx')
+  })
+
+  test('throws if Requires has when + value props', () => {
+    expect(() => {
+      const badField = Field({
+        name: 'target',
+        children: Requires({
+          when: expr.eq('source', 'premium'),
+          eq: 'premium',
+        }),
+      })
+      Umpire({ children: [Field({ name: 'source' }), badField] })
     }).toThrow('@umpire/jsx')
   })
 })
@@ -377,6 +420,83 @@ describe('Umpire JSX — value-conditional Requires', () => {
     expect(result.premiumLounge.reason).toBe('Premium members only')
     expect(result.premiumLounge.reasons).toContain('Premium members only')
   })
+
+  test('neq prop enables target only when dep does not match', () => {
+    const ump = (
+      <Umpire>
+        <Field name="role" />
+        <Field name="nonAdminTools">
+          <Requires dep="role" neq="admin" />
+        </Field>
+      </Umpire>
+    )
+    const isAdmin = ump.check({ role: 'admin', nonAdminTools: null })
+    expect(isAdmin.nonAdminTools.enabled).toBe(false)
+    const isUser = ump.check({ role: 'user', nonAdminTools: null })
+    expect(isUser.nonAdminTools.enabled).toBe(true)
+  })
+
+  test('gt prop enables target only when dep is greater than', () => {
+    const ump = (
+      <Umpire>
+        <Field name="score" />
+        <Field name="bonusRound">
+          <Requires dep="score" gt={100} />
+        </Field>
+      </Umpire>
+    )
+    const below = ump.check({ score: 100, bonusRound: null })
+    expect(below.bonusRound.enabled).toBe(false)
+    const above = ump.check({ score: 101, bonusRound: null })
+    expect(above.bonusRound.enabled).toBe(true)
+  })
+
+  test('lt prop enables target only when dep is less than', () => {
+    const ump = (
+      <Umpire>
+        <Field name="attempts" />
+        <Field name="retryPrompt">
+          <Requires dep="attempts" lt={3} />
+        </Field>
+      </Umpire>
+    )
+    const atLimit = ump.check({ attempts: 3, retryPrompt: null })
+    expect(atLimit.retryPrompt.enabled).toBe(false)
+    const below = ump.check({ attempts: 2, retryPrompt: null })
+    expect(below.retryPrompt.enabled).toBe(true)
+  })
+
+  test('notIn prop enables target when dep value is not in the set', () => {
+    const ump = (
+      <Umpire>
+        <Field name="country" />
+        <Field name="internationalShipping">
+          <Requires dep="country" notIn={['US', 'CA']} />
+        </Field>
+      </Umpire>
+    )
+    const domestic = ump.check({ country: 'US', internationalShipping: null })
+    expect(domestic.internationalShipping.enabled).toBe(false)
+    const abroad = ump.check({ country: 'UK', internationalShipping: null })
+    expect(abroad.internationalShipping.enabled).toBe(true)
+  })
+
+  test('falsy prop enables target when dep is falsy', () => {
+    const ump = (
+      <Umpire>
+        <Field name="optOut" />
+        <Field name="confirmationPrompt">
+          <Requires dep="optOut" falsy />
+        </Field>
+      </Umpire>
+    )
+    const optedOut = ump.check({ optOut: true, confirmationPrompt: null })
+    expect(optedOut.confirmationPrompt.enabled).toBe(false)
+    const notOpted = ump.check({ optOut: false, confirmationPrompt: null })
+    expect(notOpted.confirmationPrompt.enabled).toBe(true)
+    const empty = ump.check({ optOut: null, confirmationPrompt: null })
+    expect(empty.confirmationPrompt.enabled).toBe(false)
+  })
 })
 
 describe('Umpire JSX — FairWhen', () => {
@@ -415,6 +535,19 @@ describe('Umpire JSX — FairWhen', () => {
     // null/undefined is unsatisfied — fairWhen skips unsatisfied fields
     const empty = ump.check({ age: null })
     expect(empty.age.fair).toBe(true)
+  })
+
+  test('fairWhen without reason defaults to null reason', () => {
+    const ump = (
+      <Umpire>
+        <Field name="age">
+          <FairWhen check={(v: unknown) => Number(v) >= 0} />
+        </Field>
+      </Umpire>
+    )
+    const negative = ump.check({ age: -5 })
+    expect(negative.age.fair).toBe(false)
+    expect(negative.age.reason).not.toBeNull()
   })
 })
 
@@ -582,5 +715,43 @@ describe('Umpire JSX — OneOf', () => {
         ] as const,
       })
     }).toThrow('@umpire/jsx')
+  })
+
+  test('throws for empty branch', () => {
+    expect(() => {
+      Umpire({
+        children: [
+          Field({ name: 'creditCard' }),
+          OneOf({
+            name: 'payment',
+            groups: { card: [] },
+          }),
+        ] as const,
+      })
+    }).toThrow('@umpire/jsx')
+  })
+})
+
+describe('Umpire JSX — Field isEmpty', () => {
+  test('custom isEmpty overrides satisfaction detection', () => {
+    const ump = (
+      <Umpire>
+        <Field name="score" isEmpty={(v: unknown) => v === 0} />
+      </Umpire>
+    )
+
+    const zero = ump.check({ score: 0 })
+    expect(zero.score.satisfied).toBe(false)
+
+    const nonZero = ump.check({ score: 10 })
+    expect(nonZero.score.satisfied).toBe(true)
+  })
+})
+
+describe('Umpire JSX — edge cases', () => {
+  test('empty Umpire returns working instance', () => {
+    const ump = <Umpire />
+    const result = ump.check({})
+    expect(result).toEqual({})
   })
 })
