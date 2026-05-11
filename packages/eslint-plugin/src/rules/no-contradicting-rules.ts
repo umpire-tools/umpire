@@ -2,6 +2,93 @@ import type { Rule } from 'eslint'
 import type * as estree from 'estree'
 import { getRulesArray, isStringLiteral, isUmpireCall } from '../utils.js'
 
+type RequiresEntry = { target: string; dep: string }
+type DisablesEntry = {
+  source: string
+  targets: string[]
+  node: estree.CallExpression
+}
+
+function collectRequires(
+  elements: estree.ArrayExpression['elements'],
+): RequiresEntry[] {
+  const requiresList: RequiresEntry[] = []
+
+  for (const el of elements) {
+    if (
+      !el ||
+      el.type !== 'CallExpression' ||
+      el.callee.type !== 'Identifier'
+    ) {
+      continue
+    }
+    if (el.callee.name !== 'requires') {
+      continue
+    }
+
+    const args = el.arguments.filter(
+      (a): a is estree.Expression => a.type !== 'SpreadElement',
+    )
+    const targetArg = args[0]
+    if (!targetArg || !isStringLiteral(targetArg)) {
+      continue
+    }
+    const target = targetArg.value
+    for (const depArg of args.slice(1)) {
+      if (isStringLiteral(depArg)) {
+        requiresList.push({ target, dep: depArg.value })
+      }
+    }
+  }
+
+  return requiresList
+}
+
+function collectDisables(
+  elements: estree.ArrayExpression['elements'],
+): DisablesEntry[] {
+  const disablesList: DisablesEntry[] = []
+
+  for (const el of elements) {
+    if (
+      !el ||
+      el.type !== 'CallExpression' ||
+      el.callee.type !== 'Identifier'
+    ) {
+      continue
+    }
+    if (el.callee.name !== 'disables') {
+      continue
+    }
+
+    const args = el.arguments.filter(
+      (a): a is estree.Expression => a.type !== 'SpreadElement',
+    )
+    const sourceArg = args[0]
+    if (!sourceArg || !isStringLiteral(sourceArg)) {
+      continue
+    }
+    const source = sourceArg.value
+    const targetsArg = args[1]
+    if (!targetsArg || targetsArg.type !== 'ArrayExpression') {
+      continue
+    }
+
+    const targets = targetsArg.elements
+      .filter(
+        (e): e is estree.Literal & { value: string } =>
+          e?.type === 'Literal' && typeof e.value === 'string',
+      )
+      .map((e) => e.value)
+
+    if (targets.length > 0) {
+      disablesList.push({ source, targets, node: el })
+    }
+  }
+
+  return disablesList
+}
+
 /**
  * Detects pairs of rules that make a field permanently unavailable:
  *
@@ -40,57 +127,8 @@ const rule: Rule.RuleModule = {
         const rulesArray = getRulesArray(node)
         if (!rulesArray) return
 
-        type RequiresEntry = { target: string; dep: string }
-        type DisablesEntry = {
-          source: string
-          targets: string[]
-          node: estree.CallExpression
-        }
-
-        const requiresList: RequiresEntry[] = []
-        const disablesList: DisablesEntry[] = []
-
-        for (const el of rulesArray.elements) {
-          if (
-            !el ||
-            el.type !== 'CallExpression' ||
-            el.callee.type !== 'Identifier'
-          )
-            continue
-
-          const name = el.callee.name
-          const args = el.arguments.filter(
-            (a): a is estree.Expression => a.type !== 'SpreadElement',
-          )
-
-          if (name === 'requires') {
-            const targetArg = args[0]
-            if (!targetArg || !isStringLiteral(targetArg)) continue
-            const target = targetArg.value
-            for (const depArg of args.slice(1)) {
-              if (isStringLiteral(depArg)) {
-                requiresList.push({ target, dep: depArg.value })
-              }
-            }
-          }
-
-          if (name === 'disables') {
-            const sourceArg = args[0]
-            if (!sourceArg || !isStringLiteral(sourceArg)) continue
-            const source = sourceArg.value
-            const targetsArg = args[1]
-            if (!targetsArg || targetsArg.type !== 'ArrayExpression') continue
-            const targets = targetsArg.elements
-              .filter(
-                (e): e is estree.Literal & { value: string } =>
-                  e?.type === 'Literal' && typeof e.value === 'string',
-              )
-              .map((e) => e.value)
-            if (targets.length > 0) {
-              disablesList.push({ source, targets, node: el })
-            }
-          }
-        }
+        const requiresList = collectRequires(rulesArray.elements)
+        const disablesList = collectDisables(rulesArray.elements)
 
         for (const req of requiresList) {
           for (const dis of disablesList) {

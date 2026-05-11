@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "types": ["bun"],
+    "types": ["bun", "bun-types"],
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",

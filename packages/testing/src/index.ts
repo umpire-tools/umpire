@@ -839,6 +839,140 @@ function getConditionSets(options: MonkeyTestOptions | undefined) {
     : [undefined]
 }
 
+function checkDeterminism(
+  ump: AnyUmpire,
+  values: Record<string, unknown>,
+  conditions: Record<string, unknown> | undefined,
+  fieldNames: string[],
+  firstCheck: Record<string, { enabled: boolean; fair: boolean }>,
+  recordViolation: (
+    invariant: MonkeyTestViolation['invariant'],
+    values: Record<string, unknown>,
+    description: string,
+    conditions?: Record<string, unknown>,
+  ) => boolean,
+): boolean {
+  const secondCheck = ump.check(values, conditions)
+  for (const field of fieldNames) {
+    if (
+      firstCheck[field].enabled !== secondCheck[field].enabled ||
+      firstCheck[field].fair !== secondCheck[field].fair
+    ) {
+      if (
+        recordViolation(
+          'determinism',
+          values,
+          `check() disagreed for "${field}": first={enabled:${firstCheck[field].enabled}, fair:${firstCheck[field].fair}} second={enabled:${secondCheck[field].enabled}, fair:${secondCheck[field].fair}}`,
+          conditions,
+        )
+      ) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+function checkSelfPlay(
+  ump: AnyUmpire,
+  values: Record<string, unknown>,
+  conditions: Record<string, unknown> | undefined,
+  recordViolation: (
+    invariant: MonkeyTestViolation['invariant'],
+    values: Record<string, unknown>,
+    description: string,
+    conditions?: Record<string, unknown>,
+  ) => boolean,
+): boolean {
+  const selfPlayFouls = ump.play({ values, conditions }, { values, conditions })
+  return (
+    selfPlayFouls.length > 0 &&
+    recordViolation(
+      'self-play',
+      values,
+      `play(snapshot, snapshot) returned ${selfPlayFouls.length} foul recommendation(s)`,
+      conditions,
+    )
+  )
+}
+
+function checkFoulConvergence(
+  ump: AnyUmpire,
+  values: Record<string, unknown>,
+  conditions: Record<string, unknown> | undefined,
+  initValues: Record<string, unknown>,
+  maxFoulIterations: number,
+  recordViolation: (
+    invariant: MonkeyTestViolation['invariant'],
+    values: Record<string, unknown>,
+    description: string,
+    conditions?: Record<string, unknown>,
+  ) => boolean,
+): boolean {
+  let currentValues = cloneRecord(values)
+  let converged = false
+
+  for (let iteration = 0; iteration < maxFoulIterations; iteration += 1) {
+    const fouls = ump.play(
+      { values: initValues, conditions },
+      { values: currentValues, conditions },
+    )
+
+    if (fouls.length === 0) {
+      converged = true
+      break
+    }
+
+    currentValues = applyFouls(currentValues, fouls)
+  }
+
+  return (
+    !converged &&
+    recordViolation(
+      'foul-convergence',
+      values,
+      `Foul suggestions did not converge within ${maxFoulIterations} iteration(s)`,
+      conditions,
+    )
+  )
+}
+
+function checkChallengeAgreement(
+  ump: AnyUmpire,
+  values: Record<string, unknown>,
+  conditions: Record<string, unknown> | undefined,
+  fieldNames: string[],
+  firstCheck: Record<string, { enabled: boolean; fair: boolean }>,
+  recordViolation: (
+    invariant: MonkeyTestViolation['invariant'],
+    values: Record<string, unknown>,
+    description: string,
+    conditions?: Record<string, unknown>,
+  ) => boolean,
+): boolean {
+  for (const field of fieldNames) {
+    const trace = ump.challenge(field, values, conditions)
+    if (
+      trace.enabled !== firstCheck[field].enabled ||
+      trace.fair !== firstCheck[field].fair
+    ) {
+      if (
+        recordViolation(
+          'challenge-check-agreement',
+          values,
+          `challenge("${field}") disagreed with check(): challenge={enabled:${trace.enabled}, fair:${trace.fair}} check={enabled:${firstCheck[field].enabled}, fair:${firstCheck[field].fair}}`,
+          conditions,
+        )
+      ) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
 export function monkeyTest<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -895,89 +1029,34 @@ export function monkeyTest(
       samplesChecked += 1
 
       const firstCheck = ump.check(values, conditions)
-      const secondCheck = ump.check(values, conditions)
-
-      for (const field of fieldNames) {
-        if (
-          firstCheck[field].enabled !== secondCheck[field].enabled ||
-          firstCheck[field].fair !== secondCheck[field].fair
-        ) {
-          if (
-            recordViolation(
-              'determinism',
-              values,
-              `check() disagreed for "${field}": first={enabled:${firstCheck[field].enabled}, fair:${firstCheck[field].fair}} second={enabled:${secondCheck[field].enabled}, fair:${secondCheck[field].fair}}`,
-              conditions,
-            )
-          ) {
-            return true
-          }
-        }
-      }
-
-      const selfPlayFouls = ump.play(
-        { values, conditions },
-        { values, conditions },
-      )
-
       if (
-        selfPlayFouls.length > 0 &&
-        recordViolation(
-          'self-play',
+        checkDeterminism(
+          ump,
           values,
-          `play(snapshot, snapshot) returned ${selfPlayFouls.length} foul recommendation(s)`,
           conditions,
+          fieldNames,
+          firstCheck,
+          recordViolation,
+        ) ||
+        checkSelfPlay(ump, values, conditions, recordViolation) ||
+        checkFoulConvergence(
+          ump,
+          values,
+          conditions,
+          initValues,
+          maxFoulIterations,
+          recordViolation,
+        ) ||
+        checkChallengeAgreement(
+          ump,
+          values,
+          conditions,
+          fieldNames,
+          firstCheck,
+          recordViolation,
         )
       ) {
         return true
-      }
-
-      let currentValues = cloneRecord(values)
-      let converged = false
-
-      for (let iteration = 0; iteration < maxFoulIterations; iteration += 1) {
-        const fouls = ump.play(
-          { values: initValues, conditions },
-          { values: currentValues, conditions },
-        )
-
-        if (fouls.length === 0) {
-          converged = true
-          break
-        }
-
-        currentValues = applyFouls(currentValues, fouls)
-      }
-
-      if (
-        !converged &&
-        recordViolation(
-          'foul-convergence',
-          values,
-          `Foul suggestions did not converge within ${maxFoulIterations} iteration(s)`,
-          conditions,
-        )
-      ) {
-        return true
-      }
-
-      for (const field of fieldNames) {
-        const trace = ump.challenge(field, values, conditions)
-        if (
-          trace.enabled !== firstCheck[field].enabled ||
-          trace.fair !== firstCheck[field].fair
-        ) {
-          if (
-            recordViolation(
-              'challenge-check-agreement',
-              values,
-              `challenge("${field}") disagreed with check(): challenge={enabled:${trace.enabled}, fair:${trace.fair}} check={enabled:${firstCheck[field].enabled}, fair:${firstCheck[field].fair}}`,
-              conditions,
-            )
-          ) {
-            return true
-          }
-        }
       }
 
       for (const disabledField of fieldNames) {

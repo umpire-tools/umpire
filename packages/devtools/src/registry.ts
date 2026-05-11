@@ -44,18 +44,44 @@ function collectFromReason(
   }
 }
 
+function seen(existingValue: boolean | undefined, val: boolean): boolean {
+  return (existingValue ?? false) || val
+}
+
 function mergeFieldCoverage(
   existing: DevtoolsFieldCoverage | undefined,
   status: FieldStatus,
 ): DevtoolsFieldCoverage {
   return {
-    seenDisabled: (existing?.seenDisabled ?? false) || !status.enabled,
-    seenEnabled: (existing?.seenEnabled ?? false) || status.enabled,
-    seenFair: (existing?.seenFair ?? false) || status.fair,
-    seenFoul: (existing?.seenFoul ?? false) || !status.fair,
-    seenSatisfied: (existing?.seenSatisfied ?? false) || status.satisfied,
-    seenUnsatisfied: (existing?.seenUnsatisfied ?? false) || !status.satisfied,
+    seenDisabled: seen(existing?.seenDisabled, !status.enabled),
+    seenEnabled: seen(existing?.seenEnabled, status.enabled),
+    seenFair: seen(existing?.seenFair, status.fair),
+    seenFoul: seen(existing?.seenFoul, !status.fair),
+    seenSatisfied: seen(existing?.seenSatisfied, status.satisfied),
+    seenUnsatisfied: seen(existing?.seenUnsatisfied, !status.satisfied),
   }
+}
+
+function isSameRegistration<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+  ReadInput extends Record<string, unknown>,
+  Reads extends Record<string, unknown>,
+>(
+  existing: RegistryEntry,
+  ump: Umpire<F, C>,
+  values: InputValues,
+  conditions: C | undefined,
+  options: RegisterOptions<F, C, ReadInput, Reads> | undefined,
+): boolean {
+  return (
+    existing.ump === ump &&
+    existing.snapshot.values === values &&
+    existing.snapshot.conditions === conditions &&
+    existing.optionReads === options?.reads &&
+    existing.optionReadInput === options?.readInput &&
+    existing.optionExtensions === options?.extensions
+  )
 }
 
 function buildCoverage(
@@ -238,45 +264,21 @@ function buildFoulLog(
   return [...previousLog, ...freshEvents].slice(-foulLogDepth)
 }
 
-export const register: RegisterFn = <
+function buildRegistryEntry<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
-  ReadInput extends Record<string, unknown> = InputValues,
-  Reads extends Record<string, unknown> = Record<string, unknown>,
+  ReadInput extends Record<string, unknown>,
+  Reads extends Record<string, unknown>,
 >(
   id: string,
+  existing: RegistryEntry | undefined,
   ump: Umpire<F, C>,
   values: InputValues,
-  conditions?: C,
-  options?: RegisterOptions<F, C, ReadInput, Reads>,
-) => {
-  if (
-    process.env.NODE_ENV === 'production' &&
-    process.env.UMPIRE_INTERNAL !== 'true'
-  ) {
-    return
-  }
-
-  const existing = registry.get(id)
-
-  if (
-    existing &&
-    existing.ump === ump &&
-    existing.snapshot.values === values &&
-    existing.snapshot.conditions === conditions &&
-    existing.optionReads === options?.reads &&
-    existing.optionReadInput === options?.readInput &&
-    existing.optionExtensions === options?.extensions
-  ) {
-    return
-  }
-
+  conditions: C | undefined,
+  options: RegisterOptions<F, C, ReadInput, Reads> | undefined,
+): RegistryEntry {
   const previous = (existing?.snapshot as Snapshot<C> | null) ?? null
-  const currentSnapshot: Snapshot<C> = {
-    values,
-    conditions,
-  }
-
+  const currentSnapshot: Snapshot<C> = { values, conditions }
   const scorecard = ump.scorecard(currentSnapshot, {
     before: previous ?? undefined,
   })
@@ -326,6 +328,46 @@ export const register: RegisterFn = <
     existing?.foulLog ?? [],
     nextEntry,
     renderIndex,
+  )
+
+  return nextEntry
+}
+
+export const register: RegisterFn = <
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+  ReadInput extends Record<string, unknown> = InputValues,
+  Reads extends Record<string, unknown> = Record<string, unknown>,
+>(
+  id: string,
+  ump: Umpire<F, C>,
+  values: InputValues,
+  conditions?: C,
+  options?: RegisterOptions<F, C, ReadInput, Reads>,
+) => {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    process.env.UMPIRE_INTERNAL !== 'true'
+  ) {
+    return
+  }
+
+  const existing = registry.get(id)
+
+  if (
+    existing &&
+    isSameRegistration(existing, ump, values, conditions, options)
+  ) {
+    return
+  }
+
+  const nextEntry = buildRegistryEntry(
+    id,
+    existing,
+    ump,
+    values,
+    conditions,
+    options,
   )
 
   registry.set(id, nextEntry)

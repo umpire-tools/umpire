@@ -113,90 +113,97 @@ export function extractFieldRefs(node: estree.CallExpression): FieldRef[] {
       // All string-literal args are field names regardless of position.
       return stringLiterals(args)
 
-    case 'disables': {
-      // disables(source, targets, options?)
-      const refs: FieldRef[] = []
-      const source = args[0]
-      if (source) {
-        if (isStringLiteral(source)) {
-          refs.push({ node: source, value: source.value })
-        } else if (
-          source.type === 'CallExpression' &&
-          source.callee.type === 'Identifier' &&
-          source.callee.name === 'check'
-        ) {
-          // check(fieldName, predicate) — first arg is a field name
-          const checkField = source.arguments[0]
-          if (checkField && isStringLiteral(checkField)) {
-            refs.push({ node: checkField, value: checkField.value })
-          }
-        }
-      }
-      const targets = args[1]
-      if (targets?.type === 'ArrayExpression') {
-        refs.push(
-          ...stringLiterals(
-            targets.elements.filter(
-              (e): e is estree.Expression =>
-                e !== null && e.type !== 'SpreadElement',
-            ),
-          ),
-        )
-      }
-      return refs
-    }
+    case 'disables':
+      return extractFromDisables(args)
 
-    case 'oneOf': {
-      // oneOf(groupName, { branchName: [field1, field2] }, options?)
-      // arg[0] is the mutex group name — not a field name, skip it.
-      // arg[1] property values are arrays of field name strings.
-      const branches = args[1]
-      if (branches?.type !== 'ObjectExpression') return []
-      const refs: FieldRef[] = []
-      for (const prop of branches.properties) {
-        if (prop.type !== 'Property') continue
-        if (prop.value.type === 'ArrayExpression') {
-          refs.push(
-            ...stringLiterals(
-              prop.value.elements.filter(
-                (e): e is estree.Expression =>
-                  e !== null && e.type !== 'SpreadElement',
-              ),
-            ),
-          )
-        }
-      }
-      return refs
-    }
+    case 'oneOf':
+      return extractFromOneOf(args)
 
     case 'anyOf':
-      // anyOf(rule1, rule2, ...) — each arg is a rule call, recurse.
-      return args.flatMap((arg) =>
-        arg.type === 'CallExpression' ? extractFieldRefs(arg) : [],
-      )
+      return extractFromAnyOf(args)
 
-    case 'eitherOf': {
-      // eitherOf(groupName, { branchName: [rule1, rule2] })
-      // Branch values are arrays of rule calls — recurse into each.
-      const branches = args[1]
-      if (branches?.type !== 'ObjectExpression') return []
-      const refs: FieldRef[] = []
-      for (const prop of branches.properties) {
-        if (prop.type !== 'Property') continue
-        if (prop.value.type === 'ArrayExpression') {
-          for (const el of prop.value.elements) {
-            if (el?.type === 'CallExpression') {
-              refs.push(...extractFieldRefs(el))
-            }
-          }
-        }
-      }
-      return refs
-    }
+    case 'eitherOf':
+      return extractFromEitherOf(args)
 
     default:
       return []
   }
+}
+
+function extractFromDisables(args: estree.Expression[]): FieldRef[] {
+  const refs: FieldRef[] = []
+  const source = args[0]
+  if (source) {
+    if (isStringLiteral(source)) {
+      refs.push({ node: source, value: source.value })
+    } else if (
+      source.type === 'CallExpression' &&
+      source.callee.type === 'Identifier' &&
+      source.callee.name === 'check'
+    ) {
+      const checkField = source.arguments[0]
+      if (checkField && isStringLiteral(checkField)) {
+        refs.push({ node: checkField, value: checkField.value })
+      }
+    }
+  }
+
+  const targets = args[1]
+  if (targets?.type === 'ArrayExpression') {
+    refs.push(
+      ...stringLiterals(
+        targets.elements.filter(
+          (e): e is estree.Expression =>
+            e !== null && e.type !== 'SpreadElement',
+        ),
+      ),
+    )
+  }
+
+  return refs
+}
+
+function extractFromOneOf(args: estree.Expression[]): FieldRef[] {
+  const branches = args[1]
+  if (branches?.type !== 'ObjectExpression') return []
+  const refs: FieldRef[] = []
+  for (const prop of branches.properties) {
+    if (prop.type !== 'Property') continue
+    if (prop.value.type === 'ArrayExpression') {
+      refs.push(
+        ...stringLiterals(
+          prop.value.elements.filter(
+            (e): e is estree.Expression =>
+              e !== null && e.type !== 'SpreadElement',
+          ),
+        ),
+      )
+    }
+  }
+  return refs
+}
+
+function extractFromAnyOf(args: estree.Expression[]): FieldRef[] {
+  return args.flatMap((arg) =>
+    arg.type === 'CallExpression' ? extractFieldRefs(arg) : [],
+  )
+}
+
+function extractFromEitherOf(args: estree.Expression[]): FieldRef[] {
+  const branches = args[1]
+  if (branches?.type !== 'ObjectExpression') return []
+  const refs: FieldRef[] = []
+  for (const prop of branches.properties) {
+    if (prop.type !== 'Property') continue
+    if (prop.value.type === 'ArrayExpression') {
+      for (const el of prop.value.elements) {
+        if (el?.type === 'CallExpression') {
+          refs.push(...extractFieldRefs(el))
+        }
+      }
+    }
+  }
+  return refs
 }
 
 // ---------------------------------------------------------------------------

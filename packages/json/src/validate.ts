@@ -211,6 +211,57 @@ function resolveEitherOfShape(rule: Extract<JsonRule, { type: 'eitherOf' }>): {
   )
 }
 
+function validateRequiresRule(
+  rule: Extract<JsonRule, { type: 'requires' }>,
+  fieldNames: Set<string>,
+  conditions: UmpireJsonSchema['conditions'],
+): void {
+  assertField(rule.field, fieldNames, '"requires"')
+
+  if ('dependency' in rule) {
+    assertField(rule.dependency, fieldNames, '"requires"')
+    return
+  }
+
+  if ('dependencies' in rule) {
+    if (!Array.isArray(rule.dependencies) || rule.dependencies.length === 0) {
+      throw new Error(
+        '[@umpire/json] "requires" rules with dependencies must include at least one entry',
+      )
+    }
+
+    for (const dependency of rule.dependencies) {
+      if (typeof dependency === 'string') {
+        assertField(dependency, fieldNames, '"requires"')
+        continue
+      }
+
+      compileExpr(dependency, { fieldNames, conditions })
+    }
+
+    return
+  }
+
+  compileExpr(rule.when, { fieldNames, conditions })
+}
+
+function validateDisablesRule(
+  rule: Extract<JsonRule, { type: 'disables' }>,
+  fieldNames: Set<string>,
+  conditions: UmpireJsonSchema['conditions'],
+): void {
+  for (const target of rule.targets) {
+    assertField(target, fieldNames, '"disables"')
+  }
+
+  if ('source' in rule) {
+    assertField(rule.source, fieldNames, '"disables"')
+    return
+  }
+
+  compileExpr(rule.when, { fieldNames, conditions })
+}
+
 function validateRule(
   rule: JsonRule,
   fieldNames: Set<string>,
@@ -218,51 +269,14 @@ function validateRule(
 ) {
   switch (rule.type) {
     case 'requires':
-      assertField(rule.field, fieldNames, '"requires"')
-      if ('dependency' in rule) {
-        assertField(rule.dependency, fieldNames, '"requires"')
-        return
-      }
-
-      if ('dependencies' in rule) {
-        if (
-          !Array.isArray(rule.dependencies) ||
-          rule.dependencies.length === 0
-        ) {
-          throw new Error(
-            '[@umpire/json] "requires" rules with dependencies must include at least one entry',
-          )
-        }
-
-        for (const dependency of rule.dependencies) {
-          if (typeof dependency === 'string') {
-            assertField(dependency, fieldNames, '"requires"')
-            continue
-          }
-
-          compileExpr(dependency, { fieldNames, conditions })
-        }
-
-        return
-      }
-
-      compileExpr(rule.when, { fieldNames, conditions })
+      validateRequiresRule(rule, fieldNames, conditions)
       return
     case 'enabledWhen':
       assertField(rule.field, fieldNames, '"enabledWhen"')
       compileExpr(rule.when, { fieldNames, conditions })
       return
     case 'disables':
-      for (const target of rule.targets) {
-        assertField(target, fieldNames, '"disables"')
-      }
-
-      if ('source' in rule) {
-        assertField(rule.source, fieldNames, '"disables"')
-        return
-      }
-
-      compileExpr(rule.when, { fieldNames, conditions })
+      validateDisablesRule(rule, fieldNames, conditions)
       return
     case 'oneOf':
       for (const branchFields of Object.values(rule.branches)) {
@@ -300,6 +314,7 @@ function validateRule(
   }
 }
 
+// eslint-disable-next-line complexity -- sequential chain of guard-throws followed by flat iteration loops; no meaningful nesting, just input validation before delegation to typed helpers
 export function validateSchema(
   schema: unknown,
 ): asserts schema is UmpireJsonSchema {

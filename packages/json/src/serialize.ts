@@ -377,410 +377,426 @@ function excludeInspection(
   }
 }
 
-function serializeInspection(
-  inspection: RuleInspection<Record<string, FieldDef>, Record<string, unknown>>,
-  nestedInComposite: boolean,
+function serializeEnabledWhenInspection(
+  inspection: Extract<
+    RuleInspection<Record<string, FieldDef>, Record<string, unknown>>,
+    { kind: 'enabledWhen' }
+  >,
 ): SerializeRuleResult {
-  switch (inspection.kind) {
-    case 'enabledWhen':
-      if (inspection.hasDynamicReason) {
-        return excludeInspection(
-          inspection,
-          'enabledWhen() uses a dynamic reason function and cannot be serialized',
-          '(values, conditions) => string',
-          createKey('rule', 'enabledWhen', inspection.target),
-        )
+  if (inspection.hasDynamicReason) {
+    return excludeInspection(
+      inspection,
+      'enabledWhen() uses a dynamic reason function and cannot be serialized',
+      '(values, conditions) => string',
+      createKey('rule', 'enabledWhen', inspection.target),
+    )
+  }
+
+  if (inspection.predicate?.field && inspection.predicate.namedCheck) {
+    const when = createCheckExprFromMetadata(
+      inspection.predicate.field,
+      inspection.predicate.namedCheck,
+    )
+    if (when) {
+      const rule: Extract<JsonRule, { type: 'enabledWhen' }> = {
+        type: 'enabledWhen',
+        field: inspection.target,
+        when,
+        ...(inspection.reason ? { reason: inspection.reason } : {}),
       }
-
-      if (inspection.predicate?.field && inspection.predicate.namedCheck) {
-        const when = createCheckExprFromMetadata(
-          inspection.predicate.field,
-          inspection.predicate.namedCheck,
-        )
-
-        if (when) {
-          const rule: Extract<JsonRule, { type: 'enabledWhen' }> = {
-            type: 'enabledWhen',
-            field: inspection.target,
-            when,
-            ...(inspection.reason ? { reason: inspection.reason } : {}),
-          }
-
-          return {
-            rules: [rule],
-            excluded: [],
-            coverageKeys: [createKey('rule', 'enabledWhen', inspection.target)],
-          }
-        }
-      }
-
-      return excludeInspection(
-        inspection,
-        'enabledWhen() predicates are only serializable when hydrated from JSON or when they map to a portable validator',
-        undefined,
-        createKey('rule', 'enabledWhen', inspection.target),
-      )
-    case 'disables':
-      if (inspection.hasDynamicReason) {
-        return excludeInspection(
-          inspection,
-          'disables() uses a dynamic reason function and cannot be serialized',
-          '(values, conditions) => string',
-          inspection.source.kind === 'field'
-            ? createKey(
-                'rule',
-                'disables',
-                'source',
-                inspection.source.field,
-                'targets',
-                createTargetsKeyPart(inspection.targets),
-              )
-            : undefined,
-        )
-      }
-
-      if (inspection.source.kind !== 'field') {
-        if (
-          inspection.source.predicate?.field &&
-          inspection.source.predicate.namedCheck
-        ) {
-          const when = createCheckExprFromMetadata(
-            inspection.source.predicate.field,
-            inspection.source.predicate.namedCheck,
-          )
-
-          if (when) {
-            const rule: Extract<
-              JsonRule,
-              { type: 'disables'; when: JsonExpr }
-            > = {
-              type: 'disables',
-              when,
-              targets: [...inspection.targets],
-              ...(inspection.reason ? { reason: inspection.reason } : {}),
-            }
-
-            return {
-              rules: [rule],
-              excluded: [],
-              coverageKeys: [],
-            }
-          }
-        }
-
-        return excludeInspection(
-          inspection,
-          'disables() with predicate sources cannot be serialized unless hydrated from JSON or when they map to a portable validator',
-        )
-      }
-
       return {
-        rules: [
-          {
-            type: 'disables',
-            source: inspection.source.field,
-            targets: [...inspection.targets],
-            ...(inspection.reason ? { reason: inspection.reason } : {}),
-          },
-        ],
+        rules: [rule],
         excluded: [],
-        coverageKeys: [
-          createKey(
+        coverageKeys: [createKey('rule', 'enabledWhen', inspection.target)],
+      }
+    }
+  }
+
+  return excludeInspection(
+    inspection,
+    'enabledWhen() predicates are only serializable when hydrated from JSON or when they map to a portable validator',
+    undefined,
+    createKey('rule', 'enabledWhen', inspection.target),
+  )
+}
+
+function serializeDisablesInspection(
+  inspection: Extract<
+    RuleInspection<Record<string, FieldDef>, Record<string, unknown>>,
+    { kind: 'disables' }
+  >,
+): SerializeRuleResult {
+  if (inspection.hasDynamicReason) {
+    return excludeInspection(
+      inspection,
+      'disables() uses a dynamic reason function and cannot be serialized',
+      '(values, conditions) => string',
+      inspection.source.kind === 'field'
+        ? createKey(
             'rule',
             'disables',
             'source',
             inspection.source.field,
             'targets',
             createTargetsKeyPart(inspection.targets),
-          ),
-        ],
-      }
-    case 'fairWhen': {
-      if (inspection.hasDynamicReason) {
-        return excludeInspection(
-          inspection,
-          'fairWhen() uses a dynamic reason function and cannot be serialized',
-          '(values, conditions) => string',
-          createKey('rule', 'fairWhen', inspection.target),
-        )
-      }
+          )
+        : undefined,
+    )
+  }
 
-      const namedCheckRule =
-        inspection.predicate?.field === inspection.target &&
-        inspection.predicate.namedCheck
-          ? createCheckRuleFromMetadata(
-              inspection.target,
-              inspection.predicate.namedCheck,
-              inspection.reason,
-            )
-          : undefined
-
-      if (namedCheckRule) {
-        return {
-          rules: [namedCheckRule],
-          excluded: [],
-          coverageKeys: createCoverageKeys(namedCheckRule),
+  if (inspection.source.kind !== 'field') {
+    if (
+      inspection.source.predicate?.field &&
+      inspection.source.predicate.namedCheck
+    ) {
+      const when = createCheckExprFromMetadata(
+        inspection.source.predicate.field,
+        inspection.source.predicate.namedCheck,
+      )
+      if (when) {
+        const rule: Extract<JsonRule, { type: 'disables'; when: JsonExpr }> = {
+          type: 'disables',
+          when,
+          targets: [...inspection.targets],
+          ...(inspection.reason ? { reason: inspection.reason } : {}),
         }
+        return { rules: [rule], excluded: [], coverageKeys: [] }
       }
+    }
 
-      if (inspection.predicate?.field && inspection.predicate.namedCheck) {
-        const when = createCheckExprFromMetadata(
-          inspection.predicate.field,
+    return excludeInspection(
+      inspection,
+      'disables() with predicate sources cannot be serialized unless hydrated from JSON or when they map to a portable validator',
+    )
+  }
+
+  return {
+    rules: [
+      {
+        type: 'disables',
+        source: inspection.source.field,
+        targets: [...inspection.targets],
+        ...(inspection.reason ? { reason: inspection.reason } : {}),
+      },
+    ],
+    excluded: [],
+    coverageKeys: [
+      createKey(
+        'rule',
+        'disables',
+        'source',
+        inspection.source.field,
+        'targets',
+        createTargetsKeyPart(inspection.targets),
+      ),
+    ],
+  }
+}
+
+function serializeFairWhenInspection(
+  inspection: Extract<
+    RuleInspection<Record<string, FieldDef>, Record<string, unknown>>,
+    { kind: 'fairWhen' }
+  >,
+): SerializeRuleResult {
+  if (inspection.hasDynamicReason) {
+    return excludeInspection(
+      inspection,
+      'fairWhen() uses a dynamic reason function and cannot be serialized',
+      '(values, conditions) => string',
+      createKey('rule', 'fairWhen', inspection.target),
+    )
+  }
+
+  const namedCheckRule =
+    inspection.predicate?.field === inspection.target &&
+    inspection.predicate.namedCheck
+      ? createCheckRuleFromMetadata(
+          inspection.target,
           inspection.predicate.namedCheck,
+          inspection.reason,
         )
+      : undefined
 
-        if (when) {
-          const rule: Extract<JsonRule, { type: 'fairWhen' }> = {
-            type: 'fairWhen',
-            field: inspection.target,
-            when,
-            ...(inspection.reason ? { reason: inspection.reason } : {}),
-          }
+  if (namedCheckRule) {
+    return {
+      rules: [namedCheckRule],
+      excluded: [],
+      coverageKeys: createCoverageKeys(namedCheckRule),
+    }
+  }
 
-          return {
-            rules: [rule],
-            excluded: [],
-            coverageKeys: [createKey('rule', 'fairWhen', inspection.target)],
-          }
-        }
+  if (inspection.predicate?.field && inspection.predicate.namedCheck) {
+    const when = createCheckExprFromMetadata(
+      inspection.predicate.field,
+      inspection.predicate.namedCheck,
+    )
+    if (when) {
+      const rule: Extract<JsonRule, { type: 'fairWhen' }> = {
+        type: 'fairWhen',
+        field: inspection.target,
+        when,
+        ...(inspection.reason ? { reason: inspection.reason } : {}),
       }
+      return {
+        rules: [rule],
+        excluded: [],
+        coverageKeys: [createKey('rule', 'fairWhen', inspection.target)],
+      }
+    }
+  }
 
-      return excludeInspection(
-        inspection,
-        'fairWhen() predicates are only serializable when hydrated from JSON or when they map to a portable validator on the same field',
-        '(value, values, conditions) => boolean',
-        createKey('rule', 'fairWhen', inspection.target),
+  return excludeInspection(
+    inspection,
+    'fairWhen() predicates are only serializable when hydrated from JSON or when they map to a portable validator on the same field',
+    '(value, values, conditions) => boolean',
+    createKey('rule', 'fairWhen', inspection.target),
+  )
+}
+
+function serializeRequiresInspection(
+  inspection: Extract<
+    RuleInspection<Record<string, FieldDef>, Record<string, unknown>>,
+    { kind: 'requires' }
+  >,
+  nestedInComposite: boolean,
+): SerializeRuleResult {
+  if (inspection.hasDynamicReason) {
+    return excludeInspection(
+      inspection,
+      'requires() uses a dynamic reason function and cannot be serialized',
+      '(values, conditions) => string',
+      undefined,
+    )
+  }
+
+  const fieldDependencies = inspection.dependencies.filter(
+    (
+      dependency,
+    ): dependency is Extract<
+      (typeof inspection.dependencies)[number],
+      { kind: 'field' }
+    > => dependency.kind === 'field',
+  )
+
+  const serializedDependencies = inspection.dependencies.map((dependency) => {
+    if (dependency.kind === 'field') {
+      return dependency.field
+    }
+    if (dependency.predicate?.field && dependency.predicate.namedCheck) {
+      return createCheckExprFromMetadata(
+        dependency.predicate.field,
+        dependency.predicate.namedCheck,
       )
     }
-    case 'requires': {
-      if (inspection.hasDynamicReason) {
-        return excludeInspection(
-          inspection,
-          'requires() uses a dynamic reason function and cannot be serialized',
-          '(values, conditions) => string',
-          undefined,
-        )
-      }
+    return undefined
+  })
 
-      const fieldDependencies = inspection.dependencies.filter(
-        (
-          dependency,
-        ): dependency is Extract<
-          (typeof inspection.dependencies)[number],
-          { kind: 'field' }
-        > => dependency.kind === 'field',
-      )
+  if (serializedDependencies.some((dependency) => dependency === undefined)) {
+    return excludeInspection(
+      inspection,
+      'requires() with predicate dependencies cannot be serialized unless hydrated from JSON or when those predicates map to portable validators',
+      undefined,
+    )
+  }
 
-      const serializedDependencies = inspection.dependencies.map(
-        (dependency) => {
-          if (dependency.kind === 'field') {
-            return dependency.field
-          }
+  if (
+    fieldDependencies.length === inspection.dependencies.length &&
+    !nestedInComposite &&
+    serializedDependencies.length > 1
+  ) {
+    const rules = fieldDependencies.map((dependency) => ({
+      type: 'requires' as const,
+      field: inspection.target,
+      dependency: dependency.field,
+      ...(inspection.reason ? { reason: inspection.reason } : {}),
+    }))
+    return {
+      rules,
+      excluded: [],
+      coverageKeys: rules.map((rule) => createCoverageKeys(rule)).flat(),
+    }
+  }
 
-          if (dependency.predicate?.field && dependency.predicate.namedCheck) {
-            return createCheckExprFromMetadata(
-              dependency.predicate.field,
-              dependency.predicate.namedCheck,
-            )
-          }
-
-          return undefined
-        },
-      )
-
-      if (
-        serializedDependencies.some((dependency) => dependency === undefined)
-      ) {
-        return excludeInspection(
-          inspection,
-          'requires() with predicate dependencies cannot be serialized unless hydrated from JSON or when those predicates map to portable validators',
-          undefined,
-        )
-      }
-
-      if (
-        fieldDependencies.length === inspection.dependencies.length &&
-        !nestedInComposite &&
-        serializedDependencies.length > 1
-      ) {
-        const rules = fieldDependencies.map((dependency) => ({
-          type: 'requires' as const,
-          field: inspection.target,
-          dependency: dependency.field,
-          ...(inspection.reason ? { reason: inspection.reason } : {}),
-        }))
-
-        return {
-          rules,
-          excluded: [],
-          coverageKeys: rules.map((rule) => createCoverageKeys(rule)).flat(),
-        }
-      }
-
-      const [firstDependency] = serializedDependencies as Array<
-        string | JsonExpr
-      >
-
-      const rules =
-        serializedDependencies.length === 1
-          ? [
-              typeof firstDependency === 'string'
-                ? {
-                    type: 'requires' as const,
-                    field: inspection.target,
-                    dependency: firstDependency,
-                    ...(inspection.reason ? { reason: inspection.reason } : {}),
-                  }
-                : {
-                    type: 'requires' as const,
-                    field: inspection.target,
-                    when: firstDependency,
-                    ...(inspection.reason ? { reason: inspection.reason } : {}),
-                  },
-            ]
-          : [
-              {
+  const [firstDependency] = serializedDependencies as Array<string | JsonExpr>
+  const rules =
+    serializedDependencies.length === 1
+      ? [
+          typeof firstDependency === 'string'
+            ? {
                 type: 'requires' as const,
                 field: inspection.target,
-                dependencies: serializedDependencies as Array<
-                  string | JsonExpr
-                >,
+                dependency: firstDependency,
+                ...(inspection.reason ? { reason: inspection.reason } : {}),
+              }
+            : {
+                type: 'requires' as const,
+                field: inspection.target,
+                when: firstDependency,
                 ...(inspection.reason ? { reason: inspection.reason } : {}),
               },
-            ]
+        ]
+      : [
+          {
+            type: 'requires' as const,
+            field: inspection.target,
+            dependencies: serializedDependencies as Array<string | JsonExpr>,
+            ...(inspection.reason ? { reason: inspection.reason } : {}),
+          },
+        ]
 
+  return {
+    rules,
+    excluded: [],
+    coverageKeys: rules.map((rule) => createCoverageKeys(rule)).flat(),
+  }
+}
+
+function serializeOneOfInspection(
+  inspection: Extract<
+    RuleInspection<Record<string, FieldDef>, Record<string, unknown>>,
+    { kind: 'oneOf' }
+  >,
+): SerializeRuleResult {
+  if (
+    inspection.hasDynamicActiveBranch ||
+    inspection.activeBranch !== undefined
+  ) {
+    return excludeInspection(
+      inspection,
+      'oneOf() activeBranch overrides are not part of the JSON spec',
+      '(values, conditions) => string | null | undefined',
+      createKey('rule', 'oneOf', inspection.groupName),
+    )
+  }
+
+  if (inspection.hasDynamicReason || inspection.reason !== undefined) {
+    return excludeInspection(
+      inspection,
+      'oneOf() reason overrides are not part of the JSON spec',
+      '(values, conditions) => string',
+      createKey('rule', 'oneOf', inspection.groupName),
+    )
+  }
+
+  return {
+    rules: [
+      {
+        type: 'oneOf',
+        group: inspection.groupName,
+        branches: deepClone(inspection.branches),
+      },
+    ],
+    excluded: [],
+    coverageKeys: [createKey('rule', 'oneOf', inspection.groupName)],
+  }
+}
+
+function serializeAnyOfInspection(
+  inspection: Extract<
+    RuleInspection<Record<string, FieldDef>, Record<string, unknown>>,
+    { kind: 'anyOf' }
+  >,
+): SerializeRuleResult {
+  const innerRules: JsonRule[] = []
+  for (const innerInspection of inspection.rules) {
+    const inner = serializeInspection(
+      innerInspection as RuleInspection<
+        Record<string, FieldDef>,
+        Record<string, unknown>
+      >,
+      true,
+    )
+    if (inner.excluded.length > 0 || inner.rules.length !== 1) {
       return {
-        rules,
-        excluded: [],
-        coverageKeys: rules.map((rule) => createCoverageKeys(rule)).flat(),
+        rules: [],
+        excluded: [
+          createExcluded(
+            'anyOf',
+            'anyOf() contains inner rules that cannot be serialized one-to-one into JSON',
+            undefined,
+            undefined,
+          ),
+        ],
+        coverageKeys: [],
       }
     }
+    innerRules.push(inner.rules[0])
+  }
+
+  return {
+    rules: [{ type: 'anyOf', rules: innerRules }],
+    excluded: [],
+    coverageKeys: createRuleKey({ type: 'anyOf', rules: innerRules })
+      ? [createRuleKey({ type: 'anyOf', rules: innerRules }) as string]
+      : [],
+  }
+}
+
+function serializeEitherOfInspection(
+  inspection: Extract<
+    RuleInspection<Record<string, FieldDef>, Record<string, unknown>>,
+    { kind: 'eitherOf' }
+  >,
+): SerializeRuleResult {
+  const jsonBranches: Record<string, JsonRule[]> = {}
+  for (const [branchName, branchRules] of Object.entries(inspection.branches)) {
+    const serializedBranch: JsonRule[] = []
+    for (const branchRule of branchRules) {
+      const inner = serializeInspection(
+        branchRule as RuleInspection<
+          Record<string, FieldDef>,
+          Record<string, unknown>
+        >,
+        true,
+      )
+      if (inner.excluded.length > 0 || inner.rules.length !== 1) {
+        return {
+          rules: [],
+          excluded: [
+            createExcluded(
+              'eitherOf',
+              'eitherOf() contains inner rules that cannot be serialized one-to-one into JSON',
+              undefined,
+              createKey('rule', 'eitherOf', inspection.groupName),
+            ),
+          ],
+          coverageKeys: [],
+        }
+      }
+      serializedBranch.push(inner.rules[0])
+    }
+    jsonBranches[branchName] = serializedBranch
+  }
+
+  return {
+    rules: [
+      { type: 'eitherOf', group: inspection.groupName, branches: jsonBranches },
+    ],
+    excluded: [],
+    coverageKeys: [createKey('rule', 'eitherOf', inspection.groupName)],
+  }
+}
+
+function serializeInspection(
+  inspection: RuleInspection<Record<string, FieldDef>, Record<string, unknown>>,
+  nestedInComposite: boolean,
+): SerializeRuleResult {
+  switch (inspection.kind) {
+    case 'enabledWhen':
+      return serializeEnabledWhenInspection(inspection)
+    case 'disables':
+      return serializeDisablesInspection(inspection)
+    case 'fairWhen':
+      return serializeFairWhenInspection(inspection)
+    case 'requires':
+      return serializeRequiresInspection(inspection, nestedInComposite)
     case 'oneOf':
-      if (
-        inspection.hasDynamicActiveBranch ||
-        inspection.activeBranch !== undefined
-      ) {
-        return excludeInspection(
-          inspection,
-          'oneOf() activeBranch overrides are not part of the JSON spec',
-          '(values, conditions) => string | null | undefined',
-          createKey('rule', 'oneOf', inspection.groupName),
-        )
-      }
-
-      if (inspection.hasDynamicReason || inspection.reason !== undefined) {
-        return excludeInspection(
-          inspection,
-          'oneOf() reason overrides are not part of the JSON spec',
-          '(values, conditions) => string',
-          createKey('rule', 'oneOf', inspection.groupName),
-        )
-      }
-
-      return {
-        rules: [
-          {
-            type: 'oneOf',
-            group: inspection.groupName,
-            branches: deepClone(inspection.branches),
-          },
-        ],
-        excluded: [],
-        coverageKeys: [createKey('rule', 'oneOf', inspection.groupName)],
-      }
-    case 'anyOf': {
-      const innerRules: JsonRule[] = []
-
-      for (const innerInspection of inspection.rules) {
-        const inner = serializeInspection(
-          innerInspection as RuleInspection<
-            Record<string, FieldDef>,
-            Record<string, unknown>
-          >,
-          true,
-        )
-
-        if (inner.excluded.length > 0 || inner.rules.length !== 1) {
-          return {
-            rules: [],
-            excluded: [
-              createExcluded(
-                'anyOf',
-                'anyOf() contains inner rules that cannot be serialized one-to-one into JSON',
-                undefined,
-                undefined,
-              ),
-            ],
-            coverageKeys: [],
-          }
-        }
-
-        innerRules.push(inner.rules[0])
-      }
-
-      return {
-        rules: [
-          {
-            type: 'anyOf',
-            rules: innerRules,
-          },
-        ],
-        excluded: [],
-        coverageKeys: createRuleKey({ type: 'anyOf', rules: innerRules })
-          ? [createRuleKey({ type: 'anyOf', rules: innerRules }) as string]
-          : [],
-      }
-    }
-    case 'eitherOf': {
-      const jsonBranches: Record<string, JsonRule[]> = {}
-
-      for (const [branchName, branchRules] of Object.entries(
-        inspection.branches,
-      )) {
-        const serializedBranch: JsonRule[] = []
-
-        for (const branchRule of branchRules) {
-          const inner = serializeInspection(
-            branchRule as RuleInspection<
-              Record<string, FieldDef>,
-              Record<string, unknown>
-            >,
-            true,
-          )
-
-          if (inner.excluded.length > 0 || inner.rules.length !== 1) {
-            return {
-              rules: [],
-              excluded: [
-                createExcluded(
-                  'eitherOf',
-                  'eitherOf() contains inner rules that cannot be serialized one-to-one into JSON',
-                  undefined,
-                  createKey('rule', 'eitherOf', inspection.groupName),
-                ),
-              ],
-              coverageKeys: [],
-            }
-          }
-
-          serializedBranch.push(inner.rules[0])
-        }
-
-        jsonBranches[branchName] = serializedBranch
-      }
-
-      return {
-        rules: [
-          {
-            type: 'eitherOf',
-            group: inspection.groupName,
-            branches: jsonBranches,
-          },
-        ],
-        excluded: [],
-        coverageKeys: [createKey('rule', 'eitherOf', inspection.groupName)],
-      }
-    }
+      return serializeOneOfInspection(inspection)
+    case 'anyOf':
+      return serializeAnyOfInspection(inspection)
+    case 'eitherOf':
+      return serializeEitherOfInspection(inspection)
     case 'custom':
       return {
         rules: [],
@@ -835,6 +851,7 @@ function serializeRule<
   )
 }
 
+// eslint-disable-next-line complexity -- sequential iteration over fields, rules, and validators; complexity accumulates from flat ?? assignments in final assembly, not from branching logic
 export function toJson<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
