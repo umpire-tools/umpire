@@ -16,7 +16,6 @@ export function fromSubscriptionRef<
 
   const subscribe = (listener: (next: S, prev: S) => void): (() => void) => {
     const tracker = trackPreviousState(getState())
-    let active = true
 
     // Effect's changes stream emits the current value immediately, then all
     // subsequent changes. Drop the first emission so the listener only fires on
@@ -25,17 +24,12 @@ export function fromSubscriptionRef<
       Stream.runForEach(Stream.drop(SubscriptionRef.changes(ref), 1), (next) =>
         Effect.sync(() => {
           const prev = tracker.next(next)
-          if (active) {
-            listener(next, prev)
-          }
+          listener(next, prev)
         }),
       ),
     )
 
-    return () => {
-      active = false
-      Effect.runFork(Fiber.interrupt(fiber))
-    }
+    return () => Effect.runFork(Fiber.interrupt(fiber))
   }
 
   return fromStore(ump, { getState, subscribe }, options)
