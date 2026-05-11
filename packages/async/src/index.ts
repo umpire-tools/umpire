@@ -32,3 +32,5 @@ export {
   check,
   createRules,
 } from './builders.js'
+
+export { umpire } from './umpire.js'

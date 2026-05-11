@@ -31,7 +31,8 @@ export function toAsyncRule<
   C extends Record<string, unknown>,
 >(rule: AnyRule<F, C>): AsyncRule<F, C> {
   if (isAsyncRule(rule)) return rule
-  return {
+  const originalMetadata = (rule as Record<string, unknown>)._umpire
+  const wrapped: AsyncRule<F, C> = {
     __async: true as const,
     type: rule.type,
     targets: rule.targets,
@@ -49,4 +50,8 @@ export function toAsyncRule<
       )
     },
   }
+  if (originalMetadata !== undefined) {
+    ;(wrapped as Record<string, unknown>)._umpire = originalMetadata
+  }
+  return wrapped
 }
