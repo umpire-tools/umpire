@@ -1,5 +1,20 @@
-import type { AnyRule, AsyncRule, RuleEvaluation } from './types.js'
+import type {
+  AnyRule,
+  AsyncRule,
+  AsyncSafeParseValidator,
+  RuleEvaluation,
+} from './types.js'
 import type { FieldDef, FieldValues, AvailabilityMap } from '@umpire/core'
+
+export function isAsyncSafeParseValidator<T = unknown>(
+  validator: unknown,
+): validator is AsyncSafeParseValidator<T> {
+  return (
+    typeof validator === 'object' &&
+    validator !== null &&
+    typeof (validator as Record<string, unknown>).safeParseAsync === 'function'
+  )
+}
 
 export function isAsyncRule(
   rule: unknown,

@@ -1,0 +1,205 @@
+import { shouldWarnInDev, isNamedCheck } from '@umpire/core/internal'
+import type {
+  AvailabilityMap,
+  FieldDef,
+  FieldValues,
+  ValidationOutcome,
+} from '@umpire/core'
+import type { AnyValidationMap } from './types.js'
+import { isAsyncSafeParseValidator } from './guards.js'
+
+export type AnyNormalizedValidationEntry<T = unknown> = {
+  validate: (
+    value: NonNullable<T>,
+  ) => ValidationOutcome | Promise<ValidationOutcome>
+  error?: string
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+export function normalizeAnyValidationEntry<T = unknown>(
+  entry: unknown,
+): AnyNormalizedValidationEntry<T> | null {
+  if (typeof entry === 'function') {
+    return {
+      validate: entry as AnyNormalizedValidationEntry<T>['validate'],
+    }
+  }
+
+  if (isNamedCheck<T>(entry)) {
+    return { validate: entry.validate }
+  }
+
+  if (isAsyncSafeParseValidator<T>(entry)) {
+    return {
+      validate: (value) => entry.safeParseAsync(value).then((r) => r.success),
+    }
+  }
+
+  if (
+    isRecord(entry) &&
+    typeof (entry as Record<string, unknown>).safeParse === 'function'
+  ) {
+    return {
+      validate: (value) =>
+        (
+          entry as { safeParse(value: NonNullable<T>): { success: boolean } }
+        ).safeParse(value).success,
+    }
+  }
+
+  if (
+    isRecord(entry) &&
+    typeof (entry as Record<string, unknown>).test === 'function'
+  ) {
+    return {
+      validate: (value) =>
+        typeof value === 'string' &&
+        (entry as { test(value: string): boolean }).test(value),
+    }
+  }
+
+  if (isRecord(entry) && 'validator' in entry) {
+    const inner = normalizeAnyValidationEntry<T>(entry.validator)
+    if (!inner) return null
+    const result: AnyNormalizedValidationEntry<T> = { validate: inner.validate }
+    if ('error' in entry && typeof entry.error === 'string') {
+      result.error = entry.error
+    }
+    return result
+  }
+
+  return null
+}
+
+export function normalizeAnyValidators<F extends Record<string, FieldDef>>(
+  fields: F,
+  validators: AnyValidationMap<F> | undefined,
+): Partial<Record<keyof F & string, AnyNormalizedValidationEntry>> {
+  const normalized: Record<string, AnyNormalizedValidationEntry> = {}
+
+  if (!validators) {
+    return normalized as Partial<
+      Record<keyof F & string, AnyNormalizedValidationEntry>
+    >
+  }
+
+  const fieldNames = new Set(Object.keys(fields))
+
+  for (const [field, entry] of Object.entries(validators) as Array<
+    [keyof F & string, unknown]
+  >) {
+    if (entry === undefined) {
+      continue
+    }
+
+    if (!fieldNames.has(field)) {
+      throw new Error(
+        `[@umpire/async] Unknown field "${field}" referenced by validators`,
+      )
+    }
+
+    const normalizedEntry = normalizeAnyValidationEntry(entry)
+
+    if (!normalizedEntry) {
+      throw new Error(
+        `[@umpire/async] Invalid validator configured for field "${field}"`,
+      )
+    }
+
+    normalized[field] = normalizedEntry
+  }
+
+  return normalized as Partial<
+    Record<keyof F & string, AnyNormalizedValidationEntry>
+  >
+}
+
+export async function attachValidationMetadataAsync<
+  F extends Record<string, FieldDef>,
+>(
+  values: FieldValues<F>,
+  availability: AvailabilityMap<F>,
+  validators: Partial<Record<keyof F & string, AnyNormalizedValidationEntry>>,
+  fieldNames: Array<keyof F & string>,
+  signal: AbortSignal,
+): Promise<AvailabilityMap<F>> {
+  signal.throwIfAborted()
+
+  const validated = { ...availability }
+
+  const validationPromises = fieldNames
+    .filter((field) => {
+      const status = availability[field]
+      return status.enabled && status.satisfied && validators[field]
+    })
+    .map(async (field) => {
+      signal.throwIfAborted()
+      const validator = validators[field]!
+      const outcome = await validator.validate(
+        values[field] as NonNullable<FieldValues<F>[typeof field]>,
+      )
+      return { field, outcome }
+    })
+
+  const results = await Promise.all(validationPromises)
+
+  for (const { field, outcome } of results) {
+    const entry = validators[field]
+    const fallbackError = entry?.error
+
+    if (typeof outcome === 'boolean') {
+      const status = validated[field]
+      if (outcome) {
+        validated[field] = { ...status, valid: true }
+      } else {
+        validated[field] = {
+          ...status,
+          valid: false,
+          error: fallbackError ?? status.error,
+        }
+      }
+      continue
+    }
+
+    if (
+      typeof outcome === 'object' &&
+      outcome !== null &&
+      typeof (outcome as Record<string, unknown>).valid === 'boolean' &&
+      (!('error' in (outcome as Record<string, unknown>)) ||
+        (outcome as Record<string, unknown>).error === undefined ||
+        typeof (outcome as Record<string, unknown>).error === 'string')
+    ) {
+      const vr = outcome as { valid: boolean; error?: string }
+      const status = validated[field]
+      if (vr.valid) {
+        validated[field] = { ...status, valid: true }
+      } else {
+        validated[field] = {
+          ...status,
+          valid: false,
+          error: vr.error ?? fallbackError,
+        }
+      }
+      continue
+    }
+
+    if (shouldWarnInDev()) {
+      console.warn(
+        '[@umpire/async] Validation functions must return a boolean or { valid, error? }. ' +
+          'Received an unsupported result and treated it as invalid.',
+      )
+    }
+
+    const status = validated[field]
+    validated[field] = {
+      ...status,
+      valid: false,
+      error: fallbackError ?? status.error,
+    }
+  }
+
+  return validated
+}
