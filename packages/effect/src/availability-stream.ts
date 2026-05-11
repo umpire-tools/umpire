@@ -20,6 +20,8 @@ export function availabilityStream<
   ref: SubscriptionRef.SubscriptionRef<S>,
   options: FromStoreOptions<S, C>,
 ): Stream.Stream<AvailabilityMap<F>, never, never> {
+  // SubscriptionRef.changes emits the current state first. Treat that initial
+  // snapshot as a fresh check, then pass previous values on later emissions.
   return SubscriptionRef.changes(ref).pipe(
     Stream.mapAccum(
       () => undefined as AvailabilityStreamState | undefined,

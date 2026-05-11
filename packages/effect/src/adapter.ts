@@ -129,14 +129,14 @@ export function createEffectAdapter<F extends Record<string, FieldDef>>(
   )
 
   const runValidateFn = Effect.fn('@umpire/effect:runValidate')(
-    (availability: AvailabilityMap<F>, values: InputValues) =>
+    <T = Record<string, unknown>>(
+      availability: AvailabilityMap<F>,
+      values: InputValues,
+    ) =>
       Effect.gen(function* () {
         const result = yield* runEffectFn(availability, values)
-        const hasErrors = Object.values(result.errors).some(
-          (message) => message !== undefined,
-        )
-        if (!hasErrors && isDecodeSuccess(result.result)) {
-          return result.result.value
+        if (isDecodeSuccess(result.result)) {
+          return result.result.value as T
         }
         return yield* Effect.fail(
           new UmpireValidationError({
@@ -151,6 +151,6 @@ export function createEffectAdapter<F extends Record<string, FieldDef>>(
     validators,
     run: runImpl,
     runEffect: runEffectFn,
-    runValidate: runValidateFn as EffectAdapter<F>['runValidate'],
+    runValidate: runValidateFn,
   }
 }

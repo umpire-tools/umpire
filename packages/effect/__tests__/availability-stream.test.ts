@@ -1,4 +1,4 @@
-import { enabledWhen, umpire } from '@umpire/core'
+import { defineRule, enabledWhen, umpire } from '@umpire/core'
 import { Deferred, Effect, Fiber, Stream, SubscriptionRef } from 'effect'
 import { availabilityStream } from '../src/availability-stream.js'
 
@@ -62,7 +62,23 @@ describe('availabilityStream', () => {
   test('passes previous values to ump.check on subsequent emissions', async () => {
     const ump = umpire({
       fields: { email: { required: true }, name: {} },
-      rules: [],
+      rules: [
+        defineRule({
+          type: 'previous-email',
+          targets: ['name'],
+          sources: ['email'],
+          evaluate: (values, _conditions, prev) =>
+            new Map([
+              [
+                'name',
+                {
+                  enabled: values.email === '' && prev?.email === 'a@b.com',
+                  reason: null,
+                },
+              ],
+            ]),
+        }),
+      ],
     })
     const ref = makeRef({ email: 'a@b.com', name: 'Bob' })
     const stream = availabilityStream(ump, ref, {
@@ -77,6 +93,7 @@ describe('availabilityStream', () => {
     // Verify it matches direct check (no previous values on first call)
     const directInitial = ump.check({ email: 'a@b.com', name: 'Bob' })
     expect(initial).toEqual(directInitial)
+    expect(initial?.name.enabled).toBe(false)
 
     const ready = Effect.runSync(Deferred.make<void>())
     const fiber = Effect.runFork(
@@ -99,6 +116,7 @@ describe('availabilityStream', () => {
       name: 'Bob',
     })
     expect(items[1]).toEqual(directNext)
+    expect(items[1]?.name.enabled).toBe(true)
   })
 
   test('passes extracted conditions to ump.check when state changes', async () => {

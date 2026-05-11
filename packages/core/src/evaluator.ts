@@ -110,7 +110,7 @@ function evaluateAnyOfRule<
     if (isCompositePassed(constraint, result)) {
       passed = true
       reasons = undefined
-      continue
+      break
     }
 
     if (!passed) {

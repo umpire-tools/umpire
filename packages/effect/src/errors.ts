@@ -12,7 +12,16 @@ export class UmpireValidationError extends Data.TaggedError(
     readonly errors: Record<string, string | undefined>
     readonly normalizedErrors: NormalizedFieldError[]
   }) {
-    const fields = Object.keys(args.errors)
+    const fields = Object.entries(args.errors).reduce<string[]>(
+      (acc, [field, message]) => {
+        if (message !== undefined) {
+          acc.push(field)
+        }
+
+        return acc
+      },
+      [],
+    )
     super({
       ...args,
       message:

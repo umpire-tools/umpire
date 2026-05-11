@@ -451,6 +451,18 @@ describe('createEffectAdapter', () => {
     expect(error.message).toBe('Validation failed: email')
   })
 
+  test('UmpireValidationError message ignores undefined error entries', () => {
+    const error = new UmpireValidationError({
+      errors: {
+        email: undefined,
+        name: 'Name is required',
+      },
+      normalizedErrors: [],
+    })
+
+    expect(error.message).toBe('Validation failed: name')
+  })
+
   test('runValidate rejects foul values when rejectFoul is enabled', async () => {
     const fields = { spotType: {}, vehicleType: {} }
     const validation = createEffectAdapter({
@@ -489,6 +501,12 @@ describe('createEffectAdapter', () => {
     expect(error.errors).toEqual({
       vehicleType: 'Vehicle type does not match the reserved spot',
     })
+    expect(error.normalizedErrors).toEqual([
+      {
+        field: 'vehicleType',
+        message: 'Vehicle type does not match the reserved spot',
+      },
+    ])
     expect(error.message).toBe('Validation failed: vehicleType')
   })
 

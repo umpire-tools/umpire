@@ -375,7 +375,6 @@ describe('evaluate', () => {
         undefined,
         {},
         new Map(),
-        true,
       ),
     ).toEqual({
       enabled: true,
@@ -385,7 +384,7 @@ describe('evaluate', () => {
     })
   })
 
-  test('evaluates every anyOf inner rule before OR-combining results', () => {
+  test('stops evaluating anyOf inner rules after the first pass', () => {
     const fields: TestFields = {
       alpha: {},
       beta: {},
@@ -424,7 +423,6 @@ describe('evaluate', () => {
         undefined,
         {},
         new Map(),
-        true,
       ),
     ).toEqual({
       enabled: true,
@@ -432,7 +430,7 @@ describe('evaluate', () => {
       reasons: undefined,
     })
     expect(firstCalls).toBe(1)
-    expect(secondCalls).toBe(1)
+    expect(secondCalls).toBe(0)
   })
 
   test('keeps fair rules out of the gate phase when a field is already disabled', () => {
@@ -529,7 +527,6 @@ describe('evaluate', () => {
         undefined,
         {},
         new Map(),
-        true,
       ),
     ).toEqual({
       enabled: true,
