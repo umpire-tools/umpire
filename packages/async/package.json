@@ -1,0 +1,38 @@
+{
+  "name": "@umpire/async",
+  "version": "1.0.0",
+  "description": "Async-aware field-availability engine — superset of @umpire/core with async rules and validators",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepack": "node ../../scripts/materialize-agent-compat.mjs prepack",
+    "postpack": "node ../../scripts/materialize-agent-compat.mjs postpack",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "dist",
+    "AGENTS.md",
+    ".claude"
+  ],
+  "dependencies": {
+    "@umpire/core": "workspace:*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdougbrown/umpire.git",
+    "directory": "packages/async"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

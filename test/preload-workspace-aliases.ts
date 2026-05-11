@@ -13,6 +13,9 @@ if (process.env.BUN_DISABLE_WORKSPACE_MOCKS !== 'true') {
   mock.module('@umpire/core/guards', () => ({
     ...require('../packages/core/src/guards.js'),
   }))
+  mock.module('@umpire/core/internal', () => ({
+    ...require('../packages/core/src/internal.js'),
+  }))
   mock.module('@umpire/store', () => require('../packages/store/src/index.js'))
   mock.module('@umpire/reads', () => require('../packages/reads/src/index.js'))
   mock.module('@umpire/write', () => require('../packages/write/src/index.js'))

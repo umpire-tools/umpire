@@ -1920,6 +1920,14 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@umpire/async@workspace:packages/async":
+  version: 0.0.0-use.local
+  resolution: "@umpire/async@workspace:packages/async"
+  dependencies:
+    "@umpire/core": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@umpire/core@workspace:*, @umpire/core@workspace:^, @umpire/core@workspace:packages/core":
   version: 0.0.0-use.local
   resolution: "@umpire/core@workspace:packages/core"

@@ -19,6 +19,10 @@
     "./guards": {
       "types": "./dist/guards.d.ts",
       "import": "./dist/guards.js"
+    },
+    "./internal": {
+      "types": "./dist/internal.d.ts",
+      "import": "./dist/internal.js"
     }
   },
   "scripts": {
