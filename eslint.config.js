@@ -35,6 +35,13 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': 'off',
     },
   },
+  // Test files use any in rule predicates for terseness — matches core test patterns
+  {
+    files: ['packages/*/__tests__/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
   // TypeScript parser for docs source — enables umpire plugin without full TS-ESLint rules
   {
     files: ['docs/src/**/*.ts'],
