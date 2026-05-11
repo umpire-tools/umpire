@@ -65,7 +65,7 @@ if (result._tag === 'Left') {
 }
 
 // Or use the convenience adapter
-const validation = createEffectAdapter({
+const validation = createEffectAdapter()({
   schemas: fieldSchemas,
 })
 
@@ -114,7 +114,7 @@ Normalizes an Effect schema parse error or issue into `{ field, message }[]` pai
 
 Filters normalized field errors to only include enabled fields and keeps the first message per field. Returns `Partial<Record<field, message>>`. Root-level errors (from cross-field refinements) are keyed under `'_root'`.
 
-### `createEffectAdapter({ schemas, build?, rejectFoul? })`
+### `createEffectAdapter()({ schemas, build?, rejectFoul? })`
 
 Creates a convenience adapter with:
 
@@ -124,7 +124,7 @@ Creates a convenience adapter with:
 Use `build` to add cross-field refinements:
 
 ```ts
-const validation = createEffectAdapter({
+const validation = createEffectAdapter()({
   schemas: {
     password: Schema.String,
     confirmPassword: Schema.String,
@@ -183,7 +183,7 @@ For form-style inputs, define an explicit empty-state rule:
 ```ts
 import { isEmptyString, umpire } from '@umpire/core'
 
-const validation = createEffectAdapter({
+const validation = createEffectAdapter()({
   schemas: {
     email: Schema.String.check(
       Schema.makeFilter((s) =>

@@ -91,7 +91,7 @@ const errors = deriveErrors(availability, effectErrors(result.error))
 // companyName omitted if disabled on the current plan
 ```
 
-### `createEffectAdapter({ schemas, build?, valueShape?, namespace?, rejectFoul? })`
+### `createEffectAdapter()({ schemas, build?, valueShape?, namespace?, rejectFoul? })`
 
 Convenience adapter that bundles the `deriveSchema → decode → deriveErrors` flow:
 
@@ -99,7 +99,7 @@ Convenience adapter that bundles the `deriveSchema → decode → deriveErrors` 
 - `run(availability, values)` — full validation returning `{ errors, normalizedErrors, result, schemaFields }`
 
 ```ts
-const validation = createEffectAdapter({
+const validation = createEffectAdapter()({
   schemas: {
     email:       Schema.String,
     companyName: Schema.String,
@@ -124,7 +124,7 @@ if (result.result._tag === 'Left') {
 Use `build` to add cross-field refinements on the derived schema:
 
 ```ts
-const validation = createEffectAdapter({
+const validation = createEffectAdapter()({
   schemas: {
     password:        Schema.String,
     confirmPassword: Schema.String,
@@ -153,7 +153,7 @@ When field keys are namespaced with a separator — for example `account.email` 
 import { createEffectAdapter } from '@umpire/effect'
 import { Schema } from 'effect'
 
-const adapter = createEffectAdapter({
+const adapter = createEffectAdapter()({
   schemas: {
     'account.email': Schema.String,
     'account.name':  Schema.String,
@@ -244,7 +244,7 @@ const ump = umpire({
     email: { required: true, isEmpty: isEmptyString },
   },
   rules: [],
-  validators: createEffectAdapter({
+  validators: createEffectAdapter()({
     schemas: { email: Schema.String },
   }).validators,
 })

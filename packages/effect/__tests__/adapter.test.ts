@@ -19,7 +19,7 @@ function stringMatching(
 
 describe('createEffectAdapter', () => {
   test('creates per-field validators that surface the first parse error', () => {
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: { email: emailSchema },
     })
 
@@ -39,7 +39,7 @@ describe('createEffectAdapter', () => {
   })
 
   test('per-field validator reports invalid for a type mismatch', () => {
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: { count: Schema.Number },
     })
 
@@ -64,7 +64,7 @@ describe('createEffectAdapter', () => {
       companyName: { required: true },
     }
 
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: {
         email: emailSchema,
         password: stringMatching((s) => s.length >= 8, 'At least 8 characters'),
@@ -109,7 +109,7 @@ describe('createEffectAdapter', () => {
       (s) => s.length > 0,
       'Company name is required',
     )
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: {
         'account.accountType': Schema.Literals(['personal', 'business']),
         'account.companyName': companyNameSchema,
@@ -151,7 +151,7 @@ describe('createEffectAdapter', () => {
 
   test('throws when nested value shape is requested without a composed schema', () => {
     expect(() =>
-      createEffectAdapter({
+      createEffectAdapter()({
         schemas: {
           'account.companyName': Schema.String,
         },
@@ -165,7 +165,7 @@ describe('createEffectAdapter', () => {
   test('excludes disabled fields from schemaFields', () => {
     const fields = { name: {}, extra: {} }
 
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: { name: Schema.String, extra: Schema.String },
     })
 
@@ -187,7 +187,7 @@ describe('createEffectAdapter', () => {
   test('rejectFoul rejects enabled fields with a foul value', () => {
     const fields = { spotType: {}, vehicleType: {} }
 
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: {
         spotType: Schema.Literals(['electric', 'standard']),
         vehicleType: Schema.Literals(['electric', 'gas']),
@@ -235,7 +235,7 @@ describe('createEffectAdapter', () => {
   test('rejectFoul allows absent optional foul fields', () => {
     const fields = { spotType: {}, vehicleType: { required: false } }
 
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: {
         spotType: Schema.Literals(['electric', 'standard']),
         vehicleType: Schema.Literals(['electric', 'gas']),
@@ -269,7 +269,7 @@ describe('createEffectAdapter', () => {
   })
 
   test('rejectFoul uses the default message when no reason is provided', () => {
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: {
         mode: Schema.Literals(['open', 'locked']),
         choice: Schema.String,
@@ -310,7 +310,7 @@ describe('createEffectAdapter', () => {
       confirmPassword: { required: true },
     }
 
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: {
         password: Schema.String,
         confirmPassword: Schema.String,
@@ -339,7 +339,7 @@ describe('createEffectAdapter', () => {
   })
 
   test('runEffect returns the same result shape as run()', async () => {
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: { email: emailSchema },
     })
     const ump = umpire({
@@ -362,7 +362,7 @@ describe('createEffectAdapter', () => {
   })
 
   test('runEffect returns a successful decode result with schema fields', async () => {
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: {
         email: emailSchema,
         name: Schema.String,
@@ -390,7 +390,7 @@ describe('createEffectAdapter', () => {
   })
 
   test('runValidate returns the decoded value on success (not the decode wrapper)', async () => {
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: { name: Schema.String },
     })
     const ump = umpire({
@@ -408,7 +408,7 @@ describe('createEffectAdapter', () => {
   })
 
   test('runValidate returns the transformed/decoded value for coercing schemas', async () => {
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: { age: Schema.NumberFromString },
     })
     const ump = umpire({
@@ -427,8 +427,76 @@ describe('createEffectAdapter', () => {
     expect(typeof result.age).toBe('number')
   })
 
+  test('runEffect supports nested valueShape pipelines', async () => {
+    const validation = createEffectAdapter()({
+      schemas: {
+        'account.companyName': Schema.String,
+      },
+      valueShape: 'nested',
+      build: () =>
+        Schema.Struct({
+          account: Schema.Struct({
+            companyName: stringMatching(
+              (value) => value.length > 0,
+              'Company name is required',
+            ),
+          }),
+        }),
+    })
+    const availability = {
+      'account.companyName': {
+        enabled: true,
+        fair: true,
+        required: true,
+        satisfied: false,
+        valid: true,
+      },
+    }
+
+    const result = await Effect.runPromise(
+      validation.runEffect(availability, {
+        'account.companyName': '',
+      }),
+    )
+
+    expect(result.result._tag).toBe('Left')
+    expect(result.errors).toEqual({
+      'account.companyName': 'Company name is required',
+    })
+  })
+
+  test('runValidate supports nested valueShape pipelines', async () => {
+    const validation = createEffectAdapter()({
+      schemas: {
+        'account.age': Schema.NumberFromString,
+      },
+      valueShape: 'nested',
+      build: () =>
+        Schema.Struct({
+          account: Schema.Struct({
+            age: Schema.NumberFromString,
+          }),
+        }),
+    })
+    const availability = {
+      'account.age': {
+        enabled: true,
+        fair: true,
+        required: true,
+        satisfied: true,
+        valid: true,
+      },
+    }
+
+    const decoded = await Effect.runPromise(
+      validation.runValidate(availability, { 'account.age': '42' }),
+    )
+
+    expect(decoded).toEqual({ account: { age: 42 } })
+  })
+
   test('runValidate fails with UmpireValidationError on validation errors', async () => {
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: { email: emailSchema },
     })
     const ump = umpire({
@@ -463,9 +531,29 @@ describe('createEffectAdapter', () => {
     expect(error.message).toBe('Validation failed: name')
   })
 
+  test('UmpireValidationError falls back to generic message for empty errors', () => {
+    const error = new UmpireValidationError({
+      errors: {},
+      normalizedErrors: [],
+    })
+
+    expect(error.message).toBe('Validation failed')
+  })
+
+  test('UmpireValidationError falls back to generic message when all entries are undefined', () => {
+    const error = new UmpireValidationError({
+      errors: {
+        email: undefined,
+      },
+      normalizedErrors: [],
+    })
+
+    expect(error.message).toBe('Validation failed')
+  })
+
   test('runValidate rejects foul values when rejectFoul is enabled', async () => {
     const fields = { spotType: {}, vehicleType: {} }
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: {
         spotType: Schema.Literals(['electric', 'standard']),
         vehicleType: Schema.Literals(['electric', 'gas']),
@@ -511,7 +599,7 @@ describe('createEffectAdapter', () => {
   })
 
   test('can catch UmpireValidationError with Effect.catchTag', async () => {
-    const validation = createEffectAdapter({
+    const validation = createEffectAdapter()({
       schemas: { email: emailSchema },
     })
     const ump = umpire({

@@ -681,7 +681,7 @@ describe('drizzle sqlite freight quote single-table write', () => {
 
       const policy = createDrizzlePolicy(freightQuotes, {
         table: { exclude: ['createdAt'] },
-        validation: createEffectAdapter({
+        validation: createEffectAdapter()({
           schemas: effectSchemas,
           rejectFoul: true,
         }),

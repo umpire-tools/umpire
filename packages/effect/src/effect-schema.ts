@@ -62,7 +62,9 @@ export function formatEffectErrors(
   parseError: unknown,
 ): NormalizedEffectError[] {
   const issue =
-    isRecord(parseError) && 'issue' in parseError && !('_tag' in parseError)
+    isRecord(parseError) &&
+    'issue' in parseError &&
+    (!('_tag' in parseError) || parseError._tag === 'SchemaError')
       ? parseError.issue
       : parseError
 

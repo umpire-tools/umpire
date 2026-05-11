@@ -1488,16 +1488,25 @@ export function anyOf<
     targets,
     sources,
     evaluate(values, conditions, prev, fields, availability) {
-      const evaluations = rules.map((rule) =>
-        rule.evaluate(values, conditions, prev, fields, availability),
-      )
-
       return createResultMap(targets, (target) => {
-        const targetResults = evaluations.map((evaluation) =>
-          getCompositeTargetEvaluation(evaluation, target),
-        )
+        const targetResults: RuleResult[] = []
 
-        // Stryker disable next-line StringLiteral: equivalent mutant — combineCompositeResults only checks mode === 'and'; any other value including '' follows the OR path
+        for (const rule of rules) {
+          const evaluation = rule.evaluate(
+            values,
+            conditions,
+            prev,
+            fields,
+            availability,
+          )
+          const targetResult = getCompositeTargetEvaluation(evaluation, target)
+          targetResults.push(targetResult)
+
+          if (targetResult.enabled && targetResult.fair) {
+            break
+          }
+        }
+
         return combineCompositeResults(constraint, 'or', targetResults)
       })
     },

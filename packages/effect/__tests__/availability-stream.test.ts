@@ -170,6 +170,26 @@ describe('availabilityStream', () => {
     })
   })
 
+  test('works when conditions selector is omitted', async () => {
+    const ump = umpire({
+      fields: { name: { required: true } },
+      rules: [],
+    })
+    const ref = makeRef({ name: 'Alice' })
+    const stream = availabilityStream(ump, ref, {
+      select: (s) => ({ name: s.name }),
+    })
+
+    const items = await Effect.runPromise(
+      Stream.take(stream, 1).pipe(Stream.runCollect),
+    )
+
+    expect(items[0]?.name).toMatchObject({
+      enabled: true,
+      satisfied: true,
+    })
+  })
+
   test('stops emitting after fiber interruption', async () => {
     const ump = umpire({
       fields: { count: {} },
@@ -181,15 +201,28 @@ describe('availabilityStream', () => {
     })
 
     const items: Array<unknown> = []
+    const firstEmission = Effect.runSync(Deferred.make<void>())
+    let sawFirstEmission = false
     const fiber = Effect.runFork(
-      Stream.runForEach(stream, (a) =>
-        Effect.sync(() => {
+      Stream.runForEach(stream, (a) => {
+        return Effect.sync(() => {
           items.push(a)
-        }),
-      ),
+          if (!sawFirstEmission) {
+            sawFirstEmission = true
+            return true
+          }
+          return false
+        }).pipe(
+          Effect.flatMap((isFirstEmission) =>
+            isFirstEmission
+              ? Deferred.succeed(firstEmission, undefined)
+              : Effect.void,
+          ),
+        )
+      }),
     )
 
-    await Effect.runPromise(Effect.yieldNow)
+    await Effect.runPromise(Deferred.await(firstEmission))
     const countAfterInitial = items.length
     expect(countAfterInitial).toBeGreaterThan(0)
 

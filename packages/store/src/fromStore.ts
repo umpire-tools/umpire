@@ -92,8 +92,8 @@ export function fromStore<
 
     destroy(): void {
       active = false
-      unsubscribe()
       listeners.clear()
+      unsubscribe()
     },
   }
 }
