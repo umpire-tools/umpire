@@ -298,103 +298,111 @@ export function FairWhen({ check, reason }: FairWhenProps): FairWhenDescriptor {
   return { _ump: 'fairWhen', check, reason }
 }
 
-export function Umpire({ children }: UmpireProps) {
-  const childDescs: readonly UmpireChild[] = !children
-    ? []
-    : Array.isArray(children)
-      ? (children as readonly UmpireChild[])
-      : [children as UmpireChild]
+// ---- Private helpers for Umpire construction ----
 
-  // First pass: collect field names from Field descriptors
-  const allFieldNames = new Set<string>()
+function collectFieldNames(childDescs: readonly UmpireChild[]): Set<string> {
+  const names = new Set<string>()
   for (const desc of childDescs) {
     if (desc._ump === 'field') {
-      allFieldNames.add(desc.name)
+      names.add(desc.name)
     } else if (desc._ump !== 'standaloneDisables' && desc._ump !== 'oneOf') {
       throw new Error(
         `[@umpire/jsx] Unknown child type in <Umpire>: ${(desc as { _ump: string })._ump}`,
       )
     }
   }
+  return names
+}
 
-  // Validate standalone disables references
+function validateStandaloneDisables(
+  childDescs: readonly UmpireChild[],
+  allFieldNames: Set<string>,
+): void {
   for (const desc of childDescs) {
-    if (desc._ump === 'standaloneDisables') {
-      if (!allFieldNames.has(desc.source)) {
+    if (desc._ump !== 'standaloneDisables') continue
+    if (!allFieldNames.has(desc.source)) {
+      throw new Error(
+        `[@umpire/jsx] Unknown source field "${desc.source}" in <StandaloneDisables>`,
+      )
+    }
+    for (const f of desc.fields) {
+      if (!allFieldNames.has(f)) {
         throw new Error(
-          `[@umpire/jsx] Unknown source field "${desc.source}" in <StandaloneDisables>`,
+          `[@umpire/jsx] Unknown target field "${f}" in <StandaloneDisables>`,
         )
       }
-      for (const f of desc.fields) {
+    }
+  }
+}
+
+function validateOneOfDescriptors(
+  childDescs: readonly UmpireChild[],
+  allFieldNames: Set<string>,
+): void {
+  for (const desc of childDescs) {
+    if (desc._ump !== 'oneOf') continue
+    for (const [branchName, branchFields] of Object.entries(desc.groups)) {
+      if (branchFields.length === 0) {
+        throw new Error(
+          `[@umpire/jsx] oneOf("${desc.name}") branch "${branchName}" must not be empty`,
+        )
+      }
+      for (const f of branchFields) {
         if (!allFieldNames.has(f)) {
           throw new Error(
-            `[@umpire/jsx] Unknown target field "${f}" in <StandaloneDisables>`,
+            `[@umpire/jsx] Unknown field "${f}" in oneOf("${desc.name}") branch "${branchName}"`,
           )
         }
       }
     }
   }
+}
 
-  // Validate oneOf references
-  for (const desc of childDescs) {
-    if (desc._ump === 'oneOf') {
-      for (const [branchName, branchFields] of Object.entries(desc.groups)) {
-        if (branchFields.length === 0) {
-          throw new Error(
-            `[@umpire/jsx] oneOf("${desc.name}") branch "${branchName}" must not be empty`,
-          )
-        }
-        for (const f of branchFields) {
-          if (!allFieldNames.has(f)) {
-            throw new Error(
-              `[@umpire/jsx] Unknown field "${f}" in oneOf("${desc.name}") branch "${branchName}"`,
-            )
-          }
-        }
-      }
-    }
-  }
-
-  // Validate rule descriptors on Field children
+function validateRequiresDescriptors(
+  childDescs: readonly UmpireChild[],
+  allFieldNames: Set<string>,
+): void {
   const valuePropKeys = getValuePropNames()
   for (const desc of childDescs) {
     if (desc._ump !== 'field') continue
     for (const rd of desc.ruleDescs) {
-      if (rd._ump === 'requires') {
-        const hasDep = rd.dep !== undefined
-        const hasWhen = (rd as RequiresDescriptor).when !== undefined
-        const hasValueProps = valuePropKeys.some(
-          (k) => (rd as Record<string, unknown>)[k] !== undefined,
-        )
+      if (rd._ump !== 'requires') continue
+      const hasDep = rd.dep !== undefined
+      const hasWhen = (rd as RequiresDescriptor).when !== undefined
+      const hasValueProps = valuePropKeys.some(
+        (k) => (rd as Record<string, unknown>)[k] !== undefined,
+      )
 
-        if (hasDep && !allFieldNames.has(rd.dep)) {
-          throw new Error(`[@umpire/jsx] Unknown field "${rd.dep}" in requires`)
-        }
-        if (hasWhen && (hasDep || hasValueProps)) {
-          throw new Error(
-            `[@umpire/jsx] "when" cannot be combined with "dep" or value props on <Requires>`,
-          )
-        }
-        if (hasValueProps && !hasDep) {
-          throw new Error(
-            `[@umpire/jsx] Value props require "dep" on <Requires>`,
-          )
-        }
-        if (!hasDep && !hasWhen) {
-          throw new Error(
-            `[@umpire/jsx] <Requires> requires either "dep" or "when"`,
-          )
-        }
+      if (hasDep && !allFieldNames.has(rd.dep)) {
+        throw new Error(`[@umpire/jsx] Unknown field "${rd.dep}" in requires`)
+      }
+      if (hasWhen && (hasDep || hasValueProps)) {
+        throw new Error(
+          `[@umpire/jsx] "when" cannot be combined with "dep" or value props on <Requires>`,
+        )
+      }
+      if (hasValueProps && !hasDep) {
+        throw new Error(`[@umpire/jsx] Value props require "dep" on <Requires>`)
+      }
+      if (!hasDep && !hasWhen) {
+        throw new Error(
+          `[@umpire/jsx] <Requires> requires either "dep" or "when"`,
+        )
       }
     }
   }
+}
 
+function buildFieldsAndRules(
+  childDescs: readonly UmpireChild[],
+  allFieldNames: Set<string>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): { fields: Record<string, any>; rules: any[] } {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fields: Record<string, any> = {}
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rules: any[] = []
 
-  // Second pass: build fields and rules
   for (const desc of childDescs) {
     if (desc._ump === 'field') {
       fields[desc.name] = desc.def
@@ -421,6 +429,22 @@ export function Umpire({ children }: UmpireProps) {
       )
     }
   }
+
+  return { fields, rules }
+}
+
+export function Umpire({ children }: UmpireProps) {
+  const childDescs: readonly UmpireChild[] = !children
+    ? []
+    : Array.isArray(children)
+      ? (children as readonly UmpireChild[])
+      : [children as UmpireChild]
+
+  const allFieldNames = collectFieldNames(childDescs)
+  validateStandaloneDisables(childDescs, allFieldNames)
+  validateOneOfDescriptors(childDescs, allFieldNames)
+  validateRequiresDescriptors(childDescs, allFieldNames)
+  const { fields, rules } = buildFieldsAndRules(childDescs, allFieldNames)
 
   return createUmpire({ fields, rules })
 }

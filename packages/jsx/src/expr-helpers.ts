@@ -1,5 +1,5 @@
 import type { Expr } from '@umpire/dsl'
-import type { FieldDef, JsonPrimitive } from '@umpire/core'
+import type { JsonPrimitive } from '@umpire/core'
 
 type CompileExprFn = (
   expression: Expr,
