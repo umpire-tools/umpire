@@ -112,6 +112,7 @@ export const namedValidators = Object.freeze({
   },
 })
 
+// eslint-disable-next-line complexity -- pure enum-to-string lookup; complexity comes entirely from case count on a flat switch, not from nested logic
 export function defaultValidatorMessage(
   rule: JsonValidatorSpec | NamedCheckMetadata,
 ): string {
@@ -169,6 +170,7 @@ function paramsFromNamedCheckMetadata(
   return metadata.params
 }
 
+// eslint-disable-next-line complexity -- pure discriminated union mapping; each case constructs a data object from known fields with no nested logic
 export function createValidatorSpecFromMetadata(
   metadata: NamedCheckMetadata,
 ): JsonValidatorSpec | undefined {
@@ -262,6 +264,7 @@ export const createNamedValidatorFromRule: (
   rule: JsonCheckRule,
 ) => NamedCheck<unknown> = createNamedValidatorFromSpec
 
+// eslint-disable-next-line complexity -- validation logic is one-to-one with op variants; per-case checks are inherent to each op's constraints, not incidental complexity
 export function assertValidValidatorSpec(rule: JsonValidatorSpec): void {
   switch (rule.op) {
     case 'email':

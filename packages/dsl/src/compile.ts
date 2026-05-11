@@ -54,6 +54,7 @@ function getConditionValue<C extends Record<string, unknown>>(
   return conditions[condition]
 }
 
+// eslint-disable-next-line complexity -- exhaustive switch over a discriminated union; fall-through case labels each count as a branch but all paths are flat single-line returns
 function collectFieldRefs(expression: Expr): string[] {
   switch (expression.op) {
     case 'eq':

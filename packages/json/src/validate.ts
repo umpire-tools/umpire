@@ -300,6 +300,7 @@ function validateRule(
   }
 }
 
+// eslint-disable-next-line complexity -- sequential chain of guard-throws followed by flat iteration loops; no meaningful nesting, just input validation before delegation to typed helpers
 export function validateSchema(
   schema: unknown,
 ): asserts schema is UmpireJsonSchema {

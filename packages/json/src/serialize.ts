@@ -835,6 +835,7 @@ function serializeRule<
   )
 }
 
+// eslint-disable-next-line complexity -- sequential iteration over fields, rules, and validators; complexity accumulates from flat ?? assignments in final assembly, not from branching logic
 export function toJson<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
