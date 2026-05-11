@@ -57,7 +57,7 @@ describe('async validation', () => {
       fields: { a: {}, b: {} },
       rules: [enabledWhen('b', async () => false)],
       validators: {
-        b: async (v: any) => ({ valid: false, error: 'bad' }),
+        b: async (_v: any) => ({ valid: false, error: 'bad' }),
       },
     })
     const r = await ump.check({ a: 'x', b: 'value' })
@@ -79,21 +79,21 @@ describe('async validation', () => {
   })
 
   test('normalizeAnyValidationEntry handles function', () => {
-    const result = normalizeAnyValidationEntry((v: any) => true)
+    const result = normalizeAnyValidationEntry((_v: any) => true)
     expect(result).not.toBeNull()
     expect(typeof result!.validate).toBe('function')
   })
 
   test('normalizeAnyValidationEntry handles safeParseAsync', () => {
     const result = normalizeAnyValidationEntry({
-      safeParseAsync: async (v: any) => ({ success: true }),
+      safeParseAsync: async (_v: any) => ({ success: true }),
     })
     expect(result).not.toBeNull()
     expect(typeof result!.validate).toBe('function')
   })
 
   test('normalizeAnyValidationEntry handles async function', () => {
-    const result = normalizeAnyValidationEntry(async (v: any) => true)
+    const result = normalizeAnyValidationEntry(async (_v: any) => true)
     expect(result).not.toBeNull()
     expect(typeof result!.validate).toBe('function')
   })
@@ -105,7 +105,7 @@ describe('async validation', () => {
 
   test('normalizeAnyValidationEntry handles safeParse objects', () => {
     const result = normalizeAnyValidationEntry({
-      safeParse: (v: any) => ({ success: true }),
+      safeParse: (_v: any) => ({ success: true }),
     })
     expect(result).not.toBeNull()
   })
@@ -132,7 +132,7 @@ describe('async validation', () => {
         fields: { alpha: {} },
         rules: [],
         validators: {
-          beta: (v: any) => true,
+          beta: (_v: any) => true,
         } as never,
       }),
     ).toThrow('Unknown field "beta" referenced by validators')

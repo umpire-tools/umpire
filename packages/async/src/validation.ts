@@ -117,6 +117,38 @@ export function normalizeAnyValidators<F extends Record<string, FieldDef>>(
   >
 }
 
+function normalizeOutcome(
+  outcome: unknown,
+  fallbackError?: string,
+): { valid: boolean; error?: string } {
+  if (typeof outcome === 'boolean') {
+    return outcome ? { valid: true } : { valid: false, error: fallbackError }
+  }
+
+  if (
+    typeof outcome === 'object' &&
+    outcome !== null &&
+    typeof (outcome as Record<string, unknown>).valid === 'boolean' &&
+    (!('error' in (outcome as Record<string, unknown>)) ||
+      (outcome as Record<string, unknown>).error === undefined ||
+      typeof (outcome as Record<string, unknown>).error === 'string')
+  ) {
+    const vr = outcome as { valid: boolean; error?: string }
+    return vr.valid
+      ? { valid: true }
+      : { valid: false, error: vr.error ?? fallbackError }
+  }
+
+  if (shouldWarnInDev()) {
+    console.warn(
+      '[@umpire/async] Validation functions must return a boolean or { valid, error? }. ' +
+        'Received an unsupported result and treated it as invalid.',
+    )
+  }
+
+  return { valid: false, error: fallbackError }
+}
+
 export async function attachValidationMetadataAsync<
   F extends Record<string, FieldDef>,
 >(
@@ -149,55 +181,17 @@ export async function attachValidationMetadataAsync<
   for (const { field, outcome } of results) {
     const entry = validators[field]
     const fallbackError = entry?.error
-
-    if (typeof outcome === 'boolean') {
-      const status = validated[field]
-      if (outcome) {
-        validated[field] = { ...status, valid: true }
-      } else {
-        validated[field] = {
-          ...status,
-          valid: false,
-          error: fallbackError ?? status.error,
-        }
-      }
-      continue
-    }
-
-    if (
-      typeof outcome === 'object' &&
-      outcome !== null &&
-      typeof (outcome as Record<string, unknown>).valid === 'boolean' &&
-      (!('error' in (outcome as Record<string, unknown>)) ||
-        (outcome as Record<string, unknown>).error === undefined ||
-        typeof (outcome as Record<string, unknown>).error === 'string')
-    ) {
-      const vr = outcome as { valid: boolean; error?: string }
-      const status = validated[field]
-      if (vr.valid) {
-        validated[field] = { ...status, valid: true }
-      } else {
-        validated[field] = {
-          ...status,
-          valid: false,
-          error: vr.error ?? fallbackError,
-        }
-      }
-      continue
-    }
-
-    if (shouldWarnInDev()) {
-      console.warn(
-        '[@umpire/async] Validation functions must return a boolean or { valid, error? }. ' +
-          'Received an unsupported result and treated it as invalid.',
-      )
-    }
-
+    const normalized = normalizeOutcome(outcome, fallbackError)
     const status = validated[field]
-    validated[field] = {
-      ...status,
-      valid: false,
-      error: fallbackError ?? status.error,
+
+    if (normalized.valid) {
+      validated[field] = { ...status, valid: true }
+    } else {
+      validated[field] = {
+        ...status,
+        valid: false,
+        error: normalized.error ?? status.error,
+      }
     }
   }
 

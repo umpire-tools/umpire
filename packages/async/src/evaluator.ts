@@ -321,6 +321,108 @@ async function evaluateRuleForTargetAsync<
   )
 }
 
+async function evaluateGateRulesForField<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  gateRules: AsyncRule<F, C>[],
+  field: keyof F & string,
+  fields: F,
+  values: FieldValues<F>,
+  conditions: C,
+  prev: FieldValues<F> | undefined,
+  availability: Partial<AvailabilityMap<F>>,
+  rulePromiseCache: Map<AsyncRule<F, C>, Promise<Map<string, RuleEvaluation>>>,
+  signal: AbortSignal,
+): Promise<{ enabled: boolean; reason: string | null; reasons: string[] }> {
+  const reasons: string[] = []
+  let enabled = true
+  let reason: string | null = null
+
+  const results = await Promise.all(
+    gateRules.map((rule) =>
+      evaluateRuleForTargetAsync(
+        rule,
+        field,
+        fields,
+        values,
+        conditions,
+        prev,
+        availability,
+        rulePromiseCache,
+        signal,
+      ),
+    ),
+  )
+
+  for (const result of results) {
+    if (result.enabled) {
+      continue
+    }
+
+    enabled = false
+
+    if (reason === null) {
+      reason = result.reason
+    }
+
+    appendCompositeFailureReasons(result, reasons)
+  }
+
+  return { enabled, reason, reasons }
+}
+
+async function evaluateFairRulesForField<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  fairRules: AsyncRule<F, C>[],
+  field: keyof F & string,
+  fields: F,
+  values: FieldValues<F>,
+  conditions: C,
+  prev: FieldValues<F> | undefined,
+  availability: Partial<AvailabilityMap<F>>,
+  rulePromiseCache: Map<AsyncRule<F, C>, Promise<Map<string, RuleEvaluation>>>,
+  signal: AbortSignal,
+): Promise<{ fair: boolean; reason: string | null; reasons: string[] }> {
+  const reasons: string[] = []
+  let fair = true
+  let reason: string | null = null
+
+  const results = await Promise.all(
+    fairRules.map((rule) =>
+      evaluateRuleForTargetAsync(
+        rule,
+        field,
+        fields,
+        values,
+        conditions,
+        prev,
+        availability,
+        rulePromiseCache,
+        signal,
+      ),
+    ),
+  )
+
+  for (const result of results) {
+    if (result.fair !== false) {
+      continue
+    }
+
+    fair = false
+
+    if (reason === null) {
+      reason = result.reason
+    }
+
+    appendCompositeFailureReasons(result, reasons)
+  }
+
+  return { fair, reason, reasons }
+}
+
 export async function evaluateAsync<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -359,73 +461,45 @@ export async function evaluateAsync<
   for (const field of topoOrder) {
     const { gateRules, fairRules } =
       resolvedRulesByTargetPhase.get(field) ?? EMPTY_RULE_PHASE_BUCKETS
-    const reasons: string[] = []
+
     let enabled = true
     let fair = true
     let reason: string | null = null
+    const reasons: string[] = []
 
     if (gateRules.length > 0) {
-      const gateResults = await Promise.all(
-        gateRules.map((rule) =>
-          evaluateRuleForTargetAsync(
-            rule,
-            field,
-            fields,
-            values,
-            conditions,
-            prev,
-            availability,
-            rulePromiseCache,
-            signal,
-          ),
-        ),
+      const gateResult = await evaluateGateRulesForField(
+        gateRules,
+        field,
+        fields,
+        values,
+        conditions,
+        prev,
+        availability,
+        rulePromiseCache,
+        signal,
       )
-
-      for (const result of gateResults) {
-        if (result.enabled) {
-          continue
-        }
-
-        enabled = false
-
-        if (reason === null) {
-          reason = result.reason
-        }
-
-        appendCompositeFailureReasons(result, reasons)
-      }
+      enabled = gateResult.enabled
+      if (gateResult.reason !== null) reason = gateResult.reason
+      reasons.push(...gateResult.reasons)
     }
 
     if (enabled && fairRules.length > 0) {
-      const fairResults = await Promise.all(
-        fairRules.map((rule) =>
-          evaluateRuleForTargetAsync(
-            rule,
-            field,
-            fields,
-            values,
-            conditions,
-            prev,
-            availability,
-            rulePromiseCache,
-            signal,
-          ),
-        ),
+      const fairResult = await evaluateFairRulesForField(
+        fairRules,
+        field,
+        fields,
+        values,
+        conditions,
+        prev,
+        availability,
+        rulePromiseCache,
+        signal,
       )
-
-      for (const result of fairResults) {
-        if (result.fair !== false) {
-          continue
-        }
-
-        fair = false
-
-        if (reason === null) {
-          reason = result.reason
-        }
-
-        appendCompositeFailureReasons(result, reasons)
-      }
+      fair = fairResult.fair
+      if (reason === null && fairResult.reason !== null)
+        reason = fairResult.reason
+      reasons.push(...fairResult.reasons)
     }
 
     availability[field] = {

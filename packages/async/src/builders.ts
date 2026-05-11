@@ -329,6 +329,40 @@ async function isSourceActive<
   return source(values, conditions)
 }
 
+async function checkPredicateDependency<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown>,
+>(
+  dependency: Predicate<F, C>,
+  values: FieldValues<F>,
+  conditions: C,
+  availability: Partial<AvailabilityMap<F>> | undefined,
+): Promise<boolean> {
+  const sourceField = getCheckField(dependency)
+  if (
+    sourceField &&
+    (availability?.[sourceField]?.enabled === false ||
+      availability?.[sourceField]?.fair === false)
+  ) {
+    return false
+  }
+
+  return dependency(values, conditions)
+}
+
+function checkStringDependency<F extends Record<string, FieldDef>>(
+  dependency: keyof F & string,
+  values: FieldValues<F>,
+  fields: F | undefined,
+  availability: Partial<AvailabilityMap<F>> | undefined,
+): boolean {
+  return (
+    isSatisfied(values[dependency], fields?.[dependency]) &&
+    (availability?.[dependency]?.enabled ?? true) &&
+    (availability?.[dependency]?.fair ?? true)
+  )
+}
+
 async function isRequiredDependencySatisfied<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -340,23 +374,15 @@ async function isRequiredDependencySatisfied<
   availability: Partial<AvailabilityMap<F>> | undefined,
 ): Promise<boolean> {
   if (typeof dependency !== 'string') {
-    const sourceField = getCheckField(dependency)
-    if (
-      sourceField &&
-      (availability?.[sourceField]?.enabled === false ||
-        availability?.[sourceField]?.fair === false)
-    ) {
-      return false
-    }
-
-    return dependency(values, conditions)
+    return checkPredicateDependency(
+      dependency,
+      values,
+      conditions,
+      availability,
+    )
   }
 
-  return (
-    isSatisfied(values[dependency], fields?.[dependency]) &&
-    (availability?.[dependency]?.enabled ?? true) &&
-    (availability?.[dependency]?.fair ?? true)
-  )
+  return checkStringDependency(dependency, values, fields, availability)
 }
 
 function getRequiredDependencyFallback<
