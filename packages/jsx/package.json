@@ -33,7 +33,8 @@
     ".claude"
   ],
   "dependencies": {
-    "@umpire/core": "workspace:^"
+    "@umpire/core": "workspace:^",
+    "@umpire/dsl": "workspace:^"
   },
   "repository": {
     "type": "git",
