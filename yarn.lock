@@ -2054,6 +2054,7 @@ __metadata:
   resolution: "@umpire/jsx@workspace:packages/jsx"
   dependencies:
     "@umpire/core": "workspace:^"
+    "@umpire/dsl": "workspace:^"
   languageName: unknown
   linkType: soft
 
