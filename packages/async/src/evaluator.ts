@@ -1,7 +1,6 @@
 import { isSatisfied } from '@umpire/core'
 import {
   appendCompositeFailureReasons,
-  combineCompositeResults,
   getInternalRuleMetadata,
   isFairRule,
   indexRulesByTarget as coreIndexRulesByTarget,
@@ -30,54 +29,6 @@ const DEFAULT_RULE_EVALUATION: RuleEvaluation = Object.freeze({
   enabled: true,
   reason: null,
 })
-
-type CompositeConstraint = 'enabled' | 'fair'
-
-function isCompositePassed(
-  constraint: CompositeConstraint,
-  result: RuleEvaluation,
-): boolean {
-  return constraint === 'fair' ? result.fair !== false : result.enabled
-}
-
-function createCompositePassResult(
-  constraint: CompositeConstraint,
-): RuleEvaluation {
-  if (constraint === 'fair') {
-    return {
-      enabled: true,
-      fair: true,
-      reason: null,
-    }
-  }
-
-  return {
-    enabled: true,
-    reason: null,
-  }
-}
-
-function createCompositeFailureResult(
-  constraint: CompositeConstraint,
-  reasons: string[] | undefined,
-): RuleEvaluation {
-  const normalizedReasons = reasons && reasons.length > 0 ? reasons : undefined
-
-  if (constraint === 'fair') {
-    return {
-      enabled: true,
-      fair: false,
-      reason: normalizedReasons?.[0] ?? null,
-      reasons: normalizedReasons,
-    }
-  }
-
-  return {
-    enabled: false,
-    reason: normalizedReasons?.[0] ?? null,
-    reasons: normalizedReasons,
-  }
-}
 
 function isAsyncFairRule<
   F extends Record<string, FieldDef>,
@@ -128,60 +79,6 @@ export function indexRulesByTargetPhase<
   return result
 }
 
-async function evaluateAnyOfRule<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown>,
->(
-  innerRules: AnyRule<F, C>[],
-  constraint: CompositeConstraint,
-  field: keyof F & string,
-  fields: F,
-  values: FieldValues<F>,
-  conditions: C,
-  prev: FieldValues<F> | undefined,
-  availability: Partial<AvailabilityMap<F>>,
-  rulePromiseCache: Map<AsyncRule<F, C>, Promise<Map<string, RuleEvaluation>>>,
-  signal: AbortSignal,
-): Promise<RuleEvaluation> {
-  const asyncRules = innerRules.map((r) => toAsyncRule(r))
-
-  const results = await Promise.all(
-    asyncRules.map((innerRule) =>
-      evaluateRuleForTargetAsync(
-        innerRule,
-        field,
-        fields,
-        values,
-        conditions,
-        prev,
-        availability,
-        rulePromiseCache,
-        signal,
-      ),
-    ),
-  )
-
-  let passed = false
-  let reasons: string[] | undefined
-
-  for (const result of results) {
-    if (isCompositePassed(constraint, result)) {
-      passed = true
-      reasons = undefined
-      continue
-    }
-
-    if (!passed) {
-      reasons ??= []
-      appendCompositeFailureReasons(result, reasons)
-    }
-  }
-
-  return passed
-    ? createCompositePassResult(constraint)
-    : createCompositeFailureResult(constraint, reasons)
-}
-
 async function evaluateRuleForFieldAsync<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -196,63 +93,6 @@ async function evaluateRuleForFieldAsync<
   rulePromiseCache: Map<AsyncRule<F, C>, Promise<Map<string, RuleEvaluation>>>,
   signal: AbortSignal,
 ): Promise<RuleEvaluation> {
-  const metadata = getInternalRuleMetadata(rule as unknown as Rule<F, C>)
-
-  // TODO: Composite rule results are cached only through child rules, not at
-  // the composite level. For a rule targeting N fields, this re-runs the
-  // anyOf/eitherOf aggregation N times.
-  if (metadata?.kind === 'anyOf') {
-    return evaluateAnyOfRule(
-      metadata.rules,
-      metadata.constraint,
-      field,
-      fields,
-      values,
-      conditions,
-      prev,
-      availability,
-      rulePromiseCache,
-      signal,
-    )
-  }
-
-  if (metadata?.kind === 'eitherOf') {
-    const branchNames = Object.keys(metadata.branches)
-    const branchResults = await Promise.all(
-      branchNames.map(async (branchName) => {
-        const branchRules = metadata.branches[branchName]
-        const asyncBranchRules = branchRules.map((r) => toAsyncRule(r))
-        const innerResults = await Promise.all(
-          asyncBranchRules.map((innerRule) =>
-            evaluateRuleForTargetAsync(
-              innerRule,
-              field,
-              fields,
-              values,
-              conditions,
-              prev,
-              availability,
-              rulePromiseCache,
-              signal,
-            ),
-          ),
-        )
-
-        return combineCompositeResults(
-          metadata.constraint,
-          'and',
-          innerResults,
-        ) as RuleEvaluation
-      }),
-    )
-
-    return combineCompositeResults(
-      metadata.constraint,
-      'or',
-      branchResults,
-    ) as RuleEvaluation
-  }
-
   let evaluationPromise = rulePromiseCache.get(rule)
   if (!evaluationPromise) {
     evaluationPromise = rule.evaluate(

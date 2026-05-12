@@ -493,21 +493,53 @@ export function umpire<
       { values: typedValues },
     )
 
-    // TODO: scorecard() already computed the "after" availability above; calling
-    // play() here evaluates it again. A playWithAvailability helper could accept
-    // the pre-computed availability and avoid the duplicate runCheck.
     const fouls = before
-      ? await play(
-          {
-            values: before.values as FieldValues<F>,
-            conditions: before.conditions,
-          },
-          {
-            values: typedValues,
-            conditions: snapshot.conditions,
-          },
-          externalSignal,
-        )
+      ? await (async () => {
+          const beforeAvailability = await runCheck(
+            before.values as FieldValues<F>,
+            before.conditions,
+            undefined,
+            externalSignal,
+          )
+
+          const recommendations: Foul<F>[] = []
+
+          for (const field of fieldNames) {
+            const beforeStatus = beforeAvailability[field]
+            const afterStatus = checkResult[field]
+            const disabledTransition =
+              beforeStatus.enabled && !afterStatus.enabled
+            const foulTransition =
+              beforeStatus.fair && afterStatus.fair === false
+
+            if (!disabledTransition && !foulTransition) {
+              continue
+            }
+
+            const currentValue = typedValues[field]
+            const suggestedValue = fields[field].default as
+              | FieldValues<F>[typeof field]
+              | undefined
+
+            if (!afterStatus.satisfied) {
+              continue
+            }
+
+            if (isEqual(currentValue, suggestedValue)) {
+              continue
+            }
+
+            recommendations.push({
+              field,
+              reason:
+                afterStatus.reason ??
+                (disabledTransition ? 'field disabled' : 'field fouled'),
+              suggestedValue,
+            })
+          }
+
+          return recommendations
+        })()
       : []
 
     const foulsByField = foulMap(fouls)
@@ -608,8 +640,7 @@ export function umpire<
       throw new Error(`[@umpire/async] Unknown field "${field}"`)
     }
 
-    const controller = new AbortController()
-    const signal = controller.signal
+    const signal = new AbortController().signal
 
     const typedValues = values as FieldValues<F>
     const typedPrev = prev as FieldValues<F> | undefined
