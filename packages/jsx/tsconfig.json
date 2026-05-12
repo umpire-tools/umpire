@@ -8,7 +8,9 @@
     "jsxImportSource": "@umpire/jsx",
     "paths": {
       "@umpire/core": ["../core/src/index.ts"],
-      "@umpire/core/*": ["../core/src/*"]
+      "@umpire/core/*": ["../core/src/*"],
+      "@umpire/dsl": ["../dsl/src/index.ts"],
+      "@umpire/dsl/*": ["../dsl/src/*"]
     }
   },
   "include": ["src"],

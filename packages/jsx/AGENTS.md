@@ -46,5 +46,5 @@ ump.check({
 
 - `<Umpire>` only accepts `<Field>` as direct children.
 - `<Requires>` and `<Disables>` only make sense nested inside `<Field>`.
-- `when` predicates for value-based conditions are not supported in v0.1 — use the core API directly for those cases.
+- `when` predicates for multi-field conditions are supported via an `Expr` from `@umpire/dsl`. Pass it as the `when` prop on `<Requires>`. Cannot be combined with `dep` or value props.
 - The return value of the JSX expression is the same `Umpire` instance as `umpire()` from core, so all core methods (`.check()`, `.challenge()`, `.play()`, etc.) are available.

@@ -1,29 +1,6 @@
+import { compileExpr } from '@umpire/dsl'
 import type { Expr } from '@umpire/dsl'
 import type { JsonPrimitive } from '@umpire/core'
-
-type CompileExprFn = (
-  expression: Expr,
-  options: { fieldNames: Set<string> },
-) => (
-  values: Record<string, unknown>,
-  conditions: Record<string, unknown>,
-) => boolean
-
-// Eagerly load compileExpr via dynamic import (respects mock.module preload).
-// In ESM, this microtask resolves before any synchronous Umpire() call.
-let compileExprFn: CompileExprFn | null = null
-
-const _initPromise = import('@umpire/dsl').then((m) => {
-  compileExprFn = m.compileExpr as CompileExprFn
-})
-
-function getCompileExpr(): CompileExprFn {
-  if (compileExprFn) return compileExprFn
-  // Production fallback
-  throw new Error(
-    '[@umpire/jsx] @umpire/dsl not loaded. Ensure the package is installed.',
-  )
-}
 
 export function getValuePropNames(): string[] {
   return [
@@ -88,9 +65,9 @@ export function buildRequiresPredicate(
   fieldNames: Set<string>,
 ) {
   const expr = buildValueExpr(dep, props)
-  return getCompileExpr()(expr, { fieldNames })
+  return compileExpr(expr, { fieldNames })
 }
 
 export function compileWhenPredicate(when: Expr, fieldNames: Set<string>) {
-  return getCompileExpr()(when, { fieldNames })
+  return compileExpr(when, { fieldNames })
 }
