@@ -10,7 +10,7 @@ import type { AvailabilityMap, FieldDef, FieldValues, Rule } from '@umpire/core'
 import type { AnyRule, AsyncRule, RuleEvaluation } from './types.js'
 import { toAsyncRule } from './guards.js'
 
-type RulePhaseBuckets<
+export type RulePhaseBuckets<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 > = {
@@ -113,7 +113,7 @@ function indexRulesByTarget<
   ) as unknown as Map<string, AsyncRule<F, C>[]>
 }
 
-function indexRulesByTargetPhase<
+export function indexRulesByTargetPhase<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 >(
@@ -459,6 +459,8 @@ export async function evaluateAsync<
     rulesByTargetPhase ?? indexRulesByTargetPhase(resolvedRulesByTarget)
 
   for (const field of topoOrder) {
+    signal.throwIfAborted()
+
     const { gateRules, fairRules } =
       resolvedRulesByTargetPhase.get(field) ?? EMPTY_RULE_PHASE_BUCKETS
 

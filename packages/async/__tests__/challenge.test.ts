@@ -11,7 +11,7 @@ describe('async challenge()', () => {
     const trace = await ump.challenge('b', { a: 'on' })
     expect(trace.field).toBe('b')
     expect(trace.enabled).toBe(true)
-    expect(trace.directReasons.length).toBeGreaterThan(0)
+    expect(trace.directReasons.length).toBe(1)
   })
 
   test('directReasons includes rule type, index, and id', async () => {
@@ -114,8 +114,10 @@ describe('async challenge()', () => {
 
     const trace = await ump.challenge('b', { a: 'x' })
     expect(trace.enabled).toBe(false)
-    expect(trace.directReasons.length).toBeGreaterThan(0)
+    expect(trace.directReasons.length).toBe(1)
     expect(trace.directReasons[0].rule).toBe('enabledWhen')
+    expect(trace.directReasons[0].passed).toBe(false)
+    expect(trace.directReasons[0].reason).toBe('always off')
   })
 
   test('reports multiple rules for same field', async () => {

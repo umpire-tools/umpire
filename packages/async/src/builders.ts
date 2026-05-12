@@ -302,13 +302,6 @@ function normalizeBranches<F extends Record<string, FieldDef>>(
   ) as OneOfBranches<F>
 }
 
-function getBranchRules<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown>,
->(branches: EitherOfBranches<F, C>): AnyRule<F, C>[] {
-  return Object.values(branches).flatMap((branchRules) => branchRules)
-}
-
 // ---------------------------------------------------------------------------
 // Source evaluation
 // ---------------------------------------------------------------------------
@@ -1023,7 +1016,7 @@ export function eitherOf<
     }
   }
 
-  const rules = getBranchRules(branches)
+  const rules = Object.values(branches).flatMap((branchRules) => branchRules)
   const label = `eitherOf("${groupName}")`
   const { targets, sources, constraint } = resolveCompositeRuleShape(
     label,

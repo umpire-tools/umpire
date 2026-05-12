@@ -63,11 +63,12 @@ describe('cancellation', () => {
       },
     })
 
-    ump.check({ alpha: 'x' })
+    const firstPromise = ump.check({ alpha: 'x' })
     await ump.check({ alpha: 'x' })
-    await new Promise((r) => setTimeout(r, 100))
+    await Promise.resolve()
 
     expect(abortFired).toBe(true)
+    await firstPromise.catch(() => {})
   })
 
   test('onAbort receives the abort reason', async () => {
@@ -86,11 +87,12 @@ describe('cancellation', () => {
       },
     })
 
-    ump.check({ alpha: 'x' })
+    const firstPromise = ump.check({ alpha: 'x' })
     await ump.check({ alpha: 'x' })
-    await new Promise((r) => setTimeout(r, 100))
+    await Promise.resolve()
 
-    expect(capturedReason).toBeDefined()
+    expect(capturedReason).toBeInstanceOf(Error)
+    await firstPromise.catch(() => {})
   })
 
   test('does not throw when onAbort throws', async () => {
@@ -107,8 +109,9 @@ describe('cancellation', () => {
       },
     })
 
-    ump.check({ alpha: 'x' })
+    const firstPromise = ump.check({ alpha: 'x' })
     const result = await ump.check({ alpha: 'x' })
+    await firstPromise.catch(() => {})
 
     expect(result.alpha.enabled).toBe(true)
   })

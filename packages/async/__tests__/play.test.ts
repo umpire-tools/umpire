@@ -1,4 +1,4 @@
-import { umpire, enabledWhen } from '@umpire/async'
+import { umpire, enabledWhen, fairWhen } from '@umpire/async'
 import { describe, test, expect } from 'bun:test'
 
 describe('async play()', () => {
@@ -117,5 +117,26 @@ describe('async play()', () => {
 
     expect(fouls).toHaveLength(1)
     expect(fouls[0].reason).toBe('toggle must be on')
+  })
+
+  test('suggests reset when field becomes foul and still holds value', async () => {
+    const ump = umpire({
+      fields: { target: { default: 'good' } },
+      rules: [
+        fairWhen('target', async (value: string) => value === 'good', {
+          reason: 'target must be good',
+        }),
+      ],
+    })
+
+    const fouls = await ump.play(
+      { values: { target: 'good' } },
+      { values: { target: 'bad' } },
+    )
+
+    expect(fouls).toHaveLength(1)
+    expect(fouls[0].field).toBe('target')
+    expect(fouls[0].reason).toBe('target must be good')
+    expect(fouls[0].suggestedValue).toBe('good')
   })
 })

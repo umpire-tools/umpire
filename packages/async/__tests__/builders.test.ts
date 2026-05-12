@@ -256,7 +256,7 @@ describe('async builders', () => {
   test('eitherOf rejects empty branches', () => {
     expect(() => {
       eitherOf('test', {})
-    }).toThrow()
+    }).toThrow('at least one branch')
   })
 
   test('oneOf rejects empty branches', () => {

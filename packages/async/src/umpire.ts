@@ -30,10 +30,15 @@ import type {
   AsyncRule,
   AsyncRuleEntry,
   AsyncScorecardOptions,
+  RuleEvaluation,
   Umpire,
 } from './types.js'
 import { toAsyncRule } from './guards.js'
-import { evaluateAsync } from './evaluator.js'
+import {
+  evaluateAsync,
+  indexRulesByTargetPhase,
+  type RulePhaseBuckets,
+} from './evaluator.js'
 import {
   attachValidationMetadataAsync,
   normalizeAnyValidators,
@@ -42,11 +47,14 @@ import {
 function composeAbortSignals(
   internal: AbortSignal,
   external: AbortSignal,
-): AbortSignal {
+): { signal: AbortSignal; cleanup: () => void } {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (typeof (AbortSignal as any).any === 'function') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (AbortSignal as any).any([internal, external])
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      signal: (AbortSignal as any).any([internal, external]),
+      cleanup: () => {},
+    }
   }
 
   const controller = new AbortController()
@@ -63,7 +71,13 @@ function composeAbortSignals(
     forward()
   }
 
-  return controller.signal
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      internal.removeEventListener('abort', forward)
+      external.removeEventListener('abort', forward)
+    },
+  }
 }
 
 const EMPTY_CONDITIONS = Object.freeze({}) as Record<string, unknown>
@@ -72,40 +86,6 @@ function createEmptyConditions<C extends Record<string, unknown>>(
   conditions: C | undefined,
 ): C {
   return (conditions ?? EMPTY_CONDITIONS) as C
-}
-
-type RulePhaseBuckets<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown>,
-> = {
-  gateRules: AsyncRule<F, C>[]
-  fairRules: AsyncRule<F, C>[]
-}
-
-function indexAsyncRulesByTargetPhase<
-  F extends Record<string, FieldDef>,
-  C extends Record<string, unknown>,
->(
-  rulesByTarget: Map<string, AsyncRule<F, C>[]>,
-): Map<string, RulePhaseBuckets<F, C>> {
-  const result = new Map<string, RulePhaseBuckets<F, C>>()
-
-  for (const [field, rules] of rulesByTarget) {
-    const gateRules: AsyncRule<F, C>[] = []
-    const fairRules: AsyncRule<F, C>[] = []
-
-    for (const rule of rules) {
-      if (isFairRule(rule as unknown as Rule<F, C>)) {
-        fairRules.push(rule)
-      } else {
-        gateRules.push(rule)
-      }
-    }
-
-    result.set(field, { gateRules, fairRules })
-  }
-
-  return result
 }
 
 function buildAsyncRuleEntries<
@@ -275,12 +255,51 @@ export function umpire<
   ) as unknown as Map<string, AsyncRule<F, C>[]>
   const { entries: ruleEntries, entryByRule } =
     buildAsyncRuleEntries(asyncRules)
-  const rulesByTargetPhase = indexAsyncRulesByTargetPhase(rulesByTarget)
+  const rulesByTargetPhase: Map<
+    string,
+    RulePhaseBuckets<F, C>
+  > = indexRulesByTargetPhase(rulesByTarget)
   const exportedGraph = exportGraph(depGraph)
   const { incomingByField, outgoingByField } = buildFieldEdgeLookup(
     exportedGraph,
     fieldNames,
   )
+
+  async function buildDirectReasons(
+    field: keyof F & string,
+    values: FieldValues<F>,
+    conditions: C,
+    prev: FieldValues<F> | undefined,
+    availability: AvailabilityMap<F>,
+  ): Promise<ChallengeTrace['directReasons']> {
+    const targetRules = rulesByTarget.get(field) ?? []
+
+    return Promise.all(
+      targetRules.map(async (rule) => {
+        const entry = entryByRule.get(rule)
+        const evaluation = await rule.evaluate(
+          values,
+          conditions,
+          prev,
+          fields,
+          availability,
+          new AbortController().signal,
+        )
+        const result = evaluation.get(field) as RuleEvaluation | undefined
+        const passed = isFairRule(rule as unknown as Rule<F, C>)
+          ? result?.fair !== false
+          : (result?.enabled ?? true)
+
+        return {
+          rule: rule.type,
+          ruleIndex: entry?.index,
+          ruleId: entry?.id,
+          passed,
+          reason: result?.reason ?? null,
+        }
+      }),
+    )
+  }
 
   let currentController: AbortController | null = null
   const onAbort = config.onAbort
@@ -295,9 +314,10 @@ export function umpire<
     const controller = new AbortController()
     currentController = controller
 
-    const signal = externalSignal
+    const composedSignal = externalSignal
       ? composeAbortSignals(controller.signal, externalSignal)
-      : controller.signal
+      : { signal: controller.signal, cleanup: () => {} }
+    const { signal } = composedSignal
 
     let abortHandler: (() => void) | undefined
     if (onAbort) {
@@ -340,6 +360,7 @@ export function umpire<
         if (abortHandler) {
           signal.removeEventListener('abort', abortHandler)
         }
+        composedSignal.cleanup()
         if (currentController === controller) {
           currentController = null
         }
@@ -497,58 +518,57 @@ export function umpire<
     const cascadingFieldSet = new Set(cascadingFields)
 
     const scorecardFields = Object.fromEntries(
-      fieldNames.map((field) => {
-        const availability = checkResult[field]
-        const value = typedValues[field]
-        const present = !isEmptyPresent(value)
-        const scorecardField: ScorecardResult<F, C>['fields'][typeof field] = {
-          field,
-          value,
-          present,
-          satisfied: availability.satisfied,
-          enabled: availability.enabled,
-          fair: availability.fair,
-          required: availability.required,
-          reason: availability.reason,
-          reasons: availability.reasons,
-          changed: changedFieldSet.has(field),
-          cascaded: cascadingFieldSet.has(field),
-          foul: foulsByField[field] ?? null,
-          incoming: incomingByField[field],
-          outgoing: outgoingByField[field],
-        }
+      await Promise.all(
+        fieldNames.map(async (field) => {
+          const availability = checkResult[field]
+          const value = typedValues[field]
+          const present = !isEmptyPresent(value)
+          const scorecardField: ScorecardResult<F, C>['fields'][typeof field] =
+            {
+              field,
+              value,
+              present,
+              satisfied: availability.satisfied,
+              enabled: availability.enabled,
+              fair: availability.fair,
+              required: availability.required,
+              reason: availability.reason,
+              reasons: availability.reasons,
+              changed: changedFieldSet.has(field),
+              cascaded: cascadingFieldSet.has(field),
+              foul: foulsByField[field] ?? null,
+              incoming: incomingByField[field],
+              outgoing: outgoingByField[field],
+            }
 
-        if (includeChallenge) {
-          const targetRules = rulesByTarget.get(field) ?? []
-          scorecardField.trace = {
-            field,
-            enabled: availability.enabled,
-            fair: availability.fair,
-            directReasons: targetRules.map((rule) => {
-              const entry = entryByRule.get(rule)
-              return {
-                rule: rule.type,
-                ruleIndex: entry?.index,
-                ruleId: entry?.id,
-                passed: true,
-                reason: null,
-              } as ChallengeTrace['directReasons'][number]
-            }),
-            transitiveDeps: [],
-            oneOfResolution: null,
+          if (includeChallenge) {
+            scorecardField.trace = {
+              field,
+              enabled: availability.enabled,
+              fair: availability.fair,
+              directReasons: await buildDirectReasons(
+                field,
+                typedValues,
+                createEmptyConditions(snapshotWithValues.conditions),
+                typedPrev,
+                checkResult,
+              ),
+              transitiveDeps: [],
+              oneOfResolution: null,
+            }
           }
-        }
 
-        if (availability.valid !== undefined) {
-          scorecardField.valid = availability.valid
-        }
+          if (availability.valid !== undefined) {
+            scorecardField.valid = availability.valid
+          }
 
-        if (availability.error !== undefined) {
-          scorecardField.error = availability.error
-        }
+          if (availability.error !== undefined) {
+            scorecardField.error = availability.error
+          }
 
-        return [field, scorecardField]
-      }),
+          return [field, scorecardField]
+        }),
+      ),
     ) as ScorecardResult<F, C>['fields']
 
     return {
@@ -599,19 +619,12 @@ export function umpire<
       rulesByTargetPhase,
     )
 
-    const targetRules = rulesByTarget.get(field) ?? []
-
-    const directReasons: ChallengeTrace['directReasons'] = targetRules.map(
-      (rule) => {
-        const entry = entryByRule.get(rule)
-        return {
-          rule: rule.type,
-          ruleIndex: entry?.index,
-          ruleId: entry?.id,
-          passed: true,
-          reason: null,
-        }
-      },
+    const directReasons = await buildDirectReasons(
+      field,
+      typedValues,
+      resolvedConditions,
+      typedPrev,
+      availability,
     )
 
     return {

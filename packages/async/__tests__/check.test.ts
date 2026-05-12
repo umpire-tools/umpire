@@ -4,6 +4,7 @@ import {
   requires,
   fairWhen,
   disables,
+  eitherOf,
 } from '@umpire/async'
 import { describe, test, expect } from 'bun:test'
 
@@ -164,6 +165,44 @@ describe('async check()', () => {
     expect(r.target.enabled).toBe(false)
     const r2 = await ump.check({ source: null })
     expect(r2.target.enabled).toBe(true)
+  })
+
+  test('eitherOf primary branch passes', async () => {
+    const ump = umpire({
+      fields: { primary: {}, fallback: {}, target: {} },
+      rules: [
+        eitherOf('strategy', {
+          primary: [
+            enabledWhen('target', (values: any) => Boolean(values.primary)),
+          ],
+          fallback: [
+            enabledWhen('target', (values: any) => Boolean(values.fallback)),
+          ],
+        }),
+      ],
+    })
+
+    const result = await ump.check({ primary: 'yes', fallback: null })
+    expect(result.target.enabled).toBe(true)
+  })
+
+  test('eitherOf all branches fail', async () => {
+    const ump = umpire({
+      fields: { primary: {}, fallback: {}, target: {} },
+      rules: [
+        eitherOf('strategy', {
+          primary: [
+            enabledWhen('target', (values: any) => Boolean(values.primary)),
+          ],
+          fallback: [
+            enabledWhen('target', (values: any) => Boolean(values.fallback)),
+          ],
+        }),
+      ],
+    })
+
+    const result = await ump.check({ primary: null, fallback: null })
+    expect(result.target.enabled).toBe(false)
   })
 
   test('requires observes upstream disabled fields — transitive availability', async () => {

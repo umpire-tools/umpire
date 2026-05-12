@@ -101,6 +101,8 @@ describe('async validation', () => {
   test('normalizeAnyValidationEntry returns null for invalid input', () => {
     expect(normalizeAnyValidationEntry(42)).toBeNull()
     expect(normalizeAnyValidationEntry('string')).toBeNull()
+    expect(normalizeAnyValidationEntry(null)).toBeNull()
+    expect(normalizeAnyValidationEntry(undefined)).toBeNull()
   })
 
   test('normalizeAnyValidationEntry handles safeParse objects', () => {
