@@ -26,6 +26,7 @@
       "@umpire/write": ["../write/src/index.ts"],
       "@umpire/write/*": ["../write/src/*"],
       "@umpire/zod": ["../zod/src/index.ts"],
+      "@umpire/zod/async": ["../zod/src/async.ts"],
       "@umpire/zod/*": ["../zod/src/*"],
       "@umpire/testing": ["../testing/src/index.ts"]
     }

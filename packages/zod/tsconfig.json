@@ -5,6 +5,8 @@
     "rootDir": "./src",
     "composite": true,
     "paths": {
+      "@umpire/async": ["../async/src/index.ts"],
+      "@umpire/async/*": ["../async/src/*"],
       "@umpire/core": ["../core/src/index.ts"],
       "@umpire/core/*": ["../core/src/*"],
       "@umpire/write": ["../write/src/index.ts"],
@@ -12,5 +14,9 @@
     }
   },
   "include": ["src"],
-  "references": [{ "path": "../core" }, { "path": "../write" }]
+  "references": [
+    { "path": "../async" },
+    { "path": "../core" },
+    { "path": "../write" }
+  ]
 }

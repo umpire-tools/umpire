@@ -2248,12 +2248,17 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@umpire/zod@workspace:packages/zod"
   dependencies:
+    "@umpire/async": "workspace:^"
     "@umpire/core": "workspace:^"
     "@umpire/devtools": "workspace:^"
     "@umpire/write": "workspace:^"
     zod: "npm:^3.23.8"
   peerDependencies:
+    "@umpire/async": ^1.0.0
     zod: ^3.0.0 || ^4.0.0
+  peerDependenciesMeta:
+    "@umpire/async":
+      optional: true
   languageName: unknown
   linkType: soft
 

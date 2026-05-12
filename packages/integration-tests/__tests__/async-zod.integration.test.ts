@@ -1,6 +1,6 @@
 import { umpire, enabledWhen } from '@umpire/async'
+import { createZodAdapter } from '@umpire/zod/async'
 import {
-  createZodAdapter,
   deriveDiscriminatedFields,
   deriveErrors,
   deriveSchema,
@@ -175,12 +175,11 @@ describe('async + zod integration', () => {
       schemas: fieldSchemas,
     })
 
-    // adapter.validators is ValidationMap<F> (sync safeParse-based).
-    // @umpire/async accepts AnyValidationMap which should include sync validators.
+    // adapter.validators is AnyValidationMap<F> and can be passed directly.
     const ump = umpire({
       fields: { cardNumber: {}, cvv: {} },
       rules: [],
-      validators: adapter.validators as any,
+      validators: adapter.validators,
     })
 
     const result = await ump.check({
