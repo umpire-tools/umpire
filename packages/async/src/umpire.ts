@@ -271,6 +271,7 @@ export function umpire<
     conditions: C,
     prev: FieldValues<F> | undefined,
     availability: AvailabilityMap<F>,
+    signal: AbortSignal,
   ): Promise<ChallengeTrace['directReasons']> {
     const targetRules = rulesByTarget.get(field) ?? []
 
@@ -283,7 +284,7 @@ export function umpire<
           prev,
           fields,
           availability,
-          new AbortController().signal,
+          signal,
         )
         const result = evaluation.get(field) as RuleEvaluation | undefined
         const passed = isFairRule(rule as unknown as Rule<F, C>)
@@ -492,6 +493,9 @@ export function umpire<
       { values: typedValues },
     )
 
+    // TODO: scorecard() already computed the "after" availability above; calling
+    // play() here evaluates it again. A playWithAvailability helper could accept
+    // the pre-computed availability and avoid the duplicate runCheck.
     const fouls = before
       ? await play(
           {
@@ -516,6 +520,7 @@ export function umpire<
       (field) => !changedFieldSet.has(field),
     )
     const cascadingFieldSet = new Set(cascadingFields)
+    const traceSignal = externalSignal ?? new AbortController().signal
 
     const scorecardFields = Object.fromEntries(
       await Promise.all(
@@ -552,7 +557,10 @@ export function umpire<
                 createEmptyConditions(snapshotWithValues.conditions),
                 typedPrev,
                 checkResult,
+                traceSignal,
               ),
+              // TODO: These are stub values; core traces the dependency chain
+              // and oneOf resolution details here.
               transitiveDeps: [],
               oneOfResolution: null,
             }
@@ -625,6 +633,7 @@ export function umpire<
       resolvedConditions,
       typedPrev,
       availability,
+      signal,
     )
 
     return {
@@ -632,6 +641,8 @@ export function umpire<
       enabled: availability[field].enabled,
       fair: availability[field].fair,
       directReasons,
+      // TODO: These are stub values; core traces the dependency chain and oneOf
+      // resolution details here.
       transitiveDeps: [],
       oneOfResolution: null,
     }

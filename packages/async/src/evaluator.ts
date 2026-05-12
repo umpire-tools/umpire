@@ -198,6 +198,9 @@ async function evaluateRuleForFieldAsync<
 ): Promise<RuleEvaluation> {
   const metadata = getInternalRuleMetadata(rule as unknown as Rule<F, C>)
 
+  // TODO: Composite rule results are cached only through child rules, not at
+  // the composite level. For a rule targeting N fields, this re-runs the
+  // anyOf/eitherOf aggregation N times.
   if (metadata?.kind === 'anyOf') {
     return evaluateAnyOfRule(
       metadata.rules,

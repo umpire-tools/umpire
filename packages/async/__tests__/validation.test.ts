@@ -36,6 +36,25 @@ describe('async validation', () => {
     expect(r2.email.valid).toBe(false)
   })
 
+  test('auto-cancel aborts check during async validation', async () => {
+    const ump = umpire({
+      fields: { name: {} },
+      rules: [],
+      validators: {
+        name: async () =>
+          new Promise((resolve) => {
+            setTimeout(() => resolve({ valid: true }), 50)
+          }),
+      },
+    })
+
+    const firstPromise = ump.check({ name: 'Ada' })
+    const secondPromise = ump.check({ name: 'Ada' })
+
+    await expect(firstPromise).rejects.toMatchObject({ name: 'AbortError' })
+    await secondPromise
+  })
+
   test('safeParseAsync validator', async () => {
     const ump = umpire({
       fields: { email: {} },

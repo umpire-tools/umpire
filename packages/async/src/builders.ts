@@ -400,6 +400,7 @@ function isRuleOptions<
   return (
     typeof value === 'object' &&
     value !== null &&
+    typeof value !== 'function' &&
     ('reason' in value || 'trace' in value)
   )
 }

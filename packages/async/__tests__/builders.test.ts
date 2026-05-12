@@ -234,6 +234,49 @@ describe('async builders', () => {
     expect(r.hourList.enabled).toBe(false)
   })
 
+  test('oneOf with function activeBranch', async () => {
+    const ump = umpire({
+      fields: { mode: {}, hourList: {}, startTime: {}, endTime: {} },
+      rules: [
+        oneOf(
+          'strategy',
+          {
+            hourly: ['hourList'],
+            range: ['startTime', 'endTime'],
+          },
+          {
+            activeBranch: async (values: any) =>
+              values.mode === 'range' ? 'range' : null,
+          },
+        ),
+      ],
+    })
+
+    const r = await ump.check({ mode: 'range', hourList: 'all-day' })
+    expect(r.startTime.enabled).toBe(true)
+    expect(r.endTime.enabled).toBe(true)
+    expect(r.hourList.enabled).toBe(false)
+  })
+
+  test('dynamic reason function resolves in challenge trace', async () => {
+    const ump = umpire({
+      fields: { someField: {}, target: {} },
+      rules: [
+        enabledWhen('target', async () => false, {
+          reason: async (values: any) => `dynamic: ${values.someField}`,
+        }),
+      ],
+    })
+
+    const trace = await ump.challenge('target', {
+      someField: 'blocked',
+      target: 'x',
+    })
+
+    expect(trace.directReasons).toHaveLength(1)
+    expect(trace.directReasons[0].reason).toBe('dynamic: blocked')
+  })
+
   test('anyOf rejects mismatched targets', () => {
     expect(() =>
       anyOf(

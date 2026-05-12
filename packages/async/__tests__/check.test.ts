@@ -263,7 +263,8 @@ describe('async check()', () => {
     })
     const entries = ump.rules()
     expect(entries.length).toBe(1)
-    expect(entries[0].id).toBeDefined()
+    expect(typeof entries[0].id).toBe('string')
+    expect(entries[0].id.length).toBeGreaterThan(0)
   })
 
   test('graph() returns defensive copy', () => {

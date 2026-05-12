@@ -196,6 +196,7 @@ export async function attachValidationMetadataAsync<
     })
 
   const results = await Promise.all(validationPromises)
+  signal.throwIfAborted()
 
   for (const { field, outcome } of results) {
     const entry = validators[field]

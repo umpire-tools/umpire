@@ -129,6 +129,14 @@ describe('async scorecard()', () => {
     expect(result.fields.a.trace).toBeDefined()
     expect(result.fields.a.trace!.field).toBe('a')
     expect(result.fields.a.trace!.enabled).toBe(true)
+    expect(Array.isArray(result.fields.a.trace!.directReasons)).toBe(true)
+    expect(result.fields.a.trace!.directReasons.length).toBeGreaterThan(0)
+    for (const entry of result.fields.a.trace!.directReasons) {
+      expect(typeof entry.passed).toBe('boolean')
+      expect(typeof entry.reason === 'string' || entry.reason === null).toBe(
+        true,
+      )
+    }
   })
 
   test('scorecard without includeChallenge omits trace', async () => {

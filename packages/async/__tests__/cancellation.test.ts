@@ -13,7 +13,7 @@ describe('cancellation', () => {
 
     await expect(
       ump.check({ alpha: 'x' }, undefined, undefined, controller.signal),
-    ).rejects.toThrow()
+    ).rejects.toMatchObject({ name: 'AbortError' })
   })
 
   test('auto-cancels previous check when a new check is started', async () => {
@@ -44,7 +44,7 @@ describe('cancellation', () => {
     expect(result.alpha.enabled).toBe(true)
     expect(firstAborted).toBe(true)
 
-    await firstPromise
+    await firstPromise.catch(() => {})
   })
 
   test('onAbort hook fires when evaluation is auto-cancelled', async () => {
@@ -122,14 +122,16 @@ describe('cancellation', () => {
       rules: [enabledWhen('alpha', async () => true)],
     })
 
-    const results = await Promise.all([
-      ump.check({ alpha: 'a' }),
-      ump.check({ alpha: 'b' }),
-      ump.check({ alpha: 'c' }),
-    ])
+    const check1 = ump.check({ alpha: 'a' }).catch(() => null)
+    const check2 = ump.check({ alpha: 'b' }).catch(() => null)
+    const check3 = ump.check({ alpha: 'c' })
 
-    expect(results).toHaveLength(3)
-    results.forEach((r) => expect(r.alpha.enabled).toBe(true))
+    const result = await check3
+    await Promise.all([check1, check2])
+
+    // Earlier checks are aborted by auto-cancel; only the latest check should
+    // be asserted as successful.
+    expect(result.alpha.enabled).toBe(true)
   })
 
   test('external signal cancels play()', async () => {
@@ -145,7 +147,7 @@ describe('cancellation', () => {
         { values: { a: 'y' } },
         controller.signal,
       ),
-    ).rejects.toThrow()
+    ).rejects.toMatchObject({ name: 'AbortError' })
   })
 
   test('external signal cancels scorecard()', async () => {
@@ -157,6 +159,6 @@ describe('cancellation', () => {
     controller.abort()
     await expect(
       ump.scorecard({ values: { a: 'x' } }, { signal: controller.signal }),
-    ).rejects.toThrow()
+    ).rejects.toMatchObject({ name: 'AbortError' })
   })
 })

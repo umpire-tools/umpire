@@ -11,12 +11,7 @@ export type {
   Umpire,
 } from './types.js'
 
-export type { AnyNormalizedValidationEntry } from './validation.js'
-export {
-  normalizeAnyValidationEntry,
-  normalizeAnyValidators,
-  attachValidationMetadataAsync,
-} from './validation.js'
+export { normalizeAnyValidationEntry } from './validation.js'
 
 export { isAsyncRule, toAsyncRule } from './guards.js'
 
