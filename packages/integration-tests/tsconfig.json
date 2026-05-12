@@ -3,6 +3,7 @@
   "compilerOptions": {
     "types": ["bun-types"],
     "paths": {
+      "@umpire/async": ["../async/src/index.ts"],
       "@umpire/core": ["../core/src/index.ts"],
       "@umpire/core/*": ["../core/src/*"],
       "@umpire/devtools": ["../devtools/src/index.ts"],

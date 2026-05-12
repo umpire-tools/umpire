@@ -19,6 +19,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
+function extractSafeParseError(result: {
+  success: boolean
+}): string | undefined {
+  const rec = result as Record<string, unknown>
+  const err = rec.error
+  if (!isRecord(err)) return undefined
+  const errors = (err as Record<string, unknown>).errors
+  if (!Array.isArray(errors) || errors.length === 0) return undefined
+  const first = errors[0] as Record<string, unknown>
+  return typeof first.message === 'string' ? first.message : undefined
+}
+
 export function normalizeAnyValidationEntry<T = unknown>(
   entry: unknown,
 ): AnyNormalizedValidationEntry<T> | null {
@@ -34,7 +46,11 @@ export function normalizeAnyValidationEntry<T = unknown>(
 
   if (isAsyncSafeParseValidator<T>(entry)) {
     return {
-      validate: (value) => entry.safeParseAsync(value).then((r) => r.success),
+      validate: async (value) => {
+        const result = await entry.safeParseAsync(value)
+        if (result.success) return true
+        return { valid: false, error: extractSafeParseError(result) }
+      },
     }
   }
 
@@ -43,10 +59,13 @@ export function normalizeAnyValidationEntry<T = unknown>(
     typeof (entry as Record<string, unknown>).safeParse === 'function'
   ) {
     return {
-      validate: (value) =>
-        (
+      validate: (value) => {
+        const result = (
           entry as { safeParse(value: NonNullable<T>): { success: boolean } }
-        ).safeParse(value).success,
+        ).safeParse(value)
+        if (result.success) return true
+        return { valid: false, error: extractSafeParseError(result) }
+      },
     }
   }
 
