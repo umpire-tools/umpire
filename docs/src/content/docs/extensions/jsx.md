@@ -3,11 +3,17 @@ title: JSX
 description: Define Umpire fields and rules with JSX — a familiar HTML-like syntax for learning and prototyping.
 ---
 
-If you've written HTML or React, you understand the shape of JSX. `@umpire/jsx` lets you define umpire configurations with that same syntax — no separate rule API to learn. It's built for learning, teaching, and quick prototyping.
+JSX... but it builds a rules engine instead of a webpage. Yes, really. 🧑‍⚖️
 
-This is not the production way to use umpire. It costs you a JSX transform and an extra dependency. But it buys you something valuable: a config format that looks like the web you already know.
+You know JSX, right? It's that `<Button onClick={...}>Click me</Button>` stuff from React. Or maybe you don't know JSX but you do know HTML.
 
-Let's get real on this for a second: I (Doug) wanted to teach my son (11) about the library I was building out. He understands HTML but struggles with turing-complete languages. This felt like a natural gateway. I hope it helps you too. :)
+Normally when you write JSX or HTML, it turns into a real thing on the screen — a button, a form, a spinning loading indicator.
+
+`@umpire/jsx` does something completely different and a little weird: it takes JSX tags like `<Field>` and `<Requires>` and builds an **umpire evaluator** — an object you call `.check()` on to find out which fields are available in your app right now. No DOM. No browser. No components. Just a rules engine wearing JSX's clothes.
+
+It's built for learning, teaching, and quick prototyping. (Background: I (Doug) wanted to teach my son (11) about the library I was building out. He understands HTML isn't as comfortable with "real" code. This felt like a natural bridge. I hope it helps you too.)
+
+This is not the "production" way to use umpire — it costs you a JSX transform and an extra dependency. But it buys you a config format that looks like the web you already know.
 
 ## The idea
 
@@ -59,7 +65,7 @@ In your `tsconfig.json`, set the JSX import source once for all `.tsx` files:
 ```json
 {
   "compilerOptions": {
-    "jsx": "automatic",
+    "jsx": "react-jsx",
     "jsxImportSource": "@umpire/jsx"
   }
 }
