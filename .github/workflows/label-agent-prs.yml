@@ -11,17 +11,17 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - name: Check for Claude co-authorship
+      - name: Check for agent co-authorship
         id: check
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          has_claude=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits \
-            --jq '[.[].commit.message | test("Co-Authored-By: Claude")] | any')
-          echo "has_claude=$has_claude" >> "$GITHUB_OUTPUT"
+          has_agent=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/commits \
+            --jq '[.[].commit.message | test("(^|\n)Co-Authored-By: (Claude|Codex|GitHub Copilot|Copilot|Devin|Aider|Cursor)"; "i")] | any')
+          echo "has_agent=$has_agent" >> "$GITHUB_OUTPUT"
 
       - name: Apply agent label
-        if: steps.check.outputs.has_claude == 'true'
-        run: gh pr edit ${{ github.event.pull_request.number }} --add-label "👾 agent"
+        if: steps.check.outputs.has_agent == 'true'
+        run: gh pr edit ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --add-label "👾 agent"
         env:
           GH_TOKEN: ${{ github.token }}

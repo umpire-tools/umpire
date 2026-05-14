@@ -2,7 +2,9 @@ import type { InferInsertModel, Table } from 'drizzle-orm'
 import type { FieldDef, Umpire } from '@umpire/core'
 import {
   checkCreate as writeCheckCreate,
+  checkCreateAsync as writeCheckCreateAsync,
   checkPatch as writeCheckPatch,
+  checkPatchAsync as writeCheckPatchAsync,
 } from '@umpire/write'
 
 import { getTableColumnsMeta } from './table.js'
@@ -14,6 +16,9 @@ import {
 import {
   composeWriteResult,
   runWriteValidationAdapter,
+  runWriteValidationAdapterAsync,
+  type AsyncWriteValidationAdapter,
+  type AsyncWriteUmpire,
   type WriteCheckResult,
   type WriteValidationAdapter,
 } from '@umpire/write'
@@ -38,6 +43,13 @@ type FullDrizzleWriteOptions<
   C = Record<string, unknown>,
 > = DrizzleWriteOptions<C> & {
   validation?: WriteValidationAdapter<F>
+}
+
+type AsyncFullDrizzleWriteOptions<
+  F extends Record<string, FieldDef>,
+  C = Record<string, unknown>,
+> = DrizzleWriteOptions<C> & {
+  validation?: AsyncWriteValidationAdapter<F>
 }
 
 export function checkDrizzleCreate<
@@ -72,6 +84,52 @@ export function checkDrizzleCreate<
 
   const validation = options?.validation
     ? runWriteValidationAdapter(
+        options.validation,
+        write.availability,
+        write.candidate,
+      )
+    : undefined
+
+  const composed = composeWriteResult({
+    write,
+    validation,
+    extraIssues: { columns: columnIssues },
+  })
+  return { ...composed, data: finalData as InferInsertModel<T> }
+}
+
+export async function checkDrizzleCreateAsync<
+  T extends Table,
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
+  table: T,
+  ump: AsyncWriteUmpire<F, C>,
+  data: Record<string, unknown>,
+  options?: AsyncFullDrizzleWriteOptions<F, C>,
+): Promise<DrizzleWriteResult<F, InferInsertModel<T>>> {
+  const tableMeta = getTableColumnsMeta(table)
+  const exclude = deriveExclude(tableMeta, ump as Umpire<F>)
+
+  const { shapedData, columnIssues } = shapeCreateInput(
+    tableMeta,
+    exclude,
+    data,
+    options,
+  )
+
+  const write = await writeCheckCreateAsync(ump, shapedData, options?.context)
+
+  const finalData = buildCreateDataFromCandidate(
+    tableMeta,
+    exclude,
+    write.candidate,
+    shapedData,
+    write.availability as Record<string, { enabled?: boolean }>,
+  )
+
+  const validation = options?.validation
+    ? await runWriteValidationAdapterAsync(
         options.validation,
         write.availability,
         write.candidate,
@@ -137,6 +195,76 @@ export function checkDrizzlePatch<
 
   const validation = options?.validation
     ? runWriteValidationAdapter(
+        options.validation,
+        write.availability,
+        write.candidate,
+      )
+    : undefined
+
+  const composed = composeWriteResult({
+    write,
+    validation,
+    extraIssues: { columns: columnIssues },
+  })
+  return { ...composed, data: filteredData as Partial<InferInsertModel<T>> }
+}
+
+export async function checkDrizzlePatchAsync<
+  T extends Table,
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
+  table: T,
+  ump: AsyncWriteUmpire<F, C>,
+  existing: Record<string, unknown>,
+  patch: Record<string, unknown>,
+  options?: AsyncFullDrizzleWriteOptions<F, C>,
+): Promise<DrizzleWriteResult<F, Partial<InferInsertModel<T>>>> {
+  const tableMeta = getTableColumnsMeta(table)
+  const exclude = deriveExclude(tableMeta, ump as Umpire<F>)
+
+  const { shapedData, columnIssues } = shapePatchData(
+    tableMeta,
+    exclude,
+    patch,
+    options,
+  )
+
+  const initialWrite = await writeCheckPatchAsync(
+    ump,
+    existing,
+    shapedData,
+    options?.context,
+  )
+
+  const rawClears = collectDisabledStaleClears(
+    initialWrite,
+    existing,
+    shapedData,
+  )
+
+  const { shapedData: staleClears } = shapePatchData(
+    tableMeta,
+    exclude,
+    rawClears,
+    { unknownKeys: 'strip', nonWritableKeys: 'strip' },
+  )
+
+  const shapedPatchWithClears = { ...staleClears, ...shapedData }
+  const write =
+    Object.keys(staleClears).length === 0
+      ? initialWrite
+      : await writeCheckPatchAsync(
+          ump,
+          existing,
+          shapedPatchWithClears,
+          options?.context,
+        )
+
+  const filteredData = filterEnabledPatchData(write, shapedData, staleClears)
+
+  const validation = options?.validation
+    ? await runWriteValidationAdapterAsync(
         options.validation,
         write.availability,
         write.candidate,

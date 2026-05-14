@@ -1,0 +1,367 @@
+import { umpire, enabledWhen, normalizeAnyValidationEntry } from '@umpire/async'
+import { describe, test, expect, spyOn } from 'bun:test'
+
+describe('async validation', () => {
+  test('sync validator returns valid/error', async () => {
+    const ump = umpire({
+      fields: { name: {} },
+      rules: [],
+      validators: {
+        name: (v: any) =>
+          v.length > 0 ? true : { valid: false, error: 'required' },
+      },
+    })
+    const r = await ump.check({ name: '' })
+    expect(r.name.valid).toBe(false)
+    expect(r.name.error).toBe('required')
+    const r2 = await ump.check({ name: 'hello' })
+    expect(r2.name.valid).toBe(true)
+  })
+
+  test('async validator function', async () => {
+    const ump = umpire({
+      fields: { email: {} },
+      rules: [],
+      validators: {
+        email: async (v: any) => {
+          return v.includes('@')
+            ? true
+            : { valid: false, error: 'invalid email' }
+        },
+      },
+    })
+    const r = await ump.check({ email: 'test@test.com' })
+    expect(r.email.valid).toBe(true)
+    const r2 = await ump.check({ email: 'bad' })
+    expect(r2.email.valid).toBe(false)
+  })
+
+  test('auto-cancel aborts check during async validation', async () => {
+    const ump = umpire({
+      fields: { name: {} },
+      rules: [],
+      validators: {
+        name: async () =>
+          new Promise((resolve) => {
+            setTimeout(() => resolve({ valid: true }), 50)
+          }),
+      },
+    })
+
+    const firstPromise = ump.check({ name: 'Ada' })
+    const secondPromise = ump.check({ name: 'Ada' })
+
+    await expect(firstPromise).rejects.toMatchObject({ name: 'AbortError' })
+    await secondPromise
+  })
+
+  test('auto-cancel rejects without waiting for a hanging validator', async () => {
+    let calls = 0
+    const ump = umpire({
+      fields: { name: {} },
+      rules: [],
+      validators: {
+        name: async () => {
+          calls += 1
+          if (calls === 1) {
+            return new Promise(() => {})
+          }
+
+          return { valid: true }
+        },
+      },
+    })
+
+    const firstPromise = ump.check({ name: 'Ada' })
+    await Promise.resolve()
+
+    const secondPromise = ump.check({ name: 'Ada' })
+    await expect(
+      Promise.race([
+        firstPromise,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('first check still pending')), 25),
+        ),
+      ]),
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    await secondPromise
+  })
+
+  test('safeParseAsync validator', async () => {
+    const ump = umpire({
+      fields: { email: {} },
+      rules: [],
+      validators: {
+        email: {
+          safeParseAsync: async (v: any) => {
+            return { success: v.includes('@') }
+          },
+        },
+      },
+    })
+    const r = await ump.check({ email: 'test@test.com' })
+    expect(r.email.valid).toBe(true)
+  })
+
+  test('disabled fields skip validation', async () => {
+    const ump = umpire({
+      fields: { a: {}, b: {} },
+      rules: [enabledWhen('b', async () => false)],
+      validators: {
+        b: async (_v: any) => ({ valid: false, error: 'bad' }),
+      },
+    })
+    const r = await ump.check({ a: 'x', b: 'value' })
+    expect(r.b.enabled).toBe(false)
+    expect(r.b.valid).toBeUndefined()
+  })
+
+  test('unsatisfied fields skip validation', async () => {
+    const ump = umpire({
+      fields: { a: {}, b: {} },
+      rules: [],
+      validators: {
+        b: async () => ({ valid: false, error: 'bad' }),
+      },
+    })
+    const r = await ump.check({ a: 'x' })
+    expect(r.b.satisfied).toBe(false)
+    expect(r.b.valid).toBeUndefined()
+  })
+
+  test('normalizeAnyValidationEntry handles function', () => {
+    const result = normalizeAnyValidationEntry((_v: any) => true)
+    expect(result).not.toBeNull()
+    expect(typeof result!.validate).toBe('function')
+  })
+
+  test('normalizeAnyValidationEntry handles safeParseAsync', () => {
+    const result = normalizeAnyValidationEntry({
+      safeParseAsync: async (_v: any) => ({ success: true }),
+    })
+    expect(result).not.toBeNull()
+    expect(typeof result!.validate).toBe('function')
+  })
+
+  test('safeParseAsync validator reads Zod 4 issues errors', async () => {
+    const ump = umpire({
+      fields: { email: {} },
+      rules: [],
+      validators: {
+        email: {
+          safeParseAsync: async () => ({
+            success: false,
+            error: {
+              issues: [{ message: 'Invalid email' }],
+            },
+          }),
+        } as never,
+      },
+    })
+
+    const result = await ump.check({ email: 'bad' })
+    expect(result.email.valid).toBe(false)
+    expect(result.email.error).toBe('Invalid email')
+  })
+
+  test('safeParse validator extracts legacy errors messages', async () => {
+    const entry = normalizeAnyValidationEntry({
+      safeParse: () => ({
+        success: false,
+        error: {
+          errors: [{ message: 'Legacy message' }],
+        },
+      }),
+    })
+
+    const result = await entry!.validate('bad')
+    expect(result).toEqual({ valid: false, error: 'Legacy message' })
+  })
+
+  test('safeParse validator returns undefined error when no issues exist', async () => {
+    const entry = normalizeAnyValidationEntry({
+      safeParse: () => ({
+        success: false,
+        error: {},
+      }),
+    })
+
+    const result = await entry!.validate('bad')
+    expect(result).toEqual({ valid: false, error: undefined })
+  })
+
+  test('named check validators normalize directly', async () => {
+    const entry = normalizeAnyValidationEntry({
+      __check: 'startsWithA',
+      validate: (value: string) => value.startsWith('A'),
+    })
+
+    expect(entry).not.toBeNull()
+    expect(await entry!.validate('Ada')).toBe(true)
+    expect(await entry!.validate('Grace')).toBe(false)
+  })
+
+  test('normalizeAnyValidationEntry handles async function', () => {
+    const result = normalizeAnyValidationEntry(async (_v: any) => true)
+    expect(result).not.toBeNull()
+    expect(typeof result!.validate).toBe('function')
+  })
+
+  test('normalizeAnyValidationEntry returns null for invalid input', () => {
+    expect(normalizeAnyValidationEntry(42)).toBeNull()
+    expect(normalizeAnyValidationEntry('string')).toBeNull()
+    expect(normalizeAnyValidationEntry(null)).toBeNull()
+    expect(normalizeAnyValidationEntry(undefined)).toBeNull()
+  })
+
+  test('normalizeAnyValidationEntry handles safeParse objects', () => {
+    const result = normalizeAnyValidationEntry({
+      safeParse: (_v: any) => ({ success: true }),
+    })
+    expect(result).not.toBeNull()
+  })
+
+  test('normalizeAnyValidationEntry handles test objects', () => {
+    const result = normalizeAnyValidationEntry({
+      test: (v: string) => v.length > 0,
+    })
+    expect(result).not.toBeNull()
+  })
+
+  test('test object validators only run for strings', async () => {
+    const entry = normalizeAnyValidationEntry({
+      test: (v: string) => v.length > 0,
+    })
+
+    expect(await entry!.validate('x')).toBe(true)
+    expect(await entry!.validate(123 as never)).toBe(false)
+  })
+
+  test('normalizeAnyValidationEntry handles validator wrapper', () => {
+    const result = normalizeAnyValidationEntry({
+      validator: (v: string) => v.length > 0,
+      error: 'too short',
+    })
+    expect(result).not.toBeNull()
+    expect(result!.error).toBe('too short')
+  })
+
+  test('throws for unknown field in validators', () => {
+    expect(() =>
+      umpire({
+        fields: { alpha: {} },
+        rules: [],
+        validators: {
+          beta: (_v: any) => true,
+        } as never,
+      }),
+    ).toThrow('Unknown field "beta" referenced by validators')
+  })
+
+  test('throws for invalid validator shape', () => {
+    expect(() =>
+      umpire({
+        fields: { alpha: {} },
+        rules: [],
+        validators: {
+          alpha: { validator: { nope: true } },
+        } as never,
+      }),
+    ).toThrow('Invalid validator configured for field "alpha"')
+  })
+
+  test('validation metadata mirrored in scorecard', async () => {
+    const ump = umpire({
+      fields: { email: {} },
+      rules: [],
+      validators: {
+        email: {
+          validator: (v: string) => v.includes('@'),
+          error: 'Must be a valid email',
+        },
+      },
+    })
+    const card = await ump.scorecard({ values: { email: 'bad' } })
+    expect(card.fields.email.valid).toBe(false)
+    expect(card.fields.email.error).toBe('Must be a valid email')
+  })
+
+  test('validator that returns true as boolean', async () => {
+    const ump = umpire({
+      fields: { name: {} },
+      rules: [],
+      validators: { name: (v: string) => v.length > 0 },
+    })
+    const r = await ump.check({ name: 'hello' })
+    expect(r.name.valid).toBe(true)
+    const r2 = await ump.check({ name: '' })
+    expect(r2.name.valid).toBe(false)
+    expect(r2.name.error).toBeUndefined()
+  })
+
+  test('validator that returns { valid: true/false } with no error', async () => {
+    const ump = umpire({
+      fields: { x: {} },
+      rules: [],
+      validators: {
+        x: (v: string) => ({ valid: v === 'ok' }),
+      },
+    })
+    const r = await ump.check({ x: 'ok' })
+    expect(r.x.valid).toBe(true)
+    const r2 = await ump.check({ x: 'nope' })
+    expect(r2.x.valid).toBe(false)
+  })
+
+  test('warns in dev for unsupported validation result', async () => {
+    const warn = spyOn(console, 'warn').mockImplementation(() => {})
+
+    try {
+      const ump = umpire({
+        fields: { username: {} },
+        rules: [],
+        validators: {
+          username: (() => undefined) as never,
+        },
+      })
+
+      await ump.check({ username: 'doug' })
+      expect(warn).toHaveBeenCalledTimes(1)
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('unsupported result'),
+      )
+    } finally {
+      warn.mockRestore()
+    }
+  })
+
+  test('validator that returns false as boolean sets error from fallback', async () => {
+    const ump = umpire({
+      fields: { x: {} },
+      rules: [],
+      validators: {
+        x: {
+          validator: (v: string) => v.length > 0,
+          error: 'Fallback error',
+        },
+      },
+    })
+    const r = await ump.check({ x: '' })
+    expect(r.x.valid).toBe(false)
+    expect(r.x.error).toBe('Fallback error')
+  })
+
+  test('ignores undefined validator entries', async () => {
+    const ump = umpire({
+      fields: { a: {}, b: {} },
+      rules: [],
+      validators: {
+        a: undefined,
+        b: (v: string) => v.length > 0,
+      },
+    })
+    const r = await ump.check({ a: 'x', b: 'hello' })
+    expect(r.a.valid).toBeUndefined()
+    expect(r.b.valid).toBe(true)
+  })
+})

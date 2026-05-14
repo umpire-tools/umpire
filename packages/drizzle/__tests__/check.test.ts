@@ -2,11 +2,22 @@ import { describe, expect, test } from 'bun:test'
 
 import type { FieldDef } from '@umpire/core'
 import { enabledWhen, requires, umpire } from '@umpire/core'
+import {
+  enabledWhen as enabledWhenAsync,
+  requires as requiresAsync,
+  umpire as asyncUmpire,
+} from '@umpire/async'
 import { pgTable, serial, text, varchar } from 'drizzle-orm/pg-core'
 
 import { fromDrizzleTable } from '../src/table.js'
-import { checkDrizzleCreate, checkDrizzlePatch } from '../src/check.js'
+import {
+  checkDrizzleCreate,
+  checkDrizzleCreateAsync,
+  checkDrizzlePatch,
+  checkDrizzlePatchAsync,
+} from '../src/check.js'
 import type { UmpireValidationAdapter } from '../src/result.js'
+import type { AsyncWriteValidationAdapter } from '@umpire/write'
 
 const users = pgTable('users', {
   id: serial().primaryKey(),
@@ -354,5 +365,93 @@ describe('checkDrizzlePatch', () => {
     expect(result.issues.columns).toEqual([])
     expect(result.data).toHaveProperty('email', 'new@example.com')
     expect(result.data).not.toHaveProperty('id')
+  })
+})
+
+describe('async Drizzle write helpers', () => {
+  test('async create awaits async Umpire rules before shaping data', async () => {
+    const ump = asyncUmpire({
+      fields: base.fields,
+      rules: [
+        enabledWhenAsync(
+          'companyName',
+          async (values) => values.accountType === 'business',
+        ),
+        requiresAsync(
+          'companyName',
+          async (values) => values.accountType === 'business',
+        ),
+      ],
+    })
+
+    const result = await checkDrizzleCreateAsync(users, ump, {
+      email: 'a@example.com',
+      accountType: 'personal',
+      companyName: 'Acme',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.issues.rules).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'disabled',
+          field: 'companyName',
+        }),
+      ]),
+    )
+    expect(result.data).not.toHaveProperty('companyName')
+  })
+
+  test('async create awaits async validation adapter', async () => {
+    const ump = asyncUmpire({
+      fields: base.fields,
+      rules: [],
+    })
+    const validation: AsyncWriteValidationAdapter<typeof base.fields> = {
+      async run() {
+        await Promise.resolve()
+        return {
+          errors: { email: 'Invalid email' },
+          normalizedErrors: [{ field: 'email', message: 'Invalid email' }],
+          result: { success: false },
+          schemaFields: ['email'],
+        }
+      },
+    }
+
+    const result = await checkDrizzleCreateAsync(
+      users,
+      ump,
+      { email: 'bad' },
+      { validation },
+    )
+
+    expect(result.ok).toBe(false)
+    expect(result.issues.schema).toEqual([
+      { field: 'email', message: 'Invalid email' },
+    ])
+  })
+
+  test('async patch includes stale-value clears', async () => {
+    const ump = asyncUmpire({
+      fields: base.fields,
+      rules: [
+        enabledWhenAsync(
+          'companyName',
+          async (values) => values.accountType === 'business',
+        ),
+      ],
+    })
+
+    const result = await checkDrizzlePatchAsync(
+      users,
+      ump,
+      { email: 'a@example.com', accountType: 'business', companyName: 'Acme' },
+      { accountType: 'personal' },
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.data).toHaveProperty('companyName', null)
+    expect(result.data).toHaveProperty('accountType', 'personal')
   })
 })

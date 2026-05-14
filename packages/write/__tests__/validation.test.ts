@@ -8,6 +8,8 @@ import {
   flattenFieldErrorPaths,
   nestNamespacedValues,
   runWriteValidationAdapter,
+  runWriteValidationAdapterAsync,
+  type AsyncWriteValidationAdapter,
   type WriteValidationAdapter,
 } from '@umpire/write'
 
@@ -257,6 +259,55 @@ describe('runWriteValidationAdapter', () => {
     )
 
     expect(result?.schemaIssues).toEqual([])
+    expect(result?.validationResult).toEqual({ success: false })
+  })
+})
+
+describe('runWriteValidationAdapterAsync', () => {
+  test('returns undefined when no adapter', async () => {
+    const ump = umpire<Pick<TestFields, 'email'>>({
+      fields: { email: { required: true } },
+      rules: [],
+    })
+
+    const write = checkCreate(ump, { email: 'a@example.com' })
+    const result = await runWriteValidationAdapterAsync(
+      undefined,
+      write.availability,
+      write.candidate,
+    )
+
+    expect(result).toBeUndefined()
+  })
+
+  test('awaits async adapter results', async () => {
+    const ump = umpire<Pick<TestFields, 'email'>>({
+      fields: { email: { required: true } },
+      rules: [],
+    })
+
+    const write = checkCreate(ump, { email: 'bad' })
+    const adapter: AsyncWriteValidationAdapter<Pick<TestFields, 'email'>> = {
+      async run() {
+        await Promise.resolve()
+        return {
+          errors: { email: 'invalid email' },
+          normalizedErrors: [{ field: 'email', message: 'invalid email' }],
+          result: { success: false },
+          schemaFields: ['email'],
+        }
+      },
+    }
+
+    const result = await runWriteValidationAdapterAsync(
+      adapter,
+      write.availability,
+      write.candidate,
+    )
+
+    expect(result?.schemaIssues).toEqual([
+      { field: 'email', message: 'invalid email' },
+    ])
     expect(result?.validationResult).toEqual({ success: false })
   })
 })

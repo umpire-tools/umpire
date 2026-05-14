@@ -14,14 +14,26 @@ export type WriteValidationAdapter<F extends Record<string, FieldDef>> = {
   run(
     availability: AvailabilityMap<F>,
     values: InputValues,
-  ): {
-    errors: Partial<Record<keyof F & string, string>>
-    normalizedErrors: NormalizedFieldErrorWithPath[]
-    result: unknown
-    schemaFields: Array<keyof F & string>
-  }
+  ): WriteValidationAdapterResult<F>
   validators?: ValidationMap<F>
 }
+
+export type WriteValidationAdapterResult<F extends Record<string, FieldDef>> = {
+  errors: Partial<Record<keyof F & string, string>>
+  normalizedErrors: NormalizedFieldErrorWithPath[]
+  result: unknown
+  schemaFields: Array<keyof F & string>
+}
+
+export type AsyncWriteValidationAdapter<F extends Record<string, FieldDef>> =
+  Omit<WriteValidationAdapter<F>, 'run'> & {
+    run(
+      availability: AvailabilityMap<F>,
+      values: InputValues,
+    ):
+      | WriteValidationAdapterResult<F>
+      | Promise<WriteValidationAdapterResult<F>>
+  }
 
 // ── Issue types ──
 
@@ -54,6 +66,29 @@ export function runWriteValidationAdapter<F extends Record<string, FieldDef>>(
   if (!adapter) return undefined
 
   const adapterResult = adapter.run(availability, candidate)
+
+  const schemaIssues: WriteSchemaIssue<F>[] =
+    adapterResult.normalizedErrors.map((err) => ({
+      field: err.field as keyof F & string,
+      message: err.message,
+    }))
+
+  return {
+    schemaIssues,
+    validationResult: adapterResult.result,
+  }
+}
+
+export async function runWriteValidationAdapterAsync<
+  F extends Record<string, FieldDef>,
+>(
+  adapter: AsyncWriteValidationAdapter<F> | undefined,
+  availability: AvailabilityMap<F>,
+  candidate: InputValues,
+): Promise<WriteValidationRun<F> | undefined> {
+  if (!adapter) return undefined
+
+  const adapterResult = await adapter.run(availability, candidate)
 
   const schemaIssues: WriteSchemaIssue<F>[] =
     adapterResult.normalizedErrors.map((err) => ({

@@ -1,18 +1,30 @@
-export { checkCreate, checkPatch } from './check.js'
+export {
+  checkCreate,
+  checkCreateAsync,
+  checkPatch,
+  checkPatchAsync,
+} from './check.js'
 export type {
+  AsyncWriteUmpire,
   WriteCandidate,
   WriteCheckResult,
   WriteIssue,
   WriteIssueKind,
 } from './check.js'
-export { composeWriteResult, runWriteValidationAdapter } from './validation.js'
+export {
+  composeWriteResult,
+  runWriteValidationAdapter,
+  runWriteValidationAdapterAsync,
+} from './validation.js'
 export type {
+  AsyncWriteValidationAdapter,
   ComposeWriteResultInput,
   WriteComposedResult,
   WriteDebug,
   WriteRuleIssue,
   WriteSchemaIssue,
   WriteValidationAdapter,
+  WriteValidationAdapterResult,
   WriteValidationRun,
 } from './validation.js'
 export {

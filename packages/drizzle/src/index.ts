@@ -13,13 +13,28 @@ export type {
   FromDrizzleTableOptions,
   FromDrizzleTableResult,
 } from './table.js'
-export { checkDrizzleCreate, checkDrizzlePatch } from './check.js'
+export {
+  checkDrizzleCreate,
+  checkDrizzleCreateAsync,
+  checkDrizzlePatch,
+  checkDrizzlePatchAsync,
+} from './check.js'
 export {
   checkDrizzleModelCreate,
+  checkDrizzleModelCreateAsync,
   checkDrizzleModelPatch,
+  checkDrizzleModelPatchAsync,
 } from './check-model.js'
-export { createDrizzlePolicy, createDrizzleModelPolicy } from './policy.js'
-export type { DrizzlePolicyOptions } from './policy.js'
+export {
+  createAsyncDrizzleModelPolicy,
+  createAsyncDrizzlePolicy,
+  createDrizzleModelPolicy,
+  createDrizzlePolicy,
+} from './policy.js'
+export type {
+  AsyncDrizzlePolicyOptions,
+  DrizzlePolicyOptions,
+} from './policy.js'
 export {
   shapeCreateInput,
   shapePatchData,

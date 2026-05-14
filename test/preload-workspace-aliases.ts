@@ -6,12 +6,16 @@ const require = createRequire(import.meta.url)
 if (process.env.BUN_DISABLE_WORKSPACE_MOCKS !== 'true') {
   // Keep exported subpaths in sync with this file. Package tests and coverage runs
   // preload these source aliases before sibling workspaces are built.
+  mock.module('@umpire/async', () => require('../packages/async/src/index.js'))
   mock.module('@umpire/core', () => require('../packages/core/src/index.js'))
   mock.module('@umpire/core/snapshot', () => ({
     ...require('../packages/core/src/snapshot.js'),
   }))
   mock.module('@umpire/core/guards', () => ({
     ...require('../packages/core/src/guards.js'),
+  }))
+  mock.module('@umpire/core/internal', () => ({
+    ...require('../packages/core/src/internal.js'),
   }))
   mock.module('@umpire/store', () => require('../packages/store/src/index.js'))
   mock.module('@umpire/reads', () => require('../packages/reads/src/index.js'))

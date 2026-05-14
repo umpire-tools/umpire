@@ -100,6 +100,7 @@ export default defineConfig({
         {
           label: 'Extensions',
           items: [
+            { label: 'Async', slug: 'extensions/async' },
             { label: 'DSL', slug: 'extensions/dsl' },
             { label: 'DevTools', slug: 'extensions/devtools' },
             { label: 'Reads', slug: 'extensions/reads' },

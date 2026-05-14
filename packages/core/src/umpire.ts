@@ -111,7 +111,7 @@ function fillMissingScorecardValues<F extends Record<string, FieldDef>>(
   return patched
 }
 
-function normalizeValidators<F extends Record<string, FieldDef>>(
+export function normalizeValidators<F extends Record<string, FieldDef>>(
   fields: F,
   validators: ValidationMap<F> | undefined,
 ): NormalizedValidationMap<F> {
@@ -185,7 +185,7 @@ function buildFieldEdgeLookup<F extends Record<string, FieldDef>>(
   }
 }
 
-function getRuleTraceAttachments<
+export function getRuleTraceAttachments<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 >(
@@ -200,7 +200,7 @@ function getRuleTraceAttachments<
   return Array.isArray(trace) ? trace : [trace]
 }
 
-function inspectRuleTraceAttachments<
+export function inspectRuleTraceAttachments<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 >(
@@ -304,7 +304,7 @@ function cloneRuleEntry<
   }
 }
 
-function normalizeConfig<
+export function normalizeConfig<
   F extends Record<string, FieldInput>,
   C extends Record<string, unknown>,
 >(
@@ -1141,7 +1141,7 @@ function validateStructuralContradictions<
   }
 }
 
-function validateRules<
+export function validateRules<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 >(fields: F, rules: Rule<F, C>[]): void {

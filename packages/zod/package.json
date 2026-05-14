@@ -10,6 +10,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./async": {
+      "types": "./dist/async.d.ts",
+      "import": "./dist/async.js"
+    },
     "./devtools": {
       "types": "./dist/devtools.d.ts",
       "import": "./dist/devtools.js"
@@ -32,7 +36,13 @@
     "@umpire/write": "workspace:^"
   },
   "peerDependencies": {
+    "@umpire/async": "workspace:^",
     "zod": "^3.0.0 || ^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@umpire/async": {
+      "optional": true
+    }
   },
   "repository": {
     "type": "git",
@@ -43,6 +53,7 @@
     "access": "public"
   },
   "devDependencies": {
+    "@umpire/async": "workspace:^",
     "@umpire/devtools": "workspace:^",
     "zod": "^3.23.8"
   }

@@ -2,10 +2,19 @@ import { describe, expect, test } from 'bun:test'
 
 import type { FieldDef } from '@umpire/core'
 import { enabledWhen, requires } from '@umpire/core'
+import {
+  enabledWhen as enabledWhenAsync,
+  requires as requiresAsync,
+} from '@umpire/async'
 import { integer, pgTable, serial, text, varchar } from 'drizzle-orm/pg-core'
 
 import { fromDrizzleModel, fromDrizzleTable } from '../src/index.js'
-import { createDrizzlePolicy, createDrizzleModelPolicy } from '../src/policy.js'
+import {
+  createAsyncDrizzleModelPolicy,
+  createAsyncDrizzlePolicy,
+  createDrizzleModelPolicy,
+  createDrizzlePolicy,
+} from '../src/policy.js'
 import type { UmpireValidationAdapter } from '../src/result.js'
 
 const users = pgTable('users', {
@@ -31,6 +40,10 @@ function mockAdapter<F extends Record<string, FieldDef>>(
       }
     },
   }
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 describe('createDrizzlePolicy', () => {
@@ -229,5 +242,162 @@ describe('createDrizzleModelPolicy', () => {
     expect(result.ok).toBe(true)
     expect(result.dataByTable.profile).toEqual({ displayName: 'New Name' })
     expect(Object.keys(result.dataByTable.account)).toEqual([])
+  })
+})
+
+describe('async Drizzle policies', () => {
+  test('createAsyncDrizzlePolicy applies async handwritten rules', async () => {
+    const policy = createAsyncDrizzlePolicy(users, {
+      rules: [
+        enabledWhenAsync(
+          'companyName',
+          async (values) => values.accountType === 'business',
+        ),
+      ],
+    })
+
+    const result = await policy.checkCreate({
+      email: 'a@example.com',
+      accountType: 'personal',
+      companyName: 'Acme',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.issues.rules).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'companyName', kind: 'disabled' }),
+      ]),
+    )
+  })
+
+  test('createAsyncDrizzlePolicy concurrent checks do not cancel each other', async () => {
+    const policy = createAsyncDrizzlePolicy(users, {
+      rules: [
+        enabledWhenAsync('displayName', async () => {
+          await delay(25)
+          return true
+        }),
+      ],
+    })
+
+    const results = await Promise.allSettled([
+      policy.checkCreate({ email: 'first@example.com', displayName: 'First' }),
+      policy.checkCreate({
+        email: 'second@example.com',
+        displayName: 'Second',
+      }),
+    ])
+
+    expect(results).toEqual([
+      expect.objectContaining({ status: 'fulfilled' }),
+      expect.objectContaining({ status: 'fulfilled' }),
+    ])
+  })
+
+  test('createAsyncDrizzleModelPolicy applies async namespaced rules', async () => {
+    const accounts = pgTable('async_accounts', {
+      id: serial().primaryKey(),
+      email: varchar({ length: 255 }).notNull(),
+    })
+    const profiles = pgTable('async_profiles', {
+      id: serial().primaryKey(),
+      accountId: integer().notNull(),
+      displayName: text(),
+    })
+    const modelConfig = { account: accounts, profile: profiles } as const
+    const policy = createAsyncDrizzleModelPolicy(modelConfig, {
+      rules: [requiresAsync('account.email', async () => true) as never],
+    })
+
+    const result = await policy.checkCreate({})
+
+    expect(result.ok).toBe(false)
+    expect(result.issues.rules).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'account.email', kind: 'required' }),
+      ]),
+    )
+  })
+
+  test('createAsyncDrizzleModelPolicy concurrent checks do not cancel each other', async () => {
+    const accounts = pgTable('async_concurrent_accounts', {
+      id: serial().primaryKey(),
+      email: varchar({ length: 255 }).notNull(),
+    })
+    const profiles = pgTable('async_concurrent_profiles', {
+      id: serial().primaryKey(),
+      accountId: integer().notNull(),
+      displayName: text(),
+    })
+    const modelConfig = { account: accounts, profile: profiles } as const
+    const policy = createAsyncDrizzleModelPolicy(modelConfig, {
+      rules: [
+        enabledWhenAsync('profile.displayName', async () => {
+          await delay(25)
+          return true
+        }),
+      ],
+    })
+
+    const results = await Promise.allSettled([
+      policy.checkCreate({
+        'account.email': 'first@example.com',
+        'profile.accountId': 1,
+        'profile.displayName': 'First',
+      }),
+      policy.checkCreate({
+        'account.email': 'second@example.com',
+        'profile.accountId': 2,
+        'profile.displayName': 'Second',
+      }),
+    ])
+
+    expect(results).toEqual([
+      expect.objectContaining({ status: 'fulfilled' }),
+      expect.objectContaining({ status: 'fulfilled' }),
+    ])
+  })
+
+  test('createAsyncDrizzleModelPolicy checkPatch returns per-table data', async () => {
+    const accounts = pgTable('async_patch_accounts', {
+      id: serial().primaryKey(),
+      email: varchar({ length: 255 }).notNull(),
+      accountType: text().notNull().default('personal'),
+      companyName: text(),
+    })
+    const profiles = pgTable('async_patch_profiles', {
+      id: serial().primaryKey(),
+      accountId: integer().notNull(),
+      displayName: text(),
+    })
+    const modelConfig = { account: accounts, profile: profiles } as const
+    const policy = createAsyncDrizzleModelPolicy(modelConfig, {
+      rules: [
+        enabledWhenAsync('account.companyName', async (values) => {
+          return values['account.accountType'] === 'business'
+        }),
+      ],
+    })
+
+    const result = await policy.checkPatch(
+      {
+        'account.email': 'a@example.com',
+        'account.accountType': 'business',
+        'account.companyName': 'Acme',
+        'profile.accountId': 1,
+        'profile.displayName': 'Old Name',
+      },
+      {
+        'account.accountType': 'personal',
+        'profile.displayName': 'New Name',
+      },
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.dataByTable.account).toEqual({
+      companyName: null,
+      accountType: 'personal',
+    })
+    expect(result.dataByTable.profile).toEqual({ displayName: 'New Name' })
   })
 })

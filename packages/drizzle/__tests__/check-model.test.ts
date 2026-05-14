@@ -3,6 +3,10 @@ import { describe, expect, test } from 'bun:test'
 import type { FieldDef } from '@umpire/core'
 import { enabledWhen, umpire } from '@umpire/core'
 import {
+  enabledWhen as enabledWhenAsync,
+  umpire as asyncUmpire,
+} from '@umpire/async'
+import {
   integer,
   pgTable,
   serial,
@@ -14,9 +18,14 @@ import {
 import { fromDrizzleModel } from '../src/model.js'
 import {
   checkDrizzleModelCreate,
+  checkDrizzleModelCreateAsync,
   checkDrizzleModelPatch,
+  checkDrizzleModelPatchAsync,
 } from '../src/check-model.js'
-import type { WriteValidationAdapter } from '@umpire/write'
+import type {
+  AsyncWriteValidationAdapter,
+  WriteValidationAdapter,
+} from '@umpire/write'
 
 const accounts = pgTable('accounts', {
   id: serial().primaryKey(),
@@ -321,5 +330,127 @@ describe('checkDrizzleModelPatch', () => {
         expect.objectContaining({ kind: 'unknown', field: 'unknown.field' }),
       ]),
     )
+  })
+})
+
+describe('async model write helpers', () => {
+  test('async create returns dataByTable and awaits validation', async () => {
+    const ump = asyncUmpire(model)
+    const validation: AsyncWriteValidationAdapter<typeof model.fields> = {
+      async run() {
+        await Promise.resolve()
+        return {
+          errors: { 'account.email': 'Invalid email format' },
+          normalizedErrors: [
+            { field: 'account.email', message: 'Invalid email format' },
+          ],
+          result: { success: false },
+          schemaFields: ['account.email'],
+        }
+      },
+    }
+
+    const result = await checkDrizzleModelCreateAsync(
+      modelConfig,
+      ump,
+      {
+        'account.email': 'bad-email',
+        'profile.accountId': 1,
+      },
+      { validation },
+    )
+
+    expect(result.ok).toBe(false)
+    expect(result.dataByTable.account).toHaveProperty('email', 'bad-email')
+    expect(result.dataByTable.profile).toHaveProperty('accountId', 1)
+    expect(result.issues.schema).toEqual([
+      { field: 'account.email', message: 'Invalid email format' },
+    ])
+  })
+
+  test('async create filters disabled namespaced fields', async () => {
+    const ruleUmp = asyncUmpire({
+      fields: model.fields,
+      rules: [
+        enabledWhenAsync('account.companyName', async (values) => {
+          return values['account.accountType'] === 'business'
+        }),
+      ],
+    })
+
+    const result = await checkDrizzleModelCreateAsync(modelConfig, ruleUmp, {
+      'account.email': 'a@example.com',
+      'account.accountType': 'personal',
+      'account.companyName': 'Acme',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.issues.rules).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'disabled',
+          field: 'account.companyName',
+        }),
+      ]),
+    )
+    expect(result.dataByTable.account).not.toHaveProperty('companyName')
+  })
+
+  test('async patch includes stale-value clears in dataByTable', async () => {
+    const ruleUmp = asyncUmpire({
+      fields: model.fields,
+      rules: [
+        enabledWhenAsync('account.companyName', async (values) => {
+          return values['account.accountType'] === 'business'
+        }),
+      ],
+    })
+
+    const result = await checkDrizzleModelPatchAsync(
+      modelConfig,
+      ruleUmp,
+      {
+        'account.email': 'a@example.com',
+        'account.accountType': 'business',
+        'account.companyName': 'Acme',
+        'profile.accountId': 1,
+      },
+      { 'account.accountType': 'personal' },
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.dataByTable.account).toHaveProperty('companyName', null)
+    expect(result.dataByTable.account).toHaveProperty('accountType', 'personal')
+  })
+
+  test('async patch awaits validation adapter', async () => {
+    const ump = asyncUmpire(model)
+    const validation: AsyncWriteValidationAdapter<typeof model.fields> = {
+      async run() {
+        await Promise.resolve()
+        return {
+          errors: { 'profile.displayName': 'Too short' },
+          normalizedErrors: [
+            { field: 'profile.displayName', message: 'Too short' },
+          ],
+          result: { success: false },
+          schemaFields: ['profile.displayName'],
+        }
+      },
+    }
+
+    const result = await checkDrizzleModelPatchAsync(
+      modelConfig,
+      ump,
+      { 'account.email': 'a@example.com', 'profile.accountId': 1 },
+      { 'profile.displayName': 'x' },
+      { validation },
+    )
+
+    expect(result.ok).toBe(false)
+    expect(result.dataByTable.profile).toEqual({ displayName: 'x' })
+    expect(result.issues.schema).toEqual([
+      { field: 'profile.displayName', message: 'Too short' },
+    ])
   })
 })
