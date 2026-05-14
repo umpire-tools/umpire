@@ -2051,7 +2051,7 @@ __metadata:
     "@umpire/core": "workspace:^"
     "@umpire/write": "workspace:^"
   peerDependencies:
-    "@umpire/async": ^1.0.0
+    "@umpire/async": "workspace:^"
     zod: ^3.0.0 || ^4.0.0
   peerDependenciesMeta:
     "@umpire/async":
