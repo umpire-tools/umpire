@@ -243,7 +243,7 @@ export function umpire<
   const validators = normalizeAnyValidators(fields, config.validators)
   const hasValidators = Object.keys(validators).length > 0
 
-  validateRules(fields, config.rules as Rule<F, C>[])
+  validateRules(fields, configRules as Rule<F, C>[])
 
   const asyncRules = configRules.map((r) => toAsyncRule(r))
 

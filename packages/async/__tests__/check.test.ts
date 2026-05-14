@@ -6,6 +6,7 @@ import {
   disables,
   eitherOf,
 } from '@umpire/async'
+import { field } from '@umpire/core'
 import { describe, test, expect } from 'bun:test'
 
 describe('async check()', () => {
@@ -214,6 +215,18 @@ describe('async check()', () => {
     expect(r.b.enabled).toBe(false)
     expect(r.c.enabled).toBe(false)
     expect(r.c.reason).toBe('requires b')
+  })
+
+  test('validates rules attached by field builders', () => {
+    expect(() =>
+      umpire({
+        fields: {
+          a: {},
+          b: field().requires('a'),
+        },
+        rules: [disables('a', ['b'])],
+      }),
+    ).toThrow('Contradictory rules')
   })
 
   test('enabled field keeps FieldDef.required', async () => {

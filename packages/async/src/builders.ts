@@ -888,6 +888,15 @@ export function oneOf<
           ? await options.activeBranch(values, conditions)
           : options?.activeBranch
 
+      if (
+        typeof resolvedActiveBranch === 'string' &&
+        !(resolvedActiveBranch in resolvedBranches)
+      ) {
+        throw new Error(
+          `[@umpire/async] Unknown active branch "${resolvedActiveBranch}" for oneOf("${groupName}")`,
+        )
+      }
+
       const resolution = resolveOneOfState(
         groupName,
         resolvedBranches,

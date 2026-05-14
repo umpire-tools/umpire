@@ -25,9 +25,10 @@ function extractSafeParseError(result: {
   const rec = result as Record<string, unknown>
   const err = rec.error
   if (!isRecord(err)) return undefined
-  const errors = (err as Record<string, unknown>).errors
-  if (!Array.isArray(errors) || errors.length === 0) return undefined
-  const first = errors[0] as Record<string, unknown>
+  const errRecord = err as Record<string, unknown>
+  const issues = errRecord.issues ?? errRecord.errors
+  if (!Array.isArray(issues) || issues.length === 0) return undefined
+  const first = issues[0] as Record<string, unknown>
   return typeof first.message === 'string' ? first.message : undefined
 }
 

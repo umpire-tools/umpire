@@ -258,6 +258,28 @@ describe('async builders', () => {
     expect(r.hourList.enabled).toBe(false)
   })
 
+  test('oneOf rejects unknown async activeBranch result', async () => {
+    const ump = umpire({
+      fields: { mode: {}, hourList: {}, startTime: {} },
+      rules: [
+        oneOf(
+          'strategy',
+          {
+            hourly: ['hourList'],
+            range: ['startTime'],
+          },
+          {
+            activeBranch: async () => 'missing' as never,
+          },
+        ),
+      ],
+    })
+
+    await expect(ump.check({ mode: 'range' })).rejects.toThrow(
+      'Unknown active branch "missing" for oneOf("strategy")',
+    )
+  })
+
   test('dynamic reason function resolves in challenge trace', async () => {
     const ump = umpire({
       fields: { someField: {}, target: {} },

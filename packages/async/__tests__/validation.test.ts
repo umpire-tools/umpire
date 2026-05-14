@@ -111,6 +111,27 @@ describe('async validation', () => {
     expect(typeof result!.validate).toBe('function')
   })
 
+  test('safeParseAsync validator reads Zod 4 issues errors', async () => {
+    const ump = umpire({
+      fields: { email: {} },
+      rules: [],
+      validators: {
+        email: {
+          safeParseAsync: async () => ({
+            success: false,
+            error: {
+              issues: [{ message: 'Invalid email' }],
+            },
+          }),
+        } as never,
+      },
+    })
+
+    const result = await ump.check({ email: 'bad' })
+    expect(result.email.valid).toBe(false)
+    expect(result.email.error).toBe('Invalid email')
+  })
+
   test('normalizeAnyValidationEntry handles async function', () => {
     const result = normalizeAnyValidationEntry(async (_v: any) => true)
     expect(result).not.toBeNull()
