@@ -305,7 +305,7 @@ Either way, no React import needed — `@umpire/jsx` ships its own JSX runtime.
 
 ## See Also
 
-- [`@umpire/core`](https://github.com/sdougbrown/umpire/tree/main/packages/core) — the plain-function API that `@umpire/jsx` compiles down to. Start here if JSX isn't your thing.
-- [`@umpire/dsl`](https://github.com/sdougbrown/umpire/tree/main/packages/dsl) — expression helpers like `expr.and()`, `expr.eq()`, etc., used with the `when` prop on `<Requires>`.
+- [`@umpire/core`](https://github.com/umpire-tools/umpire/tree/main/packages/core) — the plain-function API that `@umpire/jsx` compiles down to. Start here if JSX isn't your thing.
+- [`@umpire/dsl`](https://github.com/umpire-tools/umpire/tree/main/packages/dsl) — expression helpers like `expr.and()`, `expr.eq()`, etc., used with the `when` prop on `<Requires>`.
 
 For Sully ❤️

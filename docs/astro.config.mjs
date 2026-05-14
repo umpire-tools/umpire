@@ -56,7 +56,7 @@ export default defineConfig({
         {
           icon: 'github',
           label: 'GitHub',
-          href: 'https://github.com/sdougbrown/umpire',
+          href: 'https://github.com/umpire-tools/umpire',
         },
       ],
       sidebar: [

@@ -32,7 +32,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sdougbrown/umpire.git",
+    "url": "git+https://github.com/umpire-tools/umpire.git",
     "directory": "packages/reads"
   },
   "publishConfig": {

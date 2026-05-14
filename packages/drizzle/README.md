@@ -2,7 +2,7 @@
 
 When your server-side state is modeled in Drizzle, `@umpire/drizzle` gives you the fastest way to start an Umpire policy from real schema metadata. It derives a `fields` object from your table columns so you can focus on the cross-field business rules that Drizzle doesn't know about — "companyName is required for business accounts" — and run consistent policy checks before persistence via `checkCreate` and `checkPatch`.
 
-[Docs](https://sdougbrown.github.io/umpire/adapters/database/drizzle/) · [Quick Start](https://sdougbrown.github.io/umpire/learn/)
+[Docs](https://umpire.tools/adapters/database/drizzle/) · [Quick Start](https://umpire.tools/learn/)
 
 ## Install
 
@@ -163,6 +163,6 @@ result composition lives in `@umpire/write`.
 
 ## Docs
 
-- [Drizzle adapter](https://sdougbrown.github.io/umpire/adapters/database/drizzle/) — column mapping table, write checks, and boundary guide
-- [@umpire/write](https://sdougbrown.github.io/umpire/extensions/write/) — full result shape for `checkCreate`/`checkPatch`
-- [Quick Start](https://sdougbrown.github.io/umpire/learn/) — learn each rule primitive
+- [Drizzle adapter](https://umpire.tools/adapters/database/drizzle/) — column mapping table, write checks, and boundary guide
+- [@umpire/write](https://umpire.tools/extensions/write/) — full result shape for `checkCreate`/`checkPatch`
+- [Quick Start](https://umpire.tools/learn/) — learn each rule primitive
