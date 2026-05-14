@@ -151,9 +151,14 @@ describe('cancellation', () => {
             calls += 1
             if (calls === 1) {
               // intentionally ignores the signal to simulate a misbehaving custom rule
-              return never<Map<string, { enabled: boolean; reason: string | null }>>()
+              return never<
+                Map<string, { enabled: boolean; reason: string | null }>
+              >()
             }
-            const map = new Map<string, { enabled: boolean; reason: string | null }>()
+            const map = new Map<
+              string,
+              { enabled: boolean; reason: string | null }
+            >()
             map.set('alpha', { enabled: true, reason: null })
             return map
           },
