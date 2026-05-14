@@ -16,6 +16,14 @@ export function isAsyncSafeParseValidator<T = unknown>(
   )
 }
 
+export function isThenable<T = unknown>(
+  value: unknown,
+): value is PromiseLike<T> {
+  return (
+    value != null && typeof (value as { then?: unknown }).then === 'function'
+  )
+}
+
 export function isAsyncRule(
   rule: unknown,
 ): rule is AsyncRule<Record<string, FieldDef>, Record<string, unknown>> {

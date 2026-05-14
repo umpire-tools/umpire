@@ -14,7 +14,7 @@ import {
   resolveOneOfState,
   runFieldValidator,
 } from '@umpire/core/internal'
-import { isAsyncRule, isAsyncSafeParseValidator } from './guards.js'
+import { isAsyncRule, isAsyncSafeParseValidator, isThenable } from './guards.js'
 import type {
   AnyRule,
   AnyValidationValidator,
@@ -233,15 +233,6 @@ function uniqueFields<F extends Record<string, FieldDef>>(
   return [...new Set(fields)]
 }
 
-function isPromiseLike<T>(value: T | PromiseLike<T>): value is PromiseLike<T> {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'then' in value &&
-    typeof value.then === 'function'
-  )
-}
-
 async function raceAbort<T>(
   promise: PromiseLike<T>,
   signal: AbortSignal,
@@ -279,7 +270,7 @@ function resolveWithAbort<T>(
   signal: AbortSignal,
 ): Promise<T> {
   signal.throwIfAborted()
-  return isPromiseLike(value)
+  return isThenable<T>(value)
     ? raceAbort(value, signal)
     : Promise.resolve(value)
 }
@@ -574,7 +565,7 @@ async function runAnyFieldValidator<T>(
   if (typeof validator === 'function') {
     const result = validator(value)
 
-    if (isPromiseLike(result)) {
+    if (isThenable(result)) {
       const awaited = signal ? await raceAbort(result, signal) : await result
       return typeof awaited === 'boolean' ? awaited : awaited.valid
     }
