@@ -14,6 +14,7 @@ import {
   resolveOneOfState,
   runFieldValidator,
 } from '@umpire/core/internal'
+import { raceAbort, resolveWithAbort } from './abort.js'
 import { isAsyncRule, isAsyncSafeParseValidator, isThenable } from './guards.js'
 import type {
   AnyRule,
@@ -233,47 +234,6 @@ function uniqueFields<F extends Record<string, FieldDef>>(
   return [...new Set(fields)]
 }
 
-async function raceAbort<T>(
-  promise: PromiseLike<T>,
-  signal: AbortSignal,
-): Promise<T> {
-  signal.throwIfAborted()
-
-  let cleanup: (() => void) | undefined
-  const abort = new Promise<never>((_, reject) => {
-    const onAbort = () => {
-      try {
-        signal.throwIfAborted()
-      } catch (error) {
-        reject(error)
-        return
-      }
-
-      reject(signal.reason)
-    }
-
-    signal.addEventListener('abort', onAbort, { once: true })
-    cleanup = () => {
-      signal.removeEventListener('abort', onAbort)
-    }
-  })
-
-  try {
-    return await Promise.race([promise, abort])
-  } finally {
-    cleanup?.()
-  }
-}
-
-function resolveWithAbort<T>(
-  value: T | PromiseLike<T>,
-  signal: AbortSignal,
-): Promise<T> {
-  signal.throwIfAborted()
-  return isThenable<T>(value)
-    ? raceAbort(value, signal)
-    : Promise.resolve(value)
-}
 
 // ---------------------------------------------------------------------------
 // Source helpers
