@@ -17,5 +17,9 @@
     }
   },
   "include": ["src"],
-  "references": [{ "path": "../core" }, { "path": "../write" }]
+  "references": [
+    { "path": "../core" },
+    { "path": "../async" },
+    { "path": "../write" }
+  ]
 }

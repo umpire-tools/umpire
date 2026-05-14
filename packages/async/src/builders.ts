@@ -233,6 +233,57 @@ function uniqueFields<F extends Record<string, FieldDef>>(
   return [...new Set(fields)]
 }
 
+function isPromiseLike<T>(value: T | PromiseLike<T>): value is PromiseLike<T> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'then' in value &&
+    typeof value.then === 'function'
+  )
+}
+
+async function raceAbort<T>(
+  promise: PromiseLike<T>,
+  signal: AbortSignal,
+): Promise<T> {
+  signal.throwIfAborted()
+
+  let cleanup: (() => void) | undefined
+  const abort = new Promise<never>((_, reject) => {
+    const onAbort = () => {
+      try {
+        signal.throwIfAborted()
+      } catch (error) {
+        reject(error)
+        return
+      }
+
+      reject(signal.reason)
+    }
+
+    signal.addEventListener('abort', onAbort, { once: true })
+    cleanup = () => {
+      signal.removeEventListener('abort', onAbort)
+    }
+  })
+
+  try {
+    return await Promise.race([promise, abort])
+  } finally {
+    cleanup?.()
+  }
+}
+
+function resolveWithAbort<T>(
+  value: T | PromiseLike<T>,
+  signal: AbortSignal,
+): Promise<T> {
+  signal.throwIfAborted()
+  return isPromiseLike(value)
+    ? raceAbort(value, signal)
+    : Promise.resolve(value)
+}
+
 // ---------------------------------------------------------------------------
 // Source helpers
 // ---------------------------------------------------------------------------
@@ -314,12 +365,15 @@ async function isSourceActive<
   values: FieldValues<F>,
   conditions: C,
   fields?: F,
+  signal?: AbortSignal,
 ): Promise<boolean> {
   if (typeof source === 'string') {
     return isSatisfied(values[source], fields?.[source])
   }
 
-  return source(values, conditions)
+  return signal
+    ? resolveWithAbort(source(values, conditions), signal)
+    : source(values, conditions)
 }
 
 async function checkPredicateDependency<
@@ -330,6 +384,7 @@ async function checkPredicateDependency<
   values: FieldValues<F>,
   conditions: C,
   availability: Partial<AvailabilityMap<F>> | undefined,
+  signal?: AbortSignal,
 ): Promise<boolean> {
   const sourceField = getCheckField(dependency)
   if (
@@ -340,7 +395,9 @@ async function checkPredicateDependency<
     return false
   }
 
-  return dependency(values, conditions)
+  return signal
+    ? resolveWithAbort(dependency(values, conditions), signal)
+    : dependency(values, conditions)
 }
 
 function checkStringDependency<F extends Record<string, FieldDef>>(
@@ -365,6 +422,7 @@ async function isRequiredDependencySatisfied<
   conditions: C,
   fields: F | undefined,
   availability: Partial<AvailabilityMap<F>> | undefined,
+  signal?: AbortSignal,
 ): Promise<boolean> {
   if (typeof dependency !== 'string') {
     return checkPredicateDependency(
@@ -372,6 +430,7 @@ async function isRequiredDependencySatisfied<
       values,
       conditions,
       availability,
+      signal,
     )
   }
 
@@ -417,9 +476,12 @@ async function resolveReasonAsync<
   values: FieldValues<F>,
   conditions: C,
   fallback: string,
+  signal?: AbortSignal,
 ): Promise<string> {
   if (typeof reason === 'function') {
-    return reason(values, conditions)
+    return signal
+      ? resolveWithAbort(reason(values, conditions), signal)
+      : reason(values, conditions)
   }
 
   return reason ?? fallback
@@ -500,17 +562,20 @@ function cloneNamedCheckMetadata(
 async function runAnyFieldValidator<T>(
   validator: AnyValidationValidator<T>,
   value: NonNullable<T>,
+  signal?: AbortSignal,
 ): Promise<boolean> {
   if (isAsyncSafeParseValidator<T>(validator)) {
-    const result = await validator.safeParseAsync(value)
+    const result = signal
+      ? await raceAbort(validator.safeParseAsync(value), signal)
+      : await validator.safeParseAsync(value)
     return result.success
   }
 
   if (typeof validator === 'function') {
     const result = validator(value)
 
-    if (result instanceof Promise) {
-      const awaited = await result
+    if (isPromiseLike(result)) {
+      const awaited = signal ? await raceAbort(result, signal) : await result
       return typeof awaited === 'boolean' ? awaited : awaited.valid
     }
 
@@ -581,7 +646,10 @@ export function enabledWhen<
       signal,
     ) => {
       signal.throwIfAborted()
-      const passed = await predicate(values, conditions)
+      const passed = await resolveWithAbort(
+        predicate(values, conditions),
+        signal,
+      )
 
       return createSingleResultMap(target, {
         enabled: passed,
@@ -592,6 +660,7 @@ export function enabledWhen<
               values,
               conditions,
               'condition not met',
+              signal,
             ),
       })
     },
@@ -641,10 +710,9 @@ export function fairWhen<
         })
       }
 
-      const passed = await predicate(
-        value as NonNullable<V>,
-        values,
-        conditions,
+      const passed = await resolveWithAbort(
+        predicate(value as NonNullable<V>, values, conditions),
+        signal,
       )
 
       return createSingleResultMap(target, {
@@ -657,6 +725,7 @@ export function fairWhen<
               values,
               conditions,
               'selection is no longer valid',
+              signal,
             ),
       })
     },
@@ -705,6 +774,7 @@ export function disables<
         values,
         conditions,
         fields,
+        signal,
       )
 
       const reason = active
@@ -713,6 +783,7 @@ export function disables<
             values,
             conditions,
             defaultReason,
+            signal,
           )
         : null
 
@@ -778,6 +849,7 @@ export function requires<
           conditions,
           fields,
           availability,
+          signal,
         )
 
         if (satisfied) {
@@ -789,6 +861,7 @@ export function requires<
           values,
           conditions,
           getRequiredDependencyFallback(dependency),
+          signal,
         )
 
         if (reason === null) {
@@ -885,7 +958,10 @@ export function oneOf<
 
       const resolvedActiveBranch =
         typeof options?.activeBranch === 'function'
-          ? await options.activeBranch(values, conditions)
+          ? await resolveWithAbort(
+              options.activeBranch(values, conditions),
+              signal,
+            )
           : options?.activeBranch
 
       if (
@@ -919,6 +995,7 @@ export function oneOf<
         values,
         conditions,
         `conflicts with ${resolution.activeBranch} strategy`,
+        signal,
       )
 
       return createResultMap(targets, (target) => {
@@ -970,21 +1047,24 @@ export function anyOf<
     ) => {
       signal.throwIfAborted()
 
-      const evaluations = await Promise.all(
-        rules.map((r) => {
-          if (isAsyncRule(r)) {
-            return r.evaluate(
-              values,
-              conditions,
-              prev,
-              fields!,
-              availability,
-              signal,
-            )
-          }
+      const evaluations = await raceAbort(
+        Promise.all(
+          rules.map((r) => {
+            if (isAsyncRule(r)) {
+              return r.evaluate(
+                values,
+                conditions,
+                prev,
+                fields!,
+                availability,
+                signal,
+              )
+            }
 
-          return r.evaluate(values, conditions, prev, fields, availability)
-        }),
+            return r.evaluate(values, conditions, prev, fields, availability)
+          }),
+        ),
+        signal,
       )
 
       return createResultMap(targets, (target) => {
@@ -1054,21 +1134,24 @@ export function eitherOf<
       > = {}
 
       for (const branchName of branchNames) {
-        branchEvaluations[branchName] = await Promise.all(
-          branches[branchName].map((r) => {
-            if (isAsyncRule(r)) {
-              return r.evaluate(
-                values,
-                conditions,
-                prev,
-                fields!,
-                availability,
-                signal,
-              )
-            }
+        branchEvaluations[branchName] = await raceAbort(
+          Promise.all(
+            branches[branchName].map((r) => {
+              if (isAsyncRule(r)) {
+                return r.evaluate(
+                  values,
+                  conditions,
+                  prev,
+                  fields!,
+                  availability,
+                  signal,
+                )
+              }
 
-            return r.evaluate(values, conditions, prev, fields, availability)
-          }),
+              return r.evaluate(values, conditions, prev, fields, availability)
+            }),
+          ),
+          signal,
         )
       }
 
