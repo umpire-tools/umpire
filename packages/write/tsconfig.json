@@ -7,12 +7,12 @@
     "paths": {
       "@umpire/core": ["../core/src/index.ts"],
       "@umpire/core/*": ["../core/src/*"],
-      "@umpire/async": ["./src/index.ts"],
-      "@umpire/async/*": ["./src/*"],
+      "@umpire/async": ["../async/src/index.ts"],
+      "@umpire/async/*": ["../async/src/*"],
       "@umpire/write": ["./src/index.ts"],
       "@umpire/write/*": ["./src/*"]
     }
   },
   "include": ["src"],
-  "references": [{ "path": "../core" }]
+  "references": [{ "path": "../core" }, { "path": "../async" }]
 }
