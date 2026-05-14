@@ -208,6 +208,37 @@ describe('async scorecard()', () => {
     }
   })
 
+  test('scorecard includeChallenge preserves rule trace attachments', async () => {
+    const ump = umpire({
+      fields: { a: {}, b: {} },
+      rules: [
+        enabledWhen('a', () => true, {
+          trace: {
+            kind: 'debug',
+            id: 'b-value',
+            inspect(values) {
+              return { value: values.b, reason: 'captured b' }
+            },
+          },
+        }),
+      ],
+    })
+
+    const result = await ump.scorecard(
+      { values: { a: 'x', b: 'seen' } },
+      { includeChallenge: true },
+    )
+
+    expect(result.fields.a.trace?.directReasons[0]?.trace).toEqual([
+      {
+        kind: 'debug',
+        id: 'b-value',
+        value: 'seen',
+        reason: 'captured b',
+      },
+    ])
+  })
+
   test('scorecard transition suggests fouls', async () => {
     const ump = umpire({
       fields: { toggle: {}, target: { default: 'reset' } },

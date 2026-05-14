@@ -18,7 +18,10 @@ import {
   buildGraph,
   detectCycles,
   exportGraph,
+  getInternalRuleMetadata,
+  getRuleTraceAttachments,
   indexRulesByTarget as coreIndexRulesByTarget,
+  inspectRuleTraceAttachments,
   isFairRule,
   normalizeConfig,
   shouldWarnInDev,
@@ -291,13 +294,22 @@ export function umpire<
           ? result?.fair !== false
           : (result?.enabled ?? true)
 
-        return {
+        const directReason = {
           rule: rule.type,
           ruleIndex: entry?.index,
           ruleId: entry?.id,
           passed,
           reason: result?.reason ?? null,
         }
+        const metadata = getInternalRuleMetadata(rule as unknown as Rule<F, C>)
+        const trace = inspectRuleTraceAttachments(
+          getRuleTraceAttachments(metadata),
+          values,
+          conditions,
+          prev,
+        )
+
+        return trace ? { ...directReason, trace } : directReason
       }),
     )
   }

@@ -62,6 +62,8 @@ export {
   normalizeConfig,
   validateRules,
   normalizeValidators,
+  getRuleTraceAttachments,
+  inspectRuleTraceAttachments,
 } from './umpire.js'
 
 // Dev

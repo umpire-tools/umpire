@@ -196,7 +196,20 @@ export async function attachValidationMetadataAsync<
       return { field, outcome }
     })
 
-  const results = await Promise.all(validationPromises)
+  let removeAbortListener: (() => void) | undefined
+  const abortPromise = new Promise<never>((_, reject) => {
+    const onAbort = () => reject(signal.reason)
+    signal.addEventListener('abort', onAbort, { once: true })
+    removeAbortListener = () => signal.removeEventListener('abort', onAbort)
+  })
+
+  const results = await Promise.race([
+    Promise.all(validationPromises),
+    abortPromise,
+  ]).finally(() => {
+    removeAbortListener?.()
+  })
+
   signal.throwIfAborted()
 
   for (const { field, outcome } of results) {

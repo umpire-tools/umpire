@@ -30,6 +30,42 @@ describe('async challenge()', () => {
     })
   })
 
+  test('includes custom trace attachments from rule options', async () => {
+    const ump = umpire({
+      fields: { submit: {}, email: {} },
+      rules: [
+        enabledWhen('submit', async () => true, {
+          trace: {
+            kind: 'validator',
+            id: 'email-domain',
+            inspect(values) {
+              return {
+                value: values.email,
+                reason: 'domain accepted',
+                dependencies: [{ field: 'email', value: values.email }],
+              }
+            },
+          },
+        }),
+      ],
+    })
+
+    const trace = await ump.challenge('submit', {
+      submit: null,
+      email: 'ada@example.com',
+    })
+
+    expect(trace.directReasons[0]?.trace).toEqual([
+      {
+        kind: 'validator',
+        id: 'email-domain',
+        value: 'ada@example.com',
+        reason: 'domain accepted',
+        dependencies: [{ field: 'email', value: 'ada@example.com' }],
+      },
+    ])
+  })
+
   test('throws on unknown field', async () => {
     const ump = umpire({
       fields: { a: {} },

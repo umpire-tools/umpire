@@ -55,6 +55,38 @@ describe('async validation', () => {
     await secondPromise
   })
 
+  test('auto-cancel rejects without waiting for a hanging validator', async () => {
+    let calls = 0
+    const ump = umpire({
+      fields: { name: {} },
+      rules: [],
+      validators: {
+        name: async () => {
+          calls += 1
+          if (calls === 1) {
+            return new Promise(() => {})
+          }
+
+          return { valid: true }
+        },
+      },
+    })
+
+    const firstPromise = ump.check({ name: 'Ada' })
+    await Promise.resolve()
+
+    const secondPromise = ump.check({ name: 'Ada' })
+    await expect(
+      Promise.race([
+        firstPromise,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('first check still pending')), 25),
+        ),
+      ]),
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    await secondPromise
+  })
+
   test('safeParseAsync validator', async () => {
     const ump = umpire({
       fields: { email: {} },

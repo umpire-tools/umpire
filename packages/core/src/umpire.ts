@@ -185,7 +185,7 @@ function buildFieldEdgeLookup<F extends Record<string, FieldDef>>(
   }
 }
 
-function getRuleTraceAttachments<
+export function getRuleTraceAttachments<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 >(
@@ -200,7 +200,7 @@ function getRuleTraceAttachments<
   return Array.isArray(trace) ? trace : [trace]
 }
 
-function inspectRuleTraceAttachments<
+export function inspectRuleTraceAttachments<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
 >(
