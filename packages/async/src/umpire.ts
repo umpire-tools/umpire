@@ -37,6 +37,7 @@ import type {
   Umpire,
 } from './types.js'
 import { toAsyncRule } from './guards.js'
+import { raceAbort } from './abort.js'
 import {
   evaluateAsync,
   indexRulesByTargetPhase,
@@ -281,12 +282,8 @@ export function umpire<
     return Promise.all(
       targetRules.map(async (rule) => {
         const entry = entryByRule.get(rule)
-        const evaluation = await rule.evaluate(
-          values,
-          conditions,
-          prev,
-          fields,
-          availability,
+        const evaluation = await raceAbort(
+          rule.evaluate(values, conditions, prev, fields, availability, signal),
           signal,
         )
         const result = evaluation.get(field) as RuleEvaluation | undefined
