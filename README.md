@@ -8,7 +8,7 @@ Forms are the most common use case, but Umpire works anywhere state fits a plain
 
 [Docs](https://umpire.tools/) • [GitHub](https://github.com/umpire-tools/umpire)
 
-[![Coverage Status](https://coveralls.io/repos/github/sdougbrown/umpire/badge.svg?branch=main)](https://coveralls.io/github/sdougbrown/umpire?branch=main)
+[![Coverage Status](https://coveralls.io/repos/github/umpire-tools/umpire/badge.svg?branch=main)](https://coveralls.io/github/umpire-tools/umpire?branch=main)
 
 ## Quick Example
 
