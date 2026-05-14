@@ -1,6 +1,6 @@
 {
   "name": "@umpire/async",
-  "version": "1.0.0",
+  "version": "1.0.0.rc1",
   "description": "Async-aware field-availability engine — superset of @umpire/core with async rules and validators",
   "license": "MIT",
   "type": "module",
