@@ -177,6 +177,7 @@ export function createAsyncDrizzlePolicy<
     ...((options.rules ?? []) as AsyncRule<Record<string, FieldDef>, C>[]),
   ]
   const ump = asyncUmpire({ fields, rules })
+  const createCheckUmp = () => asyncUmpire({ fields, rules })
 
   return {
     fields,
@@ -185,7 +186,7 @@ export function createAsyncDrizzlePolicy<
     checkCreate(data, callOpts) {
       return checkDrizzleCreateAsync(
         table,
-        ump,
+        createCheckUmp(),
         data,
         mergeOpts(options, callOpts),
       ) as Promise<DrizzleWriteResult<Record<string, FieldDef>>>
@@ -193,7 +194,7 @@ export function createAsyncDrizzlePolicy<
     checkPatch(existing, patch, callOpts) {
       return checkDrizzlePatchAsync(
         table,
-        ump,
+        createCheckUmp(),
         existing,
         patch,
         mergeOpts(options, callOpts),
@@ -315,6 +316,7 @@ export function createAsyncDrizzleModelPolicy<
     ...((options.rules ?? []) as AsyncRule<Record<string, FieldDef>, C>[]),
   ]
   const ump = asyncUmpire({ fields, rules })
+  const createCheckUmp = () => asyncUmpire({ fields, rules })
 
   return {
     fields,
@@ -325,7 +327,7 @@ export function createAsyncDrizzleModelPolicy<
     checkCreate(data, callOpts) {
       return checkDrizzleModelCreateAsync(
         modelConfig,
-        ump,
+        createCheckUmp(),
         data,
         mergeOpts(options, callOpts),
       ) as Promise<DrizzleModelWriteResult<Record<string, FieldDef>>>
@@ -333,7 +335,7 @@ export function createAsyncDrizzleModelPolicy<
     checkPatch(existing, patch, callOpts) {
       return checkDrizzleModelPatchAsync(
         modelConfig,
-        ump,
+        createCheckUmp(),
         existing,
         patch,
         mergeOpts(options, callOpts),

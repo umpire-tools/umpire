@@ -42,6 +42,10 @@ function mockAdapter<F extends Record<string, FieldDef>>(
   }
 }
 
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 describe('createDrizzlePolicy', () => {
   test('creates equivalent fields to fromDrizzleTable', () => {
     const derived = fromDrizzleTable(users)
@@ -266,6 +270,30 @@ describe('async Drizzle policies', () => {
     )
   })
 
+  test('createAsyncDrizzlePolicy concurrent checks do not cancel each other', async () => {
+    const policy = createAsyncDrizzlePolicy(users, {
+      rules: [
+        enabledWhenAsync('displayName', async () => {
+          await delay(25)
+          return true
+        }),
+      ],
+    })
+
+    const results = await Promise.allSettled([
+      policy.checkCreate({ email: 'first@example.com', displayName: 'First' }),
+      policy.checkCreate({
+        email: 'second@example.com',
+        displayName: 'Second',
+      }),
+    ])
+
+    expect(results).toEqual([
+      expect.objectContaining({ status: 'fulfilled' }),
+      expect.objectContaining({ status: 'fulfilled' }),
+    ])
+  })
+
   test('createAsyncDrizzleModelPolicy applies async namespaced rules', async () => {
     const accounts = pgTable('async_accounts', {
       id: serial().primaryKey(),
@@ -289,6 +317,45 @@ describe('async Drizzle policies', () => {
         expect.objectContaining({ field: 'account.email', kind: 'required' }),
       ]),
     )
+  })
+
+  test('createAsyncDrizzleModelPolicy concurrent checks do not cancel each other', async () => {
+    const accounts = pgTable('async_concurrent_accounts', {
+      id: serial().primaryKey(),
+      email: varchar({ length: 255 }).notNull(),
+    })
+    const profiles = pgTable('async_concurrent_profiles', {
+      id: serial().primaryKey(),
+      accountId: integer().notNull(),
+      displayName: text(),
+    })
+    const modelConfig = { account: accounts, profile: profiles } as const
+    const policy = createAsyncDrizzleModelPolicy(modelConfig, {
+      rules: [
+        enabledWhenAsync('profile.displayName', async () => {
+          await delay(25)
+          return true
+        }),
+      ],
+    })
+
+    const results = await Promise.allSettled([
+      policy.checkCreate({
+        'account.email': 'first@example.com',
+        'profile.accountId': 1,
+        'profile.displayName': 'First',
+      }),
+      policy.checkCreate({
+        'account.email': 'second@example.com',
+        'profile.accountId': 2,
+        'profile.displayName': 'Second',
+      }),
+    ])
+
+    expect(results).toEqual([
+      expect.objectContaining({ status: 'fulfilled' }),
+      expect.objectContaining({ status: 'fulfilled' }),
+    ])
   })
 
   test('createAsyncDrizzleModelPolicy checkPatch returns per-table data', async () => {
