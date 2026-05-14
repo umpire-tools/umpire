@@ -1,4 +1,4 @@
-import { umpire, anyOf, enabledWhen, oneOf } from '@umpire/async'
+import { umpire, anyOf, defineRule, enabledWhen, oneOf } from '@umpire/async'
 import { describe, test, expect } from 'bun:test'
 
 function never<T>(): Promise<T> {
@@ -134,6 +134,40 @@ describe('cancellation', () => {
 
     expect(result.alpha.enabled).toBe(true)
     expect(result.beta.enabled).toBe(false)
+    await expect(
+      Promise.race([firstResult, delayedFailure('first check hung')]),
+    ).resolves.toMatchObject({ name: 'AbortError' })
+  })
+
+  test('auto-cancel rejects without waiting for hanging custom defineRule evaluate', async () => {
+    let calls = 0
+    const ump = umpire({
+      fields: { alpha: {} },
+      rules: [
+        defineRule({
+          type: 'custom-hang',
+          targets: ['alpha'],
+          evaluate: async () => {
+            calls += 1
+            if (calls === 1) {
+              // intentionally ignores the signal to simulate a misbehaving custom rule
+              return never<Map<string, { enabled: boolean; reason: string | null }>>()
+            }
+            const map = new Map<string, { enabled: boolean; reason: string | null }>()
+            map.set('alpha', { enabled: true, reason: null })
+            return map
+          },
+        }),
+      ],
+    })
+
+    const firstResult = ump.check({ alpha: 'x' }).then(
+      () => null,
+      (error) => error,
+    )
+    const result = await ump.check({ alpha: 'x' })
+
+    expect(result.alpha.enabled).toBe(true)
     await expect(
       Promise.race([firstResult, delayedFailure('first check hung')]),
     ).resolves.toMatchObject({ name: 'AbortError' })

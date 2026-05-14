@@ -9,6 +9,34 @@ import type { AvailabilityMap, FieldDef, FieldValues, Rule } from '@umpire/core'
 import type { AnyRule, AsyncRule, RuleEvaluation } from './types.js'
 import { toAsyncRule } from './guards.js'
 
+async function raceAbort<T>(
+  promise: PromiseLike<T>,
+  signal: AbortSignal,
+): Promise<T> {
+  signal.throwIfAborted()
+
+  let cleanup: (() => void) | undefined
+  const abort = new Promise<never>((_, reject) => {
+    const onAbort = () => {
+      try {
+        signal.throwIfAborted()
+      } catch (error) {
+        reject(error)
+        return
+      }
+      reject(signal.reason)
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+    cleanup = () => signal.removeEventListener('abort', onAbort)
+  })
+
+  try {
+    return await Promise.race([promise, abort])
+  } finally {
+    cleanup?.()
+  }
+}
+
 export type RulePhaseBuckets<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -106,7 +134,7 @@ async function evaluateRuleForFieldAsync<
     rulePromiseCache.set(rule, evaluationPromise)
   }
 
-  const evaluation = await evaluationPromise
+  const evaluation = await raceAbort(evaluationPromise, signal)
   const result = evaluation.get(field)
 
   if (!result) {
