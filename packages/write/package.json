@@ -27,6 +27,9 @@
   "dependencies": {
     "@umpire/core": "workspace:^"
   },
+  "devDependencies": {
+    "@umpire/async": "workspace:^"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sdougbrown/umpire.git",

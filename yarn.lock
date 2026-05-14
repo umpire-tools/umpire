@@ -2241,6 +2241,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@umpire/write@workspace:packages/write"
   dependencies:
+    "@umpire/async": "workspace:^"
     "@umpire/core": "workspace:^"
   languageName: unknown
   linkType: soft
