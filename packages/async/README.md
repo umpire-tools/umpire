@@ -30,14 +30,20 @@ const ump = umpire({
   },
   rules: [
     // async predicate — checks the server for username availability
-    enabledWhen('username', async (values, conditions) => {
-      if (!values.email) return false
-      const taken = await checkUsernameTaken(values.username)
-      return !taken
-    }, { reason: 'username is already taken' }),
+    enabledWhen(
+      'username',
+      async (values, conditions) => {
+        if (!values.email) return false
+        const taken = await checkUsernameTaken(values.username)
+        return !taken
+      },
+      { reason: 'username is already taken' },
+    ),
 
     // sync rule from @umpire/async — mixed freely with async rules
-    requires('referralCode', (values) => values.email?.endsWith('@invite.example.com')),
+    requires('referralCode', (values) =>
+      values.email?.endsWith('@invite.example.com'),
+    ),
   ],
 })
 
@@ -89,14 +95,21 @@ All builders return `AsyncRule` and accept both sync and async predicates.
 Makes `field` enabled only when `predicate` returns (or resolves to) `true`. When it returns `false`, the field is disabled and `reason` is attached.
 
 ```ts
-type predicate = (values: FieldValues, conditions: C) => boolean | Promise<boolean>
+type predicate = (
+  values: FieldValues,
+  conditions: C,
+) => boolean | Promise<boolean>
 ```
 
 ```ts
-enabledWhen('teamSize', async (_values, conditions) => {
-  const plan = await fetchPlan(conditions.accountId)
-  return plan.allowsTeams
-}, { reason: 'upgrade to a team plan to set team size' })
+enabledWhen(
+  'teamSize',
+  async (_values, conditions) => {
+    const plan = await fetchPlan(conditions.accountId)
+    return plan.allowsTeams
+  },
+  { reason: 'upgrade to a team plan to set team size' },
+)
 ```
 
 #### `fairWhen(field, predicate, options?)`
@@ -104,14 +117,22 @@ enabledWhen('teamSize', async (_values, conditions) => {
 Marks the current value of `field` as foul when `predicate` returns `false`. Only evaluated when the field is satisfied — an empty field is always fair. The predicate receives the current value, the full values map, and conditions.
 
 ```ts
-type predicate = (value: NonNullable<V>, values: FieldValues, conditions: C) => boolean | Promise<boolean>
+type predicate = (
+  value: NonNullable<V>,
+  values: FieldValues,
+  conditions: C,
+) => boolean | Promise<boolean>
 ```
 
 ```ts
-fairWhen('email', async (email) => {
-  const domain = email.split('@')[1]
-  return checkDomainValid(domain)
-}, { reason: 'email domain is not reachable' })
+fairWhen(
+  'email',
+  async (email) => {
+    const domain = email.split('@')[1]
+    return checkDomainValid(domain)
+  },
+  { reason: 'email domain is not reachable' },
+)
 ```
 
 #### `requires(field, ...deps, options?)`
@@ -141,15 +162,19 @@ Mutually exclusive field groups. Exactly one branch can be active at a time; fie
 The `activeBranch` option pins a branch by name, or you can provide a function (sync or async) that resolves the active branch name.
 
 ```ts
-oneOf('authMethod', {
-  password: ['password', 'confirmPassword'],
-  sso: ['ssoProvider', 'ssoToken'],
-}, {
-  activeBranch: async (values) => {
-    const config = await fetchOrgConfig()
-    return config.ssoEnabled ? 'sso' : 'password'
+oneOf(
+  'authMethod',
+  {
+    password: ['password', 'confirmPassword'],
+    sso: ['ssoProvider', 'ssoToken'],
   },
-})
+  {
+    activeBranch: async (values) => {
+      const config = await fetchOrgConfig()
+      return config.ssoEnabled ? 'sso' : 'password'
+    },
+  },
+)
 ```
 
 #### `anyOf(...rules)`
@@ -169,9 +194,7 @@ OR across named branches, where each branch is itself a set of rules ANDed toget
 
 ```ts
 eitherOf('accessPath', {
-  directInvite: [
-    enabledWhen('dashboard', (v) => Boolean(v.inviteToken)),
-  ],
+  directInvite: [enabledWhen('dashboard', (v) => Boolean(v.inviteToken))],
   verifiedEmail: [
     enabledWhen('dashboard', (v) => Boolean(v.email)),
     enabledWhen('dashboard', (v) => v.emailVerified === true),
@@ -184,9 +207,13 @@ eitherOf('accessPath', {
 Builds a predicate that passes when the field's current value satisfies `validator`. Returns a predicate function for use inside `requires`, `enabledWhen`, etc. The validator can be async.
 
 ```ts
-requires('confirmPassword', 'password', check('password', async (pw) => {
-  return meetsStrengthPolicy(pw)
-}))
+requires(
+  'confirmPassword',
+  'password',
+  check('password', async (pw) => {
+    return meetsStrengthPolicy(pw)
+  }),
+)
 ```
 
 #### `createRules<F, C>()`
@@ -194,7 +221,10 @@ requires('confirmPassword', 'password', check('password', async (pw) => {
 Returns all builders narrowed to your field and condition types. Zero runtime overhead — purely a type-level convenience that avoids repeated type annotations.
 
 ```ts
-const { enabledWhen, requires, fairWhen } = createRules<typeof fields, AppConditions>()
+const { enabledWhen, requires, fairWhen } = createRules<
+  typeof fields,
+  AppConditions
+>()
 ```
 
 #### `defineRule(config)`
@@ -209,7 +239,9 @@ defineRule({
   evaluate: async (values, conditions, prev, fields, availability, signal) => {
     signal.throwIfAborted()
     const passed = await myCheck(values)
-    return new Map([['field', { enabled: passed, reason: passed ? null : 'blocked' }]])
+    return new Map([
+      ['field', { enabled: passed, reason: passed ? null : 'blocked' }],
+    ])
   },
 })
 ```
@@ -235,7 +267,9 @@ Accepted shapes:
 
 ```ts
 // Async function — return boolean or { valid, error? }
-type AsyncValidationFunction<T> = (value: NonNullable<T>) => ValidationOutcome | Promise<ValidationOutcome>
+type AsyncValidationFunction<T> = (
+  value: NonNullable<T>,
+) => ValidationOutcome | Promise<ValidationOutcome>
 
 // Object with safeParseAsync (e.g. Zod v4 with async refinements)
 type AsyncSafeParseValidator<T> = {
@@ -313,9 +347,9 @@ Returns rule metadata including index, id, and inspection data. Synchronous.
 **Auto-cancel.** Starting a new `check()` cancels any in-flight check on the same `Umpire` instance. The cancelled Promise rejects with an `AbortError`. This keeps your UI consistent when values change faster than rules evaluate — only the latest check matters.
 
 ```ts
-const first = ump.check(staleValues)  // cancelled automatically
-const result = await ump.check(freshValues)  // this one wins
-await first.catch(() => {})  // suppress the AbortError from the first check
+const first = ump.check(staleValues) // cancelled automatically
+const result = await ump.check(freshValues) // this one wins
+await first.catch(() => {}) // suppress the AbortError from the first check
 ```
 
 **External signal.** Pass an `AbortSignal` to cancel from outside — useful for route navigation, component unmount, or request deduplication.
@@ -326,7 +360,12 @@ const controller = new AbortController()
 // cancel on unmount, navigation, etc.
 onDestroy(() => controller.abort())
 
-const availability = await ump.check(values, conditions, undefined, controller.signal)
+const availability = await ump.check(
+  values,
+  conditions,
+  undefined,
+  controller.signal,
+)
 ```
 
 `play()` and `scorecard()` also support external signals. `challenge()` does not.

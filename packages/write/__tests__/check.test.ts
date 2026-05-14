@@ -10,8 +10,17 @@ import {
   type AvailabilityMap,
   type FieldDef,
 } from '@umpire/core'
+import {
+  enabledWhen as enabledWhenAsync,
+  umpire as asyncUmpire,
+} from '@umpire/async'
 import * as write from '@umpire/write'
-import { checkCreate, checkPatch } from '@umpire/write'
+import {
+  checkCreate,
+  checkCreateAsync,
+  checkPatch,
+  checkPatchAsync,
+} from '@umpire/write'
 import type {
   WriteCandidate,
   WriteCheckResult,
@@ -345,6 +354,94 @@ describe('checkPatch', () => {
 
     expect(Object.hasOwn(result.candidate, 'name')).toBe(true)
     expect(result.candidate.name).toBeUndefined()
+    expect(result.issues).toEqual([
+      { kind: 'required', field: 'name', message: 'name is required' },
+    ])
+  })
+})
+
+describe('async write checks', () => {
+  test('checkCreateAsync awaits async availability rules', async () => {
+    const ump = asyncUmpire<Pick<WriteFields, 'guarded'>, { allow: boolean }>({
+      fields: { guarded: {} },
+      rules: [
+        enabledWhenAsync('guarded', async (_values, context) => context.allow),
+      ],
+    })
+
+    await expect(
+      checkCreateAsync(ump, { guarded: 'value' }, { allow: true }),
+    ).resolves.toMatchObject({ ok: true, issues: [] })
+
+    await expect(
+      checkCreateAsync(ump, { guarded: 'value' }, { allow: false }),
+    ).resolves.toMatchObject({
+      ok: false,
+      issues: [
+        { kind: 'disabled', field: 'guarded', message: 'condition not met' },
+      ],
+    })
+  })
+
+  test('checkCreateAsync includes async validator metadata', async () => {
+    const ump = asyncUmpire<Pick<WriteFields, 'name'>>({
+      fields: { name: {} },
+      rules: [],
+      validators: {
+        name: async (value) =>
+          value === 'taken'
+            ? { valid: false, error: 'name already taken' }
+            : true,
+      },
+    })
+
+    const result = await checkCreateAsync(ump, { name: 'taken' })
+
+    expect(result.ok).toBe(true)
+    expect(result.availability.name.valid).toBe(false)
+    expect(result.availability.name.error).toBe('name already taken')
+  })
+
+  test('checkPatchAsync awaits async fouls from play', async () => {
+    const ump = asyncUmpire<Pick<WriteFields, 'toggle' | 'dependent'>>({
+      fields: { toggle: {}, dependent: {} },
+      rules: [
+        enabledWhenAsync(
+          'dependent',
+          async (values) => values.toggle === true,
+          { reason: 'dependent disabled' },
+        ),
+      ],
+    })
+
+    const result = await checkPatchAsync(
+      ump,
+      { toggle: true, dependent: 'keep me' },
+      { toggle: false },
+    )
+
+    expect(result.ok).toBe(false)
+    expect(result.issues).toEqual([
+      { kind: 'disabled', field: 'dependent', message: 'dependent disabled' },
+    ])
+    expect(result.fouls).toEqual([
+      {
+        field: 'dependent',
+        reason: 'dependent disabled',
+        suggestedValue: undefined,
+      },
+    ])
+  })
+
+  test('async helpers also accept synchronous Umpire instances', async () => {
+    const ump = umpire<Pick<WriteFields, 'name'>>({
+      fields: { name: { required: true } },
+      rules: [],
+    })
+
+    const result = await checkCreateAsync(ump, {})
+
+    expect(result.ok).toBe(false)
     expect(result.issues).toEqual([
       { kind: 'required', field: 'name', message: 'name is required' },
     ])
@@ -795,19 +892,25 @@ describe('exports', () => {
   test('exports runtime checking and validation composition helpers', () => {
     expect(Object.keys(write).sort()).toEqual([
       'checkCreate',
+      'checkCreateAsync',
       'checkPatch',
+      'checkPatchAsync',
       'composeWriteResult',
       'flattenFieldErrorPath',
       'flattenFieldErrorPaths',
       'joinFieldPath',
       'nestNamespacedValues',
       'runWriteValidationAdapter',
+      'runWriteValidationAdapterAsync',
       'splitNamespacedField',
     ])
     expect(typeof write.checkCreate).toBe('function')
+    expect(typeof write.checkCreateAsync).toBe('function')
     expect(typeof write.checkPatch).toBe('function')
+    expect(typeof write.checkPatchAsync).toBe('function')
     expect(typeof write.composeWriteResult).toBe('function')
     expect(typeof write.nestNamespacedValues).toBe('function')
     expect(typeof write.runWriteValidationAdapter).toBe('function')
+    expect(typeof write.runWriteValidationAdapterAsync).toBe('function')
   })
 })

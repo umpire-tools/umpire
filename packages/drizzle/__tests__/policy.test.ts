@@ -2,10 +2,19 @@ import { describe, expect, test } from 'bun:test'
 
 import type { FieldDef } from '@umpire/core'
 import { enabledWhen, requires } from '@umpire/core'
+import {
+  enabledWhen as enabledWhenAsync,
+  requires as requiresAsync,
+} from '@umpire/async'
 import { integer, pgTable, serial, text, varchar } from 'drizzle-orm/pg-core'
 
 import { fromDrizzleModel, fromDrizzleTable } from '../src/index.js'
-import { createDrizzlePolicy, createDrizzleModelPolicy } from '../src/policy.js'
+import {
+  createAsyncDrizzleModelPolicy,
+  createAsyncDrizzlePolicy,
+  createDrizzleModelPolicy,
+  createDrizzlePolicy,
+} from '../src/policy.js'
 import type { UmpireValidationAdapter } from '../src/result.js'
 
 const users = pgTable('users', {
@@ -229,5 +238,56 @@ describe('createDrizzleModelPolicy', () => {
     expect(result.ok).toBe(true)
     expect(result.dataByTable.profile).toEqual({ displayName: 'New Name' })
     expect(Object.keys(result.dataByTable.account)).toEqual([])
+  })
+})
+
+describe('async Drizzle policies', () => {
+  test('createAsyncDrizzlePolicy applies async handwritten rules', async () => {
+    const policy = createAsyncDrizzlePolicy(users, {
+      rules: [
+        enabledWhenAsync(
+          'companyName',
+          async (values) => values.accountType === 'business',
+        ),
+      ],
+    })
+
+    const result = await policy.checkCreate({
+      email: 'a@example.com',
+      accountType: 'personal',
+      companyName: 'Acme',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.issues.rules).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'companyName', kind: 'disabled' }),
+      ]),
+    )
+  })
+
+  test('createAsyncDrizzleModelPolicy applies async namespaced rules', async () => {
+    const accounts = pgTable('async_accounts', {
+      id: serial().primaryKey(),
+      email: varchar({ length: 255 }).notNull(),
+    })
+    const profiles = pgTable('async_profiles', {
+      id: serial().primaryKey(),
+      accountId: integer().notNull(),
+      displayName: text(),
+    })
+    const modelConfig = { account: accounts, profile: profiles } as const
+    const policy = createAsyncDrizzleModelPolicy(modelConfig, {
+      rules: [requiresAsync('account.email', async () => true) as never],
+    })
+
+    const result = await policy.checkCreate({})
+
+    expect(result.ok).toBe(false)
+    expect(result.issues.rules).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'account.email', kind: 'required' }),
+      ]),
+    )
   })
 })

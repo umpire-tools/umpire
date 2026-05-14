@@ -1,10 +1,15 @@
 import type { FieldDef, Umpire } from '@umpire/core'
 import {
   checkCreate as writeCheckCreate,
+  checkCreateAsync as writeCheckCreateAsync,
   checkPatch as writeCheckPatch,
+  checkPatchAsync as writeCheckPatchAsync,
   composeWriteResult,
   runWriteValidationAdapter,
+  runWriteValidationAdapterAsync,
   splitNamespacedField,
+  type AsyncWriteValidationAdapter,
+  type AsyncWriteUmpire,
   type WriteCheckResult,
   type WriteValidationAdapter,
 } from '@umpire/write'
@@ -34,6 +39,13 @@ type ModelWriteOptions<
   C = Record<string, unknown>,
 > = DrizzleWriteOptions<C> & {
   validation?: WriteValidationAdapter<F>
+}
+
+type AsyncModelWriteOptions<
+  F extends Record<string, FieldDef>,
+  C = Record<string, unknown>,
+> = DrizzleWriteOptions<C> & {
+  validation?: AsyncWriteValidationAdapter<F>
 }
 
 type NamespaceMeta = {
@@ -71,6 +83,48 @@ export function checkDrizzleModelCreate<
 
   const validation = options?.validation
     ? runWriteValidationAdapter(
+        options.validation,
+        write.availability,
+        write.candidate,
+      )
+    : undefined
+
+  const composed = composeWriteResult({
+    write,
+    validation,
+    extraIssues: { columns: allColumnIssues },
+  })
+  return { ...composed, dataByTable }
+}
+
+export async function checkDrizzleModelCreateAsync<
+  M extends FromDrizzleModelConfig,
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
+  modelConfig: M,
+  ump: AsyncWriteUmpire<F, C>,
+  data: Record<string, unknown>,
+  options?: AsyncModelWriteOptions<F, C>,
+): Promise<DrizzleModelWriteResult<F>> {
+  const namespaceMeta = buildNamespaceMeta(modelConfig)
+  const { flatData: flatShapedData, columnIssues: allColumnIssues } =
+    shapeNamespacedInput(namespaceMeta, data, options, 'create')
+
+  const write = await writeCheckCreateAsync(
+    ump,
+    flatShapedData,
+    options?.context,
+  )
+
+  const dataByTable = buildCreateDataByTable(
+    namespaceMeta,
+    flatShapedData,
+    write,
+  )
+
+  const validation = options?.validation
+    ? await runWriteValidationAdapterAsync(
         options.validation,
         write.availability,
         write.candidate,
@@ -137,6 +191,68 @@ export function checkDrizzleModelPatch<
 
   const validation = options?.validation
     ? runWriteValidationAdapter(
+        options.validation,
+        write.availability,
+        write.candidate,
+      )
+    : undefined
+
+  const composed = composeWriteResult({
+    write,
+    validation,
+    extraIssues: { columns: allColumnIssues },
+  })
+  return { ...composed, dataByTable }
+}
+
+export async function checkDrizzleModelPatchAsync<
+  M extends FromDrizzleModelConfig,
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
+  modelConfig: M,
+  ump: AsyncWriteUmpire<F, C>,
+  existing: Record<string, unknown>,
+  patch: Record<string, unknown>,
+  options?: AsyncModelWriteOptions<F, C>,
+): Promise<DrizzleModelWriteResult<F>> {
+  const namespaceMeta = buildNamespaceMeta(modelConfig)
+  const { flatData: flatShapedPatch, columnIssues: allColumnIssues } =
+    shapeNamespacedInput(namespaceMeta, patch, options, 'patch')
+
+  const initialWrite = await writeCheckPatchAsync(
+    ump,
+    existing,
+    flatShapedPatch,
+    options?.context,
+  )
+
+  const rawFlatClears = collectDisabledStaleClears(
+    initialWrite,
+    existing,
+    flatShapedPatch,
+  )
+  const flatStaleClears = shapeNamespacedClears(namespaceMeta, rawFlatClears)
+
+  const write =
+    Object.keys(flatStaleClears).length === 0
+      ? initialWrite
+      : await writeCheckPatchAsync(
+          ump,
+          existing,
+          { ...flatStaleClears, ...flatShapedPatch },
+          options?.context,
+        )
+
+  const dataByTable = buildPatchDataByTable(
+    namespaceMeta,
+    flatStaleClears,
+    flatShapedPatch,
+    write,
+  )
+
+  const validation = options?.validation
+    ? await runWriteValidationAdapterAsync(
         options.validation,
         write.availability,
         write.candidate,

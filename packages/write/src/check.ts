@@ -1,4 +1,11 @@
-import type { AvailabilityMap, FieldDef, Foul, Umpire } from '@umpire/core'
+import type {
+  AvailabilityMap,
+  FieldDef,
+  Foul,
+  InputValues,
+  Snapshot,
+  Umpire,
+} from '@umpire/core'
 
 export type WriteIssueKind = 'required' | 'disabled' | 'foul'
 
@@ -22,6 +29,21 @@ export type WriteCheckResult<F extends Record<string, FieldDef>> = {
   errors: string[]
 }
 
+type MaybePromise<T> = T | Promise<T>
+
+export type AsyncWriteUmpire<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+> = {
+  check(
+    values: InputValues,
+    conditions?: C,
+    prev?: InputValues,
+  ): MaybePromise<AvailabilityMap<F>>
+  play(before: Snapshot<C>, after: Snapshot<C>): MaybePromise<Foul<F>[]>
+  init(overrides?: InputValues): Record<keyof F & string, unknown>
+}
+
 export function checkCreate<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown> = Record<string, unknown>,
@@ -32,6 +54,28 @@ export function checkCreate<
 ): WriteCheckResult<F> {
   const candidate: WriteCandidate<F> = { ...ump.init(), ...data }
   const availability = ump.check(candidate, context)
+  const issues = issuesFromAvailability(availability)
+
+  return {
+    ok: issues.length === 0,
+    candidate,
+    availability,
+    issues,
+    fouls: [],
+    errors: issues.map((issue) => issue.message),
+  }
+}
+
+export async function checkCreateAsync<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
+  ump: AsyncWriteUmpire<F, C>,
+  data: Record<string, unknown>,
+  context?: C,
+): Promise<WriteCheckResult<F>> {
+  const candidate: WriteCandidate<F> = { ...ump.init(), ...data }
+  const availability = await ump.check(candidate, context)
   const issues = issuesFromAvailability(availability)
 
   return {
@@ -57,6 +101,33 @@ export function checkPatch<
   const availability = ump.check(candidate, context, existing)
   const issues = issuesFromAvailability(availability)
   const fouls = ump.play(
+    { values: existing, conditions: context },
+    { values: candidate, conditions: context },
+  )
+
+  return {
+    ok: issues.length === 0 && fouls.length === 0,
+    candidate,
+    availability,
+    issues,
+    fouls,
+    errors: issues.map((issue) => issue.message),
+  }
+}
+
+export async function checkPatchAsync<
+  F extends Record<string, FieldDef>,
+  C extends Record<string, unknown> = Record<string, unknown>,
+>(
+  ump: AsyncWriteUmpire<F, C>,
+  existing: Record<string, unknown>,
+  patch: Record<string, unknown>,
+  context?: C,
+): Promise<WriteCheckResult<F>> {
+  const candidate = { ...existing, ...patch } as WriteCandidate<F>
+  const availability = await ump.check(candidate, context, existing)
+  const issues = issuesFromAvailability(availability)
+  const fouls = await ump.play(
     { values: existing, conditions: context },
     { values: candidate, conditions: context },
   )

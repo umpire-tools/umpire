@@ -1964,6 +1964,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@umpire/drizzle@workspace:packages/drizzle"
   dependencies:
+    "@umpire/async": "workspace:^"
     "@umpire/core": "workspace:^"
     "@umpire/testing": "workspace:^"
     "@umpire/write": "workspace:^"
