@@ -290,4 +290,47 @@ describe('async Drizzle policies', () => {
       ]),
     )
   })
+
+  test('createAsyncDrizzleModelPolicy checkPatch returns per-table data', async () => {
+    const accounts = pgTable('async_patch_accounts', {
+      id: serial().primaryKey(),
+      email: varchar({ length: 255 }).notNull(),
+      accountType: text().notNull().default('personal'),
+      companyName: text(),
+    })
+    const profiles = pgTable('async_patch_profiles', {
+      id: serial().primaryKey(),
+      accountId: integer().notNull(),
+      displayName: text(),
+    })
+    const modelConfig = { account: accounts, profile: profiles } as const
+    const policy = createAsyncDrizzleModelPolicy(modelConfig, {
+      rules: [
+        enabledWhenAsync('account.companyName', async (values) => {
+          return values['account.accountType'] === 'business'
+        }),
+      ],
+    })
+
+    const result = await policy.checkPatch(
+      {
+        'account.email': 'a@example.com',
+        'account.accountType': 'business',
+        'account.companyName': 'Acme',
+        'profile.accountId': 1,
+        'profile.displayName': 'Old Name',
+      },
+      {
+        'account.accountType': 'personal',
+        'profile.displayName': 'New Name',
+      },
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.dataByTable.account).toEqual({
+      companyName: null,
+      accountType: 'personal',
+    })
+    expect(result.dataByTable.profile).toEqual({ displayName: 'New Name' })
+  })
 })
