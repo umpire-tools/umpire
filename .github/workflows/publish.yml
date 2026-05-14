@@ -40,6 +40,7 @@ jobs:
       eslint_plugin_changed: ${{ steps.versions.outputs.eslint_plugin_changed }}
       solid_changed: ${{ steps.versions.outputs.solid_changed }}
       tanstack_form_changed: ${{ steps.versions.outputs.tanstack_form_changed }}
+      async_changed: ${{ steps.versions.outputs.async_changed }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,7 +62,7 @@ jobs:
           const fs = require('node:fs');
           const path = require('node:path');
 
-          const packages = ['core', 'dsl', 'effect', 'json', 'reads', 'write', 'drizzle', 'devtools', 'store', 'signals', 'react', 'redux', 'pinia', 'tanstack-form', 'tanstack-store', 'vuex', 'zustand', 'zod', 'testing', 'eslint-plugin', 'solid'];
+          const packages = ['async', 'core', 'dsl', 'effect', 'json', 'reads', 'write', 'drizzle', 'devtools', 'store', 'signals', 'react', 'redux', 'pinia', 'tanstack-form', 'tanstack-store', 'vuex', 'zustand', 'zod', 'testing', 'eslint-plugin', 'solid'];
 
           // Manual dispatch: mark everything changed so all packages are published.
           if (process.env.MANUAL_DISPATCH === 'true') {
@@ -460,6 +461,21 @@ jobs:
       - name: Publish @umpire/solid
         if: needs.detect-version-changes.outputs.solid_changed == 'true'
         working-directory: packages/solid
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="latest"
+          if echo "$VERSION" | grep -q "-"; then TAG="alpha"; fi
+          PKG=$(node -p "require('./package.json').name")
+          if npm show "$PKG@$VERSION" version > /dev/null 2>&1; then
+            echo "$PKG@$VERSION already published, skipping"
+          else
+            yarn pack -o package.tgz
+            npm publish package.tgz --provenance --access public --tag "$TAG"
+          fi
+
+      - name: Publish @umpire/async
+        if: needs.detect-version-changes.outputs.async_changed == 'true'
+        working-directory: packages/async
         run: |
           VERSION=$(node -p "require('./package.json').version")
           TAG="latest"
