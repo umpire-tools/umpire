@@ -64,4 +64,11 @@ if (process.env.BUN_DISABLE_WORKSPACE_MOCKS !== 'true') {
   mock.module('@umpire/effect', () =>
     require('../packages/effect/src/index.js'),
   )
+  mock.module('@umpire/jsx', () => require('../packages/jsx/src/index.js'))
+  mock.module('@umpire/jsx/jsx-runtime', () =>
+    require('../packages/jsx/src/runtime.js'),
+  )
+  mock.module('@umpire/jsx/jsx-dev-runtime', () =>
+    require('../packages/jsx/src/jsx-dev-runtime.js'),
+  )
 }
