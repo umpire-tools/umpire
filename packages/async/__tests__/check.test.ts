@@ -5,8 +5,9 @@ import {
   fairWhen,
   disables,
   eitherOf,
+  defineRule,
 } from '@umpire/async'
-import { field } from '@umpire/core'
+import { enabledWhen as coreEnabledWhen, field } from '@umpire/core'
 import { describe, test, expect } from 'bun:test'
 
 describe('async check()', () => {
@@ -47,6 +48,52 @@ describe('async check()', () => {
     const result = await ump.check({ alpha: 'yes', beta: 'present' })
     expect(result.gamma.enabled).toBe(true)
     expect(result.beta.enabled).toBe(true)
+  })
+
+  test('wraps top-level core rules with evaluateTarget metadata', async () => {
+    const ump = umpire({
+      fields: { alpha: {} },
+      rules: [coreEnabledWhen('alpha', () => false)],
+    })
+
+    const result = await ump.check({ alpha: 'x' })
+    expect(result.alpha.enabled).toBe(false)
+  })
+
+  test('custom rule missing target evaluation uses default availability', async () => {
+    const ump = umpire({
+      fields: { alpha: {} },
+      rules: [
+        defineRule({
+          type: 'custom',
+          targets: ['alpha'],
+          evaluate: async () => new Map(),
+        }),
+      ],
+    })
+
+    const result = await ump.check({ alpha: 'x' })
+    expect(result.alpha.enabled).toBe(true)
+  })
+
+  test('custom rule empty reasons are normalized away', async () => {
+    const ump = umpire({
+      fields: { alpha: {} },
+      rules: [
+        defineRule({
+          type: 'custom',
+          targets: ['alpha'],
+          evaluate: async () =>
+            new Map([
+              ['alpha', { enabled: false, reason: 'blocked', reasons: [] }],
+            ]),
+        }),
+      ],
+    })
+
+    const result = await ump.check({ alpha: 'x' })
+    expect(result.alpha.enabled).toBe(false)
+    expect(result.alpha.reasons).toEqual(['blocked'])
   })
 
   test('async disabled field reports required: false', async () => {

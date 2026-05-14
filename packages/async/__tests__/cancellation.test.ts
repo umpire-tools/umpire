@@ -161,4 +161,47 @@ describe('cancellation', () => {
       ump.scorecard({ values: { a: 'x' } }, { signal: controller.signal }),
     ).rejects.toMatchObject({ name: 'AbortError' })
   })
+
+  test('falls back when AbortSignal.any is unavailable', async () => {
+    const originalAny = (AbortSignal as any).any
+    ;(AbortSignal as any).any = undefined
+
+    try {
+      const external = new AbortController()
+      const ump = umpire({
+        fields: { alpha: {} },
+        rules: [enabledWhen('alpha', async () => true)],
+      })
+
+      const result = await ump.check(
+        { alpha: 'x' },
+        undefined,
+        undefined,
+        external.signal,
+      )
+      expect(result.alpha.enabled).toBe(true)
+    } finally {
+      ;(AbortSignal as any).any = originalAny
+    }
+  })
+
+  test('fallback composed signal observes pre-aborted external signals', async () => {
+    const originalAny = (AbortSignal as any).any
+    ;(AbortSignal as any).any = undefined
+
+    try {
+      const external = new AbortController()
+      external.abort('external')
+      const ump = umpire({
+        fields: { alpha: {} },
+        rules: [enabledWhen('alpha', async () => true)],
+      })
+
+      await expect(
+        ump.check({ alpha: 'x' }, undefined, undefined, external.signal),
+      ).rejects.toBe('external')
+    } finally {
+      ;(AbortSignal as any).any = originalAny
+    }
+  })
 })

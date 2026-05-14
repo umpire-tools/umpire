@@ -132,6 +132,43 @@ describe('async validation', () => {
     expect(result.email.error).toBe('Invalid email')
   })
 
+  test('safeParse validator extracts legacy errors messages', async () => {
+    const entry = normalizeAnyValidationEntry({
+      safeParse: () => ({
+        success: false,
+        error: {
+          errors: [{ message: 'Legacy message' }],
+        },
+      }),
+    })
+
+    const result = await entry!.validate('bad')
+    expect(result).toEqual({ valid: false, error: 'Legacy message' })
+  })
+
+  test('safeParse validator returns undefined error when no issues exist', async () => {
+    const entry = normalizeAnyValidationEntry({
+      safeParse: () => ({
+        success: false,
+        error: {},
+      }),
+    })
+
+    const result = await entry!.validate('bad')
+    expect(result).toEqual({ valid: false, error: undefined })
+  })
+
+  test('named check validators normalize directly', async () => {
+    const entry = normalizeAnyValidationEntry({
+      __check: 'startsWithA',
+      validate: (value: string) => value.startsWith('A'),
+    })
+
+    expect(entry).not.toBeNull()
+    expect(await entry!.validate('Ada')).toBe(true)
+    expect(await entry!.validate('Grace')).toBe(false)
+  })
+
   test('normalizeAnyValidationEntry handles async function', () => {
     const result = normalizeAnyValidationEntry(async (_v: any) => true)
     expect(result).not.toBeNull()
@@ -157,6 +194,15 @@ describe('async validation', () => {
       test: (v: string) => v.length > 0,
     })
     expect(result).not.toBeNull()
+  })
+
+  test('test object validators only run for strings', async () => {
+    const entry = normalizeAnyValidationEntry({
+      test: (v: string) => v.length > 0,
+    })
+
+    expect(await entry!.validate('x')).toBe(true)
+    expect(await entry!.validate(123 as never)).toBe(false)
   })
 
   test('normalizeAnyValidationEntry handles validator wrapper', () => {

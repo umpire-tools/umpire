@@ -1,4 +1,4 @@
-import { umpire, enabledWhen, fairWhen } from '@umpire/async'
+import { umpire, defineRule, enabledWhen, fairWhen } from '@umpire/async'
 import { describe, test, expect } from 'bun:test'
 
 describe('async play()', () => {
@@ -16,6 +16,32 @@ describe('async play()', () => {
     expect(fouls).toHaveLength(1)
     expect(fouls[0].field).toBe('target')
     expect(fouls[0].suggestedValue).toBe('default')
+  })
+
+  test('uses fallback disabled reason when rule reason is null', async () => {
+    const ump = umpire({
+      fields: { toggle: {}, target: { default: 'default' } },
+      rules: [
+        defineRule({
+          type: 'custom',
+          targets: ['target'],
+          sources: ['toggle'],
+          evaluate: async (values: any) =>
+            new Map([
+              ['target', { enabled: values.toggle === 'on', reason: null }],
+            ]),
+        }),
+      ],
+    })
+
+    const fouls = await ump.play(
+      { values: { toggle: 'on', target: 'custom' } },
+      { values: { toggle: 'off', target: 'custom' } },
+    )
+
+    expect(fouls).toEqual([
+      { field: 'target', reason: 'field disabled', suggestedValue: 'default' },
+    ])
   })
 
   test('no foul when value already matches default', async () => {

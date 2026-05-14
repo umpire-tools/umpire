@@ -1,4 +1,4 @@
-import { umpire, enabledWhen, requires } from '@umpire/async'
+import { umpire, defineRule, enabledWhen, requires } from '@umpire/async'
 import { describe, test, expect } from 'bun:test'
 
 describe('async scorecard()', () => {
@@ -26,6 +26,75 @@ describe('async scorecard()', () => {
 
     expect(result.fields.a.changed).toBe(true)
     expect(result.transition.changedFields).toContain('a')
+  })
+
+  test('changed field detection supports fantasy-land/equals', async () => {
+    const value = {
+      id: 1,
+      'fantasy-land/equals': (other: unknown) =>
+        typeof other === 'object' && other !== null && (other as any).id === 1,
+    }
+    const ump = umpire({
+      fields: { item: {} },
+      rules: [],
+    })
+
+    const result = await ump.scorecard(
+      { values: { item: { id: 1 } } },
+      { before: { values: { item: value } } },
+    )
+
+    expect(result.fields.item.changed).toBe(false)
+  })
+
+  test('changed field detection supports equals methods', async () => {
+    const value = {
+      id: 1,
+      equals: (other: unknown) =>
+        typeof other === 'object' && other !== null && (other as any).id === 1,
+    }
+    const ump = umpire({
+      fields: { item: {} },
+      rules: [],
+    })
+
+    const result = await ump.scorecard(
+      { values: { item: { id: 1 } } },
+      { before: { values: { item: value } } },
+    )
+
+    expect(result.fields.item.changed).toBe(false)
+  })
+
+  test('changed field detection treats unequal objects as changed', async () => {
+    const ump = umpire({
+      fields: { item: {} },
+      rules: [],
+    })
+
+    const result = await ump.scorecard(
+      { values: { item: { id: 2 } } },
+      { before: { values: { item: { id: 1 } } } },
+    )
+
+    expect(result.fields.item.changed).toBe(true)
+  })
+
+  test('changed field detection supports equals methods returning false', async () => {
+    const value = {
+      equals: () => false,
+    }
+    const ump = umpire({
+      fields: { item: {} },
+      rules: [],
+    })
+
+    const result = await ump.scorecard(
+      { values: { item: { id: 1 } } },
+      { before: { values: { item: value } } },
+    )
+
+    expect(result.fields.item.changed).toBe(true)
   })
 
   test('transition.before is null when no before provided', async () => {
@@ -137,6 +206,102 @@ describe('async scorecard()', () => {
         true,
       )
     }
+  })
+
+  test('scorecard transition suggests fouls', async () => {
+    const ump = umpire({
+      fields: { toggle: {}, target: { default: 'reset' } },
+      rules: [enabledWhen('target', (values: any) => values.toggle === 'on')],
+    })
+
+    const result = await ump.scorecard(
+      { values: { toggle: 'off', target: 'stale' } },
+      { before: { values: { toggle: 'on', target: 'stale' } } },
+    )
+
+    expect(result.transition.fouls).toEqual([
+      {
+        field: 'target',
+        reason: 'condition not met',
+        suggestedValue: 'reset',
+      },
+    ])
+    expect(result.fields.target.foul?.suggestedValue).toBe('reset')
+  })
+
+  test('scorecard transition uses fallback disabled reason', async () => {
+    const ump = umpire({
+      fields: { toggle: {}, target: { default: 'reset' } },
+      rules: [
+        defineRule({
+          type: 'custom',
+          targets: ['target'],
+          sources: ['toggle'],
+          evaluate: async (values: any) =>
+            new Map([
+              ['target', { enabled: values.toggle === 'on', reason: null }],
+            ]),
+        }),
+      ],
+    })
+
+    const result = await ump.scorecard(
+      { values: { toggle: 'off', target: 'stale' } },
+      { before: { values: { toggle: 'on', target: 'stale' } } },
+    )
+
+    expect(result.transition.fouls).toEqual([
+      {
+        field: 'target',
+        reason: 'field disabled',
+        suggestedValue: 'reset',
+      },
+    ])
+  })
+
+  test('scorecard transition ignores unchanged availability', async () => {
+    const ump = umpire({
+      fields: { target: {} },
+      rules: [],
+    })
+
+    const result = await ump.scorecard(
+      { values: { target: 'same' } },
+      { before: { values: { target: 'same' } } },
+    )
+
+    expect(result.transition.fouls).toEqual([])
+  })
+
+  test('scorecard transition skips unsatisfied and defaulted fouls', async () => {
+    const ump = umpire({
+      fields: {
+        toggle: {},
+        emptyTarget: {},
+        defaultedTarget: { default: 'reset' },
+      },
+      rules: [
+        enabledWhen('emptyTarget', (values: any) => values.toggle === 'on'),
+        enabledWhen('defaultedTarget', (values: any) => values.toggle === 'on'),
+      ],
+    })
+
+    const result = await ump.scorecard(
+      {
+        values: { toggle: 'off', emptyTarget: null, defaultedTarget: 'reset' },
+      },
+      {
+        before: {
+          values: {
+            toggle: 'on',
+            emptyTarget: 'stale',
+            defaultedTarget: 'stale',
+          },
+        },
+      },
+    )
+
+    expect(result.transition.fouls).toEqual([])
   })
 
   test('scorecard without includeChallenge omits trace', async () => {

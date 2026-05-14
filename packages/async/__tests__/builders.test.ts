@@ -11,6 +11,7 @@ import {
   defineRule,
   createRules,
 } from '@umpire/async'
+import { enabledWhen as coreEnabledWhen, field } from '@umpire/core'
 import { describe, test, expect } from 'bun:test'
 
 describe('async builders', () => {
@@ -45,6 +46,23 @@ describe('async builders', () => {
     expect(r.c.enabled).toBe(true)
   })
 
+  test('requires check dependency fails when source field is disabled', async () => {
+    const ump = umpire({
+      fields: { email: {}, submit: {} },
+      rules: [
+        enabledWhen('email', () => false),
+        requires(
+          'submit',
+          check('email', (v: string) => v.includes('@')),
+        ),
+      ],
+    })
+
+    const result = await ump.check({ email: 'test@example.com' })
+    expect(result.email.enabled).toBe(false)
+    expect(result.submit.enabled).toBe(false)
+  })
+
   test('disables with field source', async () => {
     const ump = umpire({
       fields: { a: {}, b: {} },
@@ -52,6 +70,35 @@ describe('async builders', () => {
     })
     const r = await ump.check({ a: 'present' })
     expect(r.b.enabled).toBe(false)
+  })
+
+  test('disables with predicate source uses default condition reason', async () => {
+    const ump = umpire({
+      fields: { source: {}, target: {} },
+      rules: [
+        disables((values: any) => values.source === 'active', ['target']),
+      ],
+    })
+
+    const result = await ump.check({ source: 'active', target: 'x' })
+    expect(result.target.enabled).toBe(false)
+    expect(result.target.reason).toBe('overridden by condition')
+  })
+
+  test('disables with check predicate source uses field label', async () => {
+    const ump = umpire({
+      fields: { source: {}, target: {} },
+      rules: [
+        disables(
+          check('source', (value: string) => value === 'active'),
+          ['target'],
+        ),
+      ],
+    })
+
+    const result = await ump.check({ source: 'active', target: 'x' })
+    expect(result.target.enabled).toBe(false)
+    expect(result.target.reason).toBe('overridden by source')
   })
 
   test('composite anyOf with mixed rules', async () => {
@@ -146,6 +193,113 @@ describe('async builders', () => {
     expect(r.submit.enabled).toBe(true)
     const r2 = await ump.check({ email: 'bad' })
     expect(r2.submit.enabled).toBe(false)
+  })
+
+  test('check() preserves named check metadata and params', async () => {
+    const namedCheck = {
+      __check: 'minLength',
+      params: { min: 3 },
+      validate: (value: string) => value.length >= 3,
+    }
+    const predicate = check('name', namedCheck)
+
+    expect((predicate as any)._namedCheck).toEqual({
+      __check: 'minLength',
+      params: { min: 3 },
+    })
+
+    const ump = umpire({
+      fields: { name: {}, submit: {} },
+      rules: [enabledWhen('submit', predicate)],
+    })
+    const result = await ump.check({ name: 'Al' })
+    expect(result.submit.enabled).toBe(false)
+  })
+
+  test('check() preserves named check metadata without params', () => {
+    const namedCheck = {
+      __check: 'nonEmpty',
+      validate: (value: string) => value.length > 0,
+    }
+    const predicate = check('name', namedCheck)
+
+    expect((predicate as any)._namedCheck).toEqual({
+      __check: 'nonEmpty',
+    })
+  })
+
+  test('check() supports async validation results', async () => {
+    const ump = umpire({
+      fields: { code: {}, submit: {} },
+      rules: [
+        enabledWhen(
+          'submit',
+          check('code', async (value: string) => ({
+            valid: value === 'ok',
+          })),
+        ),
+      ],
+    })
+
+    const result = await ump.check({ code: 'nope' })
+    expect(result.submit.enabled).toBe(false)
+  })
+
+  test('check() supports safeParseAsync validators', async () => {
+    const ump = umpire({
+      fields: { code: {}, submit: {} },
+      rules: [
+        enabledWhen(
+          'submit',
+          check('code', {
+            safeParseAsync: async (value: string) => ({
+              success: value === 'ok',
+            }),
+          }),
+        ),
+      ],
+    })
+
+    const result = await ump.check({ code: 'ok' })
+    expect(result.submit.enabled).toBe(true)
+  })
+
+  test('check() supports core validator objects', async () => {
+    const ump = umpire({
+      fields: { code: {}, submit: {} },
+      rules: [
+        enabledWhen(
+          'submit',
+          check('code', {
+            safeParse: (value: string) => ({ success: value === 'ok' }),
+          } as never),
+        ),
+      ],
+    })
+
+    const result = await ump.check({ code: 'nope' })
+    expect(result.submit.enabled).toBe(false)
+  })
+
+  test('builders reject unnamed field selectors', () => {
+    expect(() => enabledWhen(field(), () => true)).toThrow(
+      'Named field builder required',
+    )
+    expect(() => oneOf('strategy', { hourly: [field()] })).toThrow(
+      'Named field builder required',
+    )
+  })
+
+  test('builders accept named field selectors', async () => {
+    const name = field<string>('name')
+    const submit = field('submit')
+    const ump = umpire({
+      fields: { name, submit },
+      rules: [requires(submit, name)],
+    })
+
+    const result = await ump.check({ name: 'Ada' })
+    expect(result.submit.enabled).toBe(true)
   })
 
   test('check() with null/undefined value returns false', async () => {
@@ -322,6 +476,9 @@ describe('async builders', () => {
     expect(() => {
       eitherOf('test', {})
     }).toThrow('at least one branch')
+    expect(() => {
+      eitherOf('test', { primary: [] })
+    }).toThrow('branch "primary" must not be empty')
   })
 
   test('oneOf rejects empty branches', () => {
@@ -334,5 +491,51 @@ describe('async builders', () => {
     expect(() => {
       oneOf('test', { a: ['x'], b: ['x'] })
     }).toThrow('multiple branches')
+  })
+
+  test('oneOf rejects empty branch and unknown static active branch', () => {
+    expect(() => {
+      oneOf('test', { a: [] })
+    }).toThrow('must not be empty')
+    expect(() => {
+      oneOf('test', { a: ['x'] }, { activeBranch: 'missing' as never })
+    }).toThrow('Unknown active branch "missing"')
+  })
+
+  test('oneOf leaves all fields enabled when no branch is active', async () => {
+    const ump = umpire({
+      fields: { hourList: {}, startTime: {} },
+      rules: [
+        oneOf('strategy', { hourly: ['hourList'], range: ['startTime'] }),
+      ],
+    })
+
+    const result = await ump.check({ hourList: null, startTime: null })
+    expect(result.hourList.enabled).toBe(true)
+    expect(result.startTime.enabled).toBe(true)
+  })
+
+  test('composite rules wrap sync core inner rules', async () => {
+    const any = umpire({
+      fields: { target: {} },
+      rules: [
+        anyOf(
+          coreEnabledWhen('target', () => false),
+          enabledWhen('target', () => true),
+        ),
+      ],
+    })
+    expect((await any.check({ target: 'x' })).target.enabled).toBe(true)
+
+    const either = umpire({
+      fields: { target: {} },
+      rules: [
+        eitherOf('strategy', {
+          primary: [coreEnabledWhen('target', () => false)],
+          fallback: [enabledWhen('target', () => true)],
+        }),
+      ],
+    })
+    expect((await either.check({ target: 'x' })).target.enabled).toBe(true)
   })
 })
