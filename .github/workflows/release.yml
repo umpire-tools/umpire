@@ -46,6 +46,6 @@ jobs:
 
       - name: Label Version PR
         if: steps.changesets.outputs.pullRequestNumber
-        run: gh pr edit ${{ steps.changesets.outputs.pullRequestNumber }} --add-label "🐪 bump"
+        run: gh pr edit ${{ steps.changesets.outputs.pullRequestNumber }} --repo ${{ github.repository }} --add-label "🐪 bump"
         env:
           GITHUB_TOKEN: ${{ secrets.CHANGESETS_GITHUB_TOKEN != '' && secrets.CHANGESETS_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
