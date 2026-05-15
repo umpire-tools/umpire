@@ -25,6 +25,7 @@
     ".claude"
   ],
   "dependencies": {
+    "@umpire/async": "workspace:*",
     "@umpire/core": "workspace:*",
     "@umpire/store": "workspace:*",
     "@umpire/write": "workspace:*"

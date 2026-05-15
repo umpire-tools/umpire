@@ -39,7 +39,11 @@ const effectOnly = createEffectAdapter()({
   },
 })
 
+// @ts-expect-error serviceful schemas cannot expose sync run()
 effectOnly.run({} as never, {})
+
+// @ts-expect-error serviceful schemas cannot expose sync validators
+void effectOnly.validators
 
 type EffectOnlyContext =
   ReturnType<

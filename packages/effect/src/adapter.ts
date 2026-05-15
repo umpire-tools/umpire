@@ -17,6 +17,7 @@ import {
 } from './derive-errors.js'
 import {
   decodeEffectSchema,
+  decodeEffectSchemaEffect,
   isDecodeFailure,
   isDecodeSuccess,
   type EffectDecodeResult,
@@ -55,23 +56,37 @@ export type CreateEffectAdapterOptions<
   namespace?: NamespacedFieldOptions
 } & DeriveSchemaOptions
 
-export type EffectAdapterRunResult<F extends Record<string, FieldDef>> = {
+export type EffectAdapterRunResult<
+  F extends Record<string, FieldDef>,
+  Out = unknown,
+> = {
   errors: DerivedErrorMap<F>
   normalizedErrors: NormalizedFieldError[]
-  result: EffectDecodeResult<Record<string, unknown>>
+  result: EffectDecodeResult<Out>
   schemaFields: Array<keyof F & string>
 }
 
-export type EffectAdapter<F extends Record<string, FieldDef>, Out, R> = {
-  run(
-    availability: AvailabilityMap<F>,
-    values: InputValues,
-  ): EffectAdapterRunResult<F>
-  validators: ValidationMap<F>
+type SyncAdapterMembers<F extends Record<string, FieldDef>, Out, R> = [
+  R,
+] extends [never]
+  ? {
+      validators: ValidationMap<F>
+      run(
+        availability: AvailabilityMap<F>,
+        values: InputValues,
+      ): EffectAdapterRunResult<F, Out>
+    }
+  : {}
+
+export type EffectAdapter<
+  F extends Record<string, FieldDef>,
+  Out,
+  R,
+> = SyncAdapterMembers<F, Out, R> & {
   runEffect(
     availability: AvailabilityMap<F>,
     values: InputValues,
-  ): Effect.Effect<EffectAdapterRunResult<F>, never, R>
+  ): Effect.Effect<EffectAdapterRunResult<F, Out>, never, R>
   runValidate(
     availability: AvailabilityMap<F>,
     values: InputValues,
@@ -122,10 +137,10 @@ export function createEffectAdapter<
     const runImpl = (
       availability: AvailabilityMap<F>,
       values: InputValues,
-    ): EffectAdapterRunResult<F> => {
+    ): EffectAdapterRunResult<F, Out> => {
       const { schema, validationValues } = prepareRun(availability, values)
-      const result = decodeEffectSchema<Record<string, unknown>>(
-        schema as unknown as AnyEffectSchema<Record<string, unknown>, never>,
+      const result = decodeEffectSchema<Out>(
+        schema as unknown as AnyEffectSchema<Out, never>,
         validationValues,
         { errors: 'all' },
       )
@@ -147,8 +162,8 @@ export function createEffectAdapter<
 
     const finalizeRun = (
       availability: AvailabilityMap<F>,
-      result: EffectDecodeResult<Record<string, unknown>>,
-    ): EffectAdapterRunResult<F> => {
+      result: EffectDecodeResult<Out>,
+    ): EffectAdapterRunResult<F, Out> => {
       const rawErrors = isDecodeFailure(result)
         ? effectErrors(result.error)
         : []
@@ -168,17 +183,18 @@ export function createEffectAdapter<
       }
     }
 
-    const runEffectFn: (
-      availability: AvailabilityMap<F>,
-      values: InputValues,
-    ) => Effect.Effect<EffectAdapterRunResult<F>, never, R> = Effect.fn(
-      '@umpire/effect:runEffect',
-    )((availability: AvailabilityMap<F>, values: InputValues) =>
-      Effect.sync(() => runImpl(availability, values)),
-    ) as (
-      availability: AvailabilityMap<F>,
-      values: InputValues,
-    ) => Effect.Effect<EffectAdapterRunResult<F>, never, R>
+    const runEffectFn = Effect.fn('@umpire/effect:runEffect')(
+      (availability, values) =>
+        Effect.gen(function* () {
+          const { schema, validationValues } = prepareRun(availability, values)
+          const result = yield* decodeEffectSchemaEffect(
+            schema as AnyEffectSchema<Out, R>,
+            validationValues,
+            { errors: 'all' },
+          )
+          return finalizeRun(availability, result)
+        }),
+    )
 
     const runValidateFn: (
       availability: AvailabilityMap<F>,
@@ -208,6 +224,6 @@ export function createEffectAdapter<
       run: runImpl,
       runEffect: runEffectFn,
       runValidate: runValidateFn,
-    }
+    } as EffectAdapter<F, Out, R>
   }
 }

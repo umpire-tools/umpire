@@ -8,6 +8,7 @@ export { deriveErrors, effectErrors } from './derive-errors.js'
 export type { DerivedErrorMap, NormalizedFieldError } from './derive-errors.js'
 export {
   decodeEffectSchema,
+  decodeEffectSchemaEffect,
   isDecodeFailure,
   isDecodeSuccess,
 } from './effect-schema.js'
@@ -21,4 +22,6 @@ export type {
 export { UmpireValidationError } from './errors.js'
 export { fromSubscriptionRef } from './from-subscription-ref.js'
 export { availabilityStream } from './availability-stream.js'
+export { availabilityStreamAsync } from './availability-stream-async.js'
 export { umpireLayer } from './layer.js'
+export { umpireAsyncLayer } from './async-layer.js'

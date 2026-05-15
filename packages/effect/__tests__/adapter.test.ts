@@ -1,5 +1,5 @@
 import { enabledWhen, fairWhen, umpire } from '@umpire/core'
-import { Effect, Schema } from 'effect'
+import { Context, Effect, Layer, Schema } from 'effect'
 import { createEffectAdapter } from '../src/adapter.js'
 import { UmpireValidationError } from '../src/errors.js'
 
@@ -621,5 +621,166 @@ describe('createEffectAdapter', () => {
     )
 
     expect(result).toBe('caught: Enter a valid email')
+  })
+
+  test('runValidate works with a serviceful Effect Schema when the service is provided', async () => {
+    const ParseService = Context.Service<{ parse: (s: string) => number }>(
+      'ParseService',
+    )
+
+    const servicefulSchema: Schema.Decoder<
+      number,
+      { parse: (s: string) => number }
+    > = Schema.declareConstructor()(
+      [],
+      () => (input: unknown, _ast: never) =>
+        Effect.gen(function* () {
+          const _svc = yield* Effect.service(ParseService)
+          if (typeof input === 'string') {
+            const n = Number(input)
+            if (isNaN(n)) {
+              return yield* Effect.fail(
+                new Schema.SchemaError('not a number' as never),
+              )
+            }
+            return n
+          }
+          return yield* Effect.fail(
+            new Schema.SchemaError('not a string' as never),
+          )
+        }),
+    )
+
+    const validation = createEffectAdapter()({
+      schemas: { value: servicefulSchema },
+    })
+
+    const availability = {
+      value: {
+        enabled: true,
+        fair: true,
+        required: true,
+        satisfied: true,
+        valid: true,
+      },
+    }
+
+    const result = await Effect.runPromise(
+      Effect.provide(
+        validation.runValidate(availability, { value: '42' }),
+        Layer.succeed(ParseService, { parse: (s: string) => Number(s) }),
+      ),
+    )
+
+    expect(result).toEqual({ value: 42 })
+  })
+
+  test('runEffect works with a serviceful Effect Schema when the service is provided', async () => {
+    const ParseService = Context.Service<{ parse: (s: string) => number }>(
+      'ParseService',
+    )
+
+    const servicefulSchema: Schema.Decoder<
+      number,
+      { parse: (s: string) => number }
+    > = Schema.declareConstructor()(
+      [],
+      () => (input: unknown, _ast: never) =>
+        Effect.gen(function* () {
+          const _svc = yield* Effect.service(ParseService)
+          if (typeof input === 'string') {
+            const n = Number(input)
+            if (isNaN(n)) {
+              return yield* Effect.fail(
+                new Schema.SchemaError('not a number' as never),
+              )
+            }
+            return n
+          }
+          return yield* Effect.fail(
+            new Schema.SchemaError('not a string' as never),
+          )
+        }),
+    )
+
+    const validation = createEffectAdapter()({
+      schemas: { value: servicefulSchema },
+    })
+
+    const availability = {
+      value: {
+        enabled: true,
+        fair: true,
+        required: true,
+        satisfied: true,
+        valid: true,
+      },
+    }
+
+    const result = await Effect.runPromise(
+      Effect.provide(
+        validation.runEffect(availability, { value: '42' }),
+        Layer.succeed(ParseService, { parse: (s: string) => Number(s) }),
+      ),
+    )
+
+    expect(result.result._tag).toBe('Right')
+    if (result.result._tag === 'Right') {
+      expect(result.result.value).toEqual({ value: 42 })
+    }
+  })
+
+  test('serviceful schema parse failure maps to UmpireValidationError', async () => {
+    const ParseService = Context.Service<{ parse: (s: string) => number }>(
+      'ParseService',
+    )
+
+    const servicefulSchema: Schema.Decoder<
+      number,
+      { parse: (s: string) => number }
+    > = Schema.declareConstructor()(
+      [],
+      () => (input: unknown, _ast: never) =>
+        Effect.gen(function* () {
+          const _svc = yield* Effect.service(ParseService)
+          if (typeof input === 'string') {
+            const n = Number(input)
+            if (isNaN(n)) {
+              return yield* Effect.fail(
+                new Schema.SchemaError('not a number' as never),
+              )
+            }
+            return n
+          }
+          return yield* Effect.fail(
+            new Schema.SchemaError('not a string' as never),
+          )
+        }),
+    )
+
+    const validation = createEffectAdapter()({
+      schemas: { value: servicefulSchema },
+    })
+
+    const availability = {
+      value: {
+        enabled: true,
+        fair: true,
+        required: true,
+        satisfied: true,
+        valid: true,
+      },
+    }
+
+    const error = await Effect.runPromise(
+      Effect.flip(
+        Effect.provide(
+          validation.runValidate(availability, { value: 'not-a-number' }),
+          Layer.succeed(ParseService, { parse: (s: string) => Number(s) }),
+        ),
+      ),
+    )
+
+    expect(error._tag).toBe('UmpireValidationError')
   })
 })

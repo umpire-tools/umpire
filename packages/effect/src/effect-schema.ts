@@ -1,4 +1,4 @@
-import { Result, Schema } from 'effect'
+import { Effect, Result, Schema } from 'effect'
 import type { SchemaAST, SchemaIssue } from 'effect'
 import type { FieldPathSegment } from '@umpire/write'
 
@@ -27,6 +27,25 @@ export function decodeEffectSchema<A = unknown>(
 ): EffectDecodeResult<A> {
   return normalizeDecodeResult<A>(
     Schema.decodeUnknownResult(schema)(input, options),
+  )
+}
+
+export function decodeEffectSchemaEffect<A = unknown, R = never>(
+  schema: Schema.Decoder<A, R>,
+  input: unknown,
+  options?: EffectParseOptions,
+): Effect.Effect<EffectDecodeResult<A>, never, R> {
+  return Schema.decodeUnknownEffect(schema)(input, options).pipe(
+    Effect.match({
+      onSuccess: (value): EffectDecodeResult<A> => ({ _tag: 'Right', value }),
+      onFailure: (error): EffectDecodeResult<A> => {
+        const issue =
+          isRecord(error) && error._tag === 'SchemaError' && 'issue' in error
+            ? (error as { issue: unknown }).issue
+            : error
+        return { _tag: 'Left', error: issue }
+      },
+    }),
   )
 }
 

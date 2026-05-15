@@ -1,6 +1,6 @@
 # @umpire/effect
 
-Availability-aware Effect Schema validation and SubscriptionRef bridge for [@umpire/core](https://www.npmjs.com/package/@umpire/core)-powered state. Disabled fields produce no validation errors. Required/optional follows Umpire's availability map.
+Availability-aware Effect Schema validation, SubscriptionRef bridge, Stream utilities, and Layer wiring for [@umpire/core](https://www.npmjs.com/package/@umpire/core)-powered state. Disabled fields produce no validation errors. Required/optional follows Umpire's availability map.
 
 [Docs](https://umpire.tools/adapters/validation/effect/) · [Quick Start](https://umpire.tools/learn/)
 
@@ -13,6 +13,8 @@ npm install @umpire/core @umpire/effect effect
 `effect` is a peer dependency — bring your own Effect v4 beta/stable release.
 
 ## Usage
+
+### Sync validation (schemas without service dependencies)
 
 ```ts
 import { Schema } from 'effect'
@@ -38,7 +40,7 @@ const ump = umpire({
   ],
 })
 
-// 2. Define per-field Effect schemas with no service/context dependencies
+// 2. Define per-field Effect schemas
 const fieldSchemas = {
   email: Schema.String.check(
     Schema.makeFilter((s) =>
@@ -83,17 +85,69 @@ const umpWithValidation = umpire({
 })
 ```
 
+### Effectful validation (schemas with service dependencies)
+
+When your Effect schemas require services (e.g. a repository or external API), use `runEffect` and `runValidate` instead of the sync `run` / `validators`:
+
+```ts
+import { Effect, Schema } from 'effect'
+import { createEffectAdapter } from '@umpire/effect'
+
+// fieldSchemas can have service dependencies
+const fieldSchemas = {
+  username: Schema.String.pipe(
+    Schema.filter((s: string) => s.length >= 3, { message: () => 'Too short' }),
+  ),
+  // This schema needs a UserRepo to check uniqueness
+  email: Schema.String.pipe(
+    Schema.filterEffect((s: string) =>
+      Effect.gen(function* () {
+        const repo = yield* UserRepo
+        const exists = yield* repo.findByEmail(s)
+        return !exists
+      }),
+    ),
+    { message: () => 'Email already taken' },
+  ),
+}
+
+const validation = createEffectAdapter()({ schemas: fieldSchemas })
+// note: validation.validators and validation.run are NOT available here
+// because the schemas have service dependencies (R ≠ never)
+
+// Use runEffect for full result inspection
+const program = Effect.gen(function* () {
+  const result = yield* validation.runEffect(availability, values)
+  if (result.result._tag === 'Left') {
+    console.log(result.errors)
+  }
+  return result
+})
+
+// Or runValidate — succeeds with the parsed output, fails with UmpireValidationError
+const program2 = validation
+  .runValidate(availability, values)
+  .pipe(
+    Effect.catchTag('UmpireValidationError', (error) =>
+      Effect.succeed({ errors: error.errors }),
+    ),
+  )
+
+// Provide your services
+Effect.runPromise(program.pipe(Effect.provideService(UserRepo, myRepo)))
+```
+
 ## API
 
 ### `deriveSchema(availability, schemas, options?)`
 
 Builds a `Schema.Struct` from the availability map:
 
-- **Disabled fields** are excluded entirely
-- **Enabled + required** fields use the base schema
-- **Enabled + optional** fields get `Schema.optional()`
+- **Disabled fields** — excluded from the schema entirely
+- **Enabled + required** — field uses the base schema as-is
+- **Enabled + optional** — field is wrapped with `Schema.optional()`
 
-Pass per-field schemas with no service/context dependencies.
+`deriveSchema` **preserves the `R` parameter** from your field schemas. If any field schema requires a service, the returned struct schema requires it too. This means you can pass the result to either `decodeEffectSchema` (sync, `R = never` required) or `decodeEffectSchemaEffect` (effectful, any `R`).
 Use `decodeEffectSchema()` for convenience, or call Effect v4's native `Schema.decodeUnknownResult()` directly.
 
 #### `rejectFoul` option
@@ -114,12 +168,21 @@ Normalizes an Effect schema parse error or issue into `{ field, message }[]` pai
 
 Filters normalized field errors to only include enabled fields and keeps the first message per field. Returns `Partial<Record<field, message>>`. Root-level errors (from cross-field refinements) are keyed under `'_root'`.
 
-### `createEffectAdapter()({ schemas, build?, rejectFoul? })`
+### `createEffectAdapter()({ schemas, build?, valueShape?, namespace?, rejectFoul? })`
 
-Creates a convenience adapter with:
+Creates a convenience adapter that bundles the `deriveSchema → decode → deriveErrors` flow. The adapter provides different members depending on whether your schemas have service dependencies:
 
-- `validators` for `umpire({ validators })`, surfacing the first field-level parse issue as `error`
-- `run(availability, values)` for the full `deriveSchema() → decode → deriveErrors()` flow, returning `{ errors, normalizedErrors, result, schemaFields }`
+**When all schemas are context-free** (`R = never`):
+
+- `validators` — per-field validators for `umpire({ validators })`, surfacing the first field-level parse issue as `error`
+- `run(availability, values)` — full validation returning `{ errors, normalizedErrors, result, schemaFields }`
+
+**Always available:**
+
+- `runEffect(availability, values)` — effectful validation returning `Effect<EffectAdapterRunResult, never, R>`. Works with any `R`.
+- `runValidate(availability, values)` — effectful validation returning `Effect<Out, UmpireValidationError, R>`. Succeeds with the parsed output, fails with an `UmpireValidationError` on validation failure. Works with any `R`.
+
+When your schemas have service dependencies (`R ≠ never`), `validators` and `run` are **not available** on the adapter — use `runEffect` and `runValidate` instead.
 
 Use `build` to add cross-field refinements:
 
@@ -139,9 +202,149 @@ const validation = createEffectAdapter()({
       ),
     ),
 })
+
+// Sync use (schemas must be context-free)
+const { errors } = validation.run(availability, values)
+
+// Or effectful (any R)
+const result = yield * validation.runEffect(availability, values)
 ```
 
-If you need every issue or deeper control, you can use `deriveSchema()` with either `decodeEffectSchema()` or Effect v4's native decode API.
+If you need every issue or deeper control, you can use `deriveSchema()` with either `decodeEffectSchema()` (sync) or `decodeEffectSchemaEffect()` (effectful).
+
+### `UmpireValidationError`
+
+A tagged error class thrown by `runValidate` on validation failure. Use `Effect.catchTag` to handle it:
+
+```ts
+import { UmpireValidationError } from '@umpire/effect'
+
+validation.runValidate(availability, values).pipe(
+  Effect.catchTag('UmpireValidationError', (error) => {
+    console.log(error.message) // 'Validation failed: email, password'
+    console.log(error.errors) // { email: 'Enter a valid email', password: undefined }
+    console.log(error.normalizedErrors) // [{ field: 'email', message: '...' }]
+    return Effect.succeed({ errors: error.errors })
+  }),
+)
+```
+
+`error.errors` is a `Record<string, string | undefined>` — one entry per field, `undefined` when that field passed validation.
+
+### `decodeEffectSchemaEffect(schema, input, options?)`
+
+The effectful variant of `decodeEffectSchema`. Use this when your schema has service dependencies (`R ≠ never`):
+
+```ts
+import { decodeEffectSchemaEffect, deriveSchema } from '@umpire/effect'
+
+const schema = deriveSchema(availability, fieldSchemas)
+// schema may carry R from field schemas with service dependencies
+
+const program = Effect.gen(function* () {
+  const result = yield* decodeEffectSchemaEffect(schema, values, {
+    errors: 'all',
+  })
+  if (result._tag === 'Left') {
+    // handle errors
+  }
+  return result
+})
+```
+
+The sync `decodeEffectSchema` requires `R = never` — it cannot handle service-requiring schemas.
+
+### `availabilityStream(ump, ref, options)`
+
+Returns an Effect `Stream<AvailabilityMap<F>, never, never>` from a `SubscriptionRef`. Each time the ref changes, the stream emits a fresh availability map computed by `ump.check()`:
+
+```ts
+import { SubscriptionRef, Stream } from 'effect'
+import { availabilityStream } from '@umpire/effect'
+
+const stream = availabilityStream(ump, ref, {
+  select: () => ({}),
+  conditions: (state) => state,
+})
+
+// Collect all availability snapshots
+const history = yield * Stream.runCollect(stream)
+```
+
+The first emission is a fresh check (no previous values). Subsequent emissions pass the previous values to `ump.check()` so rules that depend on prior state can diff.
+
+### `availabilityStreamAsync(ump, ref, options)`
+
+Same as `availabilityStream` but for `@umpire/async` instances. The stream's error channel is `unknown` because `@umpire/async` checks are promise-based and can reject:
+
+```ts
+import { availabilityStreamAsync } from '@umpire/effect'
+
+const stream = availabilityStreamAsync(asyncUmp, ref, options)
+// Stream<AvailabilityMap<F>, unknown, never>
+```
+
+If a check rejects, the stream fails with that error. Handle it with `Stream.catchAll` or `Stream.orElse`.
+
+### `umpireLayer(tag, definition)`
+
+Creates an Effect `Layer` that provides an `@umpire/core` `Umpire` instance as a service:
+
+```ts
+import { Context, Effect } from 'effect'
+import { umpireLayer } from '@umpire/effect'
+import { enabledWhen } from '@umpire/core'
+
+class UmpireService extends Context.Tag('UmpireService')<
+  UmpireService,
+  ReturnType<typeof umpire>
+>() {}
+
+const layer = umpireLayer(UmpireService, {
+  fields: { name: {}, email: {} },
+  rules: [enabledWhen('email', (_v, c: { showEmail: boolean }) => c.showEmail)],
+})
+
+// Use it in your program
+const program = Effect.gen(function* () {
+  const ump = yield* UmpireService
+  const availability = ump.check({ name: 'Jane' }, { showEmail: true })
+  // ...
+})
+
+Effect.runPromise(program.pipe(Effect.provide(layer)))
+```
+
+### `umpireAsyncLayer(tag, definition)`
+
+Same as `umpireLayer` but for `@umpire/async` instances:
+
+```ts
+import { umpireAsyncLayer } from '@umpire/effect'
+
+const asyncLayer = umpireAsyncLayer(AsyncUmpireService, {
+  fields: { name: {}, email: {} },
+  rules: [enabledWhen('email', (_v, c: { showEmail: boolean }) => c.showEmail)],
+})
+```
+
+### Sync-vs-effect boundary
+
+Umpire's Effect package draws a clean line between sync and effectful APIs:
+
+| API                                   | Requires `R = never`? | Handles service-requiring schemas? |
+| ------------------------------------- | --------------------- | ---------------------------------- |
+| `deriveSchema()`                      | No — preserves `R`    | Yes                                |
+| `decodeEffectSchema()`                | Yes                   | No                                 |
+| `decodeEffectSchemaEffect()`          | No                    | Yes                                |
+| `createEffectAdapter().validators`    | Yes                   | No                                 |
+| `createEffectAdapter().run()`         | Yes                   | No                                 |
+| `createEffectAdapter().runEffect()`   | No                    | Yes                                |
+| `createEffectAdapter().runValidate()` | No                    | Yes                                |
+
+`deriveSchema` itself preserves the `R` parameter from your field schemas. If a field schema requires a service (e.g. a repository for uniqueness checks), the struct schema returned by `deriveSchema` will require it too. You can feed that schema directly to `decodeEffectSchemaEffect`, `runEffect`, or `runValidate` — all of which support the full `R` channel.
+
+The sync APIs (`decodeEffectSchema`, `validators`, `run`) are available only when `R = never`. When you use a service-requiring schema, those members are not present on the adapter. You get a TypeScript error at the call site rather than a runtime failure.
 
 ### `fromSubscriptionRef(ump, ref, options)`
 
