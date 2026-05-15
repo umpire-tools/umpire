@@ -213,6 +213,30 @@ const result = yield * validation.runEffect(availability, values)
 
 For manual composition, build the availability-aware schema with `deriveSchema()`. Decode it with `decodeEffectSchema()` inside an Effect workflow. If the schema has no service requirement and you need a plain result, use `decodeEffectSchemaSync()`.
 
+### `toAsyncWriteValidationAdapter(adapter, run)`
+
+Adapts an Effect validation adapter to `@umpire/write`'s async validation protocol. Use this when serviceful Effect schemas need to participate in async write or Drizzle checks:
+
+```ts
+import { Effect } from 'effect'
+import {
+  createEffectAdapter,
+  toAsyncWriteValidationAdapter,
+} from '@umpire/effect'
+
+const validation = createEffectAdapter()({ schemas })
+
+const writeValidation = toAsyncWriteValidationAdapter(validation, (effect) =>
+  Effect.runPromise(Effect.provide(effect, LiveLayer)),
+)
+
+await policy.checkCreateAsync(data, {
+  validation: writeValidation,
+})
+```
+
+The runner is supplied by your app so you control service provisioning. For context-free schemas, `Effect.runPromise` is enough.
+
 ### `UmpireValidationError`
 
 A tagged error class thrown by `runValidate` on validation failure. Use `Effect.catchTag` to handle it:

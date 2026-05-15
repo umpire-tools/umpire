@@ -228,6 +228,30 @@ The root-level refinement error surfaces under `result.errors._root`.
 
 For manual composition, build the availability-aware schema with `deriveSchema()`. Decode it with `decodeEffectSchema()` inside an Effect workflow. If the schema has no service requirement and you need a plain result, use `decodeEffectSchemaSync()`.
 
+### `toAsyncWriteValidationAdapter(adapter, run)`
+
+Adapts an Effect validation adapter to `@umpire/write`'s async validation protocol. Use this when serviceful Effect schemas need to participate in async write or Drizzle checks:
+
+```ts
+import { Effect } from 'effect'
+import {
+  createEffectAdapter,
+  toAsyncWriteValidationAdapter,
+} from '@umpire/effect'
+
+const validation = createEffectAdapter()({ schemas })
+
+const writeValidation = toAsyncWriteValidationAdapter(validation, (effect) =>
+  Effect.runPromise(Effect.provide(effect, LiveLayer)),
+)
+
+await policy.checkCreateAsync(data, {
+  validation: writeValidation,
+})
+```
+
+The runner is supplied by your app so you control service provisioning. For context-free schemas, `Effect.runPromise` is enough.
+
 #### Nested value shape
 
 When field keys are namespaced with a separator — for example `account.email` and `account.name` from Drizzle models — the flat key-value record does not match the nested object structure a schema expects. Set `valueShape: 'nested'` to restructure values before validation:

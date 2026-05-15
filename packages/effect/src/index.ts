@@ -19,6 +19,8 @@ export type {
   EffectAdapter,
   EffectAdapterRunResult,
 } from './adapter.js'
+export { toAsyncWriteValidationAdapter } from './write-adapter.js'
+export type { EffectAdapterRunner } from './write-adapter.js'
 export { UmpireValidationError } from './errors.js'
 export { fromSubscriptionRef } from './from-subscription-ref.js'
 export { availabilityStream } from './availability-stream.js'

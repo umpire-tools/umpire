@@ -157,9 +157,10 @@ availability policy.
 Context-free Effect schemas can use these sync Drizzle/write paths through
 `validation.run`. Serviceful Effect schemas cannot satisfy
 `WriteValidationAdapter` because they do not expose sync `run`; use
-async/effectful paths for them. Until there is an explicit Effect-to-Promise
-write adapter bridge, compose `runValidate(...)`, `runEffect(...)`, or
-`decodeEffectSchema(...)` in your own Effect workflow.
+async/effectful paths for them. `@umpire/effect` provides
+`toAsyncWriteValidationAdapter(...)` to bridge serviceful Effect validation into
+Drizzle's async write helpers while letting your app decide how to provide
+Effect services.
 
 Drizzle owns column shaping and write-payload concerns; generic validation
 result composition lives in `@umpire/write`.

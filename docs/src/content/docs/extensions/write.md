@@ -113,7 +113,7 @@ When you pair write-policy checks with a schema validation library (Zod, Effect,
 
 `WriteValidationAdapter<F>` is a structural protocol. Any object with a `run(availability, values)` method that returns normalized field-level errors satisfies it. `@umpire/zod` (`createZodAdapter`) satisfies this protocol out of the box. `@umpire/effect` (`createEffectAdapter`) satisfies it only for context-free Effect schemas where sync `run` / `validators` are exposed.
 
-Serviceful Effect schemas cannot satisfy `WriteValidationAdapter` because they do not expose sync `run`. Use async/effectful write paths for those schemas. Until an explicit Effect-to-Promise write adapter bridge exists, compose `runValidate(...)`, `runEffect(...)`, or `decodeEffectSchema(...)` in your own Effect workflow rather than treating the bridge as automatic.
+Serviceful Effect schemas cannot satisfy the sync `WriteValidationAdapter` because they do not expose sync `run`. Use `toAsyncWriteValidationAdapter(...)` from `@umpire/effect` with async write/Drizzle paths for those schemas.
 
 ```ts
 import type { WriteValidationAdapter } from '@umpire/write'

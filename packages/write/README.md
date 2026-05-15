@@ -124,9 +124,9 @@ where `createEffectAdapter()` exposes sync `run` / `validators`.
 
 Serviceful Effect schemas cannot satisfy `WriteValidationAdapter` because they
 do not expose sync `run`. Use the async/effectful write path for those schemas.
-Until an explicit Effect-to-Promise write adapter bridge exists, compose
-`runValidate(...)`, `runEffect(...)`, or `decodeEffectSchema(...)` in your own
-Effect workflow instead of treating the bridge as automatic.
+`@umpire/effect` provides `toAsyncWriteValidationAdapter(...)` to bridge an
+Effect adapter into `AsyncWriteValidationAdapter` while letting your app decide
+how to provide Effect services.
 
 `runWriteValidationAdapter` calls the adapter (if provided) and returns
 normalized schema issues. `composeWriteResult` then merges write-policy issues,
