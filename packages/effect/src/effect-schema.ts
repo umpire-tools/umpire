@@ -20,17 +20,7 @@ export type EffectDecodeResult<A> =
       readonly error: unknown
     }
 
-export function decodeEffectSchema<A = unknown>(
-  schema: Schema.Decoder<unknown, never>,
-  input: unknown,
-  options?: EffectParseOptions,
-): EffectDecodeResult<A> {
-  return normalizeDecodeResult<A>(
-    Schema.decodeUnknownResult(schema)(input, options),
-  )
-}
-
-export function decodeEffectSchemaEffect<A = unknown, R = never>(
+export function decodeEffectSchema<A = unknown, R = never>(
   schema: Schema.Decoder<A, R>,
   input: unknown,
   options?: EffectParseOptions,
@@ -46,6 +36,16 @@ export function decodeEffectSchemaEffect<A = unknown, R = never>(
         return { _tag: 'Left', error: issue }
       },
     }),
+  )
+}
+
+export function decodeEffectSchemaSync<A = unknown>(
+  schema: Schema.Decoder<unknown, never>,
+  input: unknown,
+  options?: EffectParseOptions,
+): EffectDecodeResult<A> {
+  return normalizeDecodeResult<A>(
+    Schema.decodeUnknownResult(schema)(input, options),
   )
 }
 

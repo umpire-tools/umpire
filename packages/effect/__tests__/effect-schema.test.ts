@@ -1,5 +1,22 @@
-import { Schema } from 'effect'
+import { Effect, Schema } from 'effect'
+import { decodeEffectSchema, decodeEffectSchemaSync } from '../src/index.js'
 import { formatEffectErrors } from '../src/effect-schema.js'
+
+describe('decode helpers', () => {
+  test('decodeEffectSchema returns an Effect decode result', async () => {
+    const result = await Effect.runPromise(
+      decodeEffectSchema(Schema.NumberFromString, '42'),
+    )
+
+    expect(result).toEqual({ _tag: 'Right', value: 42 })
+  })
+
+  test('decodeEffectSchemaSync returns a plain decode result', () => {
+    const result = decodeEffectSchemaSync(Schema.NumberFromString, '42')
+
+    expect(result).toEqual({ _tag: 'Right', value: 42 })
+  })
+})
 
 describe('formatEffectErrors', () => {
   test('formats real Effect schema decode failures', () => {

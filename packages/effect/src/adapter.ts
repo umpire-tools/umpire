@@ -17,7 +17,7 @@ import {
 } from './derive-errors.js'
 import {
   decodeEffectSchema,
-  decodeEffectSchemaEffect,
+  decodeEffectSchemaSync,
   isDecodeFailure,
   isDecodeSuccess,
   type EffectDecodeResult,
@@ -123,7 +123,7 @@ export function createEffectAdapter<
       if (!schema) continue
 
       validators[field] = (value: unknown) => {
-        const result = decodeEffectSchema(schema, value)
+        const result = decodeEffectSchemaSync(schema, value)
         if (isDecodeSuccess(result)) return { valid: true }
 
         const errors = effectErrors(result.error)
@@ -139,7 +139,7 @@ export function createEffectAdapter<
       values: InputValues,
     ): EffectAdapterRunResult<F, Out> => {
       const { schema, validationValues } = prepareRun(availability, values)
-      const result = decodeEffectSchema<Out>(
+      const result = decodeEffectSchemaSync<Out>(
         schema as unknown as AnyEffectSchema<Out, never>,
         validationValues,
         { errors: 'all' },
@@ -187,7 +187,7 @@ export function createEffectAdapter<
       (availability, values) =>
         Effect.gen(function* () {
           const { schema, validationValues } = prepareRun(availability, values)
-          const result = yield* decodeEffectSchemaEffect(
+          const result = yield* decodeEffectSchema(
             schema as AnyEffectSchema<Out, R>,
             validationValues,
             { errors: 'all' },

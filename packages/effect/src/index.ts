@@ -8,7 +8,7 @@ export { deriveErrors, effectErrors } from './derive-errors.js'
 export type { DerivedErrorMap, NormalizedFieldError } from './derive-errors.js'
 export {
   decodeEffectSchema,
-  decodeEffectSchemaEffect,
+  decodeEffectSchemaSync,
   isDecodeFailure,
   isDecodeSuccess,
 } from './effect-schema.js'
