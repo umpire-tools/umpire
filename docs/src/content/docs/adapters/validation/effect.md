@@ -61,7 +61,7 @@ For manual composition, build the availability-aware schema with `deriveSchema()
 
 #### `rejectFoul` option
 
-Fields where `fair: false` hold values that were once valid but are now contextually wrong — a selection that no longer fits the current state. By default these pass through with their base schema (useful on the client where the user is still editing). On a **server**, you may want to reject them outright:
+Fields where `fair: false` hold values that were once valid but are now contextually wrong — a selection that no longer fits the current state. By default these pass through with their base schema (useful on the client while the form is active). On a **server**, you may want to reject them outright:
 
 ```ts
 // Server handler — rejects any submission containing a foul value
@@ -234,6 +234,7 @@ Adapts an Effect validation adapter to `@umpire/write`'s async validation protoc
 
 ```ts
 import { Effect } from 'effect'
+import { checkCreateAsync, runWriteValidationAdapterAsync, composeWriteResult } from '@umpire/write'
 import {
   createEffectAdapter,
   toAsyncWriteValidationAdapter,
@@ -245,9 +246,13 @@ const writeValidation = toAsyncWriteValidationAdapter(validation, (effect) =>
   Effect.runPromise(Effect.provide(effect, LiveLayer)),
 )
 
-await policy.checkCreateAsync(data, {
-  validation: writeValidation,
-})
+const write = await checkCreateAsync(policy, data)
+const validationRun = await runWriteValidationAdapterAsync(
+  writeValidation, 
+  write.availability, 
+  write.candidate
+)
+const result = composeWriteResult({ write, validation: validationRun })
 ```
 
 The runner is supplied by your app so you control service provisioning. For context-free schemas, `Effect.runPromise` is enough.
@@ -484,6 +489,90 @@ store.destroy() // interrupts the background fiber
 `select` and `conditions` follow the same contract as [`@umpire/store`](/adapters/store/). See [Selection](/concepts/selection/) for the full breakdown of patterns.
 
 The returned `UmpireStore` surface is the same as all store adapters: `field(name)`, `fouls`, `getAvailability()`, `subscribe(listener)`, and `destroy()`.
+
+## End-to-end flow: Server endpoint
+
+When building an API endpoint, you often need to evaluate Umpire availability rules and structural Effect schemas in one pass before writing to your database. `@umpire/write` handles the policy; `@umpire/effect` handles the schema. The two libraries combine to give you a single result object.
+
+Consider a database provisioning endpoint where certain configuration fields only apply to specific database engines, and some fields require asynchronous verification:
+
+```ts
+import { Effect, Schema } from 'effect'
+import { checkCreateAsync, composeWriteResult, runWriteValidationAdapterAsync } from '@umpire/write'
+import { createEffectAdapter, toAsyncWriteValidationAdapter } from '@umpire/effect'
+import { umpire, enabledWhen } from '@umpire/async'
+import { CloudApi, LiveCloudApiLayer } from './services'
+
+// 1. Define your effectful schemas
+// Notice how Schema.optional() is not used here. Umpire determines whether 
+// a field is required or excluded entirely based on current state.
+const schemas = {
+  engine: Schema.Literal('postgres', 'mysql', 'sqlite'),
+  version: Schema.String,
+  customParameters: Schema.Boolean,
+  replicaCount: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
+  parameterGroupId: Schema.String.pipe(
+    Schema.filterEffect((id) => Effect.gen(function*() {
+      const api = yield* CloudApi
+      // Async check that requires a service dependency
+      return yield* api.verifyParameterGroup(id)
+    }), { message: () => 'Parameter group not found or incompatible' })
+  )
+}
+
+// 2. Create the Umpire instance for your policy
+const ump = umpire({
+  fields: {
+    engine: { required: true },
+    version: { required: true },
+    customParameters: { },
+    replicaCount: { }, 
+    parameterGroupId: { required: true } // Required, but only when enabled
+  },
+  rules: [
+    enabledWhen('replicaCount', (v) => v.engine !== 'sqlite', { 
+      reason: 'SQLite does not support read replicas' 
+    }),
+    enabledWhen('parameterGroupId', (v) => v.customParameters === true, {
+      reason: 'Parameter group is only applicable when customParameters is true'
+    })
+  ]
+})
+
+// 3. Create the adapter and adapt it for async write checks
+const validation = createEffectAdapter()({ schemas })
+const writeValidation = toAsyncWriteValidationAdapter(validation, (effect) => 
+  Effect.runPromise(Effect.provide(effect, LiveCloudApiLayer))
+)
+
+// 4. In your route handler
+export async function provisionDatabase(req, res) {
+  // First evaluate the policy...
+  const write = await checkCreateAsync(ump, req.body)
+  
+  // Then evaluate the schema against the availability map...
+  const validationRun = await runWriteValidationAdapterAsync(
+    writeValidation, 
+    write.availability, 
+    write.candidate
+  )
+  
+  // Combine both into a single result...
+  const result = composeWriteResult({ write, validation: validationRun })
+  
+  if (!result.ok) {
+    // result.issues.rules contains policy failures (e.g. parameterGroupId missing when customParameters=true)
+    // result.issues.schema contains validation failures (e.g. parameterGroupId not found in cloud api)
+    return res.status(422).json({ issues: result.issues })
+  }
+  
+  // result.debug.candidate is the fully normalized and validated payload
+  await db.insert(databases).values(result.debug.candidate)
+  return res.status(201).json({ ok: true })
+}
+```
+
+This pattern keeps policy checks, schema validation, and persistence distinct while letting them fail together before your database throws constraints. Umpire cleanly separates the "should this field exist at all?" policy from the "is this value well-formed?" structural validation.
 
 ## Blank strings and `isEmpty`
 

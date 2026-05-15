@@ -91,7 +91,7 @@ type WriteIssue<F extends Record<string, FieldDef>> = {
 Issues are derived only from fields declared in the Umpire instance. At most one issue is emitted per field, checked in this order:
 
 1. **`required`** — the field is enabled, required, and unsatisfied.
-2. **`disabled`** — the field has a value and is disabled. Empty disabled fields are not issues; a field that is disabled and unsatisfied is simply not in play.
+2. **`disabled`** — the field has a value and is disabled. Empty disabled fields are not issues; a field that is disabled and unsatisfied is not in play.
 3. **`foul`** — the field has a value, is enabled, and `fair` is `false`.
 
 The `message` for each issue comes from the field's `reason` in the availability status, falling back to the first entry in `reasons`, then to a generated fallback (`"${field} is required"`, `"${field} is disabled"`, or `"${field} is foul"`).
