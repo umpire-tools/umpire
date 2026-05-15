@@ -57,6 +57,8 @@ ump.check({ password: '', confirmPassword: '' }).confirmPassword
   <RequiresDemo client:load />
 </div>
 
+Every Umpire rule takes two inputs: **values** and **conditions**. Values are what the user has entered — the current form state you pass to `check()`. Conditions are external facts that come from outside the form: the user's plan tier, a feature flag, a permission level, or anything else your app controls that isn't itself a field. Keeping them separate means your rules can react to context changes without treating app state as if it were user input.
+
 ## `enabledWhen()`
 
 Use `enabledWhen()` when a field depends on an external fact instead of another field value. Plan tiers, feature flags, permissions, and environment checks usually belong here.
@@ -78,6 +80,8 @@ ump.check({ companyName: '' }, { plan: 'personal' }).companyName
 </div>
 
 ## `fairWhen()`
+
+Unlike `requires()` and `enabledWhen()`, `fairWhen()` does not disable a field. The field stays available — the user can still interact with it. What changes is the field's current value: it passes the emptiness check but no longer fits the current state, so it is marked **foul**. `play()` uses foul status to suggest a reset for that field, leaving the decision of when to act on that suggestion with you.
 
 Use `fairWhen()` when a field's current value might stop being an appropriate selection after something else changes. The field stays enabled — it just carries a value that no longer fits, and `play()` will recommend clearing it.
 
