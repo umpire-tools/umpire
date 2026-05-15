@@ -14,6 +14,14 @@ const _inferred = createEffectAdapter()({
   },
 })
 
+const _uncurried = createEffectAdapter({
+  schemas: {
+    age: Schema.NumberFromString,
+  },
+})
+
+void _uncurried.validators.age
+
 type InferredOutput = Awaited<
   ReturnType<
     typeof _inferred.runValidate

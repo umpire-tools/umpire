@@ -349,6 +349,13 @@ function createSingleResultMap<F extends Record<string, FieldDef>>(
   return results
 }
 
+function compositeResultPasses(
+  constraint: RuleConstraint,
+  result: RuleEvaluation,
+): boolean {
+  return constraint === 'fair' ? result.fair !== false : result.enabled
+}
+
 export function resolveReason<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -1488,26 +1495,44 @@ export function anyOf<
     targets,
     sources,
     evaluate(values, conditions, prev, fields, availability) {
-      return createResultMap(targets, (target) => {
-        const targetResults: RuleResult[] = []
+      const targetResults = new Map<string, RuleResult[]>(
+        targets.map((target) => [target, []]),
+      )
+      const passedTargets = new Set<string>()
 
-        for (const rule of rules) {
-          const evaluation = rule.evaluate(
-            values,
-            conditions,
-            prev,
-            fields,
-            availability,
-          )
+      for (const rule of rules) {
+        const evaluation = rule.evaluate(
+          values,
+          conditions,
+          prev,
+          fields,
+          availability,
+        )
+
+        for (const target of targets) {
+          if (passedTargets.has(target)) {
+            continue
+          }
+
           const targetResult = getCompositeTargetEvaluation(evaluation, target)
-          targetResults.push(targetResult)
+          targetResults.get(target)!.push(targetResult)
 
-          if (targetResult.enabled && targetResult.fair) {
-            break
+          if (compositeResultPasses(constraint, targetResult)) {
+            passedTargets.add(target)
           }
         }
 
-        return combineCompositeResults(constraint, 'or', targetResults)
+        if (passedTargets.size === targets.length) {
+          break
+        }
+      }
+
+      return createResultMap(targets, (target) => {
+        return combineCompositeResults(
+          constraint,
+          'or',
+          targetResults.get(target)!,
+        )
       })
     },
   }

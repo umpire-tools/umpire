@@ -18,6 +18,15 @@ function stringMatching(
 }
 
 describe('createEffectAdapter', () => {
+  test('supports the public uncurried factory call', () => {
+    const validation = createEffectAdapter({
+      schemas: { email: emailSchema },
+    })
+
+    expect(typeof validation.run).toBe('function')
+    expect(typeof validation.validators.email).toBe('function')
+  })
+
   test('creates per-field validators that surface the first parse error', () => {
     const validation = createEffectAdapter()({
       schemas: { email: emailSchema },

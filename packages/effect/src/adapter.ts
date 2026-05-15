@@ -94,9 +94,40 @@ export type EffectAdapter<
 }
 
 export function createEffectAdapter<
+  F extends Record<string, FieldDef>,
+  Schemas extends FieldSchemas<F>,
+  BuiltSchema extends AnyEffectSchema<unknown, unknown> = AnyEffectSchema<
+    InferBaseOutput<F, Schemas>,
+    ExtractR<Schemas>
+  >,
+  Out = SchemaOutput<BuiltSchema>,
+  R = ValidationContext<F, Schemas, BuiltSchema>,
+>(
+  options: CreateEffectAdapterOptions<F, Schemas, BuiltSchema>,
+): EffectAdapter<F, Out, R>
+export function createEffectAdapter<
   F extends Record<string, FieldDef> = Record<string, FieldDef>,
->() {
-  return function <
+>(): <
+  Schemas extends FieldSchemas<F>,
+  BuiltSchema extends AnyEffectSchema<unknown, unknown> = AnyEffectSchema<
+    InferBaseOutput<F, Schemas>,
+    ExtractR<Schemas>
+  >,
+  Out = SchemaOutput<BuiltSchema>,
+  R = ValidationContext<F, Schemas, BuiltSchema>,
+>(
+  options: CreateEffectAdapterOptions<F, Schemas, BuiltSchema>,
+) => EffectAdapter<F, Out, R>
+export function createEffectAdapter<
+  F extends Record<string, FieldDef> = Record<string, FieldDef>,
+>(
+  options?: CreateEffectAdapterOptions<
+    F,
+    FieldSchemas<F>,
+    AnyEffectSchema<unknown, unknown>
+  >,
+) {
+  const createAdapter = <
     Schemas extends FieldSchemas<F>,
     BuiltSchema extends AnyEffectSchema<unknown, unknown> = AnyEffectSchema<
       InferBaseOutput<F, Schemas>,
@@ -106,7 +137,7 @@ export function createEffectAdapter<
     R = ValidationContext<F, Schemas, BuiltSchema>,
   >(
     options: CreateEffectAdapterOptions<F, Schemas, BuiltSchema>,
-  ): EffectAdapter<F, Out, R> {
+  ): EffectAdapter<F, Out, R> => {
     const { schemas, build, rejectFoul } = options
 
     if (options.valueShape === 'nested' && !build) {
@@ -226,4 +257,6 @@ export function createEffectAdapter<
       runValidate: runValidateFn,
     } as EffectAdapter<F, Out, R>
   }
+
+  return options === undefined ? createAdapter : createAdapter(options)
 }

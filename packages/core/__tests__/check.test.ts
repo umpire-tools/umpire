@@ -433,6 +433,59 @@ describe('evaluate', () => {
     expect(secondCalls).toBe(0)
   })
 
+  test('evaluates each anyOf inner rule once for multi-target rules', () => {
+    const fields: TestFields = {
+      alpha: {},
+      beta: {},
+      gamma: {},
+      delta: {},
+    }
+    let firstCalls = 0
+    let secondCalls = 0
+    const firstRule: Rule<TestFields, TestConditions> = {
+      type: 'first',
+      targets: ['alpha', 'beta'],
+      sources: [],
+      evaluate: () => {
+        firstCalls += 1
+        return new Map([
+          ['alpha', { enabled: true, reason: null }],
+          ['beta', { enabled: false, reason: 'first failed beta' }],
+        ])
+      },
+    }
+    const secondRule: Rule<TestFields, TestConditions> = {
+      type: 'second',
+      targets: ['alpha', 'beta'],
+      sources: [],
+      evaluate: () => {
+        secondCalls += 1
+        return new Map([
+          ['alpha', { enabled: true, reason: null }],
+          ['beta', { enabled: true, reason: null }],
+        ])
+      },
+    }
+    const rule = anyOf(firstRule, secondRule)
+    const result = rule.evaluate(
+      fields,
+      {} as TestConditions,
+      undefined,
+      fields,
+    )
+
+    expect(result.get('alpha')).toEqual({
+      enabled: true,
+      reason: null,
+    })
+    expect(result.get('beta')).toEqual({
+      enabled: true,
+      reason: null,
+    })
+    expect(firstCalls).toBe(1)
+    expect(secondCalls).toBe(1)
+  })
+
   test('keeps fair rules out of the gate phase when a field is already disabled', () => {
     const fields: TestFields = {
       alpha: {},
