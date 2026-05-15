@@ -238,3 +238,46 @@ expect(uncoveredRules).toEqual([])
 `report().fieldStates` records `seenEnabled`, `seenDisabled`, `seenFair`, `seenFoul`, `seenSatisfied`, and `seenUnsatisfied` for every field. `report().uncoveredRules` lists rules that never produced a failure in any instrumented call, using `challenge()` `ruleId` metadata to distinguish multiple same-type rules on the same target. Call `tracker.reset()` to clear observations between scenarios without rebuilding the wrapped umpire.
 
 For full documentation see the [Testing reference](https://umpire.dev/extensions/testing/#trackcoverageump).
+
+## Complementing trackCoverage
+
+`trackCoverage` and `monkeyTest` answer different questions and are worth running together.
+
+`trackCoverage` tells you which states your named scenarios exercised — coverage in the sense of deliberate test design. If `uncoveredRules` is non-empty, a rule went untested by any scenario you wrote.
+
+`monkeyTest` doesn't know about your scenarios. It probes the rule graph directly across inputs no human would enumerate, looking for structural failures. A rule could be fully covered by `trackCoverage` and still fail `monkeyTest` — if the predicate is impure or produces foul cycles on certain value combinations.
+
+```typescript
+import { fairWhen, requires, umpire } from '@umpire/core'
+import { monkeyTest, trackCoverage } from '@umpire/testing'
+
+const ump = umpire({
+  fields: {
+    email: { required: true },
+    password: { required: true },
+    referralCode: {},
+  },
+  rules: [
+    requires('referralCode', 'email'),
+    fairWhen('password', (val) => String(val).length >= 8, {
+      reason: 'Password must be at least 8 characters',
+    }),
+  ],
+})
+
+const tracker = trackCoverage(ump)
+
+// Scenario tests run through the tracker
+tracker.ump.check({
+  email: 'user@example.com',
+  password: 'hunter2!',
+  referralCode: 'PROMO',
+})
+tracker.ump.check({ email: null, password: 'abc' })
+
+// Every rule failure was exercised by at least one scenario
+expect(tracker.report().uncoveredRules).toEqual([])
+
+// Structural invariants hold across all sampled inputs
+expect(monkeyTest(ump).passed).toBe(true)
+```
