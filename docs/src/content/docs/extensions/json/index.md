@@ -13,6 +13,12 @@ It defines what can be expressed in a language-neutral schema, serializes TypeSc
 yarn add @umpire/core @umpire/json
 ```
 
+## At a glance
+
+- Loading a schema from a server or database — `fromJsonSafe(raw)` validates and hydrates in one call, never throws
+- Extending a parsed schema with app-specific TypeScript rules — `fromJson(schema)` + hand-written rules spread into the same `umpire()` call
+- Building rules that must round-trip through JSON — `namedValidators.*()`, `*Expr` builders, and `toJson()`
+
 ## Parsing from untrusted input
 
 When a schema arrives from user input, `localStorage`, an API response, or any other source you don't control, you need to validate it before hydrating it. Two APIs cover this — choose based on how much you want to separate those two steps.
@@ -170,33 +176,37 @@ Top-level `validators` are the portable field-local validation surface. They att
 
 At runtime, `fromJson()` turns these into `umpire({ validators })` entries. The field stays structurally enabled or disabled according to rules; the validator only answers whether the current satisfied value is well-formed.
 
-## Two check shapes
+## createJsonRules()
 
-In `@umpire/core`, `check()` is already doing two things depending on context: it's a predicate factory when used inside `enabledWhen()` or `requires()`, and older configs may still use it as a standalone structural constraint. `@umpire/json` now keeps field-local validation separate with `validators`, but preserves the older `check` rule shape for compatibility.
+When you author portable rules from TypeScript, field names are plain strings — a typo compiles fine and only surfaces at runtime. `createJsonRules<F, C>()` fixes that. It returns the full set of portable builders scoped to your field and conditions types, so TypeScript catches bad field names at the call site.
 
-**Top-level `"check"`** is the legacy standalone structural form. It still parses for compatibility, but it remains a fairness rule rather than validator metadata:
+```ts
+import { umpire } from '@umpire/core'
+import { createJsonRules, namedValidators, fromJson } from '@umpire/json'
 
-```json
-{ "type": "check", "field": "email", "op": "email" }
+type Fields = { email: {}; plan: {}; submit: {} }
+type Conditions = { isAdmin: boolean }
+
+const { enabledWhenExpr, requiresJson, disablesExpr, fairWhenExpr,
+        requiresExpr, anyOfJson, eitherOfJson, expr } = createJsonRules<Fields, Conditions>()
+
+const { fields, rules, validators } = fromJson(schema)
+
+const ump = umpire({
+  fields,
+  rules: [
+    ...rules,
+    // passing 'submet' instead of 'submit' would be a TypeScript error
+    enabledWhenExpr('submit', expr.check('email', namedValidators.email())),
+    requiresJson('plan', 'email'),
+  ],
+  validators,
+})
 ```
 
-**`expr.check()`** is the portable predicate-source form. It appears inside a predicate expression, letting one field's availability depend on whether another field passes a portable validator:
+The returned object includes: `enabledWhenExpr`, `requiresJson`, `requiresExpr`, `disablesExpr`, `fairWhenExpr`, `anyOfJson`, `eitherOfJson`, and `expr` (the JSON-aware expression builder that adds `expr.check()` on top of `@umpire/dsl`'s `expr.*`).
 
-```json
-{
-  "type": "enabledWhen",
-  "field": "submit",
-  "when": { "op": "check", "field": "email", "check": { "op": "email" } }
-}
-```
-
-The modern split is:
-
-- `validators` for field-local validation metadata
-- `expr.check()` for structural predicates that depend on another field passing a portable validator
-- top-level `"check"` only when you need to preserve older JSON schemas
-
-See [@umpire/dsl](/extensions/dsl/) for the full non-`check` expression vocabulary.
+Use `createJsonRules()` when you control the field type and want compile-time feedback. Use the module-level exports when the field type is unknown at the time you write the rule — for example, in a generic utility that accepts any schema.
 
 ## Conditions
 
@@ -235,6 +245,34 @@ Some rules are too app-specific to serialize safely. When `toJson()` encounters 
 `excluded.key` gives each entry a stable identity. Later serializations can replace or remove entries by key when a runtime learns to handle a previously excluded slot natively.
 
 `excluded` is informational. No runtime evaluates it automatically. Its job is to tell the next implementation: there was logic here, and you'll need to recreate it natively.
+
+## Two check shapes
+
+In `@umpire/core`, `check()` is already doing two things depending on context: it's a predicate factory when used inside `enabledWhen()` or `requires()`, and older configs may still use it as a standalone structural constraint. `@umpire/json` now keeps field-local validation separate with `validators`, but preserves the older `check` rule shape for compatibility.
+
+**Top-level `"check"`** is the legacy standalone structural form. It still parses for compatibility, but it remains a fairness rule rather than validator metadata:
+
+```json
+{ "type": "check", "field": "email", "op": "email" }
+```
+
+**`expr.check()`** is the portable predicate-source form. It appears inside a predicate expression, letting one field's availability depend on whether another field passes a portable validator:
+
+```json
+{
+  "type": "enabledWhen",
+  "field": "submit",
+  "when": { "op": "check", "field": "email", "check": { "op": "email" } }
+}
+```
+
+The modern split is:
+
+- `validators` for field-local validation metadata
+- `expr.check()` for structural predicates that depend on another field passing a portable validator
+- top-level `"check"` only when you need to preserve older JSON schemas
+
+See [@umpire/dsl](/extensions/dsl/) for the full non-`check` expression vocabulary.
 
 ## Portable field semantics
 
