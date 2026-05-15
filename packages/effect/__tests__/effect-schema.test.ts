@@ -1,5 +1,10 @@
 import { Effect, Schema } from 'effect'
-import { decodeEffectSchema, decodeEffectSchemaSync } from '../src/index.js'
+import {
+  decodeEffectSchema,
+  decodeEffectSchemaSync,
+  isDecodeFailure,
+  isDecodeSuccess,
+} from '../src/index.js'
 import { formatEffectErrors } from '../src/effect-schema.js'
 
 describe('decode helpers', () => {
@@ -9,12 +14,32 @@ describe('decode helpers', () => {
     )
 
     expect(result).toEqual({ _tag: 'Right', value: 42 })
+    expect(isDecodeSuccess(result)).toBe(true)
+    expect(isDecodeFailure(result)).toBe(false)
+  })
+
+  test('decodeEffectSchema returns parse issues as a failed decode result', async () => {
+    const result = await Effect.runPromise(
+      decodeEffectSchema(Schema.Number, 'not-a-number'),
+    )
+
+    expect(result._tag).toBe('Left')
+    expect(isDecodeFailure(result)).toBe(true)
+    expect(isDecodeSuccess(result)).toBe(false)
+    expect(formatEffectErrors(result.error)[0]?.message).toContain('number')
   })
 
   test('decodeEffectSchemaSync returns a plain decode result', () => {
     const result = decodeEffectSchemaSync(Schema.NumberFromString, '42')
 
     expect(result).toEqual({ _tag: 'Right', value: 42 })
+  })
+
+  test('decodeEffectSchemaSync returns parse issues as a failed decode result', () => {
+    const result = decodeEffectSchemaSync(Schema.Number, 'not-a-number')
+
+    expect(result._tag).toBe('Left')
+    expect(formatEffectErrors(result.error)[0]?.message).toContain('number')
   })
 })
 
