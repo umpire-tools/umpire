@@ -13,63 +13,24 @@ Forms are the most common use case, but Umpire works anywhere state fits a plain
 ## Quick Example
 
 ```ts
-import { enabledWhen, requires, umpire } from '@umpire/core'
+import { requires, umpire } from '@umpire/core'
 
-const signupUmp = umpire({
+const ump = umpire({
   fields: {
-    email: { required: true, isEmpty: (v) => !v },
-    password: { required: true, isEmpty: (v) => !v },
-    confirmPassword: { required: true, isEmpty: (v) => !v },
-    referralCode: {},
-    companyName: {},
-    companySize: {},
+    password: {},
+    confirmPassword: {},
   },
-  rules: [
-    requires('confirmPassword', 'password'),
-    enabledWhen('companyName', (_values, cond) => cond.plan === 'business', {
-      reason: 'business plan required',
-    }),
-    enabledWhen('companySize', (_values, cond) => cond.plan === 'business', {
-      reason: 'business plan required',
-    }),
-    requires('companySize', 'companyName'),
-  ],
+  rules: [requires('confirmPassword', 'password')],
 })
 
-const availability = signupUmp.check(
-  { email: 'alex@example.com', password: 'hunter2' },
-  { plan: 'personal' },
-)
+ump.check({ password: '', confirmPassword: '' }).confirmPassword
+// { enabled: false, satisfied: false, fair: true, required: false, reason: 'requires password', reasons: ['requires password'] }
 
-availability.companyName
-// { enabled: false, required: false, reason: 'business plan required', reasons: ['business plan required'] }
-
-const fouls = signupUmp.play(
-  {
-    values: {
-      email: 'alex@example.com',
-      password: 'hunter2',
-      companyName: 'Acme',
-      companySize: '50',
-    },
-    conditions: { plan: 'business' },
-  },
-  {
-    values: {
-      email: 'alex@example.com',
-      password: 'hunter2',
-      companyName: 'Acme',
-      companySize: '50',
-    },
-    conditions: { plan: 'personal' },
-  },
-)
-
-// [
-//   { field: 'companyName', reason: 'business plan required', suggestedValue: undefined },
-//   { field: 'companySize', reason: 'business plan required', suggestedValue: undefined },
-// ]
+ump.check({ password: 'hunter2', confirmPassword: '' }).confirmPassword
+// { enabled: true, satisfied: false, fair: true, required: false, reason: null, reasons: [] }
 ```
+
+For a larger example with conditions, plan-gated fields, and `play()` transitions, see the [Signup example](https://sdougbrown.github.io/umpire/examples/signup/) in the docs.
 
 ## Packages
 
