@@ -30,14 +30,15 @@ const reads = createReads<
     motherboardFair: boolean
   }
 >({
-  selectedCpu: ({ input }) => cpuById[input.cpu ?? ''],
+  selectedCpu: ({ input }) =>
+    input.cpu === 'am5' ? { socket: 'am5' } : undefined,
   motherboardFair: ({ input, read }) => {
     const cpu = read('selectedCpu')
     if (!input.motherboard || !cpu) {
       return true
     }
 
-    return input.motherboard.startsWith(cpu.socket)
+    return input.motherboard === cpu.socket
   },
 })
 
@@ -64,7 +65,7 @@ reads.inspect({ cpu: 'am5', motherboard: 'am5' })
 
 ## API
 
-- `createReads(resolvers)` builds a read table from named resolver functions. Returns the table with per-key shorthand methods, plus `resolve()`, `inspect()`, and `trace()`. Use this as the foundation for all read-backed rules.
+- `createReads(resolvers)` builds a read table from named resolver functions. Returns the table with per-key shorthand methods, plus `resolve()`, `inspect()`, `from()`, and `trace()`. Use this as the foundation for all read-backed rules.
 - `fairWhenRead(field, key, table, options?)` generates a `fairWhen` rule backed by a boolean read and registers the connection on the table so it appears in `inspect()` and `challenge()` traces. Reach for this when a fairness check depends on a derived value you want named and shared.
 - `enabledWhenRead(field, key, table, options?)` does the same for availability: generates an `enabledWhen` rule backed by a boolean read. Use it when the condition for enabling a field involves derived or catalog-driven data.
 - `fromRead(table, key, selectInput?)` extracts a read as a plain predicate function rather than generating a rule automatically. Useful when you need the read-backed value inside a hand-written rule or a conditional you're composing yourself.

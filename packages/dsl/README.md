@@ -11,8 +11,13 @@ Reach for `@umpire/dsl` when your rules live entirely in TypeScript — no seria
 A scheduler form where `endDate` is only available once the user has set a `startDate` and chosen a recurrence mode other than `'none'`:
 
 ```ts
-import { expr } from '@umpire/dsl'
+import { expr, compileExpr } from '@umpire/dsl'
 import { umpire, enabledWhen } from '@umpire/core'
+
+const endDateEnabled = compileExpr(
+  expr.and(expr.present('startDate'), expr.neq('recurrence', 'none')),
+  { fieldNames: new Set(['startDate', 'recurrence']) },
+)
 
 const ump = umpire({
   fields: {
@@ -21,12 +26,7 @@ const ump = umpire({
     endDate: {},
     timezone: {},
   },
-  rules: [
-    enabledWhen(
-      'endDate',
-      expr.and(expr.present('startDate'), expr.neq('recurrence', 'none')),
-    ),
-  ],
+  rules: [enabledWhen('endDate', endDateEnabled)],
 })
 
 ump.check({
