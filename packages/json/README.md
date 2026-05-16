@@ -13,11 +13,82 @@ Portable schema parsing and serialization for [@umpire/core](https://www.npmjs.c
 npm install @umpire/core @umpire/dsl @umpire/json
 ```
 
+## Which API?
+
+- Loading a schema from a server or database — `fromJsonSafe(raw)`
+- Extending a parsed schema with app-specific TypeScript rules — `fromJson(schema)` + hand-written rules
+- Building rules that must round-trip through JSON — `namedValidators.*()` + `*Expr` builders + `toJson()`
+
 ## Usage
+
+The minimum path: validate and hydrate with `fromJsonSafe()`, guard the result, then pass the pieces into `umpire()`.
+
+```ts
+import { umpire } from '@umpire/core'
+import { fromJsonSafe } from '@umpire/json'
+
+const schema = {
+  version: 1,
+  fields: {
+    email: { isEmpty: 'string' },
+    submit: {},
+  },
+  rules: [],
+  validators: {
+    email: { op: 'email', error: 'Enter a valid email address' },
+  },
+}
+
+const result = fromJsonSafe(schema)
+
+if (!result.ok) {
+  console.error(result.errors)
+  return
+}
+
+const ump = umpire({
+  fields: result.fields,
+  rules: result.rules,
+  validators: result.validators,
+})
+console.log(ump.check({ email: 'user@example.com', submit: null }))
+```
+
+### Composing with hand-written rules
+
+When most of your schema lives in JSON but a few rules require app-specific TypeScript logic, hydrate the JSON portion first, then spread the parsed rules alongside your hand-written ones in the same `umpire()` call. Hydrated rules and hand-written rules coexist without conflict — `umpire()` sees a single flat array and evaluates them together.
 
 ```ts
 import { check, enabledWhen, umpire } from '@umpire/core'
-import { namedValidators, fromJson, toJson } from '@umpire/json'
+import { namedValidators, fromJson } from '@umpire/json'
+
+const { fields, rules, validators } = fromJson(schema)
+
+const ump = umpire({
+  fields,
+  rules: [
+    ...rules,
+    enabledWhen('submit', check('email', namedValidators.email()), {
+      reason: 'Enter a valid email address',
+    }),
+  ],
+  validators,
+})
+```
+
+### Authoring for portability
+
+When rules need to cross a runtime boundary — stored in a database, sent from a server, loaded in a different language — build them through the portable builders.
+
+```ts
+import { umpire } from '@umpire/core'
+import {
+  namedValidators,
+  enabledWhenExpr,
+  expr,
+  toJson,
+  fromJson,
+} from '@umpire/json'
 
 const schema = {
   version: 1,
@@ -35,22 +106,15 @@ const { fields, rules, validators } = fromJson(schema)
 
 const mergedRules = [
   ...rules,
-  enabledWhen('submit', check('email', namedValidators.email()), {
+  enabledWhenExpr('submit', expr.check('email', namedValidators.email()), {
     reason: 'Enter a valid email address',
   }),
 ]
 
-const ump = umpire({
-  fields,
-  rules: mergedRules,
-  validators,
-})
+const ump = umpire({ fields, rules: mergedRules, validators })
 
-const json = toJson({
-  fields,
-  rules: mergedRules,
-  validators,
-})
+// Round-trips cleanly — enabledWhenExpr carries its own JSON definition
+const json = toJson({ fields, rules: mergedRules, validators })
 ```
 
 ## API

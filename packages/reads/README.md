@@ -10,6 +10,10 @@ Derived read tables and read-backed rule bridges for [@umpire/core](https://www.
 npm install @umpire/core @umpire/reads
 ```
 
+## The problem it solves
+
+A plain `fairWhen` predicate works, but it's anonymous — `challenge()` sees that a rule fired, not what domain concept drove it. It's also local: render logic that needs the same derived value has to reimplement the same lookup independently. `@umpire/reads` solves both by naming the derivation once and making it available to rules, inspection, and any other consumer without recomputation.
+
 ## Usage
 
 ```ts
@@ -22,15 +26,19 @@ const reads = createReads<
     motherboard?: string
   },
   {
+    selectedCpu: { socket: string } | undefined
     motherboardFair: boolean
   }
 >({
-  motherboardFair: ({ input }) => {
-    if (!input.motherboard) {
+  selectedCpu: ({ input }) =>
+    input.cpu === 'am5' ? { socket: 'am5' } : undefined,
+  motherboardFair: ({ input, read }) => {
+    const cpu = read('selectedCpu')
+    if (!input.motherboard || !cpu) {
       return true
     }
 
-    return input.motherboard === input.cpu
+    return input.motherboard === cpu.socket
   },
 })
 
@@ -53,13 +61,15 @@ reads.motherboardFair({ cpu: 'am5', motherboard: 'am5' })
 reads.inspect({ cpu: 'am5', motherboard: 'am5' })
 ```
 
+`motherboardFair` calls `read('selectedCpu')` rather than repeating the lookup. Both reads are evaluated at most once per `resolve()` or `inspect()` call, regardless of how many rules or other reads depend on them.
+
 ## API
 
-- `createReads(resolvers)` builds a read table with per-key shorthand methods plus `resolve()`, `inspect()`, `from()`, and `trace()`.
-- `fairWhenRead(field, key, table, options?)` bridges a boolean read into a `fairWhen` rule.
-- `enabledWhenRead(field, key, table, options?)` bridges a boolean read into an `enabledWhen` rule.
-- `fromRead(table, key, selectInput?)` returns a predicate helper from a boolean read.
-- `ReadInputType.CONDITIONS` evaluates a read against rule conditions instead of field values.
+- `createReads(resolvers)` builds a read table from named resolver functions. Returns the table with per-key shorthand methods, plus `resolve()`, `inspect()`, `from()`, and `trace()`. Use this as the foundation for all read-backed rules.
+- `fairWhenRead(field, key, table, options?)` generates a `fairWhen` rule backed by a boolean read and registers the connection on the table so it appears in `inspect()` and `challenge()` traces. Reach for this when a fairness check depends on a derived value you want named and shared.
+- `enabledWhenRead(field, key, table, options?)` does the same for availability: generates an `enabledWhen` rule backed by a boolean read. Use it when the condition for enabling a field involves derived or catalog-driven data.
+- `fromRead(table, key, selectInput?)` extracts a read as a plain predicate function rather than generating a rule automatically. Useful when you need the read-backed value inside a hand-written rule or a conditional you're composing yourself.
+- `ReadInputType.CONDITIONS` is passed as `inputType` in options to `fairWhenRead` or `enabledWhenRead` when the read should receive rule conditions as its input instead of field values. Use it for reads that evaluate metadata about the form context rather than the user's current values.
 
 ## Behavior Notes
 
