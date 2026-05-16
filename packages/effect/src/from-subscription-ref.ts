@@ -29,9 +29,7 @@ export function fromSubscriptionRef<
       ),
     )
 
-    return () => {
-      Effect.runFork(Fiber.interrupt(fiber))
-    }
+    return () => Effect.runFork(Fiber.interrupt(fiber))
   }
 
   return fromStore(ump, { getState, subscribe }, options)

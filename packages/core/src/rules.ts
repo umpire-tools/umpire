@@ -349,6 +349,13 @@ function createSingleResultMap<F extends Record<string, FieldDef>>(
   return results
 }
 
+function compositeResultPasses(
+  constraint: RuleConstraint,
+  result: RuleEvaluation,
+): boolean {
+  return constraint === 'fair' ? result.fair !== false : result.enabled
+}
+
 export function resolveReason<
   F extends Record<string, FieldDef>,
   C extends Record<string, unknown>,
@@ -1488,17 +1495,44 @@ export function anyOf<
     targets,
     sources,
     evaluate(values, conditions, prev, fields, availability) {
-      const evaluations = rules.map((rule) =>
-        rule.evaluate(values, conditions, prev, fields, availability),
+      const targetResults = new Map<string, RuleResult[]>(
+        targets.map((target) => [target, []]),
       )
+      const passedTargets = new Set<string>()
 
-      return createResultMap(targets, (target) => {
-        const targetResults = evaluations.map((evaluation) =>
-          getCompositeTargetEvaluation(evaluation, target),
+      for (const rule of rules) {
+        const evaluation = rule.evaluate(
+          values,
+          conditions,
+          prev,
+          fields,
+          availability,
         )
 
-        // Stryker disable next-line StringLiteral: equivalent mutant — combineCompositeResults only checks mode === 'and'; any other value including '' follows the OR path
-        return combineCompositeResults(constraint, 'or', targetResults)
+        for (const target of targets) {
+          if (passedTargets.has(target)) {
+            continue
+          }
+
+          const targetResult = getCompositeTargetEvaluation(evaluation, target)
+          targetResults.get(target)!.push(targetResult)
+
+          if (compositeResultPasses(constraint, targetResult)) {
+            passedTargets.add(target)
+          }
+        }
+
+        if (passedTargets.size === targets.length) {
+          break
+        }
+      }
+
+      return createResultMap(targets, (target) => {
+        return combineCompositeResults(
+          constraint,
+          'or',
+          targetResults.get(target)!,
+        )
       })
     },
   }

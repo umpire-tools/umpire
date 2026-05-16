@@ -96,8 +96,6 @@ describe('fromSubscriptionRef', () => {
     store.destroy()
 
     await Effect.runPromise(SubscriptionRef.set(ref, { showEmail: true }))
-    // Allow any pending microtasks to flush
-    await new Promise<void>((resolve) => setTimeout(resolve, 10))
 
     expect(callCount).toBe(0)
   })

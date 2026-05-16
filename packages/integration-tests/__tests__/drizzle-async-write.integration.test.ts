@@ -5,7 +5,12 @@ import {
   requires as requiresAsync,
 } from '@umpire/async'
 import { createAsyncDrizzlePolicy, createDrizzlePolicy } from '@umpire/drizzle'
+import {
+  createEffectAdapter,
+  toAsyncWriteValidationAdapter,
+} from '@umpire/effect'
 import type { AsyncWriteValidationAdapter } from '@umpire/write'
+import { Context, Effect, Layer, Schema, SchemaGetter } from 'effect'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 const accounts = sqliteTable('async_write_accounts', {
@@ -117,5 +122,72 @@ describe('drizzle async write integration', () => {
     expect(result.issues.schema).toEqual([
       { field: 'companyName', message: 'Company name is not allowed' },
     ])
+  })
+
+  it('async policy composes serviceful Effect validation through the write adapter bridge', async () => {
+    const DiscountService = Context.Service<{
+      isAllowed(code: string): boolean
+    }>('DiscountService')
+    const discountCodeSchema = Schema.String.pipe(
+      Schema.decode({
+        decode: SchemaGetter.checkEffect<
+          string,
+          { isAllowed(code: string): boolean }
+        >((input) =>
+          Effect.gen(function* () {
+            const service = yield* Effect.service(DiscountService)
+            return service.isAllowed(input)
+              ? undefined
+              : 'Discount code is not allowed'
+          }),
+        ),
+        encode: SchemaGetter.passthrough(),
+      }),
+    )
+    const validation = createEffectAdapter()({
+      schemas: { discountCode: discountCodeSchema },
+    })
+    const writeValidation = toAsyncWriteValidationAdapter(
+      validation,
+      (effect) =>
+        Effect.runPromise(
+          Effect.provide(
+            effect,
+            Layer.succeed(DiscountService, {
+              isAllowed: (code) => code === 'SAVE10',
+            }),
+          ),
+        ),
+    )
+
+    const badResult = await buildAsyncPolicy().checkCreate(
+      {
+        accountType: 'personal',
+        discountCode: 'BLOCKED',
+      },
+      {
+        context: { allowDiscounts: true },
+        validation: writeValidation,
+      },
+    )
+
+    expect(badResult.ok).toBe(false)
+    expect(badResult.issues.schema).toEqual([
+      { field: 'discountCode', message: 'Discount code is not allowed' },
+    ])
+
+    const goodResult = await buildAsyncPolicy().checkCreate(
+      {
+        accountType: 'personal',
+        discountCode: 'SAVE10',
+      },
+      {
+        context: { allowDiscounts: true },
+        validation: writeValidation,
+      },
+    )
+
+    expect(goodResult.ok).toBe(true)
+    expect(goodResult.data.discountCode).toBe('SAVE10')
   })
 })

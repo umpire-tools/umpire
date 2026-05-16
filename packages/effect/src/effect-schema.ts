@@ -1,4 +1,4 @@
-import { Result, Schema } from 'effect'
+import { Effect, Result, Schema } from 'effect'
 import type { SchemaAST, SchemaIssue } from 'effect'
 import type { FieldPathSegment } from '@umpire/write'
 
@@ -20,7 +20,26 @@ export type EffectDecodeResult<A> =
       readonly error: unknown
     }
 
-export function decodeEffectSchema<A = unknown>(
+export function decodeEffectSchema<A = unknown, R = never>(
+  schema: Schema.Decoder<A, R>,
+  input: unknown,
+  options?: EffectParseOptions,
+): Effect.Effect<EffectDecodeResult<A>, never, R> {
+  return Schema.decodeUnknownEffect(schema)(input, options).pipe(
+    Effect.match({
+      onSuccess: (value): EffectDecodeResult<A> => ({ _tag: 'Right', value }),
+      onFailure: (error): EffectDecodeResult<A> => {
+        const issue =
+          isRecord(error) && error._tag === 'SchemaError' && 'issue' in error
+            ? (error as { issue: unknown }).issue
+            : error
+        return { _tag: 'Left', error: issue }
+      },
+    }),
+  )
+}
+
+export function decodeEffectSchemaSync<A = unknown>(
   schema: Schema.Decoder<unknown, never>,
   input: unknown,
   options?: EffectParseOptions,
@@ -62,7 +81,9 @@ export function formatEffectErrors(
   parseError: unknown,
 ): NormalizedEffectError[] {
   const issue =
-    isRecord(parseError) && 'issue' in parseError && !('_tag' in parseError)
+    isRecord(parseError) &&
+    'issue' in parseError &&
+    (!('_tag' in parseError) || parseError._tag === 'SchemaError')
       ? parseError.issue
       : parseError
 

@@ -154,6 +154,14 @@ helpers (`createDrizzlePolicy`, `checkDrizzleCreate`, etc.) accept a
 `WriteValidationAdapter` to integrate schema checks alongside column-derived
 availability policy.
 
+Context-free Effect schemas can use these sync Drizzle/write paths through
+`validation.run`. Serviceful Effect schemas cannot satisfy
+`WriteValidationAdapter` because they do not expose sync `run`; use
+async/effectful paths for them. `@umpire/effect` provides
+`toAsyncWriteValidationAdapter(...)` to bridge serviceful Effect validation into
+Drizzle's async write helpers while letting your app decide how to provide
+Effect services.
+
 Drizzle owns column shaping and write-payload concerns; generic validation
 result composition lives in `@umpire/write`.
 

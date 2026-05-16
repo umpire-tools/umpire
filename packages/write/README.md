@@ -118,8 +118,15 @@ import type { WriteValidationAdapter } from '@umpire/write'
 
 `WriteValidationAdapter<F>` is a structural protocol — any object with a
 `run(availability, values)` method that returns normalized field-level errors
-satisfies it. The adapters exported by `@umpire/zod` and `@umpire/effect`
-satisfy this protocol out of the box.
+satisfies it. The adapter exported by `@umpire/zod` satisfies this protocol out
+of the box. `@umpire/effect` satisfies it only for context-free Effect schemas
+where `createEffectAdapter()` exposes sync `run` / `validators`.
+
+Serviceful Effect schemas cannot satisfy `WriteValidationAdapter` because they
+do not expose sync `run`. Use the async/effectful write path for those schemas.
+`@umpire/effect` provides `toAsyncWriteValidationAdapter(...)` to bridge an
+Effect adapter into `AsyncWriteValidationAdapter` while letting your app decide
+how to provide Effect services.
 
 `runWriteValidationAdapter` calls the adapter (if provided) and returns
 normalized schema issues. `composeWriteResult` then merges write-policy issues,

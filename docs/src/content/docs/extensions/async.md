@@ -219,9 +219,9 @@ export async function createUser(req, res) {
 }
 ```
 
-`fairWhen` is the right rule for a uniqueness check: the field is enabled, the user has provided a value, and the question is whether that value is appropriate for the current state. If the email is taken, the field is marked foul and `availability.email.reason` carries the message — no ad-hoc error tracking needed.
+`fairWhen` is the right rule for a uniqueness check: the field is enabled, a value has been provided, and the question is whether that value is appropriate for the current state. If the email is taken, the field is marked foul and `availability.email.reason` carries the message — no ad-hoc error tracking needed.
 
-The `fromDrizzleTable` call is unchanged. `@umpire/async` accepts the same `fields` and `rules` shape as `@umpire/core`; you're just switching the `umpire()` import.
+The `fromDrizzleTable` call is unchanged. `@umpire/async` accepts the same `fields` and `rules` shape as `@umpire/core`; you are only switching the `umpire()` import.
 
 ## Cancellation
 

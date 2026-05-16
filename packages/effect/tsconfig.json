@@ -7,6 +7,8 @@
     "paths": {
       "@umpire/core": ["../core/src/index.ts"],
       "@umpire/core/*": ["../core/src/*"],
+      "@umpire/async": ["../async/src/index.ts"],
+      "@umpire/async/*": ["../async/src/*"],
       "@umpire/store": ["../store/src/index.ts"],
       "@umpire/write": ["../write/src/index.ts"],
       "@umpire/write/*": ["../write/src/*"]
@@ -15,6 +17,7 @@
   "include": ["src"],
   "references": [
     { "path": "../core" },
+    { "path": "../async" },
     { "path": "../store" },
     { "path": "../write" }
   ]

@@ -1,10 +1,27 @@
 import { Schema } from 'effect'
 import type { AvailabilityMap, FieldDef } from '@umpire/core'
 
-export type AnyEffectSchema = Schema.Decoder<unknown, never>
+export type AnyEffectSchema<A = unknown, R = never> = Schema.Decoder<A, R>
+
+type SchemaOutput<S> = S extends AnyEffectSchema<infer A, unknown> ? A : never
+
+export type ExtractR<Schemas extends Record<string, unknown>> = {
+  [K in keyof Schemas]: Schemas[K] extends AnyEffectSchema<unknown, infer R>
+    ? R
+    : never
+}[keyof Schemas]
+
+export type InferBaseOutput<
+  F extends Record<string, FieldDef>,
+  Schemas extends FieldSchemas<F>,
+> = Partial<{
+  [K in keyof F & string as Schemas[K] extends AnyEffectSchema
+    ? K
+    : never]: SchemaOutput<Schemas[K]>
+}>
 
 export type FieldSchemas<F extends Record<string, FieldDef>> = Partial<
-  Record<keyof F & string, AnyEffectSchema>
+  Record<keyof F & string, AnyEffectSchema<unknown, unknown>>
 >
 
 export type DeriveSchemaOptions = {
@@ -24,11 +41,14 @@ export type DeriveSchemaOptions = {
 // both required fields and Schema.optional(...) entries in a struct shape.
 type ShapeEntry = Schema.Top
 
-export function deriveSchema<F extends Record<string, FieldDef>>(
+export function deriveSchema<
+  F extends Record<string, FieldDef>,
+  Schemas extends FieldSchemas<F>,
+>(
   availability: AvailabilityMap<F>,
-  schemas: FieldSchemas<F>,
+  schemas: Schemas,
   options?: DeriveSchemaOptions,
-): AnyEffectSchema {
+): AnyEffectSchema<InferBaseOutput<F, Schemas>, ExtractR<Schemas>> {
   const rejectFoul = options?.rejectFoul ?? false
   const shape: Record<string, ShapeEntry> = {}
 
@@ -53,5 +73,8 @@ export function deriveSchema<F extends Record<string, FieldDef>>(
 
   return Schema.Struct(
     shape as Schema.Struct.Fields,
-  ) as unknown as AnyEffectSchema
+  ) as unknown as AnyEffectSchema<
+    InferBaseOutput<F, Schemas>,
+    ExtractR<Schemas>
+  >
 }

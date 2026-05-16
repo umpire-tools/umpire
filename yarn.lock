@@ -1920,7 +1920,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@umpire/async@workspace:^, @umpire/async@workspace:packages/async":
+"@umpire/async@workspace:*, @umpire/async@workspace:^, @umpire/async@workspace:packages/async":
   version: 0.0.0-use.local
   resolution: "@umpire/async@workspace:packages/async"
   dependencies:
@@ -1986,6 +1986,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@umpire/effect@workspace:packages/effect"
   dependencies:
+    "@umpire/async": "workspace:*"
     "@umpire/core": "workspace:*"
     "@umpire/store": "workspace:*"
     "@umpire/write": "workspace:*"

@@ -45,10 +45,13 @@ export function fromStore<
 
   let currentAvailability = ump.check(initialValues, initialConditions)
   let currentFouls: Foul<F>[] = []
+  let active = true
 
   const listeners = new Set<(availability: AvailabilityMap<F>) => void>()
 
   const unsubscribe = store.subscribe((state, prevState) => {
+    if (!active) return
+
     const nextValues = select(state)
     const nextConditions = readConditions(state)
     const prevValues = select(prevState)
@@ -88,8 +91,9 @@ export function fromStore<
     },
 
     destroy(): void {
-      unsubscribe()
+      active = false
       listeners.clear()
+      unsubscribe()
     },
   }
 }
