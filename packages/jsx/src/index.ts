@@ -31,6 +31,7 @@ type RequiresDescriptor = {
   readonly lte?: number
   readonly in?: JsonPrimitive[]
   readonly notIn?: JsonPrimitive[]
+  readonly contains?: JsonPrimitive
   readonly truthy?: true
   readonly falsy?: true
   readonly when?: Expr
@@ -111,6 +112,7 @@ export interface RequiresProps {
   lte?: number
   in?: JsonPrimitive[]
   notIn?: JsonPrimitive[]
+  contains?: JsonPrimitive
   truthy?: true
   falsy?: true
   when?: Expr
@@ -269,6 +271,7 @@ export function Requires(props: RequiresProps): RequiresDescriptor {
     lte: props.lte,
     in: props.in,
     notIn: props.notIn,
+    contains: props.contains,
     truthy: props.truthy,
     falsy: props.falsy,
     when: props.when,

@@ -12,6 +12,7 @@ export function getValuePropNames(): string[] {
     'lte',
     'in',
     'notIn',
+    'contains',
     'truthy',
     'falsy',
   ]
@@ -46,6 +47,12 @@ export function buildValueExpr(
       op: 'notIn',
       field: dep,
       values: [...(props.notIn as JsonPrimitive[])],
+    })
+  if (props.contains !== undefined)
+    exprs.push({
+      op: 'contains',
+      field: dep,
+      value: props.contains as JsonPrimitive,
     })
   if (props.truthy !== undefined) exprs.push({ op: 'truthy', field: dep })
   if (props.falsy !== undefined) exprs.push({ op: 'falsy', field: dep })

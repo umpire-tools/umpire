@@ -485,6 +485,26 @@ describe('Umpire JSX — value-conditional Requires', () => {
     expect(abroad.internationalShipping.enabled).toBe(true)
   })
 
+  test('contains prop enables target when dep array holds the value', () => {
+    const ump = (
+      <Umpire>
+        <Field name="tags" />
+        <Field name="urgentRouting">
+          <Requires dep="tags" contains="urgent" />
+        </Field>
+      </Umpire>
+    )
+    const tagged = ump.check({
+      tags: ['billing', 'urgent'],
+      urgentRouting: null,
+    })
+    expect(tagged.urgentRouting.enabled).toBe(true)
+    const untagged = ump.check({ tags: ['billing'], urgentRouting: null })
+    expect(untagged.urgentRouting.enabled).toBe(false)
+    const scalar = ump.check({ tags: 'urgent', urgentRouting: null })
+    expect(scalar.urgentRouting.enabled).toBe(false)
+  })
+
   test('falsy prop enables target when dep is falsy', () => {
     const ump = (
       <Umpire>
