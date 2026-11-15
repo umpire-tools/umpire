@@ -13,8 +13,6 @@ import type { FieldIsEmptyMap } from '@umpire/dsl'
 
 import type { JsonFieldDef, JsonIsEmptyStrategy } from './schema.js'
 
-export type { FieldIsEmptyMap }
-
 // The compiler identifies a strategy by function identity, so every entry must
 // be the shared function rather than an equivalent local lambda.
 const IS_EMPTY_STRATEGIES: Record<JsonIsEmptyStrategy, IsEmptyFn> = {

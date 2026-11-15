@@ -29,11 +29,8 @@ import type {
   JsonValidatorDef,
   UmpireJsonSchema,
 } from './schema.js'
-import {
-  hydrateFieldIsEmpty,
-  hydrateIsEmptyStrategy,
-  type FieldIsEmptyMap,
-} from './strategies.js'
+import type { FieldIsEmptyMap } from '@umpire/dsl'
+import { hydrateFieldIsEmpty, hydrateIsEmptyStrategy } from './strategies.js'
 import { validateSchema } from './validate.js'
 
 export type ParsedFields = Record<string, FieldDef>

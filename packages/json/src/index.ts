@@ -15,6 +15,7 @@ export {
   requiresExpr,
 } from './builders.js'
 export { compileExpr, getExprFieldRefs } from './expr.js'
+export type { FieldIsEmptyMap } from '@umpire/dsl'
 export { fromJson, fromJsonSafe, parseJsonSchema } from './parse.js'
 export { getJsonDef } from './json-def.js'
 export { toJson } from './serialize.js'

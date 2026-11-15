@@ -15,7 +15,7 @@ import {
   createNamedValidatorFromSpec,
 } from './check-ops.js'
 import type { JsonConditionDef, JsonExpr } from './schema.js'
-import type { FieldIsEmptyMap } from './strategies.js'
+import type { FieldIsEmptyMap } from '@umpire/dsl'
 
 type ExprPredicate<
   F extends Record<string, FieldDef>,

@@ -9,11 +9,8 @@ import type {
 import { assertValidCheckRule, assertValidValidatorSpec } from './check-ops.js'
 import { compileExpr } from './expr.js'
 import { isJsonPrimitive } from './json-values.js'
-import {
-  hydrateFieldIsEmpty,
-  isJsonIsEmptyStrategy,
-  type FieldIsEmptyMap,
-} from './strategies.js'
+import type { FieldIsEmptyMap } from '@umpire/dsl'
+import { hydrateFieldIsEmpty, isJsonIsEmptyStrategy } from './strategies.js'
 
 type JsonRuleConstraint = 'enabled' | 'fair'
 
