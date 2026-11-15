@@ -8,11 +8,10 @@ import {
   oneOf,
   type FieldBuilder,
   type FieldDef,
-  type IsEmptyFn,
   type JsonPrimitive,
   type Rule,
 } from '@umpire/core'
-import type { Expr } from '@umpire/dsl'
+import type { Expr, FieldIsEmptyMap } from '@umpire/dsl'
 import {
   buildRequiresPredicate,
   compileWhenPredicate,
@@ -62,8 +61,6 @@ type RuleDescriptor =
   | RequiresDescriptor
   | DisablesDescriptor
   | FairWhenDescriptor
-
-type FieldIsEmptyMap = Record<string, IsEmptyFn | undefined>
 
 type FieldDescriptor = {
   readonly _ump: 'field'

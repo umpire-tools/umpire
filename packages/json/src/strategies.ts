@@ -9,9 +9,11 @@ import {
   type IsEmptyFn,
 } from '@umpire/core'
 
+import type { FieldIsEmptyMap } from '@umpire/dsl'
+
 import type { JsonFieldDef, JsonIsEmptyStrategy } from './schema.js'
 
-export type FieldIsEmptyMap = Record<string, IsEmptyFn | undefined>
+export type { FieldIsEmptyMap }
 
 // The compiler identifies a strategy by function identity, so every entry must
 // be the shared function rather than an equivalent local lambda.

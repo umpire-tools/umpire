@@ -24,6 +24,9 @@ type ExprConditionDef = {
   type: 'boolean' | 'string' | 'number' | 'string[]' | 'number[]'
 }
 
+/** Each field's `isEmpty` function, keyed by field name. */
+export type FieldIsEmptyMap = Record<string, IsEmptyFn | undefined>
+
 type CompileExprOptions = {
   allowUndeclaredConditions?: boolean
   fieldNames: Set<string>
@@ -32,7 +35,7 @@ type CompileExprOptions = {
    * Each field's `isEmpty` strategy, so membership ops can reject a field whose
    * declared shape contradicts the op. Omitted entries are unchecked.
    */
-  fieldIsEmpty?: Record<string, IsEmptyFn | undefined>
+  fieldIsEmpty?: FieldIsEmptyMap
 }
 
 function assertField(field: string, op: string, fieldNames: Set<string>) {
