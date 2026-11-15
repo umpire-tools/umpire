@@ -4,6 +4,7 @@ import type {
   UmpireJsonSchema,
   JsonRule,
   JsonFieldDef,
+  JsonIsEmptyStrategy,
   JsonValidatorDef,
 } from './schema.js'
 import { assertValidCheckRule, assertValidValidatorSpec } from './check-ops.js'
@@ -133,10 +134,19 @@ function validateValidatorSpecMembers(
 
 const scalarMembershipOps = new Set(['in', 'notIn', 'fieldInCond'])
 
-const nonArrayStrategies = new Set(['string', 'number', 'boolean', 'object'])
+// Exhaustive over JsonIsEmptyStrategy, so a new strategy must declare whether
+// its field can hold an array before this file compiles.
+const strategyHoldsArray: Record<JsonIsEmptyStrategy, boolean> = {
+  string: false,
+  number: false,
+  boolean: false,
+  object: false,
+  array: true,
+  present: true,
+}
 
 function isNonArrayStrategy(strategy: JsonFieldDef['isEmpty']): boolean {
-  return strategy !== undefined && nonArrayStrategies.has(strategy)
+  return strategy !== undefined && !strategyHoldsArray[strategy]
 }
 
 // Membership ops have opposite array requirements: `in`-family fields hold one
