@@ -1,6 +1,6 @@
 import type { FieldDef } from './types.js'
 
-type IsEmptyFn = NonNullable<FieldDef['isEmpty']>
+export type IsEmptyFn = NonNullable<FieldDef['isEmpty']>
 
 export const isEmptyPresent: IsEmptyFn = (value) =>
   value === null || value === undefined

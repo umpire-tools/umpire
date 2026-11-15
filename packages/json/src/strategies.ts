@@ -1,20 +1,24 @@
 import {
   isEmptyArray,
+  isEmptyBoolean,
+  isEmptyNumber,
   isEmptyObject,
   isEmptyPresent,
   isEmptyString,
   type FieldDef,
+  type IsEmptyFn,
 } from '@umpire/core'
 
-import type { JsonIsEmptyStrategy } from './schema.js'
+import type { FieldIsEmptyMap } from '@umpire/dsl'
 
-const IS_EMPTY_STRATEGIES: Record<
-  JsonIsEmptyStrategy,
-  NonNullable<FieldDef['isEmpty']>
-> = {
+import type { JsonFieldDef, JsonIsEmptyStrategy } from './schema.js'
+
+// The compiler identifies a strategy by function identity, so every entry must
+// be the shared function rather than an equivalent local lambda.
+const IS_EMPTY_STRATEGIES: Record<JsonIsEmptyStrategy, IsEmptyFn> = {
   string: isEmptyString,
-  number: (value) => typeof value !== 'number' || Number.isNaN(value),
-  boolean: (value) => typeof value !== 'boolean',
+  number: isEmptyNumber,
+  boolean: isEmptyBoolean,
   array: isEmptyArray,
   object: isEmptyObject,
   present: isEmptyPresent,
@@ -40,6 +44,22 @@ export function hydrateIsEmptyStrategy(
   }
 
   return IS_EMPTY_STRATEGIES[strategy]
+}
+
+/**
+ * Hydrate every field's declared strategy for the expression compiler, which
+ * needs the functions themselves to check a membership op against them.
+ */
+export function hydrateFieldIsEmpty(
+  fields: Record<string, JsonFieldDef>,
+): FieldIsEmptyMap {
+  const hydrated: FieldIsEmptyMap = Object.create(null)
+
+  for (const [field, definition] of Object.entries(fields)) {
+    hydrated[field] = hydrateIsEmptyStrategy(definition.isEmpty)
+  }
+
+  return hydrated
 }
 
 export function getJsonIsEmptyStrategy(

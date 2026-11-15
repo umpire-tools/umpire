@@ -2,6 +2,7 @@
 /** @jsxImportSource @umpire/jsx */
 
 import { describe, expect, test } from 'bun:test'
+import { isEmptyString } from '@umpire/core'
 import {
   Field,
   Requires,
@@ -483,6 +484,40 @@ describe('Umpire JSX — value-conditional Requires', () => {
     expect(domestic.internationalShipping.enabled).toBe(false)
     const abroad = ump.check({ country: 'UK', internationalShipping: null })
     expect(abroad.internationalShipping.enabled).toBe(true)
+  })
+
+  test('contains prop enables target when dep array holds the value', () => {
+    const ump = (
+      <Umpire>
+        <Field name="tags" />
+        <Field name="urgentRouting">
+          <Requires dep="tags" contains="urgent" />
+        </Field>
+      </Umpire>
+    )
+    const tagged = ump.check({
+      tags: ['billing', 'urgent'],
+      urgentRouting: null,
+    })
+    expect(tagged.urgentRouting.enabled).toBe(true)
+    const untagged = ump.check({ tags: ['billing'], urgentRouting: null })
+    expect(untagged.urgentRouting.enabled).toBe(false)
+    const scalar = ump.check({ tags: 'urgent', urgentRouting: null })
+    expect(scalar.urgentRouting.enabled).toBe(false)
+  })
+
+  test('contains prop rejects a dependency declared as a string field', () => {
+    expect(() => {
+      Umpire({
+        children: [
+          Field({ name: 'tags', isEmpty: isEmptyString }),
+          Field({
+            name: 'urgentRouting',
+            children: Requires({ dep: 'tags', contains: 'urgent' }),
+          }),
+        ] as const,
+      })
+    }).toThrow('"contains" requires an array field')
   })
 
   test('falsy prop enables target when dep is falsy', () => {

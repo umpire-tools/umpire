@@ -1,4 +1,15 @@
-import { isEmptyPresent, type FieldDef, type FieldValues } from '@umpire/core'
+import {
+  isEmptyArray,
+  isEmptyBigInt,
+  isEmptyBoolean,
+  isEmptyNumber,
+  isEmptyObject,
+  isEmptyPresent,
+  isEmptyString,
+  type FieldDef,
+  type FieldValues,
+  type IsEmptyFn,
+} from '@umpire/core'
 
 import type { Expr } from './types.js'
 
@@ -13,16 +24,61 @@ type ExprConditionDef = {
   type: 'boolean' | 'string' | 'number' | 'string[]' | 'number[]'
 }
 
+/** Each field's `isEmpty` function, keyed by field name. */
+export type FieldIsEmptyMap = Record<string, IsEmptyFn | undefined>
+
 type CompileExprOptions = {
   allowUndeclaredConditions?: boolean
   fieldNames: Set<string>
   conditions?: Record<string, ExprConditionDef>
+  /**
+   * Each field's `isEmpty` strategy, so membership ops can reject a field whose
+   * declared shape contradicts the op. Omitted entries are unchecked.
+   */
+  fieldIsEmpty?: FieldIsEmptyMap
 }
 
 function assertField(field: string, op: string, fieldNames: Set<string>) {
   if (!fieldNames.has(field)) {
     throw new Error(
       `[@umpire/dsl] Unknown field "${field}" in "${op}" expression`,
+    )
+  }
+}
+
+// `in`, `notIn`, and `fieldInCond` look at one scalar value; `contains` looks
+// inside a list. A field's `isEmpty` strategy is the declaration of which shape
+// it holds, so a contradictory op can only ever be a constant predicate.
+const scalarFieldOps = new Set(['in', 'notIn', 'fieldInCond'])
+
+const scalarFieldStrategies = new Set<IsEmptyFn>([
+  isEmptyString,
+  isEmptyNumber,
+  isEmptyBoolean,
+  isEmptyBigInt,
+  isEmptyObject,
+])
+
+function assertMembershipField(
+  field: string,
+  op: string,
+  fieldIsEmpty: Record<string, IsEmptyFn | undefined> | undefined,
+) {
+  const isEmptyFn = fieldIsEmpty?.[field]
+
+  if (isEmptyFn === undefined) {
+    return
+  }
+
+  if (scalarFieldOps.has(op) && isEmptyFn === isEmptyArray) {
+    throw new Error(
+      `[@umpire/dsl] Expression "${op}" requires a scalar field, but "${field}" is an array field`,
+    )
+  }
+
+  if (op === 'contains' && scalarFieldStrategies.has(isEmptyFn)) {
+    throw new Error(
+      `[@umpire/dsl] Expression "contains" requires an array field, but "${field}" is not an array field`,
     )
   }
 }
@@ -69,6 +125,7 @@ function collectFieldRefs(expression: Expr): string[] {
     case 'falsy':
     case 'in':
     case 'notIn':
+    case 'contains':
     case 'fieldInCond':
       return [expression.field]
     case 'and':
@@ -112,6 +169,11 @@ function compileInner<
   switch (expression.op) {
     case 'fieldInCond': {
       assertField(expression.field, expression.op, options.fieldNames)
+      assertMembershipField(
+        expression.field,
+        expression.op,
+        options.fieldIsEmpty,
+      )
       if (!options.allowUndeclaredConditions) {
         const conditionDef = getConditionDef(
           expression.condition,
@@ -185,6 +247,7 @@ function makeFieldPredicate<F extends Record<string, FieldDef>>(
   test: (value: unknown) => boolean,
 ): (values: FieldValues<F>, conditions: never) => boolean {
   assertField(field, op, options.fieldNames)
+  assertMembershipField(field, op, options.fieldIsEmpty)
   return (values) => test(values[field as keyof F & string])
 }
 
@@ -276,6 +339,14 @@ function compileFieldPredicate<F extends Record<string, FieldDef>>(
         expression.op,
         options,
         (value) => !expression.values.includes(value as never),
+      )
+    case 'contains':
+      return makeFieldPredicate<F>(
+        expression.field,
+        expression.op,
+        options,
+        (value) =>
+          Array.isArray(value) && value.includes(expression.value as never),
       )
     default:
       return null

@@ -171,7 +171,7 @@ import { expr } from '@umpire/dsl'
 <Requires dep="memberType" eq="premium" reason="Premium members only" />
 ```
 
-**Value props:** `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `notIn`, `truthy`, `falsy`
+**Value props:** `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `notIn`, `contains`, `truthy`, `falsy`
 
 Use `when` (from `@umpire/dsl`) when your condition spans multiple fields. You can't use `when` together with `dep` or any value props.
 

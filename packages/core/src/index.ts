@@ -58,7 +58,8 @@ export {
   isEmptyPresent,
   isEmptyString,
 } from './emptiness.js'
-export { field } from './field.js'
+export type { IsEmptyFn } from './emptiness.js'
+export { field, getFieldBuilderDef } from './field.js'
 export { foulMap } from './foul-map.js'
 export { isSatisfied } from './satisfaction.js'
 export { strike } from './strike.js'

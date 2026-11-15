@@ -13,6 +13,7 @@ export type Expr =
   | { op: 'falsy'; field: string }
   | { op: 'in'; field: string; values: JsonPrimitive[] }
   | { op: 'notIn'; field: string; values: JsonPrimitive[] }
+  | { op: 'contains'; field: string; value: JsonPrimitive }
   | { op: 'cond'; condition: string }
   | { op: 'condEq'; condition: string; value: JsonPrimitive }
   | { op: 'condIn'; condition: string; values: JsonPrimitive[] }
@@ -37,6 +38,7 @@ export type ExprBuilder<
   falsy: (field: keyof F & string) => Expr
   in: (field: keyof F & string, values: JsonPrimitive[]) => Expr
   notIn: (field: keyof F & string, values: JsonPrimitive[]) => Expr
+  contains: (field: keyof F & string, value: JsonPrimitive) => Expr
   cond: (condition: keyof C & string) => Expr
   condEq: (condition: keyof C & string, value: JsonPrimitive) => Expr
   condIn: (condition: keyof C & string, values: JsonPrimitive[]) => Expr

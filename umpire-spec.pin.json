@@ -1,12 +1,12 @@
 {
-  "version": "v1.1.0",
-  "url": "https://github.com/umpire-tools/umpire-spec/archive/refs/tags/v1.1.0.tar.gz",
-  "sha256": "11d3f3465e91b4033e62e4a5da08845c76726ef05b43662c59b88ae647d55aa4",
+  "version": "v1.2.0",
+  "url": "https://github.com/umpire-tools/umpire-spec/archive/refs/tags/v1.2.0.tar.gz",
+  "sha256": "b88f0edabd6c5dde6d9faa863e1e4bf8c0457d0c6e691a9819a69278a6ae2dce",
   "targets": [
     {
       "dir": "packages/json/conformance",
       "sources": ["conformance"],
-      "fixtureDigest": "a79edf0289b53d8597b20ee09c32334b63d7cda2fce52b53bc100e9d370f8323"
+      "fixtureDigest": "e1258ceaea1742bdbff7b37b52da66c34e2e3690838e1a90843a9b4d1a68f9e2"
     },
     {
       "dir": "packages/json-schema/conformance",

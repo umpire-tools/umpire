@@ -1,6 +1,6 @@
 import { compileExpr } from '@umpire/dsl'
 import type { Expr } from '@umpire/dsl'
-import type { JsonPrimitive } from '@umpire/core'
+import type { IsEmptyFn, JsonPrimitive } from '@umpire/core'
 
 export function getValuePropNames(): string[] {
   return [
@@ -12,6 +12,7 @@ export function getValuePropNames(): string[] {
     'lte',
     'in',
     'notIn',
+    'contains',
     'truthy',
     'falsy',
   ]
@@ -47,6 +48,12 @@ export function buildValueExpr(
       field: dep,
       values: [...(props.notIn as JsonPrimitive[])],
     })
+  if (props.contains !== undefined)
+    exprs.push({
+      op: 'contains',
+      field: dep,
+      value: props.contains as JsonPrimitive,
+    })
   if (props.truthy !== undefined) exprs.push({ op: 'truthy', field: dep })
   if (props.falsy !== undefined) exprs.push({ op: 'falsy', field: dep })
 
@@ -63,11 +70,16 @@ export function buildRequiresPredicate(
   dep: string,
   props: Record<string, unknown>,
   fieldNames: Set<string>,
+  fieldIsEmpty: Record<string, IsEmptyFn | undefined>,
 ) {
   const expr = buildValueExpr(dep, props)
-  return compileExpr(expr, { fieldNames })
+  return compileExpr(expr, { fieldNames, fieldIsEmpty })
 }
 
-export function compileWhenPredicate(when: Expr, fieldNames: Set<string>) {
-  return compileExpr(when, { fieldNames })
+export function compileWhenPredicate(
+  when: Expr,
+  fieldNames: Set<string>,
+  fieldIsEmpty: Record<string, IsEmptyFn | undefined>,
+) {
+  return compileExpr(when, { fieldNames, fieldIsEmpty })
 }

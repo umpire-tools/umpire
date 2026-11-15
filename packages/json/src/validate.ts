@@ -9,7 +9,8 @@ import type {
 import { assertValidCheckRule, assertValidValidatorSpec } from './check-ops.js'
 import { compileExpr } from './expr.js'
 import { isJsonPrimitive } from './json-values.js'
-import { isJsonIsEmptyStrategy } from './strategies.js'
+import type { FieldIsEmptyMap } from '@umpire/dsl'
+import { hydrateFieldIsEmpty, isJsonIsEmptyStrategy } from './strategies.js'
 
 type JsonRuleConstraint = 'enabled' | 'fair'
 
@@ -167,6 +168,11 @@ function validateExpression(expression: unknown): void {
         expression.values,
         `Expression "${expression.op}" values`,
       )
+      return
+    case 'contains':
+      assertKnownMembers(expression, ['op', 'field', 'value'], 'Expression')
+      assertString(expression.field, 'Expression "contains" field')
+      assertPrimitive(expression.value, 'Expression "contains" value')
       return
     case 'cond':
       assertKnownMembers(expression, ['op', 'condition'], 'Expression')
@@ -597,11 +603,18 @@ function validateRuleShape(rule: unknown): asserts rule is JsonRule {
   }
 }
 
+type RuleValidationContext = {
+  fieldNames: Set<string>
+  conditions: UmpireJsonSchema['conditions']
+  fieldIsEmpty: FieldIsEmptyMap
+}
+
 function validateRequiresRule(
   rule: Extract<JsonRule, { type: 'requires' }>,
-  fieldNames: Set<string>,
-  conditions: UmpireJsonSchema['conditions'],
+  context: RuleValidationContext,
 ): void {
+  const { fieldNames, conditions, fieldIsEmpty } = context
+
   assertField(rule.field, fieldNames, '"requires"')
 
   if ('dependency' in rule) {
@@ -623,21 +636,22 @@ function validateRequiresRule(
       }
 
       validateExpression(dependency)
-      compileExpr(dependency, { fieldNames, conditions })
+      compileExpr(dependency, { fieldNames, conditions, fieldIsEmpty })
     }
 
     return
   }
 
   validateExpression(rule.when)
-  compileExpr(rule.when, { fieldNames, conditions })
+  compileExpr(rule.when, { fieldNames, conditions, fieldIsEmpty })
 }
 
 function validateDisablesRule(
   rule: Extract<JsonRule, { type: 'disables' }>,
-  fieldNames: Set<string>,
-  conditions: UmpireJsonSchema['conditions'],
+  context: RuleValidationContext,
 ): void {
+  const { fieldNames, conditions, fieldIsEmpty } = context
+
   for (const target of rule.targets) {
     assertField(target, fieldNames, '"disables"')
   }
@@ -648,27 +662,25 @@ function validateDisablesRule(
   }
 
   validateExpression(rule.when)
-  compileExpr(rule.when, { fieldNames, conditions })
+  compileExpr(rule.when, { fieldNames, conditions, fieldIsEmpty })
 }
 
-function validateRule(
-  rule: unknown,
-  fieldNames: Set<string>,
-  conditions: UmpireJsonSchema['conditions'],
-) {
+function validateRule(rule: unknown, context: RuleValidationContext) {
+  const { fieldNames, conditions, fieldIsEmpty } = context
+
   validateRuleShape(rule)
 
   switch (rule.type) {
     case 'requires':
-      validateRequiresRule(rule, fieldNames, conditions)
+      validateRequiresRule(rule, context)
       return
     case 'enabledWhen':
       assertField(rule.field, fieldNames, '"enabledWhen"')
       validateExpression(rule.when)
-      compileExpr(rule.when, { fieldNames, conditions })
+      compileExpr(rule.when, { fieldNames, conditions, fieldIsEmpty })
       return
     case 'disables':
-      validateDisablesRule(rule, fieldNames, conditions)
+      validateDisablesRule(rule, context)
       return
     case 'oneOf':
       for (const branchFields of Object.values(rule.branches)) {
@@ -680,19 +692,19 @@ function validateRule(
     case 'fairWhen':
       assertField(rule.field, fieldNames, '"fairWhen"')
       validateExpression(rule.when)
-      compileExpr(rule.when, { fieldNames, conditions })
+      compileExpr(rule.when, { fieldNames, conditions, fieldIsEmpty })
       return
     case 'eitherOf':
       for (const branchRules of Object.values(rule.branches)) {
         for (const innerRule of branchRules) {
-          validateRule(innerRule, fieldNames, conditions)
+          validateRule(innerRule, context)
         }
       }
       resolveEitherOfShape(rule)
       return
     case 'anyOf':
       for (const innerRule of rule.rules) {
-        validateRule(innerRule, fieldNames, conditions)
+        validateRule(innerRule, context)
       }
       resolveCompositeShape('anyOf()', rule.rules)
       return
@@ -767,8 +779,14 @@ export function validateSchema(
     validateFieldDef(field, definition)
   }
 
+  const context: RuleValidationContext = {
+    fieldNames,
+    conditions: typedSchema.conditions,
+    fieldIsEmpty: hydrateFieldIsEmpty(typedSchema.fields),
+  }
+
   for (const rule of typedSchema.rules) {
-    validateRule(rule, fieldNames, typedSchema.conditions)
+    validateRule(rule, context)
   }
 
   for (const [field, validator] of Object.entries(
