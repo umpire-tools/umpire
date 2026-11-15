@@ -4,13 +4,16 @@ import type {
   UmpireJsonSchema,
   JsonRule,
   JsonFieldDef,
-  JsonIsEmptyStrategy,
   JsonValidatorDef,
 } from './schema.js'
 import { assertValidCheckRule, assertValidValidatorSpec } from './check-ops.js'
 import { compileExpr } from './expr.js'
 import { isJsonPrimitive } from './json-values.js'
-import { isJsonIsEmptyStrategy } from './strategies.js'
+import {
+  hydrateFieldIsEmpty,
+  isJsonIsEmptyStrategy,
+  type FieldIsEmptyMap,
+} from './strategies.js'
 
 type JsonRuleConstraint = 'enabled' | 'fair'
 
@@ -132,51 +135,8 @@ function validateValidatorSpecMembers(
   assertValidValidatorSpec(spec as JsonValidatorDef)
 }
 
-const scalarMembershipOps = new Set(['in', 'notIn', 'fieldInCond'])
-
-// Exhaustive over JsonIsEmptyStrategy, so a new strategy must declare whether
-// its field can hold an array before this file compiles.
-const strategyHoldsArray: Record<JsonIsEmptyStrategy, boolean> = {
-  string: false,
-  number: false,
-  boolean: false,
-  object: false,
-  array: true,
-  present: true,
-}
-
-function isNonArrayStrategy(strategy: JsonFieldDef['isEmpty']): boolean {
-  return strategy !== undefined && !strategyHoldsArray[strategy]
-}
-
-// Membership ops have opposite array requirements: `in`-family fields hold one
-// scalar, `contains` fields hold the list. The definitions live only in the
-// schema, so the cross-check runs here rather than in the compiler.
-function assertMembershipTarget(
-  op: string,
-  field: string,
-  fieldDefs: Record<string, JsonFieldDef>,
-) {
-  const strategy = fieldDefs[field]?.isEmpty
-
-  if (scalarMembershipOps.has(op) && strategy === 'array') {
-    throw new Error(
-      `[@umpire/json] Expression "${op}" requires a scalar field, but "${field}" is declared "isEmpty": "array"`,
-    )
-  }
-
-  if (op === 'contains' && isNonArrayStrategy(strategy)) {
-    throw new Error(
-      `[@umpire/json] Expression "contains" requires an array field, but "${field}" is declared "isEmpty": "${String(strategy)}"`,
-    )
-  }
-}
-
 // eslint-disable-next-line complexity -- closed-member and shape walk over a finite set of expression variants
-function validateExpression(
-  expression: unknown,
-  fieldDefs: Record<string, JsonFieldDef>,
-): void {
+function validateExpression(expression: unknown): void {
   if (!isPlainRecord(expression)) {
     throw new Error('[@umpire/json] Expression must be an object')
   }
@@ -211,13 +171,11 @@ function validateExpression(
         expression.values,
         `Expression "${expression.op}" values`,
       )
-      assertMembershipTarget(expression.op, expression.field, fieldDefs)
       return
     case 'contains':
       assertKnownMembers(expression, ['op', 'field', 'value'], 'Expression')
       assertString(expression.field, 'Expression "contains" field')
       assertPrimitive(expression.value, 'Expression "contains" value')
-      assertMembershipTarget(expression.op, expression.field, fieldDefs)
       return
     case 'cond':
       assertKnownMembers(expression, ['op', 'condition'], 'Expression')
@@ -241,7 +199,6 @@ function validateExpression(
       assertKnownMembers(expression, ['op', 'field', 'condition'], 'Expression')
       assertString(expression.field, 'Expression "fieldInCond" field')
       assertString(expression.condition, 'Expression "fieldInCond" condition')
-      assertMembershipTarget(expression.op, expression.field, fieldDefs)
       return
     case 'and':
     case 'or':
@@ -252,12 +209,12 @@ function validateExpression(
         )
       }
       for (const entry of expression.exprs) {
-        validateExpression(entry, fieldDefs)
+        validateExpression(entry)
       }
       return
     case 'not':
       assertKnownMembers(expression, ['op', 'expr'], 'Expression')
-      validateExpression(expression.expr, fieldDefs)
+      validateExpression(expression.expr)
       return
     case 'check':
       assertKnownMembers(expression, ['op', 'field', 'check'], 'Expression')
@@ -570,10 +527,7 @@ function validateRuleMembers(rule: JsonRule) {
 }
 
 // eslint-disable-next-line complexity -- one flat shape check per canonical rule variant
-function validateRuleShape(
-  rule: unknown,
-  fieldDefs: Record<string, JsonFieldDef>,
-): asserts rule is JsonRule {
+function validateRuleShape(rule: unknown): asserts rule is JsonRule {
   if (!isPlainRecord(rule)) {
     throw new Error('[@umpire/json] Rule must be an object')
   }
@@ -596,20 +550,20 @@ function validateRuleShape(
           )
         }
       } else {
-        validateExpression(rule.when, fieldDefs)
+        validateExpression(rule.when)
       }
       return
     case 'enabledWhen':
     case 'fairWhen':
       assertString(rule.field, `Rule "${rule.type}" field`)
-      validateExpression(rule.when, fieldDefs)
+      validateExpression(rule.when)
       return
     case 'disables':
       assertStringArray(rule.targets, 'Rule "disables" targets')
       if ('source' in rule) {
         assertString(rule.source, 'Rule "disables" source')
       } else {
-        validateExpression(rule.when, fieldDefs)
+        validateExpression(rule.when)
       }
       return
     case 'oneOf':
@@ -654,15 +608,15 @@ function validateRuleShape(
 
 type RuleValidationContext = {
   fieldNames: Set<string>
-  fieldDefs: Record<string, JsonFieldDef>
   conditions: UmpireJsonSchema['conditions']
+  fieldIsEmpty: FieldIsEmptyMap
 }
 
 function validateRequiresRule(
   rule: Extract<JsonRule, { type: 'requires' }>,
   context: RuleValidationContext,
 ): void {
-  const { fieldNames, fieldDefs, conditions } = context
+  const { fieldNames, conditions, fieldIsEmpty } = context
 
   assertField(rule.field, fieldNames, '"requires"')
 
@@ -684,22 +638,22 @@ function validateRequiresRule(
         continue
       }
 
-      validateExpression(dependency, fieldDefs)
-      compileExpr(dependency, { fieldNames, conditions })
+      validateExpression(dependency)
+      compileExpr(dependency, { fieldNames, conditions, fieldIsEmpty })
     }
 
     return
   }
 
-  validateExpression(rule.when, fieldDefs)
-  compileExpr(rule.when, { fieldNames, conditions })
+  validateExpression(rule.when)
+  compileExpr(rule.when, { fieldNames, conditions, fieldIsEmpty })
 }
 
 function validateDisablesRule(
   rule: Extract<JsonRule, { type: 'disables' }>,
   context: RuleValidationContext,
 ): void {
-  const { fieldNames, fieldDefs, conditions } = context
+  const { fieldNames, conditions, fieldIsEmpty } = context
 
   for (const target of rule.targets) {
     assertField(target, fieldNames, '"disables"')
@@ -710,14 +664,14 @@ function validateDisablesRule(
     return
   }
 
-  validateExpression(rule.when, fieldDefs)
-  compileExpr(rule.when, { fieldNames, conditions })
+  validateExpression(rule.when)
+  compileExpr(rule.when, { fieldNames, conditions, fieldIsEmpty })
 }
 
 function validateRule(rule: unknown, context: RuleValidationContext) {
-  const { fieldNames, fieldDefs, conditions } = context
+  const { fieldNames, conditions, fieldIsEmpty } = context
 
-  validateRuleShape(rule, fieldDefs)
+  validateRuleShape(rule)
 
   switch (rule.type) {
     case 'requires':
@@ -725,8 +679,8 @@ function validateRule(rule: unknown, context: RuleValidationContext) {
       return
     case 'enabledWhen':
       assertField(rule.field, fieldNames, '"enabledWhen"')
-      validateExpression(rule.when, fieldDefs)
-      compileExpr(rule.when, { fieldNames, conditions })
+      validateExpression(rule.when)
+      compileExpr(rule.when, { fieldNames, conditions, fieldIsEmpty })
       return
     case 'disables':
       validateDisablesRule(rule, context)
@@ -740,8 +694,8 @@ function validateRule(rule: unknown, context: RuleValidationContext) {
       return
     case 'fairWhen':
       assertField(rule.field, fieldNames, '"fairWhen"')
-      validateExpression(rule.when, fieldDefs)
-      compileExpr(rule.when, { fieldNames, conditions })
+      validateExpression(rule.when)
+      compileExpr(rule.when, { fieldNames, conditions, fieldIsEmpty })
       return
     case 'eitherOf':
       for (const branchRules of Object.values(rule.branches)) {
@@ -830,8 +784,8 @@ export function validateSchema(
 
   const context: RuleValidationContext = {
     fieldNames,
-    fieldDefs: typedSchema.fields,
     conditions: typedSchema.conditions,
+    fieldIsEmpty: hydrateFieldIsEmpty(typedSchema.fields),
   }
 
   for (const rule of typedSchema.rules) {

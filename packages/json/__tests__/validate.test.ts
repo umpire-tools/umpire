@@ -883,4 +883,26 @@ describe('validateSchema', () => {
       }),
     ).not.toThrow()
   })
+
+  test('rejects a scalar-field op on an array field under requires "when"', () => {
+    expect(() =>
+      validateSchema({
+        version: 1,
+        fields: {
+          tags: { isEmpty: 'array' },
+          submit: {},
+        },
+        rules: [
+          {
+            type: 'requires',
+            field: 'submit',
+            when: {
+              op: 'not',
+              expr: { op: 'in', field: 'tags', values: ['urgent'] },
+            },
+          },
+        ],
+      }),
+    ).toThrow('"in" requires a scalar field')
+  })
 })

@@ -7,6 +7,7 @@ import {
   oneOf,
   type FieldBuilder,
   type FieldDef,
+  type IsEmptyFn,
   type JsonPrimitive,
   type Rule,
 } from '@umpire/core'
@@ -61,15 +62,19 @@ type RuleDescriptor =
   | DisablesDescriptor
   | FairWhenDescriptor
 
+type FieldIsEmptyMap = Record<string, IsEmptyFn | undefined>
+
 type FieldDescriptor = {
   readonly _ump: 'field'
   readonly name: string
   readonly def: FieldBuilder<unknown>
+  readonly isEmpty: IsEmptyFn | undefined
   readonly ruleDescs: ReadonlyArray<RuleDescriptor>
   readonly ruleBuilders: ReadonlyArray<
     (
       fieldName: string,
       fieldNames: Set<string>,
+      fieldIsEmpty: FieldIsEmptyMap,
     ) => Rule<Record<string, FieldDef>, Record<string, unknown>>[]
   >
 }
@@ -181,8 +186,12 @@ export function Field({
 
       if (hasWhen) {
         const when = rdesc.when
-        return (target: string, fieldNames: Set<string>) => {
-          const predicate = compileWhenPredicate(when, fieldNames)
+        return (
+          target: string,
+          fieldNames: Set<string>,
+          fieldIsEmpty: FieldIsEmptyMap,
+        ) => {
+          const predicate = compileWhenPredicate(when, fieldNames, fieldIsEmpty)
           const opts = rdesc.reason ? { reason: rdesc.reason } : undefined
           return [
             requires<Record<string, FieldDef>>(
@@ -201,8 +210,17 @@ export function Field({
           const v = (rdesc as Record<string, unknown>)[k]
           if (v !== undefined) valueProps[k] = v
         }
-        return (target: string, fieldNames: Set<string>) => {
-          const predicate = buildRequiresPredicate(dep, valueProps, fieldNames)
+        return (
+          target: string,
+          fieldNames: Set<string>,
+          fieldIsEmpty: FieldIsEmptyMap,
+        ) => {
+          const predicate = buildRequiresPredicate(
+            dep,
+            valueProps,
+            fieldNames,
+            fieldIsEmpty,
+          )
           const opts = rdesc.reason ? { reason: rdesc.reason } : undefined
           return [
             requires<Record<string, FieldDef>>(target, dep),
@@ -231,7 +249,11 @@ export function Field({
     if (desc._ump === 'disables') {
       const targets = desc.fields as string[]
       const reason = desc.reason
-      return (_target: string, _fieldNames: Set<string>) => {
+      return (
+        _target: string,
+        _fieldNames: Set<string>,
+        _fieldIsEmpty: FieldIsEmptyMap,
+      ) => {
         const opts = reason ? { reason } : undefined
         return [disables<Record<string, FieldDef>>(name, targets, opts)]
       }
@@ -239,7 +261,11 @@ export function Field({
     if (desc._ump === 'fairWhen') {
       const check = desc.check
       const reason = desc.reason
-      return (_target: string, _fieldNames: Set<string>) => {
+      return (
+        _target: string,
+        _fieldNames: Set<string>,
+        _fieldIsEmpty: FieldIsEmptyMap,
+      ) => {
         const opts = reason ? { reason } : undefined
         return [
           fairWhen<Record<string, FieldDef>>(
@@ -255,7 +281,14 @@ export function Field({
     )
   })
 
-  return { _ump: 'field', name, def, ruleDescs, ruleBuilders }
+  return {
+    _ump: 'field',
+    name,
+    def,
+    isEmpty: isEmptyFn,
+    ruleDescs,
+    ruleBuilders,
+  }
 }
 
 export function Requires(props: RequiresProps): RequiresDescriptor {
@@ -303,18 +336,25 @@ export function FairWhen({ check, reason }: FairWhenProps): FairWhenDescriptor {
 
 // ---- Private helpers for Umpire construction ----
 
-function collectFieldNames(childDescs: readonly UmpireChild[]): Set<string> {
-  const names = new Set<string>()
+function collectFields(childDescs: readonly UmpireChild[]): {
+  fieldNames: Set<string>
+  fieldIsEmpty: FieldIsEmptyMap
+} {
+  const fieldNames = new Set<string>()
+  const fieldIsEmpty: FieldIsEmptyMap = Object.create(null)
+
   for (const desc of childDescs) {
     if (desc._ump === 'field') {
-      names.add(desc.name)
+      fieldNames.add(desc.name)
+      fieldIsEmpty[desc.name] = desc.isEmpty
     } else if (desc._ump !== 'standaloneDisables' && desc._ump !== 'oneOf') {
       throw new Error(
         `[@umpire/jsx] Unknown child type in <Umpire>: ${(desc as { _ump: string })._ump}`,
       )
     }
   }
-  return names
+
+  return { fieldNames, fieldIsEmpty }
 }
 
 function validateStandaloneDisables(
@@ -398,7 +438,8 @@ function validateRequiresDescriptors(
 
 function buildFieldsAndRules(
   childDescs: readonly UmpireChild[],
-  allFieldNames: Set<string>,
+  fieldNames: Set<string>,
+  fieldIsEmpty: FieldIsEmptyMap,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): { fields: Record<string, any>; rules: any[] } {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -410,7 +451,7 @@ function buildFieldsAndRules(
     if (desc._ump === 'field') {
       fields[desc.name] = desc.def
       for (const buildRule of desc.ruleBuilders) {
-        rules.push(...buildRule(desc.name, allFieldNames))
+        rules.push(...buildRule(desc.name, fieldNames, fieldIsEmpty))
       }
     }
     if (desc._ump === 'standaloneDisables') {
@@ -443,11 +484,15 @@ export function Umpire({ children }: UmpireProps) {
       ? (children as readonly UmpireChild[])
       : [children as UmpireChild]
 
-  const allFieldNames = collectFieldNames(childDescs)
+  const { fieldNames: allFieldNames, fieldIsEmpty } = collectFields(childDescs)
   validateStandaloneDisables(childDescs, allFieldNames)
   validateOneOfDescriptors(childDescs, allFieldNames)
   validateRequiresDescriptors(childDescs, allFieldNames)
-  const { fields, rules } = buildFieldsAndRules(childDescs, allFieldNames)
+  const { fields, rules } = buildFieldsAndRules(
+    childDescs,
+    allFieldNames,
+    fieldIsEmpty,
+  )
 
   return createUmpire({ fields, rules })
 }

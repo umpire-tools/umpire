@@ -29,7 +29,7 @@ import type {
   JsonValidatorDef,
   UmpireJsonSchema,
 } from './schema.js'
-import { hydrateIsEmptyStrategy } from './strategies.js'
+import { hydrateFieldIsEmpty, hydrateIsEmptyStrategy } from './strategies.js'
 import { validateSchema } from './validate.js'
 
 export type ParsedFields = Record<string, FieldDef>
@@ -78,6 +78,7 @@ function compileFairExpr<C extends Record<string, unknown>>(
   const predicate = compileExpr<ParsedFields, C>(rule.when, {
     fieldNames: new Set(Object.keys(schema.fields)),
     conditions: schema.conditions,
+    fieldIsEmpty: hydrateFieldIsEmpty(schema.fields),
   })
 
   const fairPredicate = ((
@@ -161,6 +162,7 @@ function parseRule<C extends Record<string, unknown>>(
   const exprOptions = {
     fieldNames,
     conditions: schema.conditions,
+    fieldIsEmpty: hydrateFieldIsEmpty(schema.fields),
   }
 
   switch (rule.type) {

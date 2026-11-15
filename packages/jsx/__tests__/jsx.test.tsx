@@ -2,6 +2,7 @@
 /** @jsxImportSource @umpire/jsx */
 
 import { describe, expect, test } from 'bun:test'
+import { isEmptyString } from '@umpire/core'
 import {
   Field,
   Requires,
@@ -503,6 +504,20 @@ describe('Umpire JSX — value-conditional Requires', () => {
     expect(untagged.urgentRouting.enabled).toBe(false)
     const scalar = ump.check({ tags: 'urgent', urgentRouting: null })
     expect(scalar.urgentRouting.enabled).toBe(false)
+  })
+
+  test('contains prop rejects a dependency declared as a string field', () => {
+    expect(() => {
+      Umpire({
+        children: [
+          Field({ name: 'tags', isEmpty: isEmptyString }),
+          Field({
+            name: 'urgentRouting',
+            children: Requires({ dep: 'tags', contains: 'urgent' }),
+          }),
+        ] as const,
+      })
+    }).toThrow('"contains" requires an array field')
   })
 
   test('falsy prop enables target when dep is falsy', () => {

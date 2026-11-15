@@ -15,6 +15,7 @@ import {
   createNamedValidatorFromSpec,
 } from './check-ops.js'
 import type { JsonConditionDef, JsonExpr } from './schema.js'
+import type { FieldIsEmptyMap } from './strategies.js'
 
 type ExprPredicate<
   F extends Record<string, FieldDef>,
@@ -28,6 +29,7 @@ type CompileExprOptions = {
   allowUndeclaredConditions?: boolean
   fieldNames: Set<string>
   conditions?: Record<string, JsonConditionDef>
+  fieldIsEmpty?: FieldIsEmptyMap
 }
 
 function assertField(field: string, op: string, fieldNames: Set<string>) {
