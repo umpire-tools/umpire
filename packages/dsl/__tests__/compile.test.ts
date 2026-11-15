@@ -1,3 +1,5 @@
+import { isEmptyArray, isEmptyPresent, isEmptyString } from '@umpire/core'
+
 import { compileExpr, getExprFieldRefs } from '../src/index.js'
 
 const fieldNames = new Set(['accountType', 'planId', 'quantity', 'enabled'])
@@ -163,5 +165,89 @@ describe('compileExpr', () => {
     expect(
       getExprFieldRefs({ op: 'contains', field: 'planId', value: 'team' }),
     ).toEqual(['planId'])
+  })
+
+  describe('membership field shape', () => {
+    const fieldIsEmpty = {
+      accountType: isEmptyString,
+      planId: isEmptyArray,
+      quantity: undefined,
+    } as const
+
+    test('rejects scalar-field ops on a declared array field', () => {
+      for (const expression of [
+        { op: 'in', field: 'planId', values: ['team'] },
+        { op: 'notIn', field: 'planId', values: ['team'] },
+        { op: 'fieldInCond', field: 'planId', condition: 'validPlans' },
+      ] as const) {
+        expect(() =>
+          compileExpr(expression, { fieldNames, conditions, fieldIsEmpty }),
+        ).toThrow(`"${expression.op}" requires a scalar field`)
+      }
+    })
+
+    test('rejects contains on a declared scalar field', () => {
+      expect(() =>
+        compileExpr(
+          { op: 'contains', field: 'accountType', value: 'business' },
+          { fieldNames, conditions, fieldIsEmpty },
+        ),
+      ).toThrow('"contains" requires an array field')
+    })
+
+    test('allows contains on an array field and membership without a strategy', () => {
+      expect(() =>
+        compileExpr(
+          { op: 'contains', field: 'planId', value: 'team' },
+          { fieldNames, conditions, fieldIsEmpty },
+        ),
+      ).not.toThrow()
+
+      expect(() =>
+        compileExpr(
+          { op: 'in', field: 'accountType', values: ['business'] },
+          { fieldNames, conditions, fieldIsEmpty },
+        ),
+      ).not.toThrow()
+    })
+
+    test('skips the check for isEmptyPresent and custom emptiness functions', () => {
+      const strategies = {
+        accountType: isEmptyPresent,
+        planId: (value: unknown) => value === undefined,
+      }
+
+      expect(() =>
+        compileExpr(
+          { op: 'contains', field: 'accountType', value: 'business' },
+          { fieldNames, conditions, fieldIsEmpty: strategies },
+        ),
+      ).not.toThrow()
+
+      expect(() =>
+        compileExpr(
+          { op: 'in', field: 'planId', values: ['team'] },
+          { fieldNames, conditions, fieldIsEmpty: strategies },
+        ),
+      ).not.toThrow()
+    })
+
+    test('checks nested expressions', () => {
+      expect(() =>
+        compileExpr(
+          {
+            op: 'or',
+            exprs: [
+              { op: 'present', field: 'quantity' },
+              {
+                op: 'not',
+                expr: { op: 'contains', field: 'accountType', value: 'x' },
+              },
+            ],
+          },
+          { fieldNames, conditions, fieldIsEmpty },
+        ),
+      ).toThrow('"contains" requires an array field')
+    })
   })
 })
