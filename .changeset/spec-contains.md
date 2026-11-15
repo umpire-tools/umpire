@@ -13,4 +13,4 @@ Add the `contains` expression op for array-valued fields. `expr.contains(field, 
 
 Behavior change: `fromJson`, `fromJsonSafe`, `parseJsonSchema`, and `toJson()` now throw on these documents, which the previous release accepted. A config that pairs `field().isEmpty(isEmptyArray)` with `expr.in(...)` on that field now fails to serialize. That `in` never matched an array value at runtime, so the rule it expressed never fired.
 
-Aligns with umpire-spec v1.2.0-rc.1 (V1-13). `@umpire/core` exports the `IsEmptyFn` type for the new option, plus `getFieldBuilderDef`, which an adapter holding a `field()` builder can use to read back the definition that builder has accumulated.
+Aligns with umpire-spec v1.2.0 (V1-13). `@umpire/core` exports the `IsEmptyFn` type for the new option, plus `getFieldBuilderDef`, which an adapter holding a `field()` builder can use to read back the definition that builder has accumulated.
