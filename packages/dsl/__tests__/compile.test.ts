@@ -1,4 +1,9 @@
-import { isEmptyArray, isEmptyPresent, isEmptyString } from '@umpire/core'
+import {
+  isEmptyArray,
+  isEmptyBigInt,
+  isEmptyPresent,
+  isEmptyString,
+} from '@umpire/core'
 
 import { compileExpr, getExprFieldRefs } from '../src/index.js'
 
@@ -191,6 +196,19 @@ describe('compileExpr', () => {
         compileExpr(
           { op: 'contains', field: 'accountType', value: 'business' },
           { fieldNames, conditions, fieldIsEmpty },
+        ),
+      ).toThrow('"contains" requires an array field')
+    })
+
+    test('rejects contains on a declared bigint field', () => {
+      expect(() =>
+        compileExpr(
+          { op: 'contains', field: 'quantity', value: 1 },
+          {
+            fieldNames,
+            conditions,
+            fieldIsEmpty: { quantity: isEmptyBigInt },
+          },
         ),
       ).toThrow('"contains" requires an array field')
     })

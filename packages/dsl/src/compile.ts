@@ -1,5 +1,6 @@
 import {
   isEmptyArray,
+  isEmptyBigInt,
   isEmptyBoolean,
   isEmptyNumber,
   isEmptyObject,
@@ -51,6 +52,7 @@ const scalarFieldStrategies = new Set<IsEmptyFn>([
   isEmptyString,
   isEmptyNumber,
   isEmptyBoolean,
+  isEmptyBigInt,
   isEmptyObject,
 ])
 
