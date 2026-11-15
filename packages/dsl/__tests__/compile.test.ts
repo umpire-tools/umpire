@@ -148,4 +148,20 @@ describe('compileExpr', () => {
       }),
     ).toEqual(['accountType', 'enabled'])
   })
+
+  test('contains matches one primitive in an array value', () => {
+    const predicate = compileExpr(
+      { op: 'contains', field: 'planId', value: 'team' },
+      { fieldNames, conditions },
+    )
+
+    expect(predicate({ planId: ['starter', 'team'] }, {})).toBe(true)
+    expect(predicate({ planId: ['starter'] }, {})).toBe(false)
+    expect(predicate({ planId: 'team' }, {})).toBe(false)
+    expect(predicate({ planId: ['1'] }, {})).toBe(false)
+    expect(predicate._checkField).toBe('planId')
+    expect(
+      getExprFieldRefs({ op: 'contains', field: 'planId', value: 'team' }),
+    ).toEqual(['planId'])
+  })
 })

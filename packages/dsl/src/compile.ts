@@ -69,6 +69,7 @@ function collectFieldRefs(expression: Expr): string[] {
     case 'falsy':
     case 'in':
     case 'notIn':
+    case 'contains':
     case 'fieldInCond':
       return [expression.field]
     case 'and':
@@ -276,6 +277,14 @@ function compileFieldPredicate<F extends Record<string, FieldDef>>(
         expression.op,
         options,
         (value) => !expression.values.includes(value as never),
+      )
+    case 'contains':
+      return makeFieldPredicate<F>(
+        expression.field,
+        expression.op,
+        options,
+        (value) =>
+          Array.isArray(value) && value.includes(expression.value as never),
       )
     default:
       return null

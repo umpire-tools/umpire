@@ -23,6 +23,7 @@ describe('expr builders', () => {
       falsy: expr.falsy('walkSignal'),
       in: expr.in('league', allowedLeagues),
       notIn: expr.notIn('league', allowedLeagues),
+      contains: expr.contains('lineup', 'Soto'),
       cond: expr.cond('isPlayoffs'),
       condEq: expr.condEq('weatherBand', 'windy'),
       condIn: expr.condIn('weatherBand', weatherBands),
@@ -44,6 +45,7 @@ describe('expr builders', () => {
       falsy: { op: 'falsy', field: 'walkSignal' },
       in: { op: 'in', field: 'league', values: ['al', 'nl'] },
       notIn: { op: 'notIn', field: 'league', values: ['al', 'nl'] },
+      contains: { op: 'contains', field: 'lineup', value: 'Soto' },
       cond: { op: 'cond', condition: 'isPlayoffs' },
       condEq: { op: 'condEq', condition: 'weatherBand', value: 'windy' },
       condIn: {

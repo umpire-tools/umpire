@@ -43,6 +43,9 @@ export const expr: ExprBuilder<
   notIn(field, values) {
     return { op: 'notIn', field, values: deepClone(values) }
   },
+  contains(field, value) {
+    return { op: 'contains', field, value }
+  },
   cond(condition) {
     return { op: 'cond', condition }
   },
