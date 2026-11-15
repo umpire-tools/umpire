@@ -29,7 +29,11 @@ import type {
   JsonValidatorDef,
   UmpireJsonSchema,
 } from './schema.js'
-import { hydrateFieldIsEmpty, hydrateIsEmptyStrategy } from './strategies.js'
+import {
+  hydrateFieldIsEmpty,
+  hydrateIsEmptyStrategy,
+  type FieldIsEmptyMap,
+} from './strategies.js'
 import { validateSchema } from './validate.js'
 
 export type ParsedFields = Record<string, FieldDef>
@@ -41,6 +45,21 @@ export type ParsedValidators = ValidationMap<ParsedFields>
 type ParsedSchemaMeta = {
   conditions?: Record<string, JsonConditionDef>
   excluded?: ExcludedRule[]
+}
+
+/** Built once per schema so every rule's expressions share one emptiness map. */
+type ExprOptions = {
+  fieldNames: Set<string>
+  conditions: UmpireJsonSchema['conditions']
+  fieldIsEmpty: FieldIsEmptyMap
+}
+
+function createExprOptions(schema: UmpireJsonSchema): ExprOptions {
+  return {
+    fieldNames: new Set(Object.keys(schema.fields)),
+    conditions: schema.conditions,
+    fieldIsEmpty: hydrateFieldIsEmpty(schema.fields),
+  }
 }
 
 export type JsonSchemaParseResult =
@@ -73,13 +92,9 @@ export function parseJsonSchema(raw: unknown): JsonSchemaParseResult {
 
 function compileFairExpr<C extends Record<string, unknown>>(
   rule: Extract<JsonRule, { type: 'fairWhen' }>,
-  schema: UmpireJsonSchema,
+  exprOptions: ExprOptions,
 ): JsonFairPredicate<FieldValues<ParsedFields>, C> {
-  const predicate = compileExpr<ParsedFields, C>(rule.when, {
-    fieldNames: new Set(Object.keys(schema.fields)),
-    conditions: schema.conditions,
-    fieldIsEmpty: hydrateFieldIsEmpty(schema.fields),
-  })
+  const predicate = compileExpr<ParsedFields, C>(rule.when, exprOptions)
 
   const fairPredicate = ((
     _: unknown,
@@ -156,15 +171,8 @@ function parseValidators(
 
 function parseRule<C extends Record<string, unknown>>(
   rule: JsonRule,
-  schema: UmpireJsonSchema,
+  exprOptions: ExprOptions,
 ): Rule<ParsedFields, C> {
-  const fieldNames = new Set(Object.keys(schema.fields))
-  const exprOptions = {
-    fieldNames,
-    conditions: schema.conditions,
-    fieldIsEmpty: hydrateFieldIsEmpty(schema.fields),
-  }
-
   switch (rule.type) {
     case 'requires':
       if ('dependency' in rule) {
@@ -243,7 +251,7 @@ function parseRule<C extends Record<string, unknown>>(
       return attachJsonDef(
         fairWhen<ParsedFields, C>(
           rule.field,
-          compileFairExpr<C>(rule, schema),
+          compileFairExpr<C>(rule, exprOptions),
           {
             reason: rule.reason,
           },
@@ -258,7 +266,7 @@ function parseRule<C extends Record<string, unknown>>(
 
       for (const [branchName, branchRules] of Object.entries(rule.branches)) {
         parsedBranches[branchName] = branchRules.map((innerRule) =>
-          parseRule<C>(innerRule, schema),
+          parseRule<C>(innerRule, exprOptions),
         )
       }
 
@@ -269,7 +277,7 @@ function parseRule<C extends Record<string, unknown>>(
     }
     case 'anyOf': {
       const innerRules = rule.rules.map((innerRule) =>
-        parseRule<C>(innerRule, schema),
+        parseRule<C>(innerRule, exprOptions),
       )
       return attachJsonDef(anyOf<ParsedFields, C>(...innerRules), rule)
     }
@@ -311,8 +319,9 @@ function hydrateValidatedSchema<
   }
 
   const fields = attachJsonDef(parseFieldDefs(schema.fields), meta)
+  const exprOptions = createExprOptions(schema)
   const rules = attachJsonDef(
-    schema.rules.map((rule) => parseRule<C>(rule, schema)),
+    schema.rules.map((rule) => parseRule<C>(rule, exprOptions)),
     meta,
   )
   const validators = parseValidators(schema.validators)
