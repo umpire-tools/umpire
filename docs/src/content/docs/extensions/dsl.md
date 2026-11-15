@@ -57,7 +57,9 @@ expr.contains('tags', 'urgent') // array field includes "urgent"
 
 `contains` is `true` only when the runtime value is an array holding an element equal to `value`. An absent, `null`, scalar, or object value is `false`. Every membership op compares with JSON equality and no coercion: `true` is not `1`, and `"22"` is not `22`.
 
-Whether a field is meant to hold a list is a schema-level fact, so `@umpire/dsl` does not check it. `@umpire/json` does, at schema validation: an `in`, `notIn`, or `fieldInCond` on a field declared `"isEmpty": "array"` is rejected with `"<op>" requires a scalar field`, naming the op, and a `contains` on a field declared `"isEmpty"` as `"string"`, `"number"`, `"boolean"`, or `"object"` is rejected with `"contains" requires an array field`.
+Whether a field is meant to hold a list is a field definition, not something an expression carries. `compileExpr` accepts an optional `fieldIsEmpty` map of each field's `isEmpty` function, and uses it to reject a membership op that contradicts the field's declared shape: an `in`, `notIn`, or `fieldInCond` on a field declared `isEmpty(isEmptyArray)` throws `"<op>" requires a scalar field`, naming the op, and a `contains` on a field declared `isEmpty` as `isEmptyString`, `isEmptyNumber`, `isEmptyBoolean`, or `isEmptyObject` throws `"contains" requires an array field`.
+
+The check is by function identity on the shared `@umpire/core` strategies. A custom `isEmpty` function, `isEmptyPresent`, or a field missing from the map is not checked. `@umpire/json` builds the map from each field's `"isEmpty"` string, so JSON schema validation reports the same errors for every expression position at any depth.
 
 ### Logical combinators
 
@@ -107,6 +109,7 @@ function compileExpr<F, C>(
     fieldNames: Set<string>
     conditions?: Record<string, { type: 'boolean' | 'string' | 'number' | 'string[]' | 'number[]' }>
     allowUndeclaredConditions?: boolean
+    fieldIsEmpty?: Record<string, (value: unknown) => boolean>
   },
 ): (values: FieldValues<F>, conditions: C) => boolean
 ```
@@ -116,8 +119,9 @@ function compileExpr<F, C>(
 - Every field referenced must appear in `fieldNames`. Unknown fields throw.
 - Every condition referenced must appear in `conditions`, unless `allowUndeclaredConditions` is `true`.
 - `fieldInCond` additionally requires the condition type to be `'string[]'` or `'number[]'`.
+- A membership op that contradicts the field's entry in `fieldIsEmpty` throws, as described above.
 
-Compilation sees field names, not field definitions, so the array-field rules above are enforced by `@umpire/json` schema validation rather than by `compileExpr`.
+Compilation sees field names unless you pass `fieldIsEmpty`, so a caller that omits the map gets no shape check for membership ops. `@umpire/json` passes it; `@umpire/jsx` passes each field's `isEmpty` prop.
 
 The returned predicate accepts current field values and runtime conditions.
 

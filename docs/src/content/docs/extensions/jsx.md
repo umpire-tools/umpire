@@ -195,7 +195,7 @@ Multiple matchers AND together. This field is disabled unless age is between 60 
 </Field>
 ```
 
-`in` and `notIn` match a scalar dependency against a list. `contains` goes the other way: it is satisfied when the dependency holds an array that includes the value.
+`in` and `notIn` match a scalar dependency against a list. `contains` goes the other way: it is satisfied when the dependency holds an array that includes the value. A matcher that contradicts the dependency's `isEmpty` prop throws at `<Umpire>` construction: `contains` on a field declared `isEmpty={isEmptyString}` throws `"contains" requires an array field`, and `in`, `notIn`, or `fieldInCond` on a field declared `isEmpty={isEmptyArray}` throws `"<op>" requires a scalar field`.
 
 ```tsx
 <Field name="tags" />
