@@ -60,6 +60,11 @@
       "id": "validator-surface",
       "path": "fixtures/validator-surface.json",
       "description": "Portable validators should only surface valid/error for enabled, satisfied fields and should not change structural availability."
+    },
+    {
+      "id": "array-membership",
+      "path": "fixtures/array-membership.json",
+      "description": "contains finds one primitive in an array-valued field with JSON equality and no type coercion (booleans are not numbers, strings are not numbers); in and notIn never look inside an array value."
     }
   ],
   "failures": [
