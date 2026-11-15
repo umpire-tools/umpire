@@ -164,7 +164,7 @@ Make a field available only when a dependency is met. Nest it inside the field i
 
 Props:
 - `dep`: required unless `when` is used. The field this one depends on
-- `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `notIn`, `truthy`, `falsy`: optional value matchers. If any are set, `dep` is required
+- `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in`, `notIn`, `contains`, `truthy`, `falsy`: optional value matchers. If any are set, `dep` is required
 - `when`: optional `Expr` from `@umpire/dsl`. Use this for multi-field conditions. Cannot be combined with `dep`
 - `reason`: optional string explaining why the field is disabled
 
@@ -192,6 +192,15 @@ Multiple matchers AND together. This field is disabled unless age is between 60 
 <Field name="age" />
 <Field name="seniorDiscount">
   <Requires dep="age" gte={60} lte={120} />
+</Field>
+```
+
+`in` and `notIn` match a scalar dependency against a list. `contains` goes the other way: it is satisfied when the dependency holds an array that includes the value.
+
+```tsx
+<Field name="tags" />
+<Field name="urgentRouting">
+  <Requires dep="tags" contains="urgent" />
 </Field>
 ```
 

@@ -44,6 +44,20 @@ Array and object payloads are cloned on construction, so mutating a `values` arr
 | `falsy` | `(field) => Expr` | field is falsy |
 | `in` | `(field, values: JsonPrimitive[]) => Expr` | field value is in the list |
 | `notIn` | `(field, values: JsonPrimitive[]) => Expr` | field value is not in the list |
+| `contains` | `(field, value: JsonPrimitive) => Expr` | the array held by the field includes value |
+
+### Membership and array-valued fields
+
+`in` and `notIn` compare one scalar field value against a list. They never look inside an array value: an array field is never `in` its own elements, so `in` is `false` and `notIn` is `true`. Use `contains` for the reverse direction — the field holds the list and the expression carries the one value to find.
+
+```ts
+expr.in('plan', ['pro', 'enterprise']) // scalar field in a list
+expr.contains('tags', 'urgent') // array field includes "urgent"
+```
+
+`contains` is `true` only when the runtime value is an array holding an element equal to `value`. An absent, `null`, scalar, or object value is `false`. Every membership op compares with JSON equality and no coercion: `true` is not `1`, and `"22"` is not `22`.
+
+Whether a field is meant to hold a list is a schema-level fact, so `@umpire/dsl` does not check it. `@umpire/json` does, at schema validation: an `in`, `notIn`, or `fieldInCond` on a field declared `"isEmpty": "array"` is rejected with `"in" requires a scalar field`, and a `contains` on a field declared `"isEmpty"` as `"string"`, `"number"`, `"boolean"`, or `"object"` is rejected with `"contains" requires an array field`.
 
 ### Logical combinators
 
@@ -102,6 +116,8 @@ function compileExpr<F, C>(
 - Every field referenced must appear in `fieldNames`. Unknown fields throw.
 - Every condition referenced must appear in `conditions`, unless `allowUndeclaredConditions` is `true`.
 - `fieldInCond` additionally requires the condition type to be `'string[]'` or `'number[]'`.
+
+Compilation sees field names, not field definitions, so the array-field rules above are enforced by `@umpire/json` schema validation rather than by `compileExpr`.
 
 The returned predicate accepts current field values and runtime conditions.
 
