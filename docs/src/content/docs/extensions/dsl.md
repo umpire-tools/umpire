@@ -57,7 +57,7 @@ expr.contains('tags', 'urgent') // array field includes "urgent"
 
 `contains` is `true` only when the runtime value is an array holding an element equal to `value`. An absent, `null`, scalar, or object value is `false`. Every membership op compares with JSON equality and no coercion: `true` is not `1`, and `"22"` is not `22`.
 
-Whether a field is meant to hold a list is a schema-level fact, so `@umpire/dsl` does not check it. `@umpire/json` does, at schema validation: an `in`, `notIn`, or `fieldInCond` on a field declared `"isEmpty": "array"` is rejected with `"in" requires a scalar field`, and a `contains` on a field declared `"isEmpty"` as `"string"`, `"number"`, `"boolean"`, or `"object"` is rejected with `"contains" requires an array field`.
+Whether a field is meant to hold a list is a schema-level fact, so `@umpire/dsl` does not check it. `@umpire/json` does, at schema validation: an `in`, `notIn`, or `fieldInCond` on a field declared `"isEmpty": "array"` is rejected with `"<op>" requires a scalar field`, naming the op, and a `contains` on a field declared `"isEmpty"` as `"string"`, `"number"`, `"boolean"`, or `"object"` is rejected with `"contains" requires an array field`.
 
 ### Logical combinators
 
