@@ -1,5 +1,13 @@
 # @umpire/effect
 
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies [8d55445]
+  - @umpire/core@1.1.1
+  - @umpire/async@1.0.1
+
 ## 1.2.0
 
 ### Minor Changes
