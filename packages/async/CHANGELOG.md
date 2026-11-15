@@ -1,5 +1,12 @@
 # @umpire/async
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [8d55445]
+  - @umpire/core@1.1.1
+
 ## 1.0.0
 
 ### Minor Changes

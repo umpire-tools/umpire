@@ -1,6 +1,6 @@
 {
   "name": "@umpire/jsx",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "JSX pragma for Umpire config — define fields and rules via a familiar HTML-like tree",
   "license": "MIT",
   "type": "module",
