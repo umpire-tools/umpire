@@ -1,5 +1,6 @@
 import {
   field,
+  getFieldBuilderDef,
   umpire as createUmpire,
   requires,
   disables,
@@ -68,7 +69,6 @@ type FieldDescriptor = {
   readonly _ump: 'field'
   readonly name: string
   readonly def: FieldBuilder<unknown>
-  readonly isEmpty: IsEmptyFn | undefined
   readonly ruleDescs: ReadonlyArray<RuleDescriptor>
   readonly ruleBuilders: ReadonlyArray<
     (
@@ -285,7 +285,6 @@ export function Field({
     _ump: 'field',
     name,
     def,
-    isEmpty: isEmptyFn,
     ruleDescs,
     ruleBuilders,
   }
@@ -346,7 +345,7 @@ function collectFields(childDescs: readonly UmpireChild[]): {
   for (const desc of childDescs) {
     if (desc._ump === 'field') {
       fieldNames.add(desc.name)
-      fieldIsEmpty[desc.name] = desc.isEmpty
+      fieldIsEmpty[desc.name] = getFieldBuilderDef(desc.def).isEmpty
     } else if (desc._ump !== 'standaloneDisables' && desc._ump !== 'oneOf') {
       throw new Error(
         `[@umpire/jsx] Unknown child type in <Umpire>: ${(desc as { _ump: string })._ump}`,
